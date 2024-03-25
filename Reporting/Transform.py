@@ -25,7 +25,7 @@ database_url = f"postgresql://{db_user}:{db_password}@{db_endpoint}:{db_port}/{d
 engine = create_engine(database_url)
 
 # Specify your table name and schema
-table_name = 'year_end'
+table_name = 'transactions_raw_v2'
 
 # Read the table into a pandas DataFrame
 df = pd.read_sql_table(table_name, con=engine)
@@ -72,35 +72,24 @@ transaction_map = {
     'WITH (END)': 'Ending Cap Acct Bal',
 }
 
-df['Head1_Category'] = df['Head1'].map(transaction_map)
+df['Transaction_category'] = df['Head1'].apply(lambda x: transaction_map.get(x, 'Unmapped / Others'))
+df['Amount'] = df['Amt1'].astype(float)
 
 # Step 1: Filter the DataFrame for the specified date range
-filtered_df = df[(df['Start_date'] >= pd.Timestamp('2023-01-01')) & (df['End_date'] <= pd.Timestamp('2023-12-31'))]
+df = df[(df['Start_date'] >= pd.Timestamp('2023-01-01')) & (df['End_date'] <= pd.Timestamp('2023-12-31')) & (df['PoolCode'] == 'GEN-LUCIDII') & (df['InvestorCode'] == '1000068425')]
+subset_cols = ['PoolDescription', 'PeriodDescription', 'Start_date', 'End_date', 'InvestorDescription', 'Head1', 'Transaction_category', 'Amount']
+deduplicated_df = df.drop_duplicates(subset=subset_cols)
+deduplicated_df = deduplicated_df.groupby(subset_cols[:-1])['Amount'].sum().reset_index()
 
-# Step 2 & 3: Group by the specified columns without End_date, then aggregate Amt1
-accrued_filtered_amt_df = filtered_df.groupby(['VehicleDescription','PoolDescription','InvestorDescription','Head1','Head1_Category'])['Amt1'].sum().reset_index()
-
-# Display the first few rows of the new DataFrame to verify the transformation
-print(accrued_filtered_amt_df)
-
-
-# Assuming df is your original DataFrame and the mapping has been applied
-# Step 2: Group and Aggregate
-grouped_df = df.groupby(['VehicleDescription', 'PoolDescription', 'InvestorDescription', 'Head1_Category','End_date'])['Amt1'].sum().reset_index()
-
-print(grouped_df)
-
-# Step 3: Pivot the DataFrame
-pivot_df = grouped_df.pivot_table(index=['VehicleDescription', 'PoolDescription', 'InvestorDescription','End_date'],
-                                  columns='Head1_Category', values='Amt1', fill_value=0)
+# Pivot the DataFrame
+pivot_df = deduplicated_df.pivot_table(index=['PoolDescription', 'InvestorDescription', 'Start_date', 'End_date'], columns='Transaction_category', values='Amount', fill_value=0)
 
 print(pivot_df.columns)
-pivot_df = pivot_df.reset_index()
-
 # Rename the columns if necessary, e.g., pivot_df.rename(columns={'BAL FWD': 'Balance Forwarded'})
 
-# Step 4: Final Adjustments
-# Make any necessary final adjustments to your DataFrame here
+# Export the DataFrame to Excel
+file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\Test.xlsx"
+pivot_df.to_excel(file_path, index=False, engine='openpyxl')
 
 # Display the first few rows of the resulting DataFrame
 with pd.option_context('display.max_columns', None, 'display.width', 1000, 'display.float_format', '{:.2f}'.format):
