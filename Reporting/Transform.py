@@ -1,96 +1,185 @@
+import time
 
 import pandas as pd
-import pandas as pd
-import psycopg2
-import sqlalchemy
-from sqlalchemy import create_engine
-
-
-# excel_file_path = r'C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\Demo.xlsx'
-#
-# df = pd.read_excel(excel_file_path)  # Read the Excel file
-
-# Database connection parameters
-db_endpoint = 'luciddb1.czojmxqfrx7k.us-east-1.rds.amazonaws.com'
-db_port = '5432'
-db_user = 'dbmasteruser'
-db_password = 'lnRz*(N_7aOf~7Hx6oRo8;,<vYp|~#PC'
-db_name = 'reporting'
-
-
-# Create the database URL
-database_url = f"postgresql://{db_user}:{db_password}@{db_endpoint}:{db_port}/{db_name}"
-
-# Create a database engine
-engine = create_engine(database_url)
+from Utils.Hash import hash_string
+from Utils.database_utils import read_table_from_db
+from Utils.Constants import transaction_map
 
 # Specify your table name and schema
-table_name = 'transactions_raw_v2'
+table_name = "transactions_raw_v2"
+
+start_time = time.time()
 
 # Read the table into a pandas DataFrame
-df = pd.read_sql_table(table_name, con=engine)
+df = read_table_from_db(table_name)
 
-### DATE CONVERSION ###
+### PREPROCESSING ###
 # Splitting the 'Period' column into 'Start_date' and 'End_date'
-df[['Start_date', 'End_date']] = df['PeriodDescription'].str.extract(
-    r'From (\d{1,2}/\d{1,2}/\d{4}) To (\d{1,2}/\d{1,2}/\d{4})')
+df[["Start_date", "End_date"]] = df["PeriodDescription"].str.extract(
+    r"From (\d{1,2}/\d{1,2}/\d{4}) To (\d{1,2}/\d{1,2}/\d{4})"
+)
 
 # Converting to date format
-df['Start_date'] = pd.to_datetime(df['Start_date'], format='%m/%d/%Y')
-df['End_date'] = pd.to_datetime(df['End_date'], format='%m/%d/%Y')
+df["Start_date"] = pd.to_datetime(df["Start_date"], format="%m/%d/%Y")
+df["End_date"] = pd.to_datetime(df["End_date"], format="%m/%d/%Y")
 
-### GROUP BY ###
 
-### TRANSACTION MAP ###
-transaction_map = {
-    'ASSIGN (BEG)': 'Beginning Cap Acct Bal',
-    'BAL FWD':'Beginning Cap Acct Bal',
-    'CE AD COST':'Expense',
-    'CE ADMIN': 'Expense',
-    'CE AUDIT':'Expense',
-    'CE CUST FE': 'Expense',
-    'CE FCE':'Expense',
-    'CE HED FEE': 'Expense',
-    'CE IF':'Mgmt Fee Waiver',
-    'CE IIEA': 'Income',
-    'CE IIEM':'Income',
-    'CE IIF': 'Income',
-    'CE IIM':'Income',
-    'CE IIMM': 'Income',
-    'CE IIR':'Income',
-    'CE MF': 'Mgmt Fee',
-    'CE MFW':'Mgmt Fee Waiver',
-    'CE MREAL': 'Mark to Market',
-    'CE MUNREAL':'Mark to Market',
-    'CE ORG EXP': 'Expense',
-    'CE OTH FEE':'Expense',
-    'CE RADJEXP': 'Expense',
-    'CE RADJINC':'Income',
-    'CONT': 'Beginning Cap Acct Bal',
-    'Total':'Ending Cap Acct Bal',
-    'WITH (BEG)':'Beginning Cap Acct Bal',
-    'WITH (END)': 'Ending Cap Acct Bal',
-}
-
-df['Transaction_category'] = df['Head1'].apply(lambda x: transaction_map.get(x, 'Unmapped / Others'))
-df['Amount'] = df['Amt1'].astype(float)
+df["Transaction_category"] = df["Head1"].apply(
+    lambda x: transaction_map.get(x, "Unmapped / Others")
+)
+df["Amount"] = df["Amt1"].astype(float)
 
 # Step 1: Filter the DataFrame for the specified date range
-df = df[(df['Start_date'] >= pd.Timestamp('2023-01-01')) & (df['End_date'] <= pd.Timestamp('2023-12-31')) & (df['PoolCode'] == 'GEN-LUCIDII') & (df['InvestorCode'] == '1000068425')]
-subset_cols = ['PoolDescription', 'PeriodDescription', 'Start_date', 'End_date', 'InvestorDescription', 'Head1', 'Transaction_category', 'Amount']
+# df = df[
+#     (df["Start_date"] >= pd.Timestamp("2023-01-01"))
+#     & (df["End_date"] <= pd.Timestamp("2023-12-31"))
+#     & (df["PoolCode"] == "GEN-LUCIDII")
+#     & (df["InvestorCode"] == "1000068425")
+# ]
+subset_cols = [
+    "PoolDescription",
+    "PeriodDescription",
+    "InvestorDescription",
+    "Start_date",
+    "End_date",
+    "Head1",
+    "Transaction_category",
+    "Amount",
+]
 deduplicated_df = df.drop_duplicates(subset=subset_cols)
-deduplicated_df = deduplicated_df.groupby(subset_cols[:-1])['Amount'].sum().reset_index()
+deduplicated_df = (
+    deduplicated_df.groupby(subset_cols[:-1])["Amount"].sum().reset_index()
+)
+
 
 # Pivot the DataFrame
-pivot_df = deduplicated_df.pivot_table(index=['PoolDescription', 'InvestorDescription', 'Start_date', 'End_date'], columns='Transaction_category', values='Amount', fill_value=0)
+pivot_df = deduplicated_df.pivot_table(
+    index=[
+        "PoolDescription",
+        "PeriodDescription",
+        "InvestorDescription",
+        "Start_date",
+        "End_date",
+    ],
+    columns="Transaction_category",
+    values="Amount",
+    fill_value=0,
+    aggfunc="sum",
+)
 
-print(pivot_df.columns)
+pivot_df = pivot_df.reset_index()
+
 # Rename the columns if necessary, e.g., pivot_df.rename(columns={'BAL FWD': 'Balance Forwarded'})
+pivot_df["ID"] = (
+    pivot_df["PoolDescription"].astype(str)
+    + pivot_df["InvestorDescription"].astype(str)
+    + pivot_df["Start_date"].astype(str)
+    + pivot_df["End_date"].astype(str)
+).apply(hash_string)
+
+pivot_df["Day Count"] = (pivot_df["End_date"] - pivot_df["Start_date"]).dt.days
+
+# Calculate Revised Columns
+pivot_df["Revised Beginning Cap Balance"] = (
+    pivot_df["Beginning Cap Acct Bal"]
+    + pivot_df["Withdrawal - BOP"]
+    + pivot_df["Contribution"]
+)
+pivot_df["Revised Ending Cap Acct Balance"] = (
+    pivot_df["Ending Cap Acct Bal"] + pivot_df["Withdrawal - EOP"]
+)
+
+# Calculate Returns
+pivot_df["Returns"] = (
+    pivot_df["Income"]
+    + pivot_df["Expense"]
+    + pivot_df["Mgmt Fee"]
+    + pivot_df["Mgmt Fee Waiver"]
+) / pivot_df[
+    "Revised Beginning Cap Balance"
+]  # Percentage with 2 decimals
+
+# Calculate Annualized Returns
+pivot_df["Annualized Returns"] = (
+    (pivot_df["Returns"])
+    * 360
+    / pivot_df.apply(
+        lambda row: row["Day Count"] if row["Day Count"] > 0 else 1, axis=1
+    )
+)
+
+# Drop 'Unmapped / Others'
+pivot_df = pivot_df.drop("Unmapped / Others", axis=1)
 
 # Export the DataFrame to Excel
-file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\Test.xlsx"
-pivot_df.to_excel(file_path, index=False, engine='openpyxl')
+export_pivot = pivot_df
+# Define the desired column order
+new_order = [
+    "PeriodDescription",
+    "Start_date",
+    "End_date",
+    "Day Count",
+    "Returns",
+    "Annualized Returns",
+    "PoolDescription",
+    "InvestorDescription",
+    "Beginning Cap Acct Bal",
+    "Withdrawal - BOP",
+    "Contribution",
+    "Revised Beginning Cap Balance",
+    "Income",
+    "Expense",
+    "Mgmt Fee",
+    "Mgmt Fee Waiver",
+    "Mark to Market",
+    "Ending Cap Acct Bal",
+    "Withdrawal - EOP",
+    "Revised Ending Cap Acct Balance",
+]
+
+# Reorder columns and set index
+export_pivot = export_pivot.set_index("ID")[new_order].sort_values(
+    by="Start_date", ascending=True
+)
+
+# Reformatting
+export_pivot["Start_date"] = export_pivot["Start_date"].dt.strftime("%m/%d/%Y")
+export_pivot["End_date"] = export_pivot["End_date"].dt.strftime("%m/%d/%Y")
+number_cols = [
+    "Beginning Cap Acct Bal",
+    "Withdrawal - BOP",
+    "Contribution",
+    "Revised Beginning Cap Balance",
+    "Income",
+    "Expense",
+    "Mgmt Fee",
+    "Mgmt Fee Waiver",
+    "Mark to Market",
+    "Ending Cap Acct Bal",
+    "Withdrawal - EOP",
+    "Revised Ending Cap Acct Balance",
+]
+
+percent_cols = ["Returns", "Annualized Returns"]
+
+export_df = export_pivot.style.format({col: "{:.2f}" for col in number_cols})
+export_df = export_df.format({col: "{:.2%}" for col in percent_cols})
+
+# Write to local
+file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\Returns.xlsx"
+export_pivot.to_excel(file_path, engine="openpyxl")
+
+end_time = time.time()  # Capture end time
+process_time = end_time - start_time
+print(f"Processing time: {process_time:.2f} seconds")
 
 # Display the first few rows of the resulting DataFrame
-with pd.option_context('display.max_columns', None, 'display.width', 1000, 'display.float_format', '{:.2f}'.format):
-    print(pivot_df)
+with pd.option_context(
+    "display.max_columns",
+    None,
+    "display.width",
+    1000,
+    "display.float_format",
+    "{:.2f}".format,
+):
+    print(export_pivot.head())
