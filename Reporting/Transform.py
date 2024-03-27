@@ -1,9 +1,10 @@
 import time
 
 import pandas as pd
+
+from Utils.Constants import transaction_map
 from Utils.Hash import hash_string
 from Utils.database_utils import read_table_from_db
-from Utils.Constants import transaction_map
 
 # Specify your table name and schema
 table_name = "transactions_raw_v2"
@@ -22,7 +23,6 @@ df[["Start_date", "End_date"]] = df["PeriodDescription"].str.extract(
 # Converting to date format
 df["Start_date"] = pd.to_datetime(df["Start_date"], format="%m/%d/%Y")
 df["End_date"] = pd.to_datetime(df["End_date"], format="%m/%d/%Y")
-
 
 df["Transaction_category"] = df["Head1"].apply(
     lambda x: transaction_map.get(x, "Unmapped / Others")
@@ -51,7 +51,6 @@ deduplicated_df = (
     deduplicated_df.groupby(subset_cols[:-1])["Amount"].sum().reset_index()
 )
 
-
 # Pivot the DataFrame
 pivot_df = deduplicated_df.pivot_table(
     index=[
@@ -71,41 +70,41 @@ pivot_df = pivot_df.reset_index()
 
 # Rename the columns if necessary, e.g., pivot_df.rename(columns={'BAL FWD': 'Balance Forwarded'})
 pivot_df["ID"] = (
-    pivot_df["PoolDescription"].astype(str)
-    + pivot_df["InvestorDescription"].astype(str)
-    + pivot_df["Start_date"].astype(str)
-    + pivot_df["End_date"].astype(str)
+        pivot_df["PoolDescription"].astype(str)
+        + pivot_df["InvestorDescription"].astype(str)
+        + pivot_df["Start_date"].astype(str)
+        + pivot_df["End_date"].astype(str)
 ).apply(hash_string)
 
 pivot_df["Day Count"] = (pivot_df["End_date"] - pivot_df["Start_date"]).dt.days
 
 # Calculate Revised Columns
 pivot_df["Revised Beginning Cap Balance"] = (
-    pivot_df["Beginning Cap Acct Bal"]
-    + pivot_df["Withdrawal - BOP"]
-    + pivot_df["Contribution"]
+        pivot_df["Beginning Cap Acct Bal"]
+        + pivot_df["Withdrawal - BOP"]
+        + pivot_df["Contribution"]
 )
 pivot_df["Revised Ending Cap Acct Balance"] = (
-    pivot_df["Ending Cap Acct Bal"] + pivot_df["Withdrawal - EOP"]
+        pivot_df["Ending Cap Acct Bal"] + pivot_df["Withdrawal - EOP"]
 )
 
 # Calculate Returns
 pivot_df["Returns"] = (
-    pivot_df["Income"]
-    + pivot_df["Expense"]
-    + pivot_df["Mgmt Fee"]
-    + pivot_df["Mgmt Fee Waiver"]
-) / pivot_df[
-    "Revised Beginning Cap Balance"
-]  # Percentage with 2 decimals
+                              pivot_df["Income"]
+                              + pivot_df["Expense"]
+                              + pivot_df["Mgmt Fee"]
+                              + pivot_df["Mgmt Fee Waiver"]
+                      ) / pivot_df[
+                          "Revised Beginning Cap Balance"
+                      ]  # Percentage with 2 decimals
 
 # Calculate Annualized Returns
 pivot_df["Annualized Returns"] = (
-    (pivot_df["Returns"])
-    * 360
-    / pivot_df.apply(
-        lambda row: row["Day Count"] if row["Day Count"] > 0 else 1, axis=1
-    )
+        (pivot_df["Returns"])
+        * 360
+        / pivot_df.apply(
+    lambda row: row["Day Count"] if row["Day Count"] > 0 else 1, axis=1
+)
 )
 
 # Drop 'Unmapped / Others'
@@ -175,11 +174,11 @@ print(f"Processing time: {process_time:.2f} seconds")
 
 # Display the first few rows of the resulting DataFrame
 with pd.option_context(
-    "display.max_columns",
-    None,
-    "display.width",
-    1000,
-    "display.float_format",
-    "{:.2f}".format,
+        "display.max_columns",
+        None,
+        "display.width",
+        1000,
+        "display.float_format",
+        "{:.2f}".format,
 ):
     print(export_pivot.head())
