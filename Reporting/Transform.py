@@ -30,12 +30,14 @@ df["Transaction_category"] = df["Head1"].apply(
 df["Amount"] = df["Amt1"].astype(float)
 
 # Step 1: Filter the DataFrame for the specified date range
-# df = df[
-#     (df["Start_date"] >= pd.Timestamp("2023-01-01"))
-#     & (df["End_date"] <= pd.Timestamp("2023-12-31"))
-#     & (df["PoolCode"] == "GEN-LUCIDII")
-#     & (df["InvestorCode"] == "1000068425")
-# ]
+df = df[
+    (df["Start_date"] >= pd.Timestamp("2023-01-01"))
+    & (df["End_date"] <= pd.Timestamp("2023-12-31"))
+    & (df["PoolCode"] == "GEN-LUCIDII")
+    & (df["InvestorCode"].isin(["1000068425","100081293","1000073123","1000081292"]))
+]
+
+
 subset_cols = [
     "PoolDescription",
     "PeriodDescription",
@@ -88,15 +90,14 @@ pivot_df["Revised Ending Cap Acct Balance"] = (
         pivot_df["Ending Cap Acct Bal"] + pivot_df["Withdrawal - EOP"]
 )
 
-# Calculate Returns
-pivot_df["Returns"] = (
-                              pivot_df["Income"]
-                              + pivot_df["Expense"]
-                              + pivot_df["Mgmt Fee"]
-                              + pivot_df["Mgmt Fee Waiver"]
-                      ) / pivot_df[
-                          "Revised Beginning Cap Balance"
-                      ]  # Percentage with 2 decimals
+### RETURNS CALCULATION ###
+"""
+We will calculate the returns based on the following formula:
+Returns = (Revised Ending Cap Acct Balance - Revised Beginning Cap Balance) / Revised Beginning Cap Balance
+Annualized Returns = Returns * 360 / Day Count
+"""
+
+pivot_df["Returns"] = (pivot_df["Revised Ending Cap Acct Balance"] - pivot_df["Revised Beginning Cap Balance"]) / pivot_df["Revised Beginning Cap Balance"]
 
 # Calculate Annualized Returns
 pivot_df["Annualized Returns"] = (
@@ -165,7 +166,7 @@ export_df = export_pivot.style.format({col: "{:.2f}" for col in number_cols})
 export_df = export_df.format({col: "{:.2%}" for col in percent_cols})
 
 # Write to local
-file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\Returns.xlsx"
+file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\New Returns.xlsx"
 export_pivot.to_excel(file_path, engine="openpyxl")
 
 end_time = time.time()  # Capture end time
