@@ -2,12 +2,13 @@ import time
 
 import pandas as pd
 
+from Utils.Common import print_df
 from Utils.Constants import transaction_map
 from Utils.Hash import hash_string
 from Utils.database_utils import read_table_from_db
 
 # Specify your table name and schema
-table_name = "transactions_raw_v2"
+table_name = "bronze_returns"
 
 start_time = time.time()
 
@@ -31,10 +32,9 @@ df["Amount"] = df["Amt1"].astype(float)
 
 # Step 1: Filter the DataFrame for the specified date range
 df = df[
-    (df["Start_date"] >= pd.Timestamp("2023-01-01"))
-    & (df["End_date"] <= pd.Timestamp("2023-12-31"))
-    & (df["PoolCode"] == "GEN-LUCIDII")
-    & (df["InvestorCode"].isin(["1000068425","100081293","1000073123","1000081292"]))
+    (df["Start_date"] >= pd.Timestamp("2021-01-01"))
+    & (df["End_date"] <= pd.Timestamp("2024-03-31"))
+    & (df["PoolDescription"] == "Lucid Prime Fund LLC")
 ]
 
 
@@ -166,7 +166,7 @@ export_df = export_pivot.style.format({col: "{:.2f}" for col in number_cols})
 export_df = export_df.format({col: "{:.2%}" for col in percent_cols})
 
 # Write to local
-file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\New Returns.xlsx"
+file_path = r"S:\Users\THoang\Data\Prime_fund_returns_2021_2024_copy.xlsx"
 export_pivot.to_excel(file_path, engine="openpyxl")
 
 end_time = time.time()  # Capture end time
@@ -174,12 +174,4 @@ process_time = end_time - start_time
 print(f"Processing time: {process_time:.2f} seconds")
 
 # Display the first few rows of the resulting DataFrame
-with pd.option_context(
-        "display.max_columns",
-        None,
-        "display.width",
-        1000,
-        "display.float_format",
-        "{:.2f}".format,
-):
-    print(export_pivot.head())
+print_df(pivot_df.head())
