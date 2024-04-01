@@ -5,11 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3496bc1a-6c25-4d0d-aae0-4471e8aef509" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Reporting/Historical Returns.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Reporting/Bronze Table Processed Files" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/LucidMA.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/LucidMA.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/File Crawler.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/File Crawler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Historical Returns.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Historical Returns.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/PrimeFund_C1.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/PrimeFund_M.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/PrimeFund_MIG.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/PrimeNote_M-2.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/PrimeNote_MIG-3.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/SS&amp;C SOC Data Mapping.xlsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Transform.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Transform.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/USGFund_M.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/USGNote_M-8.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Utils/Constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Constants.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,13 +56,14 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_ADD_EXTERNAL_FILES": "true",
-    "Python.File Crawler.executor": "Debug",
+    "Python.Bronze Returns Table.executor": "Run",
+    "Python.File Crawler.executor": "Run",
     "Python.Historical Returns.executor": "Run",
     "Python.Transform.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "S:/Users/THoang/Tech/LucidMA",
+    "last_opened_file_path": "S:/Users/THoang/Tech/LucidMA/Reporting",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -67,7 +79,35 @@
     ]
   }
 }]]></component>
-  <component name="RunManager" selected="Python.File Crawler">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="S:\Users\THoang\Tech\LucidMA\Reporting" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.Historical Returns">
+    <configuration name="Bronze Returns Table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="LucidMA" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="File Crawler" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -139,9 +179,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Historical Returns" />
+        <item itemvalue="Python.Bronze Returns Table" />
         <item itemvalue="Python.File Crawler" />
         <item itemvalue="Python.Transform" />
-        <item itemvalue="Python.Historical Returns" />
       </list>
     </recent_temporary>
   </component>
@@ -163,7 +204,7 @@
       <workItem from="1711569166147" duration="748000" />
       <workItem from="1711570162839" duration="59000" />
       <workItem from="1711570368861" duration="985000" />
-      <workItem from="1711571380070" duration="18228000" />
+      <workItem from="1711571380070" duration="31946000" />
     </task>
     <servers />
   </component>
@@ -179,15 +220,16 @@
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <condition expression="int(year_dir) == 2024" language="Python" />
           <url>file://$PROJECT_DIR$/Reporting/File Crawler.py</url>
-          <line>60</line>
+          <line>58</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/LucidMA$File_Crawler.coverage" NAME="File Crawler Coverage Results" MODIFIED="1711979703088" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/LucidMA$Historical_Returns.coverage" NAME="Historical Returns Coverage Results" MODIFIED="1711574475299" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$Bronze_Returns_Table.coverage" NAME="Bronze Returns Table Coverage Results" MODIFIED="1711992675467" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$File_Crawler.coverage" NAME="File Crawler Coverage Results" MODIFIED="1711980621238" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$Historical_Returns.coverage" NAME="Historical Returns Coverage Results" MODIFIED="1711997245743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Transform.coverage" NAME="Transform Coverage Results" MODIFIED="1711638630079" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
   </component>
 </project>
