@@ -7,10 +7,10 @@
     <list default="true" id="3496bc1a-6c25-4d0d-aae0-4471e8aef509" name="Changes" comment="">
       <change afterPath="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Bronze Table Processed Files" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Reporting/Calculating Returns.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Utils/Common.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/LucidMA.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/LucidMA.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Calculating Returns.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Calculating Returns.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/File Crawler.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/File Crawler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Historical Returns.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Historical Returns.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/PrimeFund_C1.tex" beforeDir="false" />
@@ -231,7 +231,7 @@
       <workItem from="1711569166147" duration="748000" />
       <workItem from="1711570162839" duration="59000" />
       <workItem from="1711570368861" duration="985000" />
-      <workItem from="1711571380070" duration="39484000" />
+      <workItem from="1711571380070" duration="46046000" />
     </task>
     <servers />
   </component>
@@ -254,7 +254,7 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns.coverage" NAME="Calculating Returns Coverage Results" MODIFIED="1712009300982" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns.coverage" NAME="Calculating Returns Coverage Results" MODIFIED="1712080362493" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Returns_Table.coverage" NAME="Bronze Returns Table Coverage Results" MODIFIED="1711992675467" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$File_Crawler.coverage" NAME="File Crawler Coverage Results" MODIFIED="1711980621238" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Historical_Returns.coverage" NAME="Historical Returns Coverage Results" MODIFIED="1711997245743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
