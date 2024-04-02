@@ -80,6 +80,10 @@ pivot_df["ID"] = (
 
 pivot_df["Day Count"] = (pivot_df["End_date"] - pivot_df["Start_date"]).dt.days
 
+# TODO: Update the column names that are used in pivot_df below
+# # Delete later
+# pivot_df["Withdrawal - EOP"] = 0
+
 # Calculate Revised Columns
 pivot_df["Revised Beginning Cap Balance"] = (
         pivot_df["Beginning Cap Acct Bal"]
