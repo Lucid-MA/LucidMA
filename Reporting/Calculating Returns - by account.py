@@ -54,6 +54,14 @@ for index, master_row in df_master.iterrows():
     start_date, end_date = master_row['Start Date'], master_row['End Date']
     # Filter df to find relevant rows based on the date criteria
     relevant_df = df[(df['Start_date'] > start_date) & (df['Start_date'] < end_date)]
+
+    # Add another filter to exclude capital account that has intra-period contributions or withdrawals (timings that are
+    # at the beginning of the evaluation period)
+    exclusion_df = relevant_df[(relevant_df['Start_date'] > start_date + pd.Timedelta(days=1)) & (
+                (abs(relevant_df['Withdrawal - BOP']) >= 1000) | (abs(relevant_df['Contribution']) >= 1000))]
+    excluded_investors = exclusion_df['InvestorDescription'].unique()
+    relevant_df = relevant_df[~relevant_df['InvestorDescription'].isin(excluded_investors)]
+
     # Group by 'InvestorDescription' and aggregate 'Returns' into a list
     grouped = relevant_df.groupby('InvestorDescription')['Returns'].apply(list).reset_index()
 
@@ -110,5 +118,25 @@ def calculate_ending_balance(row):
 
 
 df_result['Calculated_Ending_Balance'] = df_result.apply(calculate_ending_balance, axis=1)
-# file_path = r"S:\Users\THoang\Data\master_output_test.xlsx"
-# df_result.to_excel(file_path, engine="openpyxl")
+
+file_path = r"S:\Users\THoang\Data\master_returns_comparison_prime_by_account.xlsx"
+df_result.to_excel(file_path, engine="openpyxl")
+
+# PIVOT 2
+# Group by 'Start_date' and 'End_date' and aggregate the specified columns
+df_grouped = df_result.groupby(['Start_date', 'End_date']).agg({
+    'Calculated_Starting_Balance': 'sum',
+    'Calculated_Ending_Balance': 'sum',
+    'Day_counts': 'median'
+}).reset_index()
+
+# Convert 'Start_date' and 'End_date' to 'mmmm-yy-dd' format
+df_grouped['Start_date'] = df_grouped['Start_date'].dt.strftime('%Y-%m-%d')
+df_grouped['End_date'] = df_grouped['End_date'].dt.strftime('%Y-%m-%d')
+
+df_grouped['Annualized Returns - 360'] = ((df_grouped['Calculated_Ending_Balance'] - df_grouped[
+    'Calculated_Starting_Balance']) / df_grouped['Calculated_Starting_Balance'] * 360 / df_grouped[
+                                               'Day_counts']).round(4)
+
+file_path = r"S:\Users\THoang\Data\master_returns_comparison_prime.xlsx"
+df_grouped.to_excel(file_path, engine="openpyxl")
