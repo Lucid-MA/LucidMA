@@ -1,10 +1,9 @@
 from functools import reduce
 
+import numpy as np
 import pandas as pd
-from Utils.Common import print_df
 
 # Reading from master data file
-# Read the data from the Excel file
 df_master = pd.read_excel(r"S:\Users\THoang\Data\master_data_returns.xlsx")
 
 # Convert 'Start Date' and 'End Date' to datetime
@@ -28,13 +27,6 @@ df_master = df_master[
 # Add 'Day Counts' column to df_master
 df_master['Day Counts'] = (df_master['End Date'] - df_master['Start Date']).dt.days
 
-# Show the first 10 rows of the DataFrame
-# print_df(df_master.head(10))
-
-# file_path = r"S:\Users\THoang\Data\master.xlsx"
-# df_master.to_excel(file_path, engine="openpyxl")
-
-
 # Read the data from the Excel file
 df = pd.read_excel(r"S:\Users\THoang\Data\Prime_fund_returns_2021_2024_copy.xlsx")
 
@@ -50,7 +42,6 @@ df['End_date'] = pd.to_datetime(df['End_date'])
 df['Returns'] = 1 + df['Returns']
 df = df.sort_values('Start_date')
 df['Returns'] = df['Returns'].astype(float)
-
 
 # Initialize an empty DataFrame to store the result
 df_result = pd.DataFrame(
@@ -69,56 +60,55 @@ for index, master_row in df_master.iterrows():
     for _, group_row in grouped.iterrows():
         investor_name = group_row['InvestorDescription']
         relevant_returns = group_row['Returns']
-        # Calculate the product of all elements in the 'Relevant returns' list, minus 1, then adjust for the day count
-        product_of_returns = reduce((lambda x, y: x * y), relevant_returns) - 1
-        day_counts = (end_date - start_date).days
-        calculated_returns = (product_of_returns * 360) / day_counts
+        # Check if relevant_returns is not empty
+        if relevant_returns and not any(np.isnan(x) for x in relevant_returns):
+            # Calculate the product of all elements in the 'Relevant returns' list, minus 1, then adjust for the day
+            # count
+            product_of_returns = reduce((lambda x, y: x * y), relevant_returns) - 1
+            day_counts = (end_date - start_date).days
+            calculated_returns = (product_of_returns * 360) / day_counts
 
-        # Prepare the data to be appended
-        data_to_append.append({
-            'Start_date': start_date,
-            'End_date': end_date,
-            'Day_counts': day_counts,
-            'Investor_name': investor_name,
-            'Relevant returns': relevant_returns,
-            'Calculated returns': calculated_returns
-        })
+            # Prepare the data to be appended
+            data_to_append.append({
+                'Start_date': start_date,
+                'End_date': end_date,
+                'Day_counts': day_counts,
+                'Investor_name': investor_name,
+                'Relevant returns': relevant_returns,
+                'Calculated returns': calculated_returns
+            })
 
 # Concatenate all prepared rows into df_result
 df_result = pd.concat([df_result, pd.DataFrame(data_to_append)], ignore_index=True)
 
-# Display the resulting DataFrame
-print_df(df_result.head(10))
-file_path = r"S:\Users\THoang\Data\test_output.xlsx"
-df_result.to_excel(file_path, engine="openpyxl")
-#
-#
-# # Calculate 'Calculated_Starting_Balance'
-# def calculate_starting_balance(row):
-#     mask = df_grouped['Start_date'] == row['Start Date'] + pd.Timedelta(days=1)
-#     starting_balance = df_grouped.loc[mask, 'Revised Beginning Cap Balance'].iloc[0]
-#     if starting_balance.empty:
-#         return 0  # or any other default value
-#     else:
-#         return starting_balance
-#
-#
-# df_master['Calculated_Starting_Balance'] = df_master.apply(calculate_starting_balance, axis=1)
-#
-#
-# #
-# # Calculate 'Calculated_Ending_Balance'
-# def calculate_ending_balance(row):
-#     mask = df_grouped['End_date'] == row['End Date']
-#     ending_balance_df = df_grouped.loc[mask, 'Revised Ending Cap Acct Balance']
-#     if ending_balance_df.empty:
-#         return 0  # or any other default value
-#     else:
-#         return ending_balance_df.iloc[0]
-#
-#
-# df_master['Calculated_Ending_Balance'] = df_master.apply(calculate_ending_balance, axis=1)
-#
-# # Drop the unnecessary columns
-# file_path = r"S:\Users\THoang\Data\master_output.xlsx"
-# df_master.to_excel(file_path, engine="openpyxl")
+# Drop the 'Relevant returns' column from df_result
+df_result = df_result.drop(columns=['Relevant returns'])
+
+
+# Calculate 'Calculated_Starting_Balance'
+def calculate_starting_balance(row):
+    mask = (df['Start_date'] == row['Start_date'] + pd.Timedelta(days=1)) & (
+            df['InvestorDescription'] == row['Investor_name'])
+    starting_balance = df.loc[mask, 'Revised Beginning Cap Balance']
+    if starting_balance.empty:
+        return 0  # or any other default value
+    else:
+        return starting_balance.iloc[0]  # return the first value
+
+
+df_result['Calculated_Starting_Balance'] = df_result.apply(calculate_starting_balance, axis=1)
+
+
+# Calculate 'Calculated_Ending_Balance'
+def calculate_ending_balance(row):
+    mask = (df['End_date'] == row['End_date']) & (df['InvestorDescription'] == row['Investor_name'])
+    ending_balance_df = df.loc[mask, 'Revised Ending Cap Acct Balance']
+    if ending_balance_df.empty:
+        return 0  # or any other default value
+    else:
+        return ending_balance_df.iloc[0]
+
+
+df_result['Calculated_Ending_Balance'] = df_result.apply(calculate_ending_balance, axis=1)
+# file_path = r"S:\Users\THoang\Data\master_output_test.xlsx"
+# df_result.to_excel(file_path, engine="openpyxl")
