@@ -1,6 +1,6 @@
 import os
-import zipfile
 import time
+import zipfile
 
 start_time = time.time()
 
@@ -43,7 +43,6 @@ def save_processed_file(filename):
 
 # Load processed files
 processed_files = load_processed_files()
-
 
 # Iterate through base directories
 for base_dir in base_directories:

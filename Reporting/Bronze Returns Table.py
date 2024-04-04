@@ -12,15 +12,8 @@ from Utils.Constants import needed_columns
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
-# import sys
-#
-# log_file_path = r"S:\Users\THoang\Logs\Sample.txt"
-# sys.stdout = open(log_file_path, 'w')
-# sys.stderr = sys.stdout
-
-
 # Connect to the PostgreSQL database
-engine = get_database_engine()
+engine = get_database_engine('postgres')
 
 
 # Function to extract date from filename using regex

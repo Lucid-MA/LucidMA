@@ -58,7 +58,7 @@ for index, master_row in df_master.iterrows():
     # Add another filter to exclude capital account that has intra-period contributions or withdrawals (timings that are
     # at the beginning of the evaluation period)
     exclusion_df = relevant_df[(relevant_df['Start_date'] > start_date + pd.Timedelta(days=1)) & (
-                (abs(relevant_df['Withdrawal - BOP']) >= 1000) | (abs(relevant_df['Contribution']) >= 1000))]
+            (abs(relevant_df['Withdrawal - BOP']) >= 1000) | (abs(relevant_df['Contribution']) >= 1000))]
     excluded_investors = exclusion_df['InvestorDescription'].unique()
     relevant_df = relevant_df[~relevant_df['InvestorDescription'].isin(excluded_investors)]
 
@@ -136,7 +136,7 @@ df_grouped['End_date'] = df_grouped['End_date'].dt.strftime('%Y-%m-%d')
 
 df_grouped['Annualized Returns - 360'] = ((df_grouped['Calculated_Ending_Balance'] - df_grouped[
     'Calculated_Starting_Balance']) / df_grouped['Calculated_Starting_Balance'] * 360 / df_grouped[
-                                               'Day_counts']).round(4)
+                                              'Day_counts']).round(4)
 
 file_path = r"S:\Users\THoang\Data\master_returns_comparison_prime.xlsx"
 df_grouped.to_excel(file_path, engine="openpyxl")

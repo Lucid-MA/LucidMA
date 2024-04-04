@@ -1,9 +1,10 @@
 # import sys
 import os
 import subprocess
-import openpyxl as op
+from datetime import datetime
 from pathlib import Path, PureWindowsPath
-from datetime import datetime, timedelta
+
+import openpyxl as op
 
 # intialize script templates
 fund_report_template = r"""
@@ -727,26 +728,26 @@ def tablevstretch(fund_name):
 
 
 def return_table_plot(
-    fund_name,
-    prev_pd_return,
-    series_abbrev,
-    r_this_1,
-    r_this_2,
-    comp_a,
-    comp_b,
-    comp_c,
-    r_a,
-    r_b,
-    r_c,
-    s_a_0,
-    s_a_1,
-    s_a_2,
-    s_b_0,
-    s_b_1,
-    s_b_2,
-    s_c_0,
-    s_c_1,
-    s_c_2,
+        fund_name,
+        prev_pd_return,
+        series_abbrev,
+        r_this_1,
+        r_this_2,
+        comp_a,
+        comp_b,
+        comp_c,
+        r_a,
+        r_b,
+        r_c,
+        s_a_0,
+        s_a_1,
+        s_a_2,
+        s_b_0,
+        s_b_1,
+        s_b_2,
+        s_c_0,
+        s_c_1,
+        s_c_2,
 ):
     if fund_name == "USG":
         out = r"""
@@ -830,22 +831,22 @@ def addl_coll_breakdown(alloc_aa_a, oc_aa_a, alloc_bbb, oc_bbb, alloc_bb, oc_bb)
 
 
 def colltable(
-    inclextra,
-    secured_by,
-    series_abbrev,
-    include_aaa_in_usg_bucket,
-    alloc_aaa,
-    alloc_aa_a,
-    alloc_bbb,
-    alloc_bb,
-    alloc_tbills,
-    alloc_total,
-    oc_total,
-    oc_tbills,
-    oc_bb,
-    oc_bbb,
-    oc_aa_a,
-    oc_aaa,
+        inclextra,
+        secured_by,
+        series_abbrev,
+        include_aaa_in_usg_bucket,
+        alloc_aaa,
+        alloc_aa_a,
+        alloc_bbb,
+        alloc_bb,
+        alloc_tbills,
+        alloc_total,
+        oc_total,
+        oc_tbills,
+        oc_bb,
+        oc_bbb,
+        oc_aa_a,
+        oc_aaa,
 ):
     if inclextra:
         out = r"""
@@ -938,29 +939,29 @@ def plotify(ws, x_col, y_col, start, end):
     for row in range(start, end + 1):
         if ws[x_col + str(row)].value and ws[y_col + str(row)].value:
             outp = (
-                outp
-                + "("
-                + ws[x_col + str(row)].value.strftime("%Y-%m-%d")
-                + ","
-                + str(round(100 * ws[y_col + str(row)].value, 3))
-                + ") "
+                    outp
+                    + "("
+                    + ws[x_col + str(row)].value.strftime("%Y-%m-%d")
+                    + ","
+                    + str(round(100 * ws[y_col + str(row)].value, 3))
+                    + ") "
             )
     return outp
 
 
 def snapshot_graph(
-    hspace,
-    graphwidth,
-    graphheight,
-    maxreturn,
-    series_abbrev,
-    comp_a,
-    comp_b,
-    comp_c,
-    this_r,
-    ra,
-    rb,
-    rc,
+        hspace,
+        graphwidth,
+        graphheight,
+        maxreturn,
+        series_abbrev,
+        comp_a,
+        comp_b,
+        comp_c,
+        this_r,
+        ra,
+        rb,
+        rc,
 ):
     if comp_c is not None:
         out = r"""
@@ -1081,21 +1082,21 @@ def snapshot_graph(
 
 
 def performance_graph(
-    titleincl,
-    graphhspace,
-    graphwidth,
-    graphheight,
-    fund_name,
-    zero_date,
-    max_return,
-    graphx,
-    graphbarwidth,
-    return_plot,
-    comp_a_plot,
-    comp_b_plot,
-    series_abbrev,
-    comp_a,
-    comp_b,
+        titleincl,
+        graphhspace,
+        graphwidth,
+        graphheight,
+        fund_name,
+        zero_date,
+        max_return,
+        graphx,
+        graphbarwidth,
+        return_plot,
+        comp_a_plot,
+        comp_b_plot,
+        series_abbrev,
+        comp_a,
+        comp_b,
 ):
     out = r"""
       \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
@@ -1179,64 +1180,64 @@ def coupon_plotify(ws, crow, daycount):
     for i in range(startrow, crow + 2):
         addl = ws["E" + str(i)].value.strftime("%m/%d/%y") + " &"
         addl = (
-            addl
-            + r"""\textbf{{"""
-            + ws["F" + str(i)].value.strftime("%m/%d/%y")
-            + r"""}} &"""
+                addl
+                + r"""\textbf{{"""
+                + ws["F" + str(i)].value.strftime("%m/%d/%y")
+                + r"""}} &"""
         )
         addl = (
-            addl
-            + r"""\textbf{{"""
-            + form_as_percent(ws[("N" if daycount == 360 else "O") + str(i)].value, 2)
-            + (r"""{{\tiny (Est'd)}}""" if i == crow + 1 else "")
-            + (
-                "*"
-                if ws["C12"].value == "Monthly1"
-                and ws["E" + str(i)].value.strftime("%m/%d/%y") == "12/30/20"
-                else ""
-            )
-            + r"""}} &"""
-        )
-        addl = (
-            addl
-            + benchmark_shorten(ws["U" + str(i)].value)
-            + ("+" if int(10000 * ws["W" + str(i)].value) > 0 else "-")
-            + str(int(abs(ws["X" + str(i)].value)))
-            + " &"
-        )
-        addl = (
-            addl
-            + (r"\$" if i == startrow else r"\hphantom{{\$}}")
-            + "{:,.0f}".format(ws["R" + str(i)].value)
-            + " &"
-        )
-        addl = (
-            addl
-            + (
-                r"\hphantom{{\$}}n/a"
-                if i == crow + 1
-                else (
-                    (r"\$" if i == startrow else r"\hphantom{{\$}}")
-                    + "{:,.2f}".format(ws["T" + str(i)].value)
+                addl
+                + r"""\textbf{{"""
+                + form_as_percent(ws[("N" if daycount == 360 else "O") + str(i)].value, 2)
+                + (r"""{{\tiny (Est'd)}}""" if i == crow + 1 else "")
+                + (
+                    "*"
+                    if ws["C12"].value == "Monthly1"
+                       and ws["E" + str(i)].value.strftime("%m/%d/%y") == "12/30/20"
+                    else ""
                 )
-            )
-            + " &"
+                + r"""}} &"""
         )
         addl = (
-            addl
-            + ws[("S" if i < crow + 1 else "F") + str(i)].value.strftime("%m/%d/%y")
-            + " &"
+                addl
+                + benchmark_shorten(ws["U" + str(i)].value)
+                + ("+" if int(10000 * ws["W" + str(i)].value) > 0 else "-")
+                + str(int(abs(ws["X" + str(i)].value)))
+                + " &"
         )
         addl = (
-            addl
-            + (r"\$" if i == startrow else r"\hphantom{{\$}}")
-            + "{:,.0f}".format(ws["R" + str(i)].value)
-            + " &"
+                addl
+                + (r"\$" if i == startrow else r"\hphantom{{\$}}")
+                + "{:,.0f}".format(ws["R" + str(i)].value)
+                + " &"
         )
         addl = (
-            addl
-            + form_as_percent(ws["AP" + str(i)].value, 1)
-            + (r" \\" if i <= crow + 1 or remaining_rows > 0 else " ")
+                addl
+                + (
+                    r"\hphantom{{\$}}n/a"
+                    if i == crow + 1
+                    else (
+                            (r"\$" if i == startrow else r"\hphantom{{\$}}")
+                            + "{:,.2f}".format(ws["T" + str(i)].value)
+                    )
+                )
+                + " &"
+        )
+        addl = (
+                addl
+                + ws[("S" if i < crow + 1 else "F") + str(i)].value.strftime("%m/%d/%y")
+                + " &"
+        )
+        addl = (
+                addl
+                + (r"\$" if i == startrow else r"\hphantom{{\$}}")
+                + "{:,.0f}".format(ws["R" + str(i)].value)
+                + " &"
+        )
+        addl = (
+                addl
+                + form_as_percent(ws["AP" + str(i)].value, 1)
+                + (r" \\" if i <= crow + 1 or remaining_rows > 0 else " ")
         )
         outp = outp + addl
 
@@ -1247,9 +1248,9 @@ def coupon_plotify(ws, crow, daycount):
             r"""& & & & & & & &      \\ """ if i < remaining_rows - 1 else ""
         )
         outp = (
-            outp
-            + addl
-            + r"""
+                outp
+                + addl
+                + r"""
 
         """
         )
@@ -1298,14 +1299,14 @@ def exp_rat_footnote(incl, cap, rat):
 def wordify(val):
     try:
         prefix = 0
-        if val >= 10**9:
-            prefix = round(round(val, 9) / (10**9), 2)
+        if val >= 10 ** 9:
+            prefix = round(round(val, 9) / (10 ** 9), 2)
             suffix = " billion"
-        elif val >= 10**6:
-            prefix = round(round(val, 6) / (10**6), 1)
+        elif val >= 10 ** 6:
+            prefix = round(round(val, 6) / (10 ** 6), 1)
             suffix = " million"
-        elif val >= 10**3:
-            prefix = int(round(val, 3) / (10**3))
+        elif val >= 10 ** 3:
+            prefix = int(round(val, 3) / (10 ** 3))
             suffix = ",000"
         return r"\$" + str(prefix) + suffix
     except:
@@ -1317,9 +1318,9 @@ def month_wordify(months):
         return str(int(months)) + " Months" if int(months) != 1 else " Month"
     else:
         return (
-            str(int(months / 12))
-            + (" Years" if int(months / 12) != 1 else " Year")
-            + ("" if months % 12 == 0 else (str(months % 12) + " Months"))
+                str(int(months / 12))
+                + (" Years" if int(months / 12) != 1 else " Year")
+                + ("" if months % 12 == 0 else (str(months % 12) + " Months"))
         )
 
 
@@ -1345,12 +1346,12 @@ def benchmark_shorten(s):
 # assumes each is in format "-4.342 \\%"
 def bps_spread(t, b):
     try:
-        val = round(float(t[0 : t.index("\\")]) - float(b[0 : b.index("\\")]), 2)
+        val = round(float(t[0: t.index("\\")]) - float(b[0: b.index("\\")]), 2)
         return (
             "-"
             if int(abs(val) * 100) == 0
             else (
-                ("+" if int(val * 100) > 0 else "-") + str(int(abs(val) * 100)) + " bps"
+                    ("+" if int(val * 100) > 0 else "-") + str(int(abs(val) * 100)) + " bps"
             )
         )
     except:
@@ -1472,7 +1473,7 @@ for ws in wb.worksheets:
                     if bigsheet[col + "6"].value.upper() == ws["C9"].value.upper():
                         program_size = bigsheet[
                             col + str(overview_row)
-                        ].value  # post sub/redemp...
+                            ].value  # post sub/redemp...
                         break
             # todo hardcode consolidated series buckets here
             consolidated_monthly_bucket_size = 0
@@ -1480,8 +1481,8 @@ for ws in wb.worksheets:
                 if bigsheet[col + "6"].value:
                     if bigsheet[col + "6"].value.upper() in consolidated_monthly_series:
                         consolidated_monthly_bucket_size = (
-                            consolidated_monthly_bucket_size
-                            + bigsheet[col + str(overview_row)].value
+                                consolidated_monthly_bucket_size
+                                + bigsheet[col + str(overview_row)].value
                         )  # post sub/redemp...
 
             # consolidated_monthly_bucket_size = 909650767.36
@@ -1688,7 +1689,7 @@ for ws in wb.worksheets:
                         + series_descriptions[ws["C6"].value.upper()]
                     ),
                     series_abbrev=ws["C11"].value
-                    + (" (NYP Custom)" if ws["C11"].value == "C1" else ""),
+                                  + (" (NYP Custom)" if ws["C11"].value == "C1" else ""),
                     port_limit="Quarterly" if "Q" in ws["C11"].value else "Monthly",
                     seriesname=ws["C12"].value,
                     fund_description=(
@@ -1900,7 +1901,7 @@ for ws in wb.worksheets:
                                         ws[
                                             ("N" if daycount == 360 else "O")
                                             + str(crow)
-                                        ].value
+                                            ].value
                                         * 100,
                                         2,
                                     ),
@@ -1916,7 +1917,7 @@ for ws in wb.worksheets:
                                 round(
                                     ws[
                                         ("N" if daycount == 360 else "O") + str(crow)
-                                    ].value
+                                        ].value
                                     * 100,
                                     2,
                                 ),

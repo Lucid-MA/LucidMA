@@ -1,15 +1,15 @@
 # Note: This code is a template and needs to be executed in an appropriate environment with the necessary libraries installed.
 
 import os
-import pandas as pd
 import re
-from sqlalchemy import create_engine, text
-from datetime import datetime
-import zlib
-import hashlib
 import time
-from Utils.database_utils import get_database_engine
+from datetime import datetime
+
+import pandas as pd
+from sqlalchemy import text
+
 from Utils.Hash import hash_string
+from Utils.database_utils import get_database_engine
 
 # import sys
 #
@@ -19,7 +19,7 @@ from Utils.Hash import hash_string
 
 
 # Connect to the PostgreSQL database
-engine = get_database_engine()
+engine = get_database_engine('postgres')
 
 
 # Function to extract date from filename using regex
@@ -177,7 +177,6 @@ needed_columns = [
     "Head1",
     "Amt1",
 ]
-
 
 create_transactions_table(TABLE_NAME)
 validate_schema_and_update_db(excel_dir, TABLE_NAME)

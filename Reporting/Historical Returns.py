@@ -8,7 +8,7 @@ excel_file = r"S:\Users\THoang\Tech\LucidMA\Master Data.xlsx"
 
 start_index = column_index_from_string('E')
 end_index = column_index_from_string('AV')
-column_list = list(range(start_index-1, end_index))
+column_list = list(range(start_index - 1, end_index))
 
 tabs_of_interest = [
     "USGFund M",
@@ -26,7 +26,7 @@ tabs_of_interest = [
 ]
 
 # --- Main Logic ---
-dfs = [] # A list to hold the dataframes
+dfs = []  # A list to hold the dataframes
 
 for tab_name in tabs_of_interest:
     try:

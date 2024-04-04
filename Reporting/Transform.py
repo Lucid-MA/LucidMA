@@ -8,12 +8,13 @@ from Utils.Hash import hash_string
 from Utils.database_utils import read_table_from_db
 
 # Specify your table name and schema
+db_type = "postgres"
 table_name = "bronze_returns"
 
 start_time = time.time()
 
 # Read the table into a pandas DataFrame
-df = read_table_from_db(table_name)
+df = read_table_from_db(table_name, db_type)
 
 ### PREPROCESSING ###
 # Splitting the 'Period' column into 'Start_date' and 'End_date'
@@ -35,8 +36,7 @@ df = df[
     (df["Start_date"] >= pd.Timestamp("2021-01-01"))
     & (df["End_date"] <= pd.Timestamp("2024-03-31"))
     & (df["PoolDescription"] == "Lucid Prime Fund LLC")
-]
-
+    ]
 
 subset_cols = [
     "PoolDescription",
@@ -101,7 +101,8 @@ Returns = (Revised Ending Cap Acct Balance - Revised Beginning Cap Balance) / Re
 Annualized Returns = Returns * 360 / Day Count
 """
 
-pivot_df["Returns"] = (pivot_df["Revised Ending Cap Acct Balance"] - pivot_df["Revised Beginning Cap Balance"]) / pivot_df["Revised Beginning Cap Balance"]
+pivot_df["Returns"] = (pivot_df["Revised Ending Cap Acct Balance"] - pivot_df["Revised Beginning Cap Balance"]) / \
+                      pivot_df["Revised Beginning Cap Balance"]
 
 # Calculate Annualized Returns
 pivot_df["Annualized Returns"] = (

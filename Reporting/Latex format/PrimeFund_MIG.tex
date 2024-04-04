@@ -1,7 +1,6 @@
-
 \documentclass[9pt]{article}
 \usepackage[T1]{fontenc}
-\hfuzz=27pt 
+\hfuzz=27pt
 \usepackage{lmodern}
 \usepackage[dvipsnames,table,xcdraw]{xcolor}
 \definecolor{lucid_blue}{RGB}{0,18,82}
@@ -33,192 +32,193 @@
 \usetikzlibrary{shadows,shadows.blur,shapes.geometric}
 \pgfplotsset{compat=1.8}
 \pgfplotsset{every axis/.append style={
-                    label style={font=\tiny},
-                    tick label style={font=\tiny}  
-                    }}
+    label style={font=\tiny},
+    tick label style={font=\tiny}
+}}
 \lhead{\includegraphics[width=9cm]{lucid_logo.png}}
 \rhead{Report Date: March 27, 2024}
 \setlength{\columnsep}{3em}
 \begin{document}
-\twocolumn[{
-\begin{center}
-\renewcommand{\arraystretch}{1.5}\begin{tabular}{!{\color{light_grey}\vrule}
->{\columncolor{lucid_blue}}m{\mywidth} !{\color{light_grey}\vrule}}
-{\color[HTML]{FFFFFF} \large \textbf{Monthly Report}}\\
-\end{tabular}
-\end{center}
+    \twocolumn[{
+        \begin{center}
+            \renewcommand{\arraystretch}{1.5}\begin{tabular}{!{\color{light_grey}\vrule}
+                    >{\columncolor{lucid_blue}}m{\mywidth} !{\color{light_grey}\vrule}}
+            {\color[HTML]{FFFFFF} \large \textbf{Monthly Report}}
+                                                 \\
+            \end{tabular}
+        \end{center}
 
-\begin{tabular}{!{\color{light_grey}\vrule}
->{\columncolor{lucid_blue}}l !{\color{light_grey}\vrule}
->{\columncolor[HTML]{EFEFEF}}p{\quarterwidthb} !{\color{light_grey}\vrule}
->{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}}
-\arrayrulecolor{light_grey}\hline
-{\color[HTML]{FFFFFF} \textbf{Program Series}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{Lucid Prime - Series MIG}} \\[1.5mm]
-{\color[HTML]{FFFFFF} \textbf{Objective and Strategy}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF} 
-The fund series seeks income generation with 100\% capital preservation and primarily invests in repurchase agreements secured by US Government Backed securities (USG) and Eligible Collateral Securities as well as other Eligible Investments (T-Bills, A1/P1 Commercial Paper and money market funds).
- 
-
-
-\textbf{{Series MIG}} interests have (i) maximum maturities of 1 month on all series assets, (ii) monthly withdrawal dates and (iii) all Eligible Collateral for repurchase agreements must be Investment Grade securities only or USG securities.
-} \\[9.4em]
-{\color[HTML]{FFFFFF} \textbf{Current Target Return}\textsuperscript{1}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{1m SOFR + 60-62 bps}} \\
-{\color[HTML]{FFFFFF} \textbf{Previous Period Return}} & Feb 15 - Mar 14 & \textbf{5.92\%} (1m SOFR + 60 bps) \\ 
-{\color[HTML]{FFFFFF} \textbf{Current Period Est'd Return}\textsuperscript{2}} & Mar 14 - Apr 18 & \textbf{5.93\%}  (1m SOFR + 60 bps) \\ \arrayrulecolor{light_grey}\hline
-\end{tabular}
-
-\begin{center}
-\noindent \renewcommand{\arraystretch}{1}\begin{tabular}{!{\color{light_grey}\vrule}m{5.2cm}!{\color{light_grey}\vrule}m{\eighthwidth}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}}
-\arrayrulecolor{light_grey}\hline
-\rowcolor{lucid_blue} 
-{\color[HTML]{FFFFFF} \textbf{Net Returns}\textsuperscript{3}}               & \multicolumn{2}{m{\quarterwidth}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{Previous Period}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{3 Months}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{1 Year}}} \\
-\rowcolor{lucid_blue}  
-{\color[HTML]{FFFFFF} Series / Comparables} & {\color[HTML]{FFFFFF} Return}                & {\color[HTML]{FFFFFF} Spread}               & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}        & {\color[HTML]{FFFFFF} Spread}        & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}       & {\color[HTML]{FFFFFF} Spread}       \\ \arrayrulecolor{light_grey}\hline
-
-    \textbf{Lucid Prime - Series MIG}                    & \textbf{5.92\%}                              & \textbf{-}                                  & \textbf{5.97\%}                               & \textbf{-}                           & \textbf{5.96\%}                             & \textbf{-}                          \\
-1m SOFR                       & 5.32\%                                       & \textbf{+60 bps}                            & 5.36\%                               & \textbf{+61 bps}                     & 5.32\%                              & \textbf{+64 bps}                    \\
-1m A1/P1 CP                       & 5.34\%                                       & \textbf{+57 bps}                           & 5.37\%                               & \textbf{+60 bps}                     & 5.28\%                              & \textbf{+68 bps}                    \\
-1m T-Bills                       & 5.29\%                                       & \textbf{+63 bps}                            & 5.30\%                               & \textbf{+67 bps}                     & 5.18\%                              & \textbf{+78 bps}                    \\ \arrayrulecolor{light_grey}\hline
-    
-\end{tabular}
-\end{center}
-}]
-\hfill \break
-\hfill \break
-
-\noindent \renewcommand{\arraystretch}{1.6}\begin{tabular}{!{\color{light_grey}\vrule}
->{\columncolor[HTML]{EFEFEF}}p{3.7cm} 
->{\columncolor[HTML]{EFEFEF}}p{4cm}!{\color{light_grey}\vrule}}
-\arrayrulecolor{light_grey}\hline
-\multicolumn{2}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Fund and Series Details\textsuperscript{4}}}} \\
-Fund Size & \$3.13 billion\\
-Series Size & \$677.2 million\\
-Lucid AUM & \$4.77 billion\\
-Series Rating & AA+ by Egan Jones\\
-Series Withdrawal & Monthly\\
-Next Withdrawal & April 18, 2024\\
-Next Notice Date & April 11, 2024\\
-Min Investment & \$500,000\\
-Current WAL & 35 days\\
-\noindent\parbox[b]{\hsize}{\vspace{1mm}Current Max Limit on all Series Assets} & April 18, 2024\\[-1mm]
-Fund Entity & Lucid Prime Fund LLC\\
-Fund Inception & July 20, 2018\\
-Series Inception & October 15, 2020\\ \arrayrulecolor{light_grey}\hline
-\end{tabular}
-\hspace*{-0.2cm}\begin{tabular}{p{8.45cm}}
-\textit{\scriptsize Please see fund Offering Memorandum and related documents for complete terms and Important Disclaimer attached.}
-\end{tabular}
+        \begin{tabular}{!{\color{light_grey}\vrule}
+                >{\columncolor{lucid_blue}}l !{\color{light_grey}\vrule}
+                >{\columncolor[HTML]{EFEFEF}}p{\quarterwidthb} !{\color{light_grey}\vrule}
+                >{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}}
+            \arrayrulecolor{light_grey}\hline
+            {\color[HTML]{FFFFFF} \textbf{Program Series}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{Lucid Prime - Series MIG}} \\[1.5mm]
+            {\color[HTML]{FFFFFF} \textbf{Objective and Strategy}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}
+            The fund series seeks income generation with 100\% capital preservation and primarily invests in repurchase agreements secured by US Government Backed securities (USG) and Eligible Collateral Securities as well as other Eligible Investments (T-Bills, A1/P1 Commercial Paper and money market funds).
 
 
-\begin{figure}
-\centering
-\noindent\renewcommand{\arraystretch}{1.5}\begin{tabular}{!{\color{light_grey}\vrule}
->{\columncolor[HTML]{EFEFEF}}p{3.5cm} 
->{\columncolor[HTML]{EFEFEF}}c
->{\columncolor[HTML]{EFEFEF}}c!{\color{light_grey}\vrule}}
-\arrayrulecolor{light_grey}\hline
-\multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Portfolio Composition\textsuperscript{5}}}} \\
-\textbf{Series Assets} & \textbf{\% Portfolio} & \textbf{O/C Rate}\\
-US Govt/AAA Repo & 14.4\% & 119.6\% \\
-IG Repo: AA to A & 30.8\% & 124.5\% \\
-        IG Repo: BBB & 53.4\% & 127.3\% \\
-        Repo: BB & - & - \\
-T-Bills; Gov't MMF & 1.4\% & - \\ \cline{2-2} \cline{3-3} 
-\textbf{Total} & 100.0\% & \textbf{125.0\%} \\\arrayrulecolor{light_grey}\hline
-\end{tabular}
+
+            \textbf{{Series MIG}} interests have (i) maximum maturities of 1 month on all series assets, (ii) monthly withdrawal dates and (iii) all Eligible Collateral for repurchase agreements must be Investment Grade securities only or USG securities.
+            } \\[9.4em]
+            {\color[HTML]{FFFFFF} \textbf{Current Target Return}\textsuperscript{1}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{1m SOFR + 60-62 bps}} \\
+            {\color[HTML]{FFFFFF} \textbf{Previous Period Return}}                         & Feb 15 - Mar 14 & \textbf{5.92\%} (1m SOFR + 60 bps) \\
+            {\color[HTML]{FFFFFF} \textbf{Current Period Est'd Return}\textsuperscript{2}} & Mar 14 - Apr 18 & \textbf{5.93\%}  (1m SOFR + 60 bps) \\ \arrayrulecolor{light_grey}\hline
+        \end{tabular}
+
+        \begin{center}
+            \noindent \renewcommand{\arraystretch}{1}\begin{tabular}{!{\color{light_grey}\vrule}m{5.2cm}!{\color{light_grey}\vrule}m{\eighthwidth}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}}
+                                                         \arrayrulecolor{light_grey}\hline
+                                                         \rowcolor{lucid_blue}
+                                                         {\color[HTML]{FFFFFF} \textbf{Net Returns}\textsuperscript{3}} & \multicolumn{2}{m{\quarterwidth}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{Previous Period}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{3 Months}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{1 Year}}} \\
+                                                         \rowcolor{lucid_blue}
+                                                         {\color[HTML]{FFFFFF} Series / Comparables} & {\color[HTML]{FFFFFF} Return} & {\color[HTML]{FFFFFF} Spread}               & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}        & {\color[HTML]{FFFFFF} Spread}        & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}       & {\color[HTML]{FFFFFF} Spread}       \\ \arrayrulecolor{light_grey}\hline
+
+                                                         \textbf{Lucid Prime - Series MIG}           & \textbf{5.92\%}               & \textbf{-}                    & \textbf{5.97\%}                                  & \textbf{-}                           & \textbf{5.96\%}                             & \textbf{-}                          \\
+                                                         1m SOFR                                     & 5.32\%                        & \textbf{+60 bps}              & 5.36\%                                           & \textbf{+61 bps}              & 5.32\%                                           & \textbf{+64 bps}              \\
+                                                         1m A1/P1 CP                                 & 5.34\%                        & \textbf{+57 bps}              & 5.37\%                                           & \textbf{+60 bps}              & 5.28\%                                           & \textbf{+68 bps}              \\
+                                                         1m T-Bills                                  & 5.29\%                        & \textbf{+63 bps}              & 5.30\%                                           & \textbf{+67 bps}              & 5.18\%                                           & \textbf{+78 bps}              \\ \arrayrulecolor{light_grey}\hline
+
+            \end{tabular}
+        \end{center}
+    }]
+    \hfill \break
+    \hfill \break
+
+    \noindent \renewcommand{\arraystretch}{1.6}\begin{tabular}{!{\color{light_grey}\vrule}
+            >{\columncolor[HTML]{EFEFEF}}p{3.7cm}
+            >{\columncolor[HTML]{EFEFEF}}p{4cm}!{\color{light_grey}\vrule}}
+                                                   \arrayrulecolor{light_grey}\hline
+                                                   \multicolumn{2}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Fund and Series Details\textsuperscript{4}}}} \\
+                                                   Fund Size                                                                       & \$3.13 billion       \\
+                                                   Series Size                                                                     & \$677.2 million      \\
+                                                   Lucid AUM                                                                       & \$4.77 billion       \\
+                                                   Series Rating                                                                   & AA+ by Egan Jones    \\
+                                                   Series Withdrawal                                                               & Monthly              \\
+                                                   Next Withdrawal                                                                 & April 18, 2024       \\
+                                                   Next Notice Date                                                                & April 11, 2024       \\
+                                                   Min Investment                                                                  & \$500,000            \\
+                                                   Current WAL                                                                     & 35 days              \\
+                                                   \noindent\parbox[b]{\hsize}{\vspace{1mm}Current Max Limit on all Series Assets} & April 18, 2024\\[-1mm]
+                                                   Fund Entity                                                                     & Lucid Prime Fund LLC \\
+                                                   Fund Inception                                                                  & July 20, 2018        \\
+                                                   Series Inception                                                                & October 15, 2020     \\ \arrayrulecolor{light_grey}\hline
+    \end{tabular}
+    \hspace*{-0.2cm}\begin{tabular}{p{8.45cm}}
+                        \textit{\scriptsize Please see fund Offering Memorandum and related documents for complete terms and Important Disclaimer attached.}
+    \end{tabular}
+
+
+    \begin{figure}
+        \centering
+        \noindent\renewcommand{\arraystretch}{1.5}\begin{tabular}{!{\color{light_grey}\vrule}
+                >{\columncolor[HTML]{EFEFEF}}p{3.5cm}
+                >{\columncolor[HTML]{EFEFEF}}c
+                >{\columncolor[HTML]{EFEFEF}}c!{\color{light_grey}\vrule}}
+                                                      \arrayrulecolor{light_grey}\hline
+                                                      \multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Portfolio Composition\textsuperscript{5}}}} \\
+                                                      \textbf{Series Assets} & \textbf{\% Portfolio} & \textbf{O/C Rate} \\
+                                                      US Govt/AAA Repo       & 14.4\%                & 119.6\%           \\
+                                                      IG Repo: AA to A       & 30.8\%                & 124.5\%           \\
+                                                      IG Repo: BBB           & 53.4\%                & 127.3\%           \\
+                                                      Repo: BB               & -                     & -                 \\
+                                                      T-Bills; Gov't MMF     & 1.4\%                 & -                 \\ \cline{2-2} \cline{3-3}
+                                                      \textbf{Total}         & 100.0\%               & \textbf{125.0\%}  \\\arrayrulecolor{light_grey}\hline
+        \end{tabular}
 
 % \tikzfading[name=fade down,
 %     top color=transparent!30,
 %     bottom color=transparent!0]
 
 
-      \hspace*{-0.77cm}\resizebox {!} {6.676cm} {\begin{tikzpicture}
-\begin{axis}[
-    title style = {font = \small},
-    axis line style = {light_grey},
-        title={{[WHAT IS GOING]Performance vs Benchmark}},
-    date coordinates in=x, date ZERO=2022-12-08,
-    xticklabel=\month/\day/\year,  
-    ymin=0, ymax=7, %MAXRETURN HERE
-    legend cell align = {left},
-    legend style={at={(0.05,1.0)},
-      anchor=north east, font=\small, draw=none,fill=none},
-      x=0.188mm, %CHANGE THIS to tighten in graph, eg if quarterly
-    bar width=2.0mm, ybar=2pt, %bar width is width, ybar is space between
-   % symbolic x coords={Firm 1, Firm 2, Firm 3, Firm 4, Firm 5},
-    xtick=data,
-    x tick label style={rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode},
-         yticklabel=\pgfmathparse{\tick}\pgfmathprintnumber{\pgfmathresult}\,\%,
-    y tick label style = {/pgf/number format/.cd,
-            fixed,
-            fixed zerofill,
-            precision=2,
-            /pgf/number format/assume math mode
-    },
-    nodes near coords align={vertical},
-    ytick distance=0.5,
-    xtick pos=bottom,ytick pos=left,
-    every node near coord/.append style={font=\fontsize{6}{6}\selectfont,/pgf/number format/.cd,
-            fixed,
-            fixed zerofill,
-            precision=2,/pgf/number format/assume math mode},
-    ]
+        \hspace*{-0.77cm}\resizebox {!} {6.676cm} {\begin{tikzpicture}
+                                                       \begin{axis}[
+                                                           title style = {font = \small},
+                                                           axis line style = {light_grey},
+                                                           title={{[WHAT IS GOING]Performance vs Benchmark}},
+                                                           date coordinates in=x, date ZERO=2022-12-08,
+                                                           xticklabel=\month/\day/\year,
+                                                           ymin=0, ymax=7, %MAXRETURN HERE
+                                                           legend cell align = {left},
+                                                           legend style={at={(0.05,1.0)},
+                                                           anchor=north east, font=\small, draw=none,fill=none},
+                                                           x=0.188mm, %CHANGE THIS to tighten in graph, eg if quarterly
+                                                           bar width=2.0mm, ybar=2pt, %bar width is width, ybar is space between
+                                                       % symbolic x coords={Firm 1, Firm 2, Firm 3, Firm 4, Firm 5},
+                                                           xtick=data,
+                                                           x tick label style={rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode},
+                                                           yticklabel=\pgfmathparse{\tick}\pgfmathprintnumber{\pgfmathresult}\,\%,
+                                                           y tick label style = {/pgf/number format/.cd,
+                                                           fixed,
+                                                           fixed zerofill,
+                                                           precision=2,
+                                                           /pgf/number format/assume math mode
+                                                           },
+                                                           nodes near coords align={vertical},
+                                                           ytick distance=0.5,
+                                                           xtick pos=bottom,ytick pos=left,
+                                                           every node near coord/.append style={font=\fontsize{6}{6}\selectfont,/pgf/number format/.cd,
+                                                           fixed,
+                                                           fixed zerofill,
+                                                           precision=2,/pgf/number format/assume math mode},
+                                                       ]
 %\addplot[ybar, nodes near coords, fill=blue] 
-\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
-    coordinates {
-        (2022-12-08,4.425) (2023-01-12,4.86) (2023-02-09,5.05) (2023-03-09,5.16) (2023-04-13,5.33) (2023-05-11,5.51) (2023-06-15,5.68) (2023-07-20,5.78) (2023-08-17,5.87) (2023-09-14,5.93) (2023-10-19,5.93) (2023-11-16,5.93) (2023-12-14,5.93) (2024-01-18,5.96) (2024-02-15,5.93) (2024-03-14,5.92) 
-    };
-\addplot[draw=dark_red,ultra thick,smooth] 
-    coordinates {
-        (2022-12-08,3.8) (2023-01-12,4.23) (2023-02-09,4.43) (2023-03-09,4.56) (2023-04-13,4.73) (2023-05-11,4.88) (2023-06-15,5.05) (2023-07-20,5.15) (2023-08-17,5.25) (2023-09-14,5.31) (2023-10-19,5.33) (2023-11-16,5.33) (2023-12-14,5.33) (2024-01-18,5.36) (2024-02-15,5.33) (2024-03-14,5.32) 
-    };
-\addplot[draw=dark_color,ultra thick,smooth] 
-    coordinates {
-        (2022-12-08,3.67) (2023-01-12,4.02) (2023-02-09,4.32) (2023-03-09,4.47) (2023-04-13,4.62) (2023-05-11,4.81) (2023-06-15,4.94) (2023-07-20,5.15) (2023-08-17,5.16) (2023-09-14,5.28) (2023-10-19,5.33) (2023-11-16,5.32) (2023-12-14,5.32) (2024-01-18,5.36) (2024-02-15,5.33) (2024-03-14,5.34) 
-    };
-\legend{\hphantom{A}Prime Series MIG,\hphantom{A}1m SOFR,\hphantom{A}1m A1/P1 CP}
-\end{axis}
-    \end{tikzpicture}}
-
-    
-\end{figure}
+                                                           \addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}]
+                                                           coordinates {
+                                                               (2022-12-08,4.425) (2023-01-12,4.86) (2023-02-09,5.05) (2023-03-09,5.16) (2023-04-13,5.33) (2023-05-11,5.51) (2023-06-15,5.68) (2023-07-20,5.78) (2023-08-17,5.87) (2023-09-14,5.93) (2023-10-19,5.93) (2023-11-16,5.93) (2023-12-14,5.93) (2024-01-18,5.96) (2024-02-15,5.93) (2024-03-14,5.92)
+                                                           };
+                                                           \addplot[draw=dark_red,ultra thick,smooth]
+                                                           coordinates {
+                                                               (2022-12-08,3.8) (2023-01-12,4.23) (2023-02-09,4.43) (2023-03-09,4.56) (2023-04-13,4.73) (2023-05-11,4.88) (2023-06-15,5.05) (2023-07-20,5.15) (2023-08-17,5.25) (2023-09-14,5.31) (2023-10-19,5.33) (2023-11-16,5.33) (2023-12-14,5.33) (2024-01-18,5.36) (2024-02-15,5.33) (2024-03-14,5.32)
+                                                           };
+                                                           \addplot[draw=dark_color,ultra thick,smooth]
+                                                           coordinates {
+                                                               (2022-12-08,3.67) (2023-01-12,4.02) (2023-02-09,4.32) (2023-03-09,4.47) (2023-04-13,4.62) (2023-05-11,4.81) (2023-06-15,4.94) (2023-07-20,5.15) (2023-08-17,5.16) (2023-09-14,5.28) (2023-10-19,5.33) (2023-11-16,5.32) (2023-12-14,5.32) (2024-01-18,5.36) (2024-02-15,5.33) (2024-03-14,5.34)
+                                                           };
+                                                           \legend{\hphantom{A}Prime Series MIG,\hphantom{A}1m SOFR,\hphantom{A}1m A1/P1 CP}
+                                                       \end{axis}
+        \end{tikzpicture}}
 
 
-\onecolumn
+    \end{figure}
+
+
+    \onecolumn
 
 
 
-\pagebreak 
+    \pagebreak
 
-\footnotesize
-\noindent\textbf{\color{lucid_blue}Notes}
+    \footnotesize
+    \noindent\textbf{\color{lucid_blue}Notes}
 
-\begin{enumerate}
-\item Target returns based on the program manager's estimate of the projected returns for the respective series based on current market conditions. 
+    \begin{enumerate}
+        \item Target returns based on the program manager's estimate of the projected returns for the respective series based on current market conditions.
 
-\item Current return (estimated) is based on the rates of the invested series portfolio as of the current period start date.  Actual period return based on the final net returns of portfolio.   
+        \item Current return (estimated) is based on the rates of the invested series portfolio as of the current period start date. Actual period return based on the final net returns of portfolio.
 
-\item Annualized net returns of Fund Series and comparables are for the entirety of each period and are quoted on an Act/360 basis for Lucid Prime Series and Act/365 for Lucid USG series. Any interperiod subscriptions will have different returns based upon the respective interperiod portfolio investments and allocations. Net returns include the applicable series expense ratio and include any management fee waivers or maximum expense caps. Historical returns assume reinvestment at the applicable Fund Series, Libor, T-Bill or MMF Index rate at the end of each period.  Money Market index returns based on the average of the daily rates for the respective period. SOFR is the term reference rate for the applicable period (e.g. 1m or 3m) as published by the CME Group. Fund Series expense ratio currently capped at an all-in ratio of 39.75 bps and can vary over time.
+        \item Annualized net returns of Fund Series and comparables are for the entirety of each period and are quoted on an Act/360 basis for Lucid Prime Series and Act/365 for Lucid USG series. Any interperiod subscriptions will have different returns based upon the respective interperiod portfolio investments and allocations. Net returns include the applicable series expense ratio and include any management fee waivers or maximum expense caps. Historical returns assume reinvestment at the applicable Fund Series, Libor, T-Bill or MMF Index rate at the end of each period. Money Market index returns based on the average of the daily rates for the respective period. SOFR is the term reference rate for the applicable period (e.g. 1m or 3m) as published by the CME Group. Fund Series expense ratio currently capped at an all-in ratio of 39.75 bps and can vary over time.
 
-\item All Fund details as of the last period end date. Fund accepts new subscriptions and redemptions on each Withdrawal Date.  Manager may accept subscriptions on any other day with approval, as fully described in the private offering memorandum.
+        \item All Fund details as of the last period end date. Fund accepts new subscriptions and redemptions on each Withdrawal Date. Manager may accept subscriptions on any other day with approval, as fully described in the private offering memorandum.
 
-\item Portfolio composition and Over-Collateralization Rate (``O/C Rate'') of the repo investments as of the business day prior to the last day of the most recent period. O/C Rate equals the market value of the collateral as a proportion of the respective repo investments. Eligible repo collateral details and classifications for the Series as fully described in the private offering memorandum.
+        \item Portfolio composition and Over-Collateralization Rate (``O/C Rate'') of the repo investments as of the business day prior to the last day of the most recent period. O/C Rate equals the market value of the collateral as a proportion of the respective repo investments. Eligible repo collateral details and classifications for the Series as fully described in the private offering memorandum.
 
-\end{enumerate}
+    \end{enumerate}
 
-\noindent\textbf{\color{lucid_blue}Important Disclaimer}
+    \noindent\textbf{\color{lucid_blue}Important Disclaimer}
 
-\scriptsize
+    \scriptsize
 
-\noindent This material has been prepared by Lucid Management and Capital Partners LP or one of its affiliates, principals or advisors (``Lucid'') and may contain ``forward-looking statements'' which are based on Lucid's beliefs, as well as on a number of assumptions concerning future events, based on information currently available to Lucid. Readers are cautioned not to put undue reliance on such forward-looking statements, which are not a guarantee of future performance, and are subject to a number of uncertainties and other factors, many of which are outside Lucid's control, which could cause actual results to differ materially from such statements. This material is for distribution only under such circumstances as may be permitted by applicable law and it is solely intended for qualified institutions and individuals with existing relationships with Lucid, its affiliates or advisers.  It has no regard to the specific investment objectives, financial situation or particular needs of any recipient. It is published solely for informational and discussion purposes only and is not to be construed as a solicitation or an offer to buy or sell any securities, related financial instruments, actual fund or specific transaction. No representation or warranty, either express or implied, is provided in relation to the accuracy, completeness or reliability of the information contained herein, nor is it intended to be a complete statement or summary of the securities, markets or developments referred to in the materials.  It should not be regarded by recipients as a substitute for the exercise of their own judgment. Any opinions expressed in this material are subject to change without notice and may differ or be contrary to opinions expressed by other business areas or groups of Lucid as a result of using different assumptions and criteria. Lucid is under no obligation to update or keep current the information contained herein. Lucid, its partners, officers and employees' or clients may have or have had interests or long or short positions in the securities or other financial instruments referred to herein and may at any time make purchases and/or sales in them as principal or agent. Neither Lucid nor any of its affiliates, nor any of Lucid or any of its affiliates, partners, employees or agents accepts any liability for any loss or damage arising out of the use of all or any part of this material. Money market investments including repurchase agreements are not suitable for all investors. Past performance is not necessarily indicative of future results.  Prior to entering into a transaction you should consult with your own legal, regulatory, tax, financial and accounting advisers to the extent you deem necessary to make your own investment, hedging and trading decisions. Any transaction between you and Lucid will be subject to the detailed provisions of a private placement memorandum or a managed account agreement relating to that transaction. Additional information will be made available upon request. The indicative information in this document (the ``Information'') are provided to you for information purposes only and may not be complete. Any redistribution of this document without express written consent of Lucid is prohibited.  No part of this material may be reproduced in any form, or referred to in any publication, without express written consent of Lucid.  This presentation should only be considered current as of the date of the publication without regard to the date on which you may have accessed or received the information. Unless required by law or specifically agreed in writing, we have no obligation to continue to provide to you the Information, and we may cease doing so at any time in our sole discretion. \underline{\textit{Targeted Return Disclosure}} \textit{The targeted returns included in this presentation are not intended as, and must not be regarded as, a representation, warranty or prediction that any Fund (or series thereof) will achieve any particular rate of return over any particular time period or that any Fund (or series thereof) will not incur losses. Although Lucid believes, based on these factors, that the referenced return targets are reasonable, return targets are subject to inherent limitations including, without limitation, the fact they cannot take into account the impact of future economic events on future trading and investment decisions. These events may include changes in interest rates and/or benchmarks greater than those occurring within the historical time period examined when developing the return targets, or future changes in laws or regulations. All targeted returns are net of Lucid's anticipated fees and expenses.}
+    \noindent This material has been prepared by Lucid Management and Capital Partners LP or one of its affiliates, principals or advisors (``Lucid'') and may contain ``forward-looking statements'' which are based on Lucid's beliefs, as well as on a number of assumptions concerning future events, based on information currently available to Lucid. Readers are cautioned not to put undue reliance on such forward-looking statements, which are not a guarantee of future performance, and are subject to a number of uncertainties and other factors, many of which are outside Lucid's control, which could cause actual results to differ materially from such statements. This material is for distribution only under such circumstances as may be permitted by applicable law and it is solely intended for qualified institutions and individuals with existing relationships with Lucid, its affiliates or advisers. It has no regard to the specific investment objectives, financial situation or particular needs of any recipient. It is published solely for informational and discussion purposes only and is not to be construed as a solicitation or an offer to buy or sell any securities, related financial instruments, actual fund or specific transaction. No representation or warranty, either express or implied, is provided in relation to the accuracy, completeness or reliability of the information contained herein, nor is it intended to be a complete statement or summary of the securities, markets or developments referred to in the materials. It should not be regarded by recipients as a substitute for the exercise of their own judgment. Any opinions expressed in this material are subject to change without notice and may differ or be contrary to opinions expressed by other business areas or groups of Lucid as a result of using different assumptions and criteria. Lucid is under no obligation to update or keep current the information contained herein. Lucid, its partners, officers and employees' or clients may have or have had interests or long or short positions in the securities or other financial instruments referred to herein and may at any time make purchases and/or sales in them as principal or agent. Neither Lucid nor any of its affiliates, nor any of Lucid or any of its affiliates, partners, employees or agents accepts any liability for any loss or damage arising out of the use of all or any part of this material. Money market investments including repurchase agreements are not suitable for all investors. Past performance is not necessarily indicative of future results. Prior to entering into a transaction you should consult with your own legal, regulatory, tax, financial and accounting advisers to the extent you deem necessary to make your own investment, hedging and trading decisions. Any transaction between you and Lucid will be subject to the detailed provisions of a private placement memorandum or a managed account agreement relating to that transaction. Additional information will be made available upon request. The indicative information in this document (the ``Information'') are provided to you for information purposes only and may not be complete. Any redistribution of this document without express written consent of Lucid is prohibited. No part of this material may be reproduced in any form, or referred to in any publication, without express written consent of Lucid. This presentation should only be considered current as of the date of the publication without regard to the date on which you may have accessed or received the information. Unless required by law or specifically agreed in writing, we have no obligation to continue to provide to you the Information, and we may cease doing so at any time in our sole discretion. \underline{\textit{Targeted Return Disclosure}} \textit{The targeted returns included in this presentation are not intended as, and must not be regarded as, a representation, warranty or prediction that any Fund (or series thereof) will achieve any particular rate of return over any particular time period or that any Fund (or series thereof) will not incur losses. Although Lucid believes, based on these factors, that the referenced return targets are reasonable, return targets are subject to inherent limitations including, without limitation, the fact they cannot take into account the impact of future economic events on future trading and investment decisions. These events may include changes in interest rates and/or benchmarks greater than those occurring within the historical time period examined when developing the return targets, or future changes in laws or regulations. All targeted returns are net of Lucid's anticipated fees and expenses.}
 
-\vspace{1mm}
-\noindent SEC ADV Part 2 firm brochure: \underline{https://files.adviserinfo.sec.gov/IAPD/Content/Common/crd\_iapd\_Brochure.aspx?BRCHR\_VRSN\_ID=832231}}
+    \vspace{1mm}
+    \noindent SEC ADV Part 2 firm brochure: \underline{https://files.adviserinfo.sec.gov/IAPD/Content/Common/crd\_iapd\_Brochure.aspx?BRCHR\_VRSN\_ID=832231}}
 
 
 \scriptsize
 \begin{center}
 \renewcommand{\arraystretch}{1.2}\begin{tabular}{!{\color{light_grey}\vrule}
->{\columncolor[HTML]{EFEFEF}}p{8cm} 
+>{\columncolor[HTML]{EFEFEF}}p{8cm}
 >{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}
 >{\columncolor[HTML]{EFEFEF}}p{9cm}  !{\color{light_grey}\vrule}}
 \multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Contact Information}}} \\ \arrayrulecolor{light_grey}\hline

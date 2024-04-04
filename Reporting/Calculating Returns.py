@@ -1,5 +1,4 @@
 import pandas as pd
-from Utils.Common import print_df
 
 # Reading from master data file
 # Read the data from the Excel file
@@ -54,7 +53,7 @@ df_grouped['End_date'] = pd.to_datetime(df_grouped['End_date'])
 
 # Add 'Returns' column to df_grouped
 df_grouped['Returns'] = 1 + (
-            df_grouped['Revised Ending Cap Acct Balance'] - df_grouped['Revised Beginning Cap Balance']) / df_grouped[
+        df_grouped['Revised Ending Cap Acct Balance'] - df_grouped['Revised Beginning Cap Balance']) / df_grouped[
                             'Revised Beginning Cap Balance']
 
 df_grouped = df_grouped.sort_values('Start_date')

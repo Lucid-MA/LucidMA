@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 
 
@@ -11,3 +13,8 @@ def print_df(df):
             "{:.2f}".format,
     ):
         print(df)
+
+
+def redirect_output_to_log_file(log_file_path):
+    sys.stdout = open(log_file_path, 'w')
+    sys.stderr = sys.stdout
