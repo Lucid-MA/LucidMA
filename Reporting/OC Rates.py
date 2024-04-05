@@ -1,8 +1,8 @@
 import pandas as pd
-
+from sqlalchemy import text
 from Utils.Common import print_df
 from Utils.SQL_queries import *
-from Utils.database_utils import execute_sql_query
+from Utils.database_utils import execute_sql_query, DatabaseConnection, get_database_engine
 
 table_name = "dbo.TRADEPIECES"
 db_type = "sql_server_1"
@@ -16,6 +16,16 @@ valdate = pd.to_datetime('4/01/2024')
 
 sql_query = OC_query
 df = execute_sql_query(sql_query, db_type, params=[])
+
+
+# Check for duplicates in 'Trade ID' column
+duplicates = df.duplicated(subset='Trade ID')
+
+# If there are duplicates, print a message
+if duplicates.any():
+    print("There are duplicates in the 'Trade ID' column.")
+else:
+    print("There are no duplicates in the 'Trade ID' column.")
 
 # Define the data type dictionary
 dtype_dict = {
@@ -42,6 +52,49 @@ dtype_dict = {
 
 # Apply the data type conversion
 df = df.astype(dtype_dict)
+
+engine = get_database_engine('postgres')
+def create_or_update_table(tb_name, df):
+    # Map pandas data types to PostgreSQL data types
+    type_mapping = {
+        'int64': 'INTEGER',
+        'float64': 'REAL',
+        'string': 'TEXT',
+        'datetime64[ns]': 'TIMESTAMP'
+    }
+
+    # Construct column definitions
+    columns_sql = ", ".join(
+        [f'"{col}" {type_mapping[dtype_dict[col]]}' for col in df.columns]
+    )
+
+    # Create the table with IF NOT EXISTS
+    create_table_sql = f"""
+                CREATE TABLE IF NOT EXISTS {tb_name} ({columns_sql}, PRIMARY KEY ("Trade ID"))
+            """
+
+    with engine.begin() as conn:
+        conn.execute(text(create_table_sql))
+        print(f"Table {tb_name} created successfully or already exists.")
+
+        # Check if there are new entries in df that are not in the table yet
+        query = f"SELECT \"Trade ID\" FROM {tb_name}"
+        existing_ids = pd.read_sql(query, con=engine)["Trade ID"]
+        new_entries = df[~df["Trade ID"].isin(existing_ids)]
+
+        if not new_entries.empty:
+            # Upsert new entries into the table
+            new_entries.to_sql(tb_name, conn, if_exists='append', index=False, method='multi')
+            return f"Upserting new entries to {tb_name}"
+        else:
+            return f"{tb_name} is already up to date"
+
+# CREATE OC TABLE AND INSERT DATA
+tb_name = "Bronze_OC_Rates"
+create_or_update_table(tb_name, df)
+
+
+# Filter the DataFrame based on the conditions
 df = df[(df['End Date'] > valdate) | (df['End Date'].isnull())]
 # print(df.shape[0])
 # print(df[df['Trade ID'].isin([145945,145924])]['Comments'])

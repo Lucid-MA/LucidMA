@@ -1,20 +1,8 @@
 import pandas as pd
 import pyodbc
+from contextlib import contextmanager
 from sqlalchemy import create_engine
 
-# # Configuration
-# DB_CONFIG = {
-#     "db_endpoint": "luciddb1.czojmxqfrx7k.us-east-1.rds.amazonaws.com",
-#     "db_port": "5432",
-#     "db_user": "dbmasteruser",
-#     "db_password": "lnRz*(N_7aOf~7Hx6oRo8;,<vYp|~#PC",
-#     "db_name": "reporting",
-# }
-#
-#
-# def get_database_engine():
-#     database_url = f"postgresql://{DB_CONFIG['db_user']}:{DB_CONFIG['db_password']}@{DB_CONFIG['db_endpoint']}:{DB_CONFIG['db_port']}/{DB_CONFIG['db_name']}"
-#     return create_engine(database_url)
 
 # Configuration
 DB_CONFIG = {
@@ -69,3 +57,13 @@ def execute_sql_query(sql_query, db_type, params=None):
         return pd.read_sql(sql_query, con=engine, params=params)
     elif db_type == "postgres":
         return pd.read_sql(sql_query, con=engine, params=params)
+
+
+@contextmanager
+def DatabaseConnection(db_type):
+    engine = get_database_engine(db_type)
+    conn = engine.connect()
+    try:
+        yield conn
+    finally:
+        conn.close()

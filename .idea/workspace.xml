@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3496bc1a-6c25-4d0d-aae0-4471e8aef509" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Reporting/OC Rates.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Reporting/OC Rates - temp - v2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Reporting/OC Rates - temp.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Utils/SQL_queries.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" afterDir="false" />
@@ -21,6 +22,7 @@
       <change beforePath="$PROJECT_DIR$/Reporting/Latex format/PrimeNote_MIG-3.tex" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Latex format/PrimeNote_MIG-3.tex" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Latex format/USGFund_M.tex" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Latex format/USGFund_M.tex" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Latex format/USGNote_M-8.tex" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Latex format/USGNote_M-8.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/OC Rates.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/OC Rates.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Raw stage (optimized) v2.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Raw stage (optimized) v2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Transform.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Transform.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Utils/Common.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Common.py" afterDir="false" />
@@ -68,6 +70,8 @@
     "Python.File Crawler.executor": "Run",
     "Python.Historical Returns.executor": "Run",
     "Python.Investor_Statements_test_0403.executor": "Run",
+    "Python.OC Rates - temp - v2.executor": "Run",
+    "Python.OC Rates - temp.executor": "Run",
     "Python.OC Rates.executor": "Run",
     "Python.Transform.executor": "Debug",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
@@ -94,7 +98,7 @@
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.OC Rates">
+  <component name="RunManager" selected="Python.OC Rates - temp - v2">
     <configuration name="Bronze Returns Table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -110,29 +114,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="Calculating Returns - by account (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="LucidMA" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Calculating Returns - by account.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -164,6 +145,52 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="OC Rates - temp - v2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="LucidMA" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/OC Rates - temp - v2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="OC Rates - temp" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="LucidMA" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/OC Rates - temp.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="OC Rates" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -187,36 +214,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Transform" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="LucidMA" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Transform.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.OC Rates - temp - v2" />
+        <item itemvalue="Python.OC Rates - temp" />
         <item itemvalue="Python.OC Rates" />
         <item itemvalue="Python.Investor_Statements_test_0403" />
         <item itemvalue="Python.Bronze Returns Table" />
-        <item itemvalue="Python.Transform" />
-        <item itemvalue="Python.Calculating Returns - by account (1)" />
       </list>
     </recent_temporary>
   </component>
@@ -239,7 +243,7 @@
       <workItem from="1711570162839" duration="59000" />
       <workItem from="1711570368861" duration="985000" />
       <workItem from="1711571380070" duration="66111000" />
-      <workItem from="1712168402120" duration="28234000" />
+      <workItem from="1712168402120" duration="44894000" />
     </task>
     <servers />
   </component>
@@ -272,14 +276,16 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/LucidMA$OC_Rates.coverage" NAME="OC Rates Coverage Results" MODIFIED="1712263777948" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$OC_Rates.coverage" NAME="OC Rates Coverage Results" MODIFIED="1712333911036" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Investor_Statements_test_0403.coverage" NAME="Investor_Statements_test_0403 Coverage Results" MODIFIED="1712253089048" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Funds/Fund Reporting/Monthly Reports/python" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns.coverage" NAME="Calculating Returns Coverage Results" MODIFIED="1712080460907" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Returns_Table.coverage" NAME="Bronze Returns Table Coverage Results" MODIFIED="1712177821378" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$OC_Rates___temp.coverage" NAME="OC Rates - temp Coverage Results" MODIFIED="1712345425659" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___test.coverage" NAME="Calculating Returns - test Coverage Results" MODIFIED="1712090394998" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$File_Crawler.coverage" NAME="File Crawler Coverage Results" MODIFIED="1711980621238" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Historical_Returns.coverage" NAME="Historical Returns Coverage Results" MODIFIED="1711997245743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___by_account__1_.coverage" NAME="Calculating Returns - by account (1) Coverage Results" MODIFIED="1712158155292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$OC_Rates___temp___v2.coverage" NAME="OC Rates - temp - v2 Coverage Results" MODIFIED="1712345935650" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Transform.coverage" NAME="Transform Coverage Results" MODIFIED="1712177718052" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
   </component>
 </project>
