@@ -1,13 +1,11 @@
-import time
-
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, inspect, Column, Integer, Float, DateTime, String, PrimaryKeyConstraint
+from sqlalchemy import Table, MetaData, inspect, Column, Integer, Float, DateTime, String, PrimaryKeyConstraint
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import  sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from Utils.Common import print_df
 from Utils.SQL_queries import *
-from Utils.database_utils import execute_sql_query, DatabaseConnection, get_database_engine
+from Utils.database_utils import execute_sql_query, get_database_engine
 
 table_name = "dbo.TRADEPIECES"
 db_type = "sql_server_1"
@@ -67,6 +65,7 @@ df = df.replace({pd.NaT: None})
 
 engine = get_database_engine('postgres')
 
+
 def create_or_update_table(tb_name, df):
     # Create a Table object
     metadata = MetaData()
@@ -114,14 +113,13 @@ def create_or_update_table(tb_name, df):
     finally:
         session.close()
 
+
 # CREATE OC TABLE AND INSERT DATA
 tb_name = "Bronze_OC_Rates_mini"
 create_or_update_table(tb_name, df)
 
-
 print(df.shape[0])
 print(df['Comments'].unique())
-
 
 # Group by 'Comments' and calculate the sum of 'Money'
 df_result = df.groupby('Comments')['Money'].sum().reset_index()
@@ -129,4 +127,3 @@ df_result = df.groupby('Comments')['Money'].sum().reset_index()
 df_result = df_result.rename(columns={'Money': 'Investment Amount'})
 print_df(df_result)
 print(df.columns)
-

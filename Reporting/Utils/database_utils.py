@@ -1,8 +1,8 @@
+from contextlib import contextmanager
+
 import pandas as pd
 import pyodbc
-from contextlib import contextmanager
 from sqlalchemy import create_engine
-
 
 # Configuration
 DB_CONFIG = {
