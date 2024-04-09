@@ -105,7 +105,7 @@ and (tradetypes.description = 'Reverse' or tradetypes.description = 'ReverseFree
 order by tradepieces.company asc, tradepieces.ledgername asc, tradepieces.contraname asc
 """
 
-OC_query_test = f"""
+Yating_query = f"""
 declare @valdate as date
 set @valdate = '4/01/2024'
 declare @fundname as varchar(10)

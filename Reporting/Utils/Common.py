@@ -10,7 +10,7 @@ def print_df(df):
             "display.width",
             1000,
             "display.float_format",
-            "{:.2f}".format,
+            "{:.4f}".format,
     ):
         print(df)
 

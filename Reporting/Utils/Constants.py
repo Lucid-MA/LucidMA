@@ -54,3 +54,7 @@ master_data_return_column_order = [
     "BBB (%)", "HY (%)", "A1/P1 CP", "T-Bills /Govt MMF", "Total OC Rate", "US Gov't & AAA",
     "AA to A", "BBB", "HY", "Benchmark File", "Comments"
 ]
+
+cash_balance_column_order = [
+    "Fund", "Series", "Account", "Cash Balance", "Sweep Balance", "Projected Total Balance"
+]
