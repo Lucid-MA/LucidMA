@@ -3,9 +3,13 @@ import time
 import pandas as pd
 
 from Utils.Common import print_df
-from Utils.Constants import transaction_map
+from Utils.Constants import transaction_map, pool_mapping, period_mapping, investor_mapping
 from Utils.Hash import hash_string
 from Utils.database_utils import read_table_from_db
+"""
+TODO: What this script does
+"""
+
 
 # Specify your table name and schema
 db_type = "postgres"
@@ -35,23 +39,32 @@ df["Amount"] = df["Amt1"].astype(float)
 df = df[
     (df["Start_date"] >= pd.Timestamp("2021-01-01"))
     & (df["End_date"] <= pd.Timestamp("2024-03-31"))
-    & (df["PoolDescription"] == "Lucid Prime Fund LLC")
+    # & (df["PoolDescription"] == "Lucid Prime Fund LLC")
     ]
 
+# Step 2: Deduplicate the DataFrame due to repeating transactions on later file dates of the same year
 subset_cols = [
-    "PoolDescription",
-    "PeriodDescription",
-    "InvestorDescription",
-    "Start_date",
-    "End_date",
+    "PoolCode",
+    "Period",
+    "InvestorCode",
     "Head1",
     "Transaction_category",
+    "Start_date",
+    "End_date",
     "Amount",
 ]
 deduplicated_df = df.drop_duplicates(subset=subset_cols)
 deduplicated_df = (
     deduplicated_df.groupby(subset_cols[:-1])["Amount"].sum().reset_index()
 )
+
+# Add 'PoolDescription', 'PeriodDescription' and 'InvestorDescription' columns
+deduplicated_df['PoolDescription'] = deduplicated_df['PoolCode'].map(pool_mapping)
+deduplicated_df['PeriodDescription'] = deduplicated_df['Period'].map(period_mapping)
+deduplicated_df['InvestorDescription'] = deduplicated_df['InvestorCode'].map(investor_mapping)
+
+# Drop the 'PoolCode', 'Period' and 'InvestorCode' columns
+deduplicated_df = deduplicated_df.drop(columns=['PoolCode', 'Period', 'InvestorCode'])
 
 # Pivot the DataFrame
 pivot_df = deduplicated_df.pivot_table(
@@ -171,12 +184,9 @@ export_df = export_pivot.style.format({col: "{:.2f}" for col in number_cols})
 export_df = export_df.format({col: "{:.2%}" for col in percent_cols})
 
 # Write to local
-file_path = r"S:\Users\THoang\Data\Prime_fund_returns_2021_2024_copy.xlsx"
-export_pivot.to_excel(file_path, engine="openpyxl")
+file_path = r"S:\Users\THoang\Data\series_returns_2021_2024.xlsx"
+export_df.to_excel(file_path, engine="openpyxl")
 
 end_time = time.time()  # Capture end time
 process_time = end_time - start_time
 print(f"Processing time: {process_time:.2f} seconds")
-
-# Display the first few rows of the resulting DataFrame
-print_df(pivot_df.head())

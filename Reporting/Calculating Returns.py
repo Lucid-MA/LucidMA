@@ -13,9 +13,11 @@ start_date = pd.to_datetime('1/14/2021')
 end_date = pd.to_datetime('2/15/2024')
 
 # Filter the DataFrame based on the conditions
-df_master = df_master[(df_master['Fund Name'] == 'PrimeFund M') &
-                      (df_master['Start Date'] >= start_date) &
-                      (df_master['End Date'] <= end_date)]
+df_master = df_master[
+    (df_master['Start Date'] >= start_date) &
+    (df_master['End Date'] <= end_date)
+    # & (df_master['Fund Name'] == 'PrimeFund M')
+    ]
 
 # Select the required columns
 df_master = df_master[
@@ -25,22 +27,16 @@ df_master = df_master[
 # Add 'Day Counts' column to df_master
 df_master['Day Counts'] = (df_master['End Date'] - df_master['Start Date']).dt.days
 
-# Show the first 10 rows of the DataFrame
-# print_df(df_master.head(10))
-
-# file_path = r"S:\Users\THoang\Data\master.xlsx"
-# df_master.to_excel(file_path, engine="openpyxl")
-
-
 # Read the data from the Excel file
-df = pd.read_excel(r"S:\Users\THoang\Data\Prime_fund_returns_2021_2024_copy.xlsx")
+df = pd.read_excel(r"S:\Users\THoang\Data\All_funds_returns_2021_2024_copy.xlsx")
 
 # Select the required columns
-df = df[['Start_date', 'End_date', 'InvestorDescription', 'Revised Beginning Cap Balance', 'Withdrawal - BOP',
+df = df[['Start_date', 'End_date', 'PoolDescription', 'InvestorDescription', 'Revised Beginning Cap Balance',
+         'Withdrawal - BOP',
          'Contribution', 'Revised Ending Cap Acct Balance']]
 
 # Group by 'Start_date' and 'End_date' and aggregate the specified columns
-df_grouped = df.groupby(['Start_date', 'End_date']).agg({
+df_grouped = df.groupby(['PoolDescription', 'Start_date', 'End_date']).agg({
     'Revised Beginning Cap Balance': 'sum',
     'Withdrawal - BOP': 'sum',
     'Contribution': 'sum',
