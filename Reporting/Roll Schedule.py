@@ -1,7 +1,8 @@
 import pandas as pd
 from sqlalchemy import create_engine, Table, Column, String, Date, MetaData, Float, Integer, text
 from sqlalchemy.exc import SQLAlchemyError
-
+import re
+from Utils.Common import get_file_path
 from Utils.database_utils import get_database_engine
 
 engine = get_database_engine('postgres')
@@ -42,7 +43,8 @@ create_table_with_schema(tb_name)
 # Your data loading and transformation logic here
 
 # Load the Excel file
-file_path = "S:/Users/THoang/Data/Roll Schedule.xlsx"  # Update with the actual path to your Excel file
+file_path = get_file_path("S:/Users/THoang/Data/Roll Schedule.xlsx")
+# Update with the actual path to your Excel file
 df = pd.read_excel(file_path)
 
 # Transform the Data
@@ -61,3 +63,49 @@ for i in range(0, df.shape[1], 2):
 transformed_df = pd.DataFrame(data)
 
 upsert_data(tb_name, transformed_df)
+
+# Convert to dict for easier access
+transformed_dict = transformed_df.to_dict('records')
+for record in transformed_dict:
+    record['StartDate'] = record['StartDate'].strftime('%Y-%m-%d')
+    record['EndDate'] = record['EndDate'].strftime('%Y-%m-%d')
+
+
+# Step 1: Create a new dictionary
+roll_schedule_mapping = {}
+
+# Step 2: Iterate over transformed_dict
+for record in transformed_dict:
+    # Create a tuple for the dates
+    date_tuple = (record['StartDate'], record['EndDate'])
+
+    # Check if the 'FundName' is already a key in roll_schedule_mapping
+    if record['FundName'] in roll_schedule_mapping:
+        # If it is, append the date_tuple to the list of values for that key
+        roll_schedule_mapping[record['FundName']].append(date_tuple)
+    else:
+        # If it's not, create a new key-value pair with 'FundName' as the key and a list containing date_tuple as the value
+        roll_schedule_mapping[record['FundName']] = [date_tuple]
+
+import os
+
+print(os.getcwd())
+def update_roll_schedule_mapping(roll_schedule_mapping):
+    # Read the content of Constants.py
+    with open('Utils/Constants.py', 'r') as f:
+        content = f.read()
+
+    # Convert roll_schedule_mapping to a string
+    roll_schedule_mapping_str = str(roll_schedule_mapping)
+
+    # Use a regular expression to replace the line where roll_schedule_mapping is defined
+    content = re.sub(r'roll_schedule_mapping = .*', 'roll_schedule_mapping = ' + roll_schedule_mapping_str, content)
+
+    # Write the result back to Constants.py
+    with open('Utils/Constants.py', 'w') as f:
+        f.write(content)
+
+# Call the function with the new roll_schedule_mapping
+update_roll_schedule_mapping(roll_schedule_mapping)
+
+print(transformed_dict)
