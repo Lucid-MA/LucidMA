@@ -24,7 +24,8 @@ transaction_map = {
     "CE RADJEXP": "Expense",
     "CE RADJINC": "Income",
     "CONT": "Contribution",
-    "Total": "Ending Cap Acct Bal",
+    # "Total": "Ending Cap Acct Bal",
+    "TOTAL PF": "Ending Cap Acct Bal",
     "WITH (BEG)": "Withdrawal - BOP",
     "WITH (END)": "Withdrawal - EOP",
 }
