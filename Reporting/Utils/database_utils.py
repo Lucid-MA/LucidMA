@@ -1,8 +1,19 @@
+import os
+import platform
 from contextlib import contextmanager
 
 import pandas as pd
 import pyodbc
 from sqlalchemy import create_engine
+
+import pymssql
+# server = '172.31.32.100'
+# database = 'Prod1'
+# username = 'LUCID\\tony.hoang'
+# password = os.getenv('MY_PASSWORD')
+#
+# conn = pymssql.connect(server, username, password, database)
+# cursor = conn.cursor()
 
 # Configuration
 DB_CONFIG = {
@@ -23,7 +34,10 @@ DB_CONFIG = {
         "driver": "{ODBC Driver 17 for SQL Server}",
         "server": "LUCIDSQL2",
         "database": "Prod1",
-        "trusted_connection": "yes"
+        "trusted_connection": "yes",
+        "domain": "LUCID",
+        "user": "tony.hoang",
+        "password": os.getenv('MY_PASSWORD'),
     }
 }
 
@@ -33,13 +47,24 @@ def get_database_engine(db_type):
         database_url = f"postgresql://{DB_CONFIG['postgres']['db_user']}:{DB_CONFIG['postgres']['db_password']}@{DB_CONFIG['postgres']['db_endpoint']}:{DB_CONFIG['postgres']['db_port']}/{DB_CONFIG['postgres']['db_name']}"
         return create_engine(database_url)
     elif db_type.startswith("sql_server"):
-        conn_str = (
-            f"DRIVER={DB_CONFIG[db_type]['driver']};"
-            f"SERVER={DB_CONFIG[db_type]['server']};"
-            f"DATABASE={DB_CONFIG[db_type]['database']};"
-            f"Trusted_Connection={DB_CONFIG[db_type]['trusted_connection']};"
-        )
-        return pyodbc.connect(conn_str)
+        if platform.system() == 'Darwin':  # macOS
+            conn_str = (
+                DB_CONFIG[db_type]['server'],
+                DB_CONFIG[db_type]['user'],
+                DB_CONFIG[db_type]['password'],
+                DB_CONFIG[db_type]['database'],
+            )
+            return pymssql.connect(conn_str)
+        elif platform.system() == 'Windows':
+            conn_str = (
+                f"DRIVER={DB_CONFIG[db_type]['driver']};"
+                f"SERVER={DB_CONFIG[db_type]['server']};"
+                f"DATABASE={DB_CONFIG[db_type]['database']};"
+                f"Trusted_Connection={DB_CONFIG[db_type]['trusted_connection']};"
+            )
+            return pyodbc.connect(conn_str)
+        else:
+            raise Exception('Unsupported platform')
 
 
 def read_table_from_db(table_name, db_type):

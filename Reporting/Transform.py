@@ -2,8 +2,8 @@ import time
 
 import pandas as pd
 
-from Utils.Common import print_df
-from Utils.Constants import transaction_map, pool_mapping, period_mapping, investor_mapping
+from Utils.Common import print_df, get_file_path
+from Utils.Constants import transaction_map, pool_mapping, investor_mapping
 from Utils.Hash import hash_string
 from Utils.database_utils import read_table_from_db
 """
@@ -45,12 +45,12 @@ df = df[
 # Step 2: Deduplicate the DataFrame due to repeating transactions on later file dates of the same year
 subset_cols = [
     "PoolCode",
-    "Period",
+    "PeriodDescription",
+    "Start_date",
+    "End_date",
     "InvestorCode",
     "Head1",
     "Transaction_category",
-    "Start_date",
-    "End_date",
     "Amount",
 ]
 deduplicated_df = df.drop_duplicates(subset=subset_cols)
@@ -58,22 +58,13 @@ deduplicated_df = (
     deduplicated_df.groupby(subset_cols[:-1])["Amount"].sum().reset_index()
 )
 
-# Add 'PoolDescription', 'PeriodDescription' and 'InvestorDescription' columns
-deduplicated_df['PoolDescription'] = deduplicated_df['PoolCode'].map(pool_mapping)
-deduplicated_df['PeriodDescription'] = deduplicated_df['Period'].map(period_mapping)
-deduplicated_df['InvestorDescription'] = deduplicated_df['InvestorCode'].map(investor_mapping)
-
-# Drop the 'PoolCode', 'Period' and 'InvestorCode' columns
-deduplicated_df = deduplicated_df.drop(columns=['PoolCode', 'Period', 'InvestorCode'])
 
 # Pivot the DataFrame
 pivot_df = deduplicated_df.pivot_table(
     index=[
-        "PoolDescription",
+        "PoolCode",
         "PeriodDescription",
-        "InvestorDescription",
-        "Start_date",
-        "End_date",
+        "InvestorCode",
     ],
     columns="Transaction_category",
     values="Amount",
@@ -82,6 +73,19 @@ pivot_df = deduplicated_df.pivot_table(
 )
 
 pivot_df = pivot_df.reset_index()
+
+# Add 'PoolDescription', 'PeriodDescription' and 'InvestorDescription' columns
+pivot_df['PoolDescription'] = pivot_df['PoolCode'].map(pool_mapping)
+pivot_df['InvestorDescription'] = pivot_df['InvestorCode'].map(investor_mapping)
+
+# Splitting the 'Period' column into 'Start_date' and 'End_date'
+pivot_df[["Start_date", "End_date"]] = pivot_df["PeriodDescription"].str.extract(
+    r"From (\d{1,2}/\d{1,2}/\d{4}) To (\d{1,2}/\d{1,2}/\d{4})"
+)
+
+# Converting to date format
+pivot_df["Start_date"] = pd.to_datetime(pivot_df["Start_date"], format="%m/%d/%Y")
+pivot_df["End_date"] = pd.to_datetime(pivot_df["End_date"], format="%m/%d/%Y")
 
 # Rename the columns if necessary, e.g., pivot_df.rename(columns={'BAL FWD': 'Balance Forwarded'})
 pivot_df["ID"] = (
@@ -184,7 +188,7 @@ export_df = export_pivot.style.format({col: "{:.2f}" for col in number_cols})
 export_df = export_df.format({col: "{:.2%}" for col in percent_cols})
 
 # Write to local
-file_path = r"S:\Users\THoang\Data\series_returns_2021_2024.xlsx"
+file_path = get_file_path("S:/Users/THoang/Data/series_returns_2021_2024.xlsx")
 export_df.to_excel(file_path, engine="openpyxl")
 
 end_time = time.time()  # Capture end time
