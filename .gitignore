@@ -130,3 +130,7 @@ gradle-app.setting
 #NDK
 obj/
 .externalNativeBuild
+
+'Reporting/S:\Users\THoang\Data\all_funds_master_returns_comparison_prime.xlsx'
+'Reporting/S:\Users\THoang\Data\all_funds_master_returns_comparison_prime_by_account.xlsx'
+
