@@ -4,7 +4,9 @@ from sqlalchemy.exc import SQLAlchemyError
 import re
 from Utils.Common import get_file_path
 from Utils.database_utils import get_database_engine
-
+"""
+This script create a table 'roll_schedule' in the database and upsert data from an Excel file.
+"""
 engine = get_database_engine('postgres')
 
 def create_table_with_schema(tb_name):
@@ -87,9 +89,6 @@ for record in transformed_dict:
         # If it's not, create a new key-value pair with 'FundName' as the key and a list containing date_tuple as the value
         roll_schedule_mapping[record['FundName']] = [date_tuple]
 
-import os
-
-print(os.getcwd())
 def update_roll_schedule_mapping(roll_schedule_mapping):
     # Read the content of Constants.py
     with open('Utils/Constants.py', 'r') as f:

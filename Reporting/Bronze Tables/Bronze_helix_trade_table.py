@@ -7,14 +7,15 @@ from datetime import datetime
 
 import pandas as pd
 from sqlalchemy import text
-
+from sqlalchemy.exc import SQLAlchemyError
 from Utils.Constants import needed_columns
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
 # Connect to the PostgreSQL database
 engine = get_database_engine('postgres')
-
+# File to track processed files
+bronze_table_tracker = "Bronze Table Processed Files"
 
 # Function to extract date from filename using regex
 def extract_file_date(file_name):
@@ -24,6 +25,17 @@ def extract_file_date(file_name):
         return datetime.strptime(match.group(1), "%m-%d-%y").date()
     return None
 
+def read_processed_files():
+    try:
+        with open(bronze_table_tracker, 'r') as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()
+
+
+def mark_file_processed(filename):
+    with open(bronze_table_tracker, 'a') as file:
+        file.write(filename + '\n')
 
 # Context manager for database connection
 class DatabaseConnection:
@@ -63,6 +75,7 @@ def create_transactions_table(tb_name):
 
     except Exception as e:
         print(f"Failed to create table {tb_name}: {e}")
+        raise
 
 
 def generate_transaction_id(row):
@@ -70,6 +83,37 @@ def generate_transaction_id(row):
     unique_string = f"{row['SK']}-{row['VehicleCode']}-{row['PoolCode']}-{row['Period']}-{row['InvestorCode']}-{row['Head1']}"
     return hash_string(unique_string)
 
+
+def upsert_data(tb_name, df):
+    with engine.connect() as conn:
+        try:
+            with conn.begin():  # Start a transaction
+                # Constructing the UPSERT SQL dynamically based on DataFrame columns
+                column_names = ", ".join([f'"{col}"' for col in df.columns])
+                value_placeholders = ", ".join([f":{col}" for col in df.columns])
+                update_clause = ", ".join(
+                    [
+                        f'"{col}"=EXCLUDED."{col}"'
+                        for col in df.columns
+                        if col != "TransactionID"
+                    ]
+                )
+
+                upsert_sql = text(
+                    f"""
+                        INSERT INTO {tb_name} ({column_names})
+                        VALUES ({value_placeholders})
+                        ON CONFLICT ("TransactionID")
+                        DO UPDATE SET {update_clause}; 
+                    """
+                )
+                # Execute upsert in a transaction
+                conn.execute(upsert_sql, df.to_dict(orient="records"))
+            print(
+                f"Data for {df['Factor_date'][0]} upserted successfully into {tb_name}.")
+        except SQLAlchemyError as e:
+            print(f"An error occurred: {e}")
+            raise
 
 # Function to validate schema consistency and update database
 def validate_schema_and_update_db(excel_dirs, tb_name):
@@ -82,9 +126,6 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
         excel_dir (str): The directory containing Excel files.
         tb_name (str): The name of the database table to update.
     """
-    # Load processed files
-    with open('Bronze Table Processed Files', 'r') as f:
-        processed_files = f.read().splitlines()
 
     # Process each Excel file
     for excel_dir in excel_dirs:
@@ -100,7 +141,7 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                     )
                     continue
                 # Check if file has been processed
-                if file in processed_files:
+                if file in read_processed_files():
                     print(f"File already processed: {file}")
                     continue
 
@@ -125,35 +166,13 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 # with DatabaseConnection() as conn:
                 #     df.to_sql(tb_name, conn, if_exists='append', index=False, method='multi', chunksize=5000)
 
-                # OPTION 2: Efficient Upsert using PostgreSQL syntax
-                with DatabaseConnection() as conn:
-                    with conn.begin():  # Start a transaction
-                        # Constructing the UPSERT SQL dynamically based on DataFrame columns
-                        column_names = ", ".join([f'"{col}"' for col in df.columns])
-                        value_placeholders = ", ".join([f":{col}" for col in df.columns])
-                        update_clause = ", ".join(
-                            [
-                                f'"{col}"=EXCLUDED."{col}"'
-                                for col in df.columns
-                                if col != "TransactionID"
-                            ]
-                        )
-
-                        upsert_sql = text(
-                            f"""
-                                                INSERT INTO {tb_name} ({column_names})
-                                                VALUES ({value_placeholders})
-                                                ON CONFLICT ("TransactionID")
-                                                DO UPDATE SET {update_clause}; 
-                                            """
-                        )
-
-                        # Execute upsert in a transaction
-                        conn.execute(upsert_sql, df.to_dict(orient="records"))
-
-                # After processing the file, add its name to the "Bronze Table Processed File"
-                with open('Bronze Table Processed Files', 'a') as f:
-                    f.write(file + '\n')
+                try:
+                    # Insert into PostgreSQL table
+                    upsert_data(tb_name, df)
+                    # Mark file as processed
+                    mark_file_processed(file)
+                except SQLAlchemyError:
+                    print(f"Skipping {file} due to an error")
 
                 end_time = time.time()  # Capture end time
                 process_time = end_time - start_time

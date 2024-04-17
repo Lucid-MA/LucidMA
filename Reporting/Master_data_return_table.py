@@ -3,7 +3,11 @@ from openpyxl.utils import column_index_from_string
 
 from Utils.Constants import master_data_return_column_order
 
-# --- Settings ---
+"""
+This script read in the historical returns table for all the series in the Master Data file
+and exports it to a new Excel file.
+"""
+
 excel_file = r"S:\Users\THoang\Tech\LucidMA\Master Data.xlsx"
 
 start_index = column_index_from_string('E')

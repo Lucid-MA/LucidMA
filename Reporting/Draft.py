@@ -1,195 +1,153 @@
-import platform
-from contextlib import contextmanager
-
+import numpy as np
 import pandas as pd
-import pyodbc
-from sqlalchemy import create_engine
 
+from Reporting.Utils.database_utils import read_table_from_db
 from Utils.Common import print_df
-from Utils.SQL_queries import OC_query
-import mysql.connector
-import os
-
-
-import pymssql
-
-from Utils.database_utils import read_table_from_db
-
-db_type = "postgres"
-table_name = "bronze_oc_rates"
-report_date = '2024-04-05'
-valdate = pd.to_datetime(report_date)
-fund_name = 'Prime'
-series_name = 'Monthly'
-
-df_bronze = read_table_from_db(table_name, db_type)
-
-# Filter the DataFrame based on the conditions
-df_bronze = df_bronze[(df_bronze['End Date'] > valdate) | (df_bronze['End Date'].isnull())]
-
-# Create a mask for the conditions
-mask = (df_bronze['fund'] == fund_name) & (df_bronze['Series'] == series_name) & (df_bronze['Start Date'] <= valdate)
-# Use the mask to filter the DataFrame and calculate the sum
-df_bronze = df_bronze[mask]
-
-print_df(df_bronze.head())
-
+from Utils.Hash import hash_string
 #
-# server = '172.31.32.100'
-# database = 'Prod1'
-# username = 'LUCID\\tony.hoang'
-# password = os.getenv('MY_PASSWORD')
-# def create_db_connection(server, database, username, password):
-#     if platform.system() == 'Darwin':  # macOS
-#         print(platform.system())
-#         conn = pymssql.connect(server, username, password, database)
-#     elif platform.system() == 'Windows':
-#         conn_str = (
-#             f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-#             f"SERVER={server};"
-#             f"DATABASE={database};"
-#             f"UID={username};"
-#             f"PWD={password};"
-#             f"Trusted_Connection=yes;"
-#         )
-#         conn = pyodbc.connect(conn_str)
+# Load the contents of List_a and List_b
+list_a_path = "C:/Users/Tony.Hoang/Documents/List_a"
+list_b_path = "C:/Users/Tony.Hoang/Documents/List_b"
+
+# Read the contents of each file
+with open(list_a_path, 'r') as file_a, open(list_b_path, 'r') as file_b:
+    list_a = file_a.read().splitlines()
+    list_b = file_b.read().splitlines()
+
+
+# Convert lists to sets for efficient operations
+set_a = set(list_a)
+set_b = set(list_b)
+
+# Items in List_a but not in List_b
+items_in_a_not_in_b = set_a.difference(set_b)
+
+# Create List_c which contains items in List_b but not in List_a
+list_c = list(set_b.difference(set_a))
+
+# Display the results
+print(list_c)
+
+
+
+# db_type = "postgres"
+# table_name = "bronze_oc_rates"
+# report_date = '2024-04-05'
+# valdate = pd.to_datetime(report_date)
+# fund_name = 'Prime'
+# series_name = 'Master'
+#
+# df_bronze = read_table_from_db(table_name, db_type)
+#
+# # Filter the DataFrame based on the conditions
+# df_bronze = df_bronze[(df_bronze['End Date'] > valdate) | (df_bronze['End Date'].isnull())]
+#
+# # Create a mask for the conditions
+# mask = (df_bronze['fund'] == fund_name) & (df_bronze['Series'] == series_name) & (df_bronze['Start Date'] <= valdate)
+# # Use the mask to filter the DataFrame and calculate the sum
+# df_bronze = df_bronze[mask]
+#
+# ## UPDATE PRICE TABLE ##
+# # select price data from afternoon file
+# df_price = read_table_from_db("bronze_daily_price", "postgres")
+# df_price = df_price[(df_price['Price_date'] == report_date) & (df_price['Is_AM'] == 0)]
+# df_bronze = df_bronze.merge(df_price[['Bond_ID', 'Final_price']], left_on='BondID', right_on='Bond_ID', how='left')
+# # Rename 'Final_price' column to 'Price'
+# df_bronze.rename(columns={'Final_price': 'Price'}, inplace=True)
+# # Replace missing values in 'Price' column with 100
+# df_bronze['Price'] = df_bronze['Price'].fillna(100)
+# # Drop the 'Bond_ID' column as it's no longer needed
+# df_bronze.drop(columns='Bond_ID', inplace=True)
+#
+# ## UPDATE FACTOR TABLE ##
+# df_factor = read_table_from_db('bronze_price_factor', 'postgres')
+# df_factor = df_factor[(df_factor['Factor_date'] == report_date)]
+# df_bronze = df_bronze.merge(df_factor[['Bond_ID', 'Factor']], left_on='BondID', right_on='Bond_ID', how='left')
+#
+# ## UPDATE CASH BALANCE TABLE ##
+# df_cash_balance = read_table_from_db('bronze_cash_balance', 'postgres')
+# df_cash_balance = df_cash_balance[(df_cash_balance['Balance_date'] == report_date)]
+#
+#
+# def calculate_collateral_mv(row):
+#     """
+#     This function calculates the 'Collateral_MV' column.
+#     TODO: Review the formula when Factor == 0
+#     """
+#     if row['Factor'] == 0:
+#         return (row['Par/Quantity'] * row['Price'] * row['Factor'] / 100) + 0.001
 #     else:
-#         raise Exception('Unsupported platform')
-#     return conn
+#         return row['Par/Quantity'] * row['Price'] * row['Factor'] / 100
+#
+#
+# df_bronze['Collateral_MV'] = df_bronze.apply(calculate_collateral_mv, axis=1)
+# df_bronze['WAR'] = df_bronze['Orig. Rate'] * df_bronze['Money'] / 100
+# df_bronze['WAH'] = df_bronze['HairCut'] * df_bronze['Money'] / 100
+# df_bronze['WAS'] = df_bronze['Spread'] * df_bronze['Money'] / 10000
+#
+# ### CALCULATE NET CASH MARGIN BALANCE ###
+#
+# # Filter df_bronze where 'BondID' equals 'CASHUSD01'
+# df_cash_margin = df_bronze[df_bronze['BondID'] == 'CASHUSD01']
+#
+# df_bronze_AAA = df_bronze[df_bronze['Comments'] == 'AAA']
+# df_temp_AAA = pd.read_excel("S:/Users/THoang/Data/temp_AAA.xlsx")
+#
+#
+# # Group by 'Counterparty' and calculate the sum of 'Collateral_MV'
+# df_cash_margin = df_cash_margin.groupby(['Counterparty', 'fund', 'Series'])['Collateral_MV'].sum().reset_index()
+# df_cash_margin.rename(columns={'Collateral_MV': 'Net_cash_margin_balance'}, inplace=True)
 #
 #
 #
-# # conn = pymssql.connect(server, username, password, database)
-# conn = create_db_connection(server, database, username, password)
-# cursor = conn.cursor()
+# # Group df_bronze by 'Counterparty' and calculate the sum of 'Money'
+# df_invest = df_bronze.groupby(['Counterparty', 'fund', 'Series'])['Money'].sum().reset_index()
+# df_invest.rename(columns={'Money': 'Net_invest'}, inplace=True)
 #
-# cursor.execute('SELECT TOP 10 * FROM dbo.counterparties')
-# results = cursor.fetchall()
-# print(results)
+# # Merge df_cash_margin and df_invest on 'Counterparty', 'Fund', 'Series' using an outer join
+# df_margin = pd.merge(df_cash_margin, df_invest, on=['Counterparty', 'fund', 'Series'], how='outer')
 #
-# server = '172.31.32.100'
-# database = 'Prod1'
-# username = 'LUCID\\tony.hoang'
-# password = os.getenv('MY_PASSWORD')
+# # Fill NaN values in 'Net_cash_margin_balance' and 'Net_invest' with 0
+# df_margin[['Net_cash_margin_balance', 'Net_invest']] = df_margin[['Net_cash_margin_balance', 'Net_invest']].fillna(0)
+# pledged_cash_margin = df_margin.loc[df_margin['Net_cash_margin_balance'] <= 0, 'Net_cash_margin_balance'].sum()
 #
-# # Specify the driver and setup your connection string
-# driver = '{ODBC Driver 18 for SQL Server}'  # or the specific driver version you have installed
-# conn_str = (
-#     f"DRIVER={driver};"
-#     f"SERVER={server};"
-#     f"DATABASE={database};"
-#     f"UID={username};"
-#     f"PWD={password};"
-#     f"TrustServerCertificate=yes;"  # Disable SSL certificate verification
+# trade_invest = df_bronze['Money'].sum()
 #
-# )
+# cash_balance_mask = (df_cash_balance['Fund'] == fund_name.upper()) & (df_cash_balance['Series'] == series_name.upper()) & (
+#         df_cash_balance['Account'] == 'MAIN')
+# projected_total_balance = df_cash_balance.loc[cash_balance_mask, 'Projected_Total_Balance'].values[0]
 #
-# # Connect to your database
-# conn = pyodbc.connect(conn_str)
-# cursor = conn.cursor()
+# total_invest = projected_total_balance + trade_invest + abs(pledged_cash_margin)
 #
-# # Execute SQL query
-# cursor.execute('SELECT TOP 10 * FROM dbo.counterparties')
-# results = cursor.fetchall()
+# print(
+#     f'Total invest is {total_invest}, projected total balance is {projected_total_balance}, trade invest is {trade_invest}, pledged cash margin is {pledged_cash_margin}')
 #
-# # Print results
-# for row in results:
-#     print(row)
+# #### FINAL OC TABLE ###
 #
-# # Clean up
-# cursor.close()
-# conn.close()
+# # Group by 'Comments' and calculate the sum of 'Money' and sum of 'Collateral_MV'
+# df_result = df_bronze.groupby('Comments').agg({
+#     'Money': 'sum',
+#     'Collateral_MV': 'sum',
+#     'WAR': 'sum',
+#     'WAS': 'sum',
+#     'WAH': 'sum'
+# }).reset_index()
 #
+# # Rename the 'Money' column to 'Investment_Amount'
+# df_result = df_result.rename(columns={'Money': 'Investment_Amount'})
+# # Calculate 'Wtd Avg Rate', 'Wtd Avg Spread', and 'Wtd Avg Haircut'
+# df_result['Wtd_Avg_Rate'] = np.where(df_result['Investment_Amount'] != 0,
+#                                      df_result['WAR'] / df_result['Investment_Amount'], None)
+# df_result['Wtd_Avg_Spread'] = np.where(df_result['Investment_Amount'] != 0,
+#                                        df_result['WAS'] / df_result['Investment_Amount'], None)
+# df_result['Wtd_Avg_Haircut'] = np.where(df_result['Investment_Amount'] != 0,
+#                                         df_result['WAH'] / df_result['Investment_Amount'], None)
 #
-# # config = {
-# #     'host': '172.31.0.10',
-# #     'database': 'your_database_name',
-# #     'user': 'HELIXREPO_PROD_02',
-# #     'password': os.getenv('MY_PASSWORD')
-# # }
-# #
-# # try:
-# #     mydb = mysql.connector.connect(**config)
-# #     print("Connection successful")
-# #
-# # except mysql.connector.Error as err:
-# #     print(f"Something went wrong: {err}")
+# df_result['Percentage_of_Series_Portfolio'] = df_result['Investment_Amount'] / total_invest
+# df_result['Current_OC'] = np.where(df_result['Investment_Amount'] != 0,
+#                                    df_result['Collateral_MV'] / df_result['Investment_Amount'], None)
 #
-# # Configuration
-# DB_CONFIG = {
-#     "postgres": {
-#         "db_endpoint": "luciddb1.czojmxqfrx7k.us-east-1.rds.amazonaws.com",
-#         "db_port": "5432",
-#         "db_user": "dbmasteruser",
-#         "db_password": "lnRz*(N_7aOf~7Hx6oRo8;,<vYp|~#PC",
-#         "db_name": "reporting",
-#     },
-#     "sql_server_1": {
-#         "driver": "{ODBC Driver 17 for SQL Server}",
-#         "server": "172.31.0.10",
-#         "database": "HELIXREPO_PROD_02",
-#         "user": "tony.hoang",
-#         "password": os.getenv('MY_PASSWORD'),
-#         "domain": "LUCID",
-#         "authentication": "SQL Server Authentication"
-#     },
-#     "sql_server_2": {
-#         "driver": "{ODBC Driver 17 for SQL Server}",
-#         "server": "172.31.32.100",
-#         "database": "Prod1",
-#         "user": "LUCID\\tony.hoang",
-#         "password": os.getenv('MY_PASSWORD'),
-#         # "authentication": "NTLM"
-#     }
-# }
+# # Drop the 'WAR', 'WAS', and 'WAH' columns as they are no longer needed
+# df_result.drop(columns=['WAR', 'WAS', 'WAH'], inplace=True)
 #
-#
-# def get_database_engine(db_type):
-#     if db_type == "postgres":
-#         database_url = f"postgresql://{DB_CONFIG['postgres']['db_user']}:{DB_CONFIG['postgres']['db_password']}@{DB_CONFIG['postgres']['db_endpoint']}:{DB_CONFIG['postgres']['db_port']}/{DB_CONFIG['postgres']['db_name']}"
-#         return create_engine(database_url)
-#     elif db_type.startswith("sql_server"):
-#         conn_str = (
-#             f"DRIVER={DB_CONFIG[db_type]['driver']};"
-#             f"SERVER={DB_CONFIG[db_type]['server']};"
-#             f"DATABASE={DB_CONFIG[db_type]['database']};"
-#             f"UID={DB_CONFIG[db_type]['user']};"
-#             # f"UID={DB_CONFIG[db_type]['domain']}\\{DB_CONFIG[db_type]['user']};"
-#             f"PWD={DB_CONFIG[db_type]['password']}"
-#             f"Trusted_Connection=yes;"
-#             # if DB_CONFIG[db_type]['authentication'] == "NTLM" else ""
-#         )
-#         return pyodbc.connect(conn_str)
-#
-#
-# def read_table_from_db(table_name, db_type):
-#     engine = get_database_engine(db_type)
-#     if db_type.startswith("sql_server"):
-#         query = f"SELECT * FROM {table_name}"
-#         return pd.read_sql(query, con=engine)
-#     elif db_type == "postgres":
-#         return pd.read_sql_table(table_name, con=engine)
-#
-#
-# def execute_sql_query(sql_query, db_type, params=None):
-#     engine = get_database_engine(db_type)
-#     if db_type.startswith("sql_server"):
-#         return pd.read_sql(sql_query, con=engine, params=params)
-#     elif db_type == "postgres":
-#         return pd.read_sql(sql_query, con=engine, params=params)
-#
-#
-# @contextmanager
-# def DatabaseConnection(db_type):
-#     engine = get_database_engine(db_type)
-#     conn = engine.connect()
-#     try:
-#         yield conn
-#     finally:
-#         conn.close()
-#
-# # table_name = "dbo.TRADEPIECES"
-# db_type = "sql_server_2"
-#
-# sql_query = "SELECT * FROM dbo.counterparties"
-# df = execute_sql_query(sql_query, db_type, params=[])
+# print_df(df_result.head(10))

@@ -5,6 +5,7 @@ import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Integer, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
+from Utils.Common import get_file_path
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
@@ -17,9 +18,7 @@ processed_files_tracker = "Bronze Table Processed Daily Prices"
 # Directory and file pattern
 
 pattern = "Used Prices "
-# directory = "/Volumes/Sdrive$/Users/THoang/Data/Test/"
-directory = "S:/Lucid/Data/Bond Data/Historical/"
-# directory = "/Volumes/Sdrive$/Lucid/Data/Bond Data/Historical"
+directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical/")
 
 
 def create_table_with_schema(tb_name):
@@ -68,6 +67,7 @@ def upsert_data(tb_name, df):
                 f"Data for {df['Price_date'][0]} {'AM' if df['Is_AM'][0] == 1 else 'PM'} upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
+            raise
 
 
 def read_processed_files():
@@ -136,10 +136,12 @@ for filename in os.listdir(directory):
         df["Is_AM"] = is_am
         df["Source"] = filename
 
-        # Insert into PostgreSQL table
-        upsert_data(tb_name, df)
-
-        # Mark file as processed
-        mark_file_processed(filename)
+        try:
+            # Insert into PostgreSQL table
+            upsert_data(tb_name, df)
+            # Mark file as processed
+            mark_file_processed(filename)
+        except SQLAlchemyError:
+            print(f"Skipping {filename} due to an error")
 
 print("Process completed.")

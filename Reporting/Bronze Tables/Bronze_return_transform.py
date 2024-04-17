@@ -7,7 +7,20 @@ from Utils.Constants import transaction_map, pool_mapping, investor_mapping
 from Utils.Hash import hash_string
 from Utils.database_utils import read_table_from_db
 """
-TODO: What this script does
+This script is used for transforming and processing data from the 'bronze_returns' table in a PostgreSQL database. 
+
+The script performs the following steps:
+1. Reads data from the 'bronze_returns' table into a pandas DataFrame.
+2. Preprocesses the data by splitting the 'Period' column into 'Start_date' and 'End_date', mapping transaction categories, and filtering the DataFrame for a specified date range.
+3. Deduplicates the DataFrame based on a subset of columns.
+4. Pivots the DataFrame based on the 'Transaction_category' column.
+5. Adds 'PoolDescription', 'PeriodDescription' and 'InvestorDescription' columns.
+6. Creates a unique ID for each row by hashing certain columns.
+7. Calculates 'Day Count', 'Returns', and 'Annualized Returns' columns.
+8. Drops the 'Unmapped / Others' column.
+9. Exports the transformed DataFrame to an Excel file.
+
+The script is part of a larger data processing pipeline and is used for generating a report on series returns for the period 2021-2024.
 """
 
 

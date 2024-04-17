@@ -29,3 +29,10 @@ def get_file_path(file_path_windows):
     else:
         raise Exception('Unsupported platform')
     return file_path
+
+
+def clean_and_convert_dates(df, date_columns):
+    for col in date_columns:
+        df[col] = pd.to_datetime(df[col], errors='coerce')  # Convert to datetime, make errors NaT
+        df[col] = df[col].fillna(pd.to_datetime('1900-01-01'))
+    return df

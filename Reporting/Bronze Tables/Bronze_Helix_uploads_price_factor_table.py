@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Integer, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Constants import cash_balance_column_order
+from Utils.Common import get_file_path
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
@@ -13,14 +13,12 @@ from Utils.database_utils import get_database_engine
 engine = get_database_engine('postgres')
 
 # File to track processed files
-processed_files_tracker = "Bronze Table Processed Cash Balance"
+processed_files_tracker = "Bronze Table Processed Daily Price Factor"
 
 # Directory and file pattern
 
-pattern = "CashSummary"
-# directory = "/Volumes/Sdrive$/Users/THoang/Data/Test/"
-# directory = "S:/Users/THoang/Data/Test"
-directory = "S:/Mandates/Operations/Daily Reconciliation/Historical"
+pattern = "Helix Factors "
+directory = get_file_path(r"S:/Lucid/Data/Bond Data/Helix Bond Uploads")
 
 def extract_date_and_indicator(filename):
     """
@@ -31,11 +29,10 @@ def extract_date_and_indicator(filename):
         str: The extracted date.
     """
     # Use regex to match the date
-    match = re.search(r"CashSummary_(\d{4})(\d{2})(\d{2}).xlsx$", filename)
+    match = re.search(r"Helix Factors (\d{4}-\d{2}-\d{2})", filename)
 
     if match:
-        # This should be "2023-09-15" for "CashSummary_20230915"
-        date_raw = "-".join(match.groups())
+        date_raw = match.group(1)  # This should be "2022-12-22"
         return date_raw
     return None
 
@@ -56,14 +53,11 @@ def create_table_with_schema(tb_name):
     metadata = MetaData()
     metadata.bind = engine
     table = Table(tb_name, metadata,
-                  Column("Balance_ID", String, primary_key=True),
-                  Column("Fund", String),
-                  Column("Series", String),
-                  Column("Account", String),
-                  Column("Cash_Balance", Float),
-                  Column("Sweep_Balance", Float),
-                  Column("Projected_Total_Balance", Float),
-                  Column("Balance_date", Date),
+                  Column("Factor_ID", String, primary_key=True),
+                  Column("Bond_ID", String),
+                  Column("Factor", Float),
+                  Column("Effective_date", String),
+                  Column("Factor_date", Date),
                   Column("Source", String),
                   extend_existing=True)
     metadata.create_all(engine)
@@ -80,7 +74,7 @@ def upsert_data(tb_name, df):
                     [
                         f'"{col}"=EXCLUDED."{col}"'
                         for col in df.columns
-                        if col != "Balance_ID"  # Assuming "Factor_ID" is unique and used for conflict resolution
+                        if col != "Factor_ID"  # Assuming "Factor_ID" is unique and used for conflict resolution
                     ]
                 )
 
@@ -88,7 +82,7 @@ def upsert_data(tb_name, df):
                     f"""
                     INSERT INTO {tb_name} ({column_names})
                     VALUES ({value_placeholders})
-                    ON CONFLICT ("Balance_ID")
+                    ON CONFLICT ("Factor_ID")
                     DO UPDATE SET {update_clause};
                     """
                 )
@@ -96,18 +90,19 @@ def upsert_data(tb_name, df):
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
             print(
-                f"Data for {df['Balance_date'][0]} upserted successfully into {tb_name}.")
+                f"Data for {df['Factor_date'][0]} upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
+            raise
 
 
-tb_name = "bronze_cash_balance"
+tb_name = "bronze_price_factor"
 create_table_with_schema(tb_name)
 
 
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
-    if filename.startswith(pattern) and filename.endswith(".xlsx") and filename not in read_processed_files():
+    if filename.startswith(pattern) and filename.endswith(".xls") and filename not in read_processed_files():
         filepath = os.path.join(directory, filename)
 
         date = extract_date_and_indicator(filename)
@@ -120,27 +115,30 @@ for filename in os.listdir(directory):
         # Read the Excel file
         df = pd.read_excel(
             filepath,
-            header=11,  # Row 12 (index 11) is the header)
-            usecols=cash_balance_column_order,
+            header=2,  # Row 3 (index 2) is the header)
         )
 
         # Convert all column names to lowercase
         df.columns = df.columns.str.lower()
 
+        # Now you can use the lowercase column names
+        df = df[["cusip", "factor", "effectivedate"]]
 
         # Rename columns
-        df.rename(columns={"fund":"Fund", "series":"Series", "account":"Account","cash balance": "Cash_Balance", "sweep balance": "Sweep_Balance", "projected total balance": "Projected_Total_Balance"},
+        df.rename(columns={"cusip": "Bond_ID", "factor": "Factor", "effectivedate": "Effective_date"},
                   inplace=True)
         # Create Price_ID
-        df["Balance_ID"] = df.apply(lambda row: hash_string(f"{row['Fund']}{row['Series']}{row['Account']}{date}"), axis=1)
-        df["Balance_date"] = date
-        df['Balance_date'] = pd.to_datetime(df['Balance_date']).dt.strftime('%Y-%m-%d')
+        df["Factor_ID"] = df.apply(lambda row: hash_string(f"{row['Bond_ID']}{filename}"), axis=1)
+        df["Factor_date"] = date
+        df['Factor_date'] = pd.to_datetime(df['Factor_date']).dt.strftime('%Y-%m-%d')
         df["Source"] = filename
 
-        # Insert into PostgreSQL table
-        upsert_data(tb_name, df)
-
-        # Mark file as processed
-        mark_file_processed(filename)
+        try:
+            # Insert into PostgreSQL table
+            upsert_data(tb_name, df)
+            # Mark file as processed
+            mark_file_processed(filename)
+        except SQLAlchemyError:
+            print(f"Skipping {filename} due to an error")
 
 print("Process completed.")

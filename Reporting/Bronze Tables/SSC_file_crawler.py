@@ -2,6 +2,30 @@ import os
 import time
 import zipfile
 
+"""
+This script automates the extraction and organization of financial documents from zip archives 
+located within specified directory paths. It is specifically designed for handling "End of Month" 
+NAV (Net Asset Value) packets for different funds (USG and Prime). The script performs the following operations:
+
+1. Identifies and processes zip files containing the target file pattern "Statement-of-Changes-Period-Detail"
+   within the specified directories for each fund type.
+2. Extracts these targeted files and saves them to a structured directory based on the fund type (USG or Prime)
+   and renames them to include a unique postfix while converting them into Excel format.
+3. Tracks processed files to avoid reprocessing using a text file stored at a specified location.
+4. Provides feedback on the processing time and a list of relevant filenames extracted during the session.
+
+Directories Scanned:
+- USG NAV Packets under "S:\\Mandates\\Funds\\Fund NAV Calculations\\USG\\USG NAV Packets\\End of Month"
+- Prime NAV Packets under "S:\\Mandates\\Funds\\Fund NAV Calculations\\Prime\\Prime NAV Packets\\End of Month"
+
+Output:
+- Files are extracted to "S:\\Users\\THoang\\Data\\SSC" under respective subfolders labeled 'USG' and 'Prime'.
+- A log of processed files is maintained to ensure files are only processed once.
+
+This script is intended to be run on a regular basis to streamline the management of monthly financial reports and ensure
+data consistency and availability for timely financial analysis and reporting.
+"""
+
 start_time = time.time()
 
 # Base directories to search
