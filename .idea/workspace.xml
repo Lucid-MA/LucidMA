@@ -5,32 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3496bc1a-6c25-4d0d-aae0-4471e8aef509" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_bond_data_table.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_returns_table.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Reporting/Silver_OC_processing.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Reporting/Silver_OC_table.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Bloomberg Price Factor.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_Helix_uploads_price_factor_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Cash Balance.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_cash_balance_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze OC Rates.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_OC_rates_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Prices Data.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_daily_prices_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Returns Table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_helix_trade_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Table Processed Cash Balance" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze Table Processed Cash Balance" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Table Processed Daily Price Factor (Bloomberg)" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze Table Processed Daily Price Factor" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Table Processed Daily Prices" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze Table Processed Daily Prices" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze Table Processed Files" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze Table Processed Files" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Calculating Returns - by account.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Calculating Returns.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_returns_calculation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Capacities.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Investment_capacities_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Draft.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Draft.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/File Crawler.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/SSC_file_crawler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Historical Returns.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Master_data_return_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Investor_Statements.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Reports/Investor_Statements.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Raw stage (optimized) v2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Roll Schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Roll_schedule_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Silver OC Rates.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Transform.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze Tables/Bronze_return_transform.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Utils/Common.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Common.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,53 +38,53 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "Python.Bronze Bloomberg Price Factor.executor": "Run",
-    "Python.Bronze Bond Data.executor": "Run",
-    "Python.Bronze Cash Balance.executor": "Run",
-    "Python.Bronze Prices Data.executor": "Run",
-    "Python.Bronze Returns Table.executor": "Debug",
-    "Python.Bronze_daily_prices_table.executor": "Run",
-    "Python.Calculating Returns - by account (1).executor": "Debug",
-    "Python.Calculating Returns - by account.executor": "Run",
-    "Python.Calculating Returns - test.executor": "Run",
-    "Python.Calculating Returns v2.executor": "Debug",
-    "Python.Calculating Returns.executor": "Run",
-    "Python.Draft.executor": "Run",
-    "Python.File Crawler.executor": "Run",
-    "Python.Gold Capacities.executor": "Run",
-    "Python.Historical Returns.executor": "Run",
-    "Python.Investor_Statements_test_0403.executor": "Run",
-    "Python.OC Rates - temp - v2.executor": "Run",
-    "Python.OC Rates - temp.executor": "Run",
-    "Python.OC Rates.executor": "Run",
-    "Python.Roll Schedule.executor": "Run",
-    "Python.Silver OC Rates.executor": "Run",
-    "Python.Silver OC table.executor": "Run",
-    "Python.Silver_OC_table (1).executor": "Debug",
-    "Python.Transform.executor": "Debug",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "database.data.extractors.current.export.id": "Comma-separated (CSV)_id",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze Tables",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;Python.Bronze Bloomberg Price Factor.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Bronze Bond Data.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Bronze Cash Balance.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Bronze Prices Data.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Bronze Returns Table.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Bronze_daily_prices_table.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Calculating Returns - by account (1).executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Calculating Returns - by account.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Calculating Returns - test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Calculating Returns v2.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Calculating Returns.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Draft.executor&quot;: &quot;Run&quot;,
+    &quot;Python.File Crawler.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Gold Capacities.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Historical Returns.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Investor_Statements_test_0403.executor&quot;: &quot;Run&quot;,
+    &quot;Python.OC Rates - temp - v2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.OC Rates - temp.executor&quot;: &quot;Run&quot;,
+    &quot;Python.OC Rates.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Roll Schedule.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Silver OC Rates.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Silver OC table.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Silver_OC_table (1).executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Transform.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;database.data.extractors.current.export.id&quot;: &quot;Comma-separated (CSV)_id&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;S:/Users/THoang/Tech/LucidMA/Reporting/Bronze Tables&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "postgresql",
-      "sqlserver"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;postgresql&quot;,
+      &quot;sqlserver&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting\Bronze Tables" />
@@ -120,7 +95,7 @@
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting\Reports" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Silver_OC_table (1)">
+  <component name="RunManager" selected="Python.Investor_Statements_test_0403">
     <configuration name="Bronze_bond_data_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -190,6 +165,29 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Investor_Statements_test_0403" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="LucidMA" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../../../../Mandates/Funds/Fund Reporting/Monthly Reports/python" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../../../../Mandates/Funds/Fund Reporting/Monthly Reports/python/Investor_Statements_test_0403.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Silver_OC_table (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -213,36 +211,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Silver_OC_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="LucidMA" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="S:\Users\THoang\Tech\LucidMA\Reporting\Silver_OC_table.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Investor_Statements_test_0403" />
         <item itemvalue="Python.Silver_OC_table (1)" />
         <item itemvalue="Python.Bronze_daily_prices_table" />
         <item itemvalue="Python.Bronze_bond_data_table" />
         <item itemvalue="Python.Draft" />
-        <item itemvalue="Python.Silver_OC_table" />
       </list>
     </recent_temporary>
   </component>
@@ -266,7 +241,8 @@
       <workItem from="1711570368861" duration="985000" />
       <workItem from="1711571380070" duration="66111000" />
       <workItem from="1712168402120" duration="51309000" />
-      <workItem from="1712580588159" duration="153732000" />
+      <workItem from="1712580588159" duration="154791000" />
+      <workItem from="1713401460248" duration="6866000" />
     </task>
     <servers />
   </component>
@@ -318,14 +294,14 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/LucidMA$Investor_Statements_test_0403.coverage" NAME="Investor_Statements_test_0403 Coverage Results" MODIFIED="1712604966814" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Funds/Fund Reporting/Monthly Reports/python" />
+    <SUITE FILE_PATH="coverage/LucidMA$Investor_Statements_test_0403.coverage" NAME="Investor_Statements_test_0403 Coverage Results" MODIFIED="1713449928929" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Funds/Fund Reporting/Monthly Reports/python" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Bloomberg_Price_Factor.coverage" NAME="Bronze Bloomberg Price Factor Coverage Results" MODIFIED="1713207771714" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Returns_Table.coverage" NAME="Bronze Returns Table Coverage Results" MODIFIED="1712177821378" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns_v2.coverage" NAME="Calculating Returns v2 Coverage Results" MODIFIED="1712848684458" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Roll_Schedule.coverage" NAME="Roll Schedule Coverage Results" MODIFIED="1712869696397" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns_v2.coverage" NAME="Calculating Returns v2 Coverage Results" MODIFIED="1712848684458" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Bond_Data.coverage" NAME="Bronze Bond Data Coverage Results" MODIFIED="1713366467631" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___by_account__1_.coverage" NAME="Calculating Returns - by account (1) Coverage Results" MODIFIED="1712158155292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$OC_Rates___temp___v2.coverage" NAME="OC Rates - temp - v2 Coverage Results" MODIFIED="1712347624331" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___by_account__1_.coverage" NAME="Calculating Returns - by account (1) Coverage Results" MODIFIED="1712158155292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$OC_Rates___temp.coverage" NAME="OC Rates - temp Coverage Results" MODIFIED="1712347357426" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Silver_OC_table.coverage" NAME="Silver OC table Coverage Results" MODIFIED="1713275224935" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Gold_Capacities.coverage" NAME="Gold Capacities Coverage Results" MODIFIED="1712676076944" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
