@@ -13,13 +13,13 @@ from Utils.database_utils import get_database_engine
 engine = get_database_engine('postgres')
 
 # File to track processed files
-processed_files_tracker = "Bronze Table Processed Daily Prices"
+processed_files_tracker = "Bronze Table Processed Daily Prices V2"
 
 # Directory and file pattern
 
 pattern = "Used Prices "
 directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical/")
-
+date_pattern = re.compile(r"(\d{4}-\d{2}-\d{2})(AM|PM)")
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
@@ -31,6 +31,7 @@ def create_table_with_schema(tb_name):
                   Column("Bond_ID", String),
                   Column("Clean_price", Float),
                   Column("Final_price", Float),
+                  Column("Price_source", String),
                   Column("Source", String),
                   extend_existing=True)
     metadata.create_all(engine)
@@ -83,6 +84,7 @@ def mark_file_processed(filename):
         file.write(filename + '\n')
 
 
+
 def extract_date_and_indicator(filename):
     """
     This function extracts the date and AM/PM indicator from a filename.
@@ -92,7 +94,7 @@ def extract_date_and_indicator(filename):
         tuple: A tuple containing the date and a boolean indicating whether it's AM (True) or PM (False).
     """
     # Use regex to match the date and AM/PM indicator
-    match = re.search(r"(\d{4}-\d{2}-\d{2})(AM|PM)", filename)
+    match = date_pattern.search(filename)
 
     if match:
         date = match.group(1)  # This should be "2020-02-11"
@@ -102,7 +104,7 @@ def extract_date_and_indicator(filename):
 
 
 # Assuming df is your DataFrame after processing an unprocessed file
-tb_name = "bronze_daily_price"
+tb_name = "bronze_daily_price_v2"
 create_table_with_schema(tb_name)
 
 # Iterate over files in the specified directory
@@ -123,11 +125,15 @@ for filename in os.listdir(directory):
         # Convert all column names to lowercase
         df.columns = df.columns.str.lower()
 
+        # Check if 'set source' column exists, if not, create it with default value 'Unknown'
+        if 'set source' not in df.columns:
+            df['set source'] = 'Unknown'
+
         # Now you can use the lowercase column names
-        df = df[["cusip", "clean price", "price to use"]]
+        df = df[["cusip", "clean price", "price to use", "set source"]]
 
         # Rename columns
-        df.rename(columns={"cusip": "Bond_ID", "clean price": "Clean_price", "price to use": "Final_price"},
+        df.rename(columns={"cusip": "Bond_ID", "clean price": "Clean_price", "price to use": "Final_price", "set source": "Price_source"},
                   inplace=True)
         # Create Price_ID
         df["Price_ID"] = df.apply(lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1)

@@ -52,12 +52,12 @@ for pool in df['PoolDescription'].unique():
         start_period_dt = datetime.strptime(start_period, '%Y-%m-%d')
         end_period_dt = datetime.strptime(end_period, '%Y-%m-%d')
 
-        # Filter rows based on the date range
+        # Filter 1: Filter rows based on the date range
         period_data = pool_data[
             (pool_data['Start_date'] > start_period_dt) & (pool_data['Start_date'] < end_period_dt)]
 
-        # Add another filter to exclude capital account that has intra-period contributions or withdrawals (timings that are
-        # at the beginning of the evaluation period)
+        # Filter 2: Exclude capital account that has intra-period contributions or withdrawals
+        # (timings that are at the beginning of the evaluation period)
         exclusion_df = period_data[(period_data['Start_date'] > start_period_dt + pd.Timedelta(days=1)) & (
                 (abs(period_data['Withdrawal - BOP']) >= 1000) | (abs(period_data['Contribution']) >= 1000))]
         excluded_investors = exclusion_df['InvestorDescription'].unique()
