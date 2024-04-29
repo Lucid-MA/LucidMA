@@ -8,6 +8,8 @@ from datetime import datetime
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+
+from Utils.Common import get_file_path
 from Utils.Constants import needed_columns
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
@@ -110,7 +112,7 @@ def upsert_data(tb_name, df):
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
             print(
-                f"Data for {df['Factor_date'][0]} upserted successfully into {tb_name}.")
+                f"Data for {df['FileDate'][0]} upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
             raise
@@ -129,6 +131,7 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 
     # Process each Excel file
     for excel_dir in excel_dirs:
+        excel_dir = get_file_path(excel_dir)
         for file in os.listdir(excel_dir):
             if file.endswith(".xlsx"):
                 start_time = time.time()
@@ -184,8 +187,8 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 # Main execution
 TABLE_NAME = "bronze_returns"
 base_directories = [
-    r"S:\Users\THoang\Data\SSC\Prime",
-    r"S:\Users\THoang\Data\SSC\USG",
+    r"S:/Users/THoang/Data/SSC/Prime",
+    r"S:/Users/THoang/Data/SSC/USG",
 ]
 
 create_transactions_table(TABLE_NAME)
