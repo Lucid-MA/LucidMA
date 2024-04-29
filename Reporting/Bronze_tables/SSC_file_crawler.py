@@ -2,6 +2,8 @@ import os
 import time
 import zipfile
 
+from Utils.Common import get_file_path
+
 """
 This script automates the extraction and organization of financial documents from zip archives 
 located within specified directory paths. It is specifically designed for handling "End of Month" 
@@ -30,12 +32,12 @@ start_time = time.time()
 
 # Base directories to search
 base_directories = [
-    r"S:\Mandates\Funds\Fund NAV Calculations\USG\USG NAV Packets\End of Month",
-    r"S:\Mandates\Funds\Fund NAV Calculations\Prime\Prime NAV Packets\End of Month"
+    r"S:/Mandates/Funds/Fund NAV Calculations/USG/USG NAV Packets/End of Month",
+    r"S:/Mandates/Funds/Fund NAV Calculations/Prime/Prime NAV Packets/End of Month"
 ]
 
 # Destination folder base
-destination_folder_base = r"S:\Users\THoang\Data\SSC"
+destination_folder_base = r"S:/Users/THoang/Data/SSC"
 
 # Target filename pattern
 target_filename_pattern = "Statement-of-Changes-Period-Detail"
@@ -47,8 +49,20 @@ year_threshold = 2021
 relevant_filenames = []
 
 # File to store processed filenames
-processed_file_path = os.path.join(destination_folder_base, "Processed file.txt")
+processed_file_path = get_file_path(os.path.join(destination_folder_base, "Processed file.txt"))
+processed_file_tracker = 'Processed SSC Zip files'
 
+def read_processed_files():
+    try:
+        with open(processed_file_tracker, 'r') as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()
+
+
+def mark_file_processed(filename):
+    with open(processed_file_tracker, 'a') as file:
+        file.write(filename + '\n')
 
 # Function to load processed files
 def load_processed_files():
@@ -70,27 +84,23 @@ processed_files = load_processed_files()
 
 # Iterate through base directories
 for base_dir in base_directories:
+    base_dir = get_file_path(base_dir)
     # Determine postfix based on directory
     postfix = "USG" if "USG" in base_dir else "Prime"
 
     # Create destination folder with postfix
-    destination_folder = os.path.join(destination_folder_base, postfix)
+    destination_folder = get_file_path(os.path.join(destination_folder_base, postfix))
     os.makedirs(destination_folder, exist_ok=True)  # Create if it doesn't exist
 
     # Get directories matching year threshold
     for year_dir in os.listdir(base_dir):
-        if int(year_dir) >= year_threshold:
+        if year_dir.isdigit() and int(year_dir) >= year_threshold:
             year_path = os.path.join(base_dir, year_dir)
 
             # Process zip files within year directory
             for zip_file in os.listdir(year_path):
-                if zip_file.endswith(".zip"):
+                if zip_file.endswith(".zip") and zip_file not in read_processed_files():
                     zip_path = os.path.join(year_path, zip_file)
-
-                    # Check if file has been processed
-                    if zip_path in processed_files:
-                        print(f"File already processed: {zip_path}")
-                        continue
 
                     # Unzip contents
                     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -110,7 +120,7 @@ for base_dir in base_directories:
                                 relevant_filenames.append(new_filepath)
 
                     # Save processed file
-                    save_processed_file(zip_path)
+                    mark_file_processed(zip_file)
 
 end_time = time.time()
 process_time = end_time - start_time
