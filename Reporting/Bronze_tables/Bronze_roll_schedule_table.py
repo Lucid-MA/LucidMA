@@ -7,7 +7,12 @@ from Utils.database_utils import get_database_engine
 """
 This script create a table 'roll_schedule' in the database and upsert data from an Excel file.
 """
+
+# Constants
 engine = get_database_engine('postgres')
+roll_schedule_file_path = "S:/Users/THoang/Data/Roll Schedule.xlsx"
+tb_name = 'bronze_roll_schedule'
+
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
@@ -38,14 +43,12 @@ def upsert_data(tb_name, df):
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
 
-# Example usage
-tb_name = 'roll_schedule'
 create_table_with_schema(tb_name)
 
 # Your data loading and transformation logic here
 
 # Load the Excel file
-file_path = get_file_path("S:/Users/THoang/Data/Roll Schedule.xlsx")
+file_path = get_file_path(roll_schedule_file_path)
 # Update with the actual path to your Excel file
 df = pd.read_excel(file_path)
 
@@ -90,8 +93,13 @@ for record in transformed_dict:
         roll_schedule_mapping[record['FundName']] = [date_tuple]
 
 def update_roll_schedule_mapping(roll_schedule_mapping):
+    import os
+
+    # Change the directory to where the script is located
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
     # Read the content of Constants.py
-    with open('Utils/Constants.py', 'r') as f:
+    with open('../Utils/Constants.py', 'r') as f:
         content = f.read()
 
     # Convert roll_schedule_mapping to a string
@@ -101,7 +109,7 @@ def update_roll_schedule_mapping(roll_schedule_mapping):
     content = re.sub(r'roll_schedule_mapping = .*', 'roll_schedule_mapping = ' + roll_schedule_mapping_str, content)
 
     # Write the result back to Constants.py
-    with open('Utils/Constants.py', 'w') as f:
+    with open('../Utils/Constants.py', 'w') as f:
         f.write(content)
 
 # Call the function with the new roll_schedule_mapping

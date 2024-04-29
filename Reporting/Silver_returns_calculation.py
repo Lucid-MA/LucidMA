@@ -21,8 +21,8 @@ def run_script(script_path):
 
 
 # Path to the scripts
-transform_script = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Bronze Tables/Bronze_returns_transform.py")
-calculation_script = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Bronze Tables/Bronze_returns_calculation.py")
+transform_script = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_returns_transform.py")
+calculation_script = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_returns_calculation.py")
 
 # Run the first script
 if run_script(transform_script):
