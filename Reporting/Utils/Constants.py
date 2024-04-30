@@ -201,7 +201,7 @@ cusip_mapping = {
     "Lucid Prime Fund LLC_2YIG": "PRIME-2YIG0",
     "Lucid Prime Fund LLC_S1": "PRIME-S1000",
     "Lucid Prime Fund LLC_C1": "PRIME-C1000",
-    "Lucid Prime Fund LLC": "PRIME-M0000",
+    "Lucid Prime Fund LLC": "PRIME-M000",
     "Lucid Prime Fund LLC_MIG": "PRIME-MIG0",
     "Lucid Prime Fund LLC_Q364": "PRIME-Q364",
     "Lucid Prime Fund LLC_QX": "PRIME-QX00",

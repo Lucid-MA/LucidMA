@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.regex.PatternSyntaxException;
 import java.util.HashMap;
+import java.util.Base64;
 
 public class IDCPricing {
 
@@ -48,7 +49,8 @@ public class IDCPricing {
 	        connect.setDoOutput(true);
 	        String up = user + ":" + password;
 
-	        String userpass = javax.xml.bind.DatatypeConverter.printBase64Binary(up.getBytes());
+// 	        String userpass = javax.xml.bind.DatatypeConverter.printBase64Binary(up.getBytes());
+	        String userpass = Base64.getEncoder().encodeToString(up.getBytes());
 	        connect.setRequestProperty("Authorization","Basic " + userpass);
 	    
 	        // Create a print stream, for easy writing
