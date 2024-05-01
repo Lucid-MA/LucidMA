@@ -1,5 +1,7 @@
 # pull prices from JPPD and IDC into source file. if AM, gets cusips from helix. if PM, re-prices cusips already there
 # (new cusips added throughout the day aren't to be included in PM price)
+import ast
+import time
 
 # JJ Vulopas
 
@@ -103,6 +105,91 @@ def helix_match():
         for extra_f in to_add:
             cusips_all[f].add(extra_f)
     return cusips_all, helix_pull_time
+
+# File to track processed files
+base_path = r"S:/Lucid/Data/Bond Data/Historical Price/"
+
+def fetch_jppd(cusips, vdate):
+    start_time = time.time()
+    print(f"Fetching prices from Pricing Direct for {vdate}...")
+    vdate = datetime.strptime(vdate, '%Y%m%d')
+    url = 'https://www.pricing-direct.com/pricingdirect/request/priceWsFICusips'
+    data = {
+        "Cusip": cusips,
+        "Date": [vdate.strftime("%m/%d/%Y")],
+        "CloseType": ["BOND"],
+        "PriceType": ["BID"]
+    }
+    namepass = "yating:19960601Lyt"
+    headers_pd = {"Authorization": "Basic " + base64.b64encode(namepass.encode("utf-8")).decode("utf-8")}
+    response = requests.post(url, json=data, headers=headers_pd)
+
+    if response.status_code == 200:
+        src = ast.literal_eval(response.text)
+        data = []
+        for i in range(0, len(src) - 1):  # skip disclaimer, the last
+            x = src[i]
+            cusip = x["SecurityID"]
+            price = x['Bid Evaluation']
+            try:
+                float_price = float(price)  # Attempt to convert price to float
+                data.append([cusip, float_price])  # Append if successful
+            except ValueError:
+                continue  # Skip appending if conversion fails
+
+        # Create a DataFrame with CUSIPs and prices
+        df = pd.DataFrame(data, columns=["CUSIP", "price"])
+
+        # Export to Excel
+        vdate = vdate.strftime('%Y%m%d')
+        file_name = f"PD_{vdate}"
+        output_path = f"{base_path}{file_name}.xlsx"
+        df.to_excel(output_path, engine="openpyxl", index=False)
+        print(f"Data exported to {output_path}")
+        end_time = time.time()
+        print(f"Time taken: {end_time - start_time:.2f} seconds")
+        return df
+    else:
+        print(f"Error fetching data from Pricing Direct: {response.status_code}")
+        print(f"Response content: {response.content}")
+        return None
+
+def fetch_idc(cusips, price_date):
+    start_time = time.time()
+    print("Fetching prices from IDC...")
+    url = "https://rplus.intdata.com/cgi/nph-rplus"
+    user = "d4lucid"
+    password = "Spring17!"
+
+    # Prepare the request
+    auth = base64.b64encode(f"{user}:{password}".encode()).decode()
+    headers = {"Authorization": f"Basic {auth}"}
+    idc_req = f'GET,({" ,".join(cusips)}),(PRC),{price_date},,D,TITLES=SHORT,DATEFORM=YMD'
+
+    # Send the request
+    response = requests.post(url, headers=headers, data={"Request": idc_req, "Done": "flag"})
+
+    if response.status_code == 200:
+        lines = response.text.strip().split("\n")
+        data = []
+
+        for line in lines[1:-1]:  # Skip the first line (header) and the last line (CRC)
+            parts = line.split(",")
+            cusip = parts[0].strip('"')  # Remove the quotes around the CUSIP
+            price = parts[1]
+            data.append([cusip, price])
+
+        # Create a DataFrame with dates as columns and CUSIPs as rows
+        df = pd.DataFrame(data, columns=["CUSIP", "price"])
+
+
+        print(f"Data uploaded exported to table")
+        end_time = time.time()
+        print(f"Time taken: {end_time - start_time:.2f} seconds")
+    else:
+        print(f"Error fetching data from IDC: {response.status_code}")
+        return None
+
 
 # fetch from idc using remoteplus, returns tuple of 1) map of cusips to prices and 2) time request sent
 def idc_fetch(cusips):
@@ -349,6 +436,16 @@ def PM_process():
         row = row + 1
         curr = px_sheet.cell(row=row, column=1)
 
+    # NEW PROCESS HERE
+    # Get the current time in seconds since the epoch
+    current_time = time.time()
+    # Convert to a datetime object
+    date_time = datetime.fromtimestamp(current_time)
+    # Format the date as YYYYMMDD
+    query_date = date_time.strftime('%Y%m%d')
+    fetch_idc(pxable_cusips, query_date)
+    fetch_jppd(pxable_cusips, query_date)
+
     idc_outp = idc_fetch(pxable_cusips)
     pd_outp = pd_fetch(pxable_cusips)
     print("Saving to price source...")
@@ -387,7 +484,8 @@ def PM_process():
 
 # main process
 if __name__ == "__main__":
-    if (datetime.now().hour < 12):
-        AM_process()
-    else:
-        PM_process()
+    PM_process()
+    # if (datetime.now().hour < 12):
+    #     AM_process()
+    # else:
+    #     PM_process()

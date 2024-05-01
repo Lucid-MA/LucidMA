@@ -5,15 +5,7 @@ from contextlib import contextmanager
 import pandas as pd
 import pyodbc
 from sqlalchemy import create_engine
-
 import pymssql
-# server = '172.31.32.100'
-# database = 'Prod1'
-# username = 'LUCID\\tony.hoang'
-# password = os.getenv('MY_PASSWORD')
-#
-# conn = pymssql.connect(server, username, password, database)
-# cursor = conn.cursor()
 
 # Configuration
 DB_CONFIG = {
@@ -31,13 +23,11 @@ DB_CONFIG = {
         "trusted_connection": "yes"
     },
     "sql_server_2": {
-        "driver": "{ODBC Driver 17 for SQL Server}",
+        # "driver": "{ODBC Driver 17 for SQL Server}",
+        "driver": "ODBC+Driver+17+for+SQL+Server",
         "server": "LUCIDSQL2",
         "database": "Prod1",
-        "trusted_connection": "yes",
-        "domain": "LUCID",
-        "user": "tony.hoang",
-        "password": os.getenv('MY_PASSWORD'),
+        "trusted_connection": "yes"
     }
 }
 
@@ -57,14 +47,15 @@ def get_database_engine(db_type):
             return pymssql.connect(conn_str)
         elif platform.system() == 'Windows':
             conn_str = (
-                f"DRIVER={DB_CONFIG[db_type]['driver']};"
-                f"SERVER={DB_CONFIG[db_type]['server']};"
-                f"DATABASE={DB_CONFIG[db_type]['database']};"
-                f"Trusted_Connection={DB_CONFIG[db_type]['trusted_connection']};"
+                f"mssql+pyodbc://{DB_CONFIG[db_type]['user']}:{DB_CONFIG[db_type]['password']}@"
+                f"{DB_CONFIG[db_type]['server']}/{DB_CONFIG[db_type]['database']}?"
+                f"driver={DB_CONFIG[db_type]['driver']}&Trusted_Connection={DB_CONFIG[db_type]['trusted_connection']}"
             )
-            return pyodbc.connect(conn_str)
+            # return pyodbc.connect(conn_str)
+            return create_engine(conn_str)
         else:
             raise Exception('Unsupported platform')
+
 
 
 def read_table_from_db(table_name, db_type):

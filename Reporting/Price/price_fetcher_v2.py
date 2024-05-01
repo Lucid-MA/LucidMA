@@ -208,12 +208,24 @@ def fetch_idc(cusips, price_date):
 # fetch from idc using remoteplus, returns tuple of 1) map of cusips to prices and 2) time request sent
 def idc_fetch(cusips):
     print("Fetching prices from IDC...")
-    idc_test_req = "GET,(3140H8QR9,13080BAE1, 3136A66B5),(PRC),,, ,Titles=SHORT,DATEFORM=YMD" # confirmed that IDC response format same if doesn't have cusip
-    idc_req = "GET,(" + (",".join(cusips)) + "),(PRC),,, ,Titles=SHORT,DATEFORM=YMD"
-    #java_path = r"C:\Users\jvulopas\python_projects\IDCPricing"
+    # Write CUSIPs to a temporary file
+    with open("temp_cusips.txt", "w") as file:
+        file.write(",".join(cusips))
+
+    idc_req = f"GET,(!temp_cusips.txt),(PRC),,, ,Titles=SHORT,DATEFORM=YMD"
     java_path = "IDCPricing"
+
     # HTTP post to remoteplus through java program
-    idc_response = subprocess.check_output("java " + java_path + " \"" + idc_req + "\"", shell=True).decode("utf-8")
+    idc_response = subprocess.check_output(f"java {java_path} \"{idc_req}\"", shell=True).decode("utf-8")
+
+    # Remove the temporary file
+    os.remove("temp_cusips.txt")
+    #
+    # idc_req = "GET,(" + (",".join(cusips)) + "),(PRC),,, ,Titles=SHORT,DATEFORM=YMD"
+    # #java_path = r"C:\Users\jvulopas\python_projects\IDCPricing"
+    # java_path = "IDCPricing"
+    # # HTTP post to remoteplus through java program
+    # idc_response = subprocess.check_output("java " + java_path + " \"" + idc_req + "\"", shell=True).decode("utf-8")
     idc_response_time = datetime.now()
     print(idc_response)
     idc_prices = dict()
@@ -506,7 +518,8 @@ def PM_process():
 
 # main process
 if __name__ == "__main__":
-    if (datetime.now().hour < 12):
-        AM_process()
-    else:
-        PM_process()
+    PM_process()
+    # if (datetime.now().hour < 12):
+    #     AM_process()
+    # else:
+    #     PM_process()
