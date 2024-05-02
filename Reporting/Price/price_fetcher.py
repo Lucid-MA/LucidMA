@@ -387,7 +387,8 @@ def PM_process():
 
 # main process
 if __name__ == "__main__":
-    if (datetime.now().hour < 12):
-        AM_process()
-    else:
-        PM_process()
+    AM_process()
+    # if (datetime.now().hour < 12):
+    #     AM_process()
+    # else:
+    #     PM_process()

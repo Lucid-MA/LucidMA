@@ -195,17 +195,31 @@ notice_date_rule = {
 }
 
 cusip_mapping = {
-    "Lucid Prime Fund LLC_A1": "PRIME-A1000",
-    "Lucid Prime Fund LLC_M1": "PRIME-M1000",
-    "Lucid Cash Fund USG LLC": "USG-FUND00",
-    "Lucid Prime Fund LLC_2YIG": "PRIME-2YIG0",
-    "Lucid Prime Fund LLC_S1": "PRIME-S1000",
-    "Lucid Prime Fund LLC_C1": "PRIME-C1000",
-    "Lucid Prime Fund LLC": "PRIME-M000",
-    "Lucid Prime Fund LLC_MIG": "PRIME-MIG0",
-    "Lucid Prime Fund LLC_Q364": "PRIME-Q364",
-    "Lucid Prime Fund LLC_QX": "PRIME-QX00",
-    "Lucid Prime Fund LLC_Q1": "PRIME-Q100",
+    "Lucid Prime Fund LLC_A1": "PRIME-A10",
+    "Lucid Prime Fund LLC_M1": "PRIME-M10",
+    "Lucid Cash Fund USG LLC": "USGFD-M00",
+    "Lucid Prime Fund LLC_2YIG": "PRIME-2YI",
+    "Lucid Prime Fund LLC_S1": "PRIME-S10",
+    "Lucid Prime Fund LLC_C1": "PRIME-C10",
+    "Lucid Prime Fund LLC": "PRIME-M00",
+    "Lucid Prime Fund LLC_MIG": "PRIME-MIG",
+    "Lucid Prime Fund LLC_Q364": "PRIME-Q36",
+    "Lucid Prime Fund LLC_QX": "PRIME-QX0",
+    "Lucid Prime Fund LLC_Q1": "PRIME-Q10",
+}
+
+NAV_name_mapping = {
+    'USG_Monthly': 'USGFD-M00',
+    'Prime_Master': 'PRIME-M00',
+    'Prime_A1': 'PRIME-A10',
+    'Prime_2YIG': 'PRIME-2YI',
+    'Prime_Q364': 'PRIME-Q36',
+    'Prime_QuarterlyX': 'PRIME-QX0',
+    'Prime_Quarterly1': 'PRIME-Q10',
+    'Prime_Custom1': 'PRIME-C10',
+    'Prime_MonthlyIG': 'PRIME-MIG',
+    'Prime_Monthly': 'PRIME-M10',
+    'Prime_S1': 'PRIME-S10'
 }
 
 holiday_data = {

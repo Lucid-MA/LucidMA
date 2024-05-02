@@ -6,11 +6,12 @@ from pathlib import PureWindowsPath, Path
 import openpyxl as op
 import pandas as pd
 import requests
-from sqlalchemy import text, Table, MetaData, Column, String, Date, DateTime
+from sqlalchemy import text, Table, MetaData, Column, String, Date, DateTime, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine
+from Utils.SQL_queries import all_securities_query, daily_price_securities_helix_query
+from Utils.database_utils import get_database_engine, execute_sql_query
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 engine = get_database_engine('sql_server_2')
@@ -119,38 +120,22 @@ def fetch_jppd(cusips, vdate):
 
 # Assuming df is your DataFrame after processing an unprocessed file
 tb_name = "bronze_daily_price_jppd"
-create_table_with_schema(tb_name)
+inspector = inspect(engine)
+if not inspector.has_table('table_name'):
+    create_table_with_schema(tb_name)
 
-currdest = PureWindowsPath(Path("S:/Lucid/Data/Bond Data/Price Source/Price_Source.xlsx"))
-
-try:
-    wb = op.load_workbook(currdest)
-except:
-    print("file not found")
-    exit()
-
-if 'PM Prices' in wb.sheetnames:
-    px_sheet = wb["PM Prices"]  # overwrite current PM page if exists
-else:
-    px_sheet = wb.copy_worksheet(wb["AM Prices"])  # make new (so copy AM) if doesn't
-
-px_sheet.title = "PM Prices"
-pxable_cusips = []
-
-row = 2
-curr = px_sheet.cell(row=row, column=1)
-while (curr.value):
-    pxable_cusips.append(curr.value)
-    row = row + 1
-    curr = px_sheet.cell(row=row, column=1)
+# Get list of cusips to fetch price from
+db_type = "sql_server_1"
+records = execute_sql_query(daily_price_securities_helix_query, db_type, params=[])
+cusip_list = records["BondID"].tolist()
 
 # Get the current time in seconds since the epoch
 current_time = time.time()
 # Convert to a datetime object
-date_time = datetime.fromtimestamp(current_time) - timedelta(days=1)
+date_time = datetime.fromtimestamp(current_time)
 # Format the date as YYYYMMDD
 query_date = date_time.strftime("%m/%d/%Y")
 
-fetch_jppd(pxable_cusips[:10], query_date)
+fetch_jppd(cusip_list, query_date)
 
 print("Process completed.")

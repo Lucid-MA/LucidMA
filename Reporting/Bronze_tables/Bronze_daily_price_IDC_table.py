@@ -1,15 +1,14 @@
 import base64
 import time
 from datetime import datetime
-from pathlib import PureWindowsPath, Path
-import openpyxl as op
 import pandas as pd
 import requests
-from sqlalchemy import text, Table, MetaData, Column, String, Date, DateTime
+from sqlalchemy import text, Table, MetaData, Column, String, Date, DateTime, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine
+from Utils.SQL_queries import all_securities_query, daily_price_securities_helix_query
+from Utils.database_utils import get_database_engine, execute_sql_query
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 engine = get_database_engine('sql_server_2')
@@ -88,7 +87,11 @@ def fetch_idc(cusips, price_date):
             parts = line.split(",")
             cusip = parts[0].strip('"')  # Remove the quotes around the CUSIP
             price = parts[1]
-            data.append([cusip, price])
+            try:
+                float_price = float(price)  # Attempt to convert price to float
+                data.append([cusip, float_price])  # Append if successful
+            except ValueError:
+                continue  # Skip appending if conversion fails
 
         # Create a DataFrame with dates as columns and CUSIPs as rows
         df = pd.DataFrame(data, columns=["bond_id", "price"])
@@ -113,37 +116,17 @@ def fetch_idc(cusips, price_date):
         print(f"Error fetching data from IDC: {response.status_code}")
         return None
 
-import logging
-logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
 
 # Assuming df is your DataFrame after processing an unprocessed file
 tb_name = "bronze_daily_price_idc"
-create_table_with_schema(tb_name)
+inspector = inspect(engine)
+if not inspector.has_table('table_name'):
+    create_table_with_schema(tb_name)
 
-currdest = PureWindowsPath(Path("S:/Lucid/Data/Bond Data/Price Source/Price_Source.xlsx"))
-
-try:
-    wb = op.load_workbook(currdest)
-except:
-    print("file not found")
-    exit()
-
-if 'PM Prices' in wb.sheetnames:
-    px_sheet = wb["PM Prices"]  # overwrite current PM page if exists
-else:
-    px_sheet = wb.copy_worksheet(wb["AM Prices"])  # make new (so copy AM) if doesn't
-
-px_sheet.title = "PM Prices"
-pxable_cusips = []
-
-row = 2
-curr = px_sheet.cell(row=row, column=1)
-while (curr.value):
-    pxable_cusips.append(curr.value)
-    row = row + 1
-    curr = px_sheet.cell(row=row, column=1)
+# Get list of cusips to fetch price from
+db_type = "sql_server_1"
+records = execute_sql_query(daily_price_securities_helix_query, db_type, params=[])
+cusip_list = records["BondID"].tolist()
 
 # Get the current time in seconds since the epoch
 current_time = time.time()
@@ -152,6 +135,6 @@ date_time = datetime.fromtimestamp(current_time)
 # Format the date as YYYYMMDD
 query_date = date_time.strftime('%Y%m%d')
 
-fetch_idc(pxable_cusips[:10], query_date)
+fetch_idc(cusip_list, query_date)
 
 print("Process completed.")

@@ -13,7 +13,7 @@ from Utils.database_utils import get_database_engine
 engine = get_database_engine('postgres')
 
 # File to track processed files
-processed_files_tracker = "Bronze Table Processed Daily Prices V2"
+processed_files_tracker = "Bronze Table Processed Daily Prices"
 
 # Directory and file pattern
 
@@ -104,7 +104,7 @@ def extract_date_and_indicator(filename):
 
 
 # Assuming df is your DataFrame after processing an unprocessed file
-tb_name = "bronze_daily_price_v2"
+tb_name = "bronze_daily_price"
 create_table_with_schema(tb_name)
 
 # Iterate over files in the specified directory
@@ -142,6 +142,8 @@ for filename in os.listdir(directory):
         df["Is_AM"] = is_am
         df["Source"] = filename
 
+        df = df.dropna(subset=['Bond_ID'], how='any')
+        df = df.dropna(subset=['Clean_price', 'Final_price'], how='all')
         try:
             # Insert into PostgreSQL table
             upsert_data(tb_name, df)

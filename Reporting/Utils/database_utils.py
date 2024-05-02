@@ -17,17 +17,22 @@ DB_CONFIG = {
         "db_name": "reporting",
     },
     "sql_server_1": {
-        "driver": "{ODBC Driver 17 for SQL Server}",
+        # "driver": "{ODBC Driver 17 for SQL Server}",
+        "driver": "ODBC+Driver+17+for+SQL+Server",
         "server": "LUCIDSQL1",
         "database": "HELIXREPO_PROD_02",
-        "trusted_connection": "yes"
+        "trusted_connection": "yes",
+        "user": "tony.hoang",
+        "password": os.getenv("MY_PASSWORD")
     },
     "sql_server_2": {
         # "driver": "{ODBC Driver 17 for SQL Server}",
         "driver": "ODBC+Driver+17+for+SQL+Server",
         "server": "LUCIDSQL2",
         "database": "Prod1",
-        "trusted_connection": "yes"
+        "trusted_connection": "yes",
+        "user":"tony.hoang",
+        "password":os.getenv("MY_PASSWORD")
     }
 }
 
