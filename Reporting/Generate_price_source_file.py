@@ -1,5 +1,7 @@
 import os
 from datetime import datetime, timedelta
+
+import numpy as np
 from openpyxl import Workbook
 from openpyxl.reader.excel import load_workbook
 from pandas._libs.tslibs.offsets import BDay
@@ -40,6 +42,9 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
             # Drop the "Unnamed: 1" column if it exists
             pm_prices_df = pm_prices_df.loc[:, ~pm_prices_df.columns.str.contains('^Unnamed')]
 
+            # Fill blank values in "IDC" and "Pricing Direct" columns with "N/A"
+            pm_prices_df[["IDC", "Pricing Direct"]] = pm_prices_df[["IDC", "Pricing Direct"]].fillna("N/A")
+
             # Check if the current Excel file exists
             if os.path.exists(current_excel):
                 # Load the current workbook
@@ -47,6 +52,10 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
                 if "AM Prices" in current_book.sheetnames:
                     # Remove the existing "AM Prices" sheet
                     std = current_book["AM Prices"]
+                    current_book.remove(std)
+                if "PM Prices" in current_book.sheetnames:
+                    # Remove the existing "PM Prices" sheet
+                    std = current_book["PM Prices"]
                     current_book.remove(std)
                 # Create a new "AM Prices" sheet to ensure it's fresh
                 current_book.create_sheet("AM Prices")
@@ -73,6 +82,63 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
             print("Replaced AM Prices with PM Prices successfully.")
         else:
             print("No 'PM Prices' tab found in the file for the previous business day.")
+
+        if "Info" in prev_day_book.sheetnames:
+            info_df = pd.read_excel(full_path, sheet_name="Info")
+
+            # Remove the "Unnamed: 1" and "Unnamed: 2" columns if they exist
+            info_df = info_df.loc[:, ~info_df.columns.str.contains('^Unnamed')]
+            # Generate the dates based on conditions
+            today = pd.Timestamp('today').normalize().strftime('%Y-%m-%d')
+            previous_business_day = (pd.Timestamp('today') - BDay(1)).normalize().strftime('%Y-%m-%d')
+
+            # Define conditions
+            conditions = [
+                (info_df['Price fetch info'] == "Pulled cusips from Helix"),
+                (info_df['Price fetch info'] == "Helix file used"),
+                (info_df['Price fetch info'] == "Pulled prices from IDC"),
+                (info_df['Price fetch info'] == "Pulled prices from PD"),
+            ]
+
+            # Define choices corresponding to the conditions
+            choices = [today, today, previous_business_day, previous_business_day]
+
+            # Use numpy select to apply these conditions and choices
+            info_df['date'] = np.select(conditions, choices, default=None)
+
+            # Check if the current Excel file exists
+            if os.path.exists(current_excel):
+                # Load the current workbook
+                current_book = load_workbook(current_excel)
+                if "Info" in current_book.sheetnames:
+                    # Remove the existing "Info" sheet
+                    info_sheet = current_book["Info"]
+                    current_book.remove(info_sheet)
+                # Create a new "Info" sheet to ensure it's fresh
+                current_book.create_sheet("Info")
+                current_book.save(current_excel)
+                current_book.close()
+            else:
+                # Create a new workbook
+                current_book = Workbook()
+
+                # Remove the default sheet
+                default_sheet = current_book.active
+                current_book.remove(default_sheet)
+
+                # Create a new "Info" sheet
+                current_book.create_sheet("Info")
+
+                current_book.save(current_excel)
+                current_book.close()
+
+            # Write using pandas ExcelWriter with explicit handling
+            with pd.ExcelWriter(current_excel, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                info_df.to_excel(writer, sheet_name="Info", index=False)
+
+            print("Copied Info sheet from the previous day's file.")
+        else:
+            print("No 'Info' tab found in the file for the previous business day.")
     else:
         print("No file found for the previous business day.")
 

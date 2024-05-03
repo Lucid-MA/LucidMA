@@ -9,7 +9,6 @@
       <change afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_benchmark_table.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_daily_NAV_table.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Generate Price Source file.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Reporting/Generate_price_source_file.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze Table Processed Daily Prices" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze Table Processed Daily Prices" afterDir="false" />
@@ -19,6 +18,7 @@
       <change beforePath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_daily_prices_table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_daily_prices_table.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_helix_trade_table.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Draft.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Draft.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Generate_price_source_file.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Generate_price_source_file.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Price/fetch_idc.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Price/fetch_idc.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Price/price_fetcher.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Price/price_fetcher.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Utils/Constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Constants.py" afterDir="false" />
@@ -354,7 +354,7 @@
       <workItem from="1713476345763" duration="2325000" />
       <workItem from="1713883578201" duration="7621000" />
       <workItem from="1714485798448" duration="36110000" />
-      <workItem from="1714591010844" duration="31616000" />
+      <workItem from="1714591010844" duration="42622000" />
     </task>
     <servers />
   </component>
@@ -426,7 +426,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___by_account.coverage" NAME="Calculating Returns - by account Coverage Results" MODIFIED="1713196971217" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/Code$Draft.coverage" NAME="Draft Coverage Results" MODIFIED="1712936315985" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/Code$Calculating_Returns_v2.coverage" NAME="Calculating Returns v2 Coverage Results" MODIFIED="1712958319461" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/LucidMA$Generate_price_source_file.coverage" NAME="Generate_price_source_file Coverage Results" MODIFIED="1714684668748" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/LucidMA$Generate_price_source_file.coverage" NAME="Generate_price_source_file Coverage Results" MODIFIED="1714746927881" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_daily_price_JPPD_table.coverage" NAME="Bronze_daily_price_JPPD_table Coverage Results" MODIFIED="1714601122703" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/Code$Transform.coverage" NAME="Transform Coverage Results" MODIFIED="1712958152226" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns_v2.coverage" NAME="Calculating Returns v2 Coverage Results" MODIFIED="1712848684458" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
