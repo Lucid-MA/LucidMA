@@ -1,0 +1,196 @@
+\documentclass[9pt]{article}
+\usepackage[T1]{fontenc}
+\hfuzz=27pt
+\usepackage{lmodern}
+\usepackage[dvipsnames,table,xcdraw]{xcolor}
+\definecolor{lucid_blue}{RGB}{0,18,82}
+\definecolor{light_grey}{RGB}{198,198,198}
+\definecolor{dark_red}{RGB}{144,8,8}
+\definecolor{dark_color}{RGB}{9,143,68}
+\definecolor{dark_grey}{RGB}{194,194,214}
+\usepackage[margin=0.7in,headsep=0.1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{colortbl}
+\usepackage{boldline}
+\graphicspath{ {images/} }
+\pagestyle{fancy}
+\usepackage{adjustbox}
+\usepackage{pgfplots}
+\renewcommand{\familydefault}{\sfdefault} % make font nice non bitmap
+\renewcommand*{\thepage}{\small\arabic{page}}
+\usepgfplotslibrary{dateplot}
+\def\mywidth{17.6cm}
+\def\halfwidthb{12.4cm}
+\def\quarterwidthb{6cm}
+\def\quarterwidth{4.35cm}
+\def\eighthwidth{2.175cm}
+\def\quarterwidtha{3.41cm}
+\def\eighthwidtha{1.2cm}
+\def\lesswidth{10.9cm}
+\usetikzlibrary{shadows,shadows.blur,shapes.geometric}
+\pgfplotsset{compat=1.8}
+\pgfplotsset{every axis/.append style={
+					label style={font=\tiny},
+					tick label style={font=\tiny}
+					}}
+\lhead{\includegraphics[width=9cm]{lucid_logo.png}}
+\rhead{Report Date: {{ report_date }}}
+\setlength{\columnsep}{3em}
+\begin{document}
+\twocolumn[{
+\begin{center}
+\renewcommand{\arraystretch}{1.5}\begin{tabular}{!{\color{light_grey}\vrule}
+>{\columncolor{lucid_blue}}m{\mywidth} !{\color{light_grey}\vrule}}
+{\color[HTML]{FFFFFF} \large \textbf{Monthly Report}}\\
+\end{tabular}
+\end{center}
+
+\begin{tabular}{!{\color{light_grey}\vrule}
+>{\columncolor{lucid_blue}}l !{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}p{\quarterwidthb} !{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}}
+\arrayrulecolor{light_grey}\hline
+{\color[HTML]{FFFFFF} \textbf{Program Series}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{Lucid Prime - Series {{ series }}}} \\[1.5mm]
+{\color[HTML]{FFFFFF} \textbf{Redemption \& Coupon Frequency}} & \multicolumn{2}{l!{\color{light_grey}\vrule}{\cellcolor[HTML]{EFEFEF}\textbf{{ frequency }}}} \\
+{\color[HTML]{FFFFFF} \textbf{Rating}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{{ rating }}} \\
+{\color[HTML]{FFFFFF} \textbf{Current Target Return of Notes}\textsuperscript{1}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{{ benchmark + tgt_outperform_bps}}}\\
+{\color[HTML]{FFFFFF} \textbf{Previous Period Return}} & {{ prev_period_start }} - {{ prev_period_end }} & \textbf{{ prev_period_return }}\%} (1m SOFR + {{ prev_period_spread }} bps) \\
+{\color[HTML]{FFFFFF} \textbf{Current Period Est'd Return}\textsuperscript{2}} & {{ curr_period_start }} - {{ curr_period_end }} & \textbf{{ curr_period_return }}\%} (1m SOFR + {{ curr_period_spread }} bps) \\ \arrayrulecolor{light_grey}\hline
+\end{tabular}
+\begin{center}
+\noindent \renewcommand{\arraystretch}{1}\begin{tabular}{!{\color{light_grey}\vrule}m{5.2cm}!{\color{light_grey}\vrule}m{\eighthwidth}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}}
+\arrayrulecolor{light_grey}\hline
+\rowcolor{lucid_blue}
+{\color[HTML]{FFFFFF} \textbf{Net Returns}\textsuperscript{3}} & \multicolumn{2}{m{\quarterwidth}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{Previous Period}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{3 Months}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{1 Year}}} \\
+\rowcolor{lucid_blue}
+{\color[HTML]{FFFFFF} Series / Comparables} & {\color[HTML]{FFFFFF} Return} & {\color[HTML]{FFFFFF} Spread} & {\color[HTML]{FFFFFF} Return\textsuperscript{1}} & {\color[HTML]{FFFFFF} Spread} & {\color[HTML]{FFFFFF} Return\textsuperscript{1}} & {\color[HTML]{FFFFFF} Spread} \\ \arrayrulecolor{light_grey}\hline
+{% for row in net_returns %}
+\textbf{{ row.series }} & \textbf{{ row.prev_period_return }}\%} & \textbf{{ row.prev_period_spread }} & \textbf{{ row.three_month_return }}\%} & \textbf{{ row.three_month_spread }} & \textbf{{ row.one_year_return }}\%} & \textbf{{ row.one_year_spread }} \\
+{% endfor %}
+\arrayrulecolor{light_grey}\hline
+\end{tabular}
+\end{center}
+}]
+\hfill \break
+\hfill \break
+\noindent \renewcommand{\arraystretch}{1.6}\begin{tabular}{!{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}p{3.7cm}
+>{\columncolor[HTML]{EFEFEF}}p{4cm}!{\color{light_grey}\vrule}}
+\arrayrulecolor{light_grey}\hline
+\multicolumn{2}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Fund and Series Details\textsuperscript{4}}}} \\
+Fund Size & \${{ fund_size }} billion\\
+Series Size & \${{ series_size }} million\\
+Lucid AUM & \${{ lucid_aum }} billion\\
+Series Rating & {{ series_rating }}\\
+Series Withdrawal & {{ series_withdrawal }}\\
+Next Withdrawal & {{ next_withdrawal }}\\
+Next Notice Date & {{ next_notice_date }}\\
+\arrayrulecolor{light_grey}\hline
+\end{tabular}
+
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}
+	\begin{axis}[
+		axis line style = {light_grey},
+		title={{"Performance vs Benchmark"}},
+		date coordinates in=x, date ZERO=2023-01-12,
+		xticklabel=\month/\day/\year,
+		ymin=3, ymax=7, %MAXRETURN HERE
+		legend cell align = {left},
+		legend style={at={(0.2,1)},
+		  anchor=north east, font=\tiny, draw=none,fill=none},
+		  x=0.188mm, %CHANGE THIS to tighten in graph, eg if quarterly
+		bar width=2.0mm, ybar=2pt, %bar width is width, ybar is space between
+	   % symbolic x coords={Firm 1, Firm 2, Firm 3, Firm 4, Firm 5},
+		xtick=data,
+		x tick label style={rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode},
+			 yticklabel=\pgfmathparse{\tick}\pgfmathprintnumber{\pgfmathresult}\,\%,
+		y tick label style = {/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,
+				/pgf/number format/assume math mode
+		},
+		nodes near coords align={vertical},
+		ytick distance=0.5,
+		xtick pos=bottom,ytick pos=left,
+		every node near coord/.append style={font=\fontsize{6}{6}\selectfont,/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,/pgf/number format/assume math mode},
+		]
+	%\addplot[ybar, nodes near coords, fill=blue]
+	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}]
+		coordinates {
+			{% for coord in prime_series_m_coords %}({{ coord.date }},{{ coord.value }}) {% endfor %}
+		};
+	\addplot[draw=dark_red,ultra thick,smooth]
+		coordinates {
+			{% for coord in sofr_coords %}({{ coord.date }},{{ coord.value }}) {% endfor %}
+		};
+	\addplot[draw=dark_color,ultra thick,smooth]
+		coordinates {
+			{% for coord in cp_coords %}({{ coord.date }},{{ coord.value }}) {% endfor %}
+		};
+	\legend{\hphantom{A}Prime Series M,\hphantom{A}1m SOFR,\hphantom{A}1m A1/P1 CP}
+	\end{axis}
+		\end{tikzpicture}}
+
+
+\end{figure}
+
+
+\onecolumn
+
+
+
+\pagebreak
+
+\footnotesize
+\noindent\textbf
+\footnotesize
+\noindent\textbf{\color{lucid_blue}Notes}
+
+\begin{enumerate}
+\item Target returns based on the program manager's estimate of the projected returns for the respective series based on current market conditions.
+
+\item Current return (estimated) is based on the rates of the invested series portfolio as of the current period start date.  Actual period return based on the final net returns of portfolio.
+
+\item Annualized net returns of Fund Series and comparables are for the entirety of each period and are quoted on an Act/360 basis for Lucid Prime Series and Act/365 for Lucid USG series. Any interperiod subscriptions will have different returns based upon the respective interperiod portfolio investments and allocations. Net returns include the applicable series expense ratio and include any management fee waivers or maximum expense caps. Historical returns assume reinvestment at the applicable Fund Series, Libor, T-Bill or MMF Index rate at the end of each period.  Money Market index returns based on the average of the daily rates for the respective period. SOFR is the term reference rate for the applicable period (e.g. 1m or 3m) as published by the CME Group. Fund Series expense ratio currently capped at an all-in ratio of 32.75 bps and can vary over time.
+
+\item All Fund details as of the last period end date. Fund accepts new subscriptions and redemptions on each Withdrawal Date.  Manager may accept subscriptions on any other day with approval, as fully described in the private offering memorandum.
+
+\item Portfolio composition and Over-Collateralization Rate (``O/C Rate'') of the repo investments as of the business day prior to the last day of the most recent period. O/C Rate equals the market value of the collateral as a proportion of the respective repo investments. Eligible repo collateral details and classifications for the Series as fully described in the private offering memorandum.
+
+\end{enumerate}
+
+\noindent\textbf{\color{lucid_blue}Important Disclaimer}
+
+\scriptsize
+
+\noindent This material has been prepared by Lucid Management and Capital Partners LP or one of its affiliates, principals or advisors (``Lucid'') and may contain ``forward-looking statements'' which are based on Lucid's beliefs, as well as on a number of assumptions concerning future events, based on information currently available to Lucid. Readers are cautioned not to put undue reliance on such forward-looking statements, which are not a guarantee of future performance, and are subject to a number of uncertainties and other factors, many of which are outside Lucid's control, which could cause actual results to differ materially from such statements. This material is for distribution only under such circumstances as may be permitted by applicable law and it is solely intended for qualified institutions and individuals with existing relationships with Lucid, its affiliates or advisers.  It has no regard to the specific investment objectives, financial situation or particular needs of any recipient. It is published solely for informational and discussion purposes only and is not to be construed as a solicitation or an offer to buy or sell any securities, related financial instruments or to participate in any particular trading strategy. No representation or warranty, either express or implied, is provided in relation to the accuracy, completeness or reliability of the information contained herein. It should not be regarded by recipients as a substitute for the exercise of their own judgment. Any opinions expressed in this material are subject to change without notice and may differ or be contrary to opinions expressed by other business areas or groups of Lucid as a result of using different assumptions and criteria. Lucid is under no obligation to update or keep current the information contained herein. Lucid, its directors, officers and employees, or clients may have or have had interests or long or short positions in the securities or other financial instruments referred to herein, and may at any time make purchases and/or sales in them as principal or agent. Lucid may act or have acted as market-maker in the securities or other financial instruments discussed in this material. Furthermore, Lucid may have or have had a relationship with or may provide or has provided investment banking, capital markets and/or other financial services to the relevant companies. Neither Lucid nor any of its affiliates, nor any of Lucid's or any of its affiliates, directors, employees or agents accepts any liability for any loss or damage arising out of the use of all or any part of this material
+\vspace{1mm}
+\noindent SEC ADV Part 2 firm brochure: \underline{https://files.adviserinfo.sec.gov/IAPD/Content/Common/crd\_iapd\_Brochure.aspx?BRCHR\_VRSN\_ID=903911}}
+
+
+\scriptsize
+\begin{center}
+\renewcommand{\arraystretch}{1.2}\begin{tabular}{!{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}p{8cm}
+>{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}p{9cm}  !{\color{light_grey}\vrule}}
+\multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Contact Information}}} \\ \arrayrulecolor{light_grey}\hline
+\textbf{Investment Manager} &  & \textbf{For Investors (Subscriptions \& Withdrawals)} \\\arrayrulecolor{light_grey}\hline
+Lucid Management and Capital Partners LP &  & \underline{Lucid.IR@sscinc.com} with copy to: \\
+295 Madison Avenue, 39th Floor &  & \underline{operations@lucidma.com} \\
+New York, New York 10017 &  & \\
+T: +1-212-551-1702 &  &  \\
+Investor Relations: \underline{carolina.siles@lucidma.com} &  & \\
+\textbf{Fund Auditor:} KPMG & & \textbf{Fund Custodian:} Bank of NY Mellon\\ \arrayrulecolor{light_grey}\hline
+\end{tabular}
+\end{center}
+\end{document}
