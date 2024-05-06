@@ -142,38 +142,6 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
     else:
         print("No file found for the previous business day.")
 
-#
-# def create_pm_prices_tab(price_date, excel_file):
-#     engine = get_database_engine('sql_server_2')
-#     query = text(f"""
-#         SELECT
-#             COALESCE(idc.bond_id, jppd.bond_id) AS "Cusip/ISIN",
-#             COALESCE(idc.price, 'N/A') AS "IDC",
-#             COALESCE(jppd.price, 'N/A') AS "Pricing Direct"
-#         FROM
-#             (SELECT bond_id, price FROM bronze_daily_price_idc WHERE price_date = :price_date) idc
-#             FULL OUTER JOIN
-#             (SELECT bond_id, price FROM bronze_daily_price_jppd WHERE price_date = :price_date) jppd
-#             ON idc.bond_id = jppd.bond_id
-#     """)
-#
-#     with engine.connect() as conn:
-#         result = conn.execute(query, {'price_date': price_date})
-#         data = result.fetchall()
-#         df = pd.DataFrame(data, columns=result.keys())
-#
-#     if os.path.exists(excel_file):
-#         book = load_workbook(excel_file)
-#         mode = 'a'
-#     else:
-#         book = Workbook()
-#         mode = 'w'
-#
-#     with pd.ExcelWriter(excel_file, engine='openpyxl', mode=mode) as writer:
-#         if "PM Prices" in writer.book.sheetnames:
-#             std = writer.book["PM Prices"]
-#             writer.book.remove(std)
-#         df.to_excel(writer, sheet_name="PM Prices", index=False)
 
 def create_pm_prices_tab(price_date, excel_file):
     engine = get_database_engine('sql_server_2')
@@ -290,6 +258,21 @@ def main(excel_file):
         print("Running PM tasks...")
         create_pm_prices_tab(price_date, excel_file)
         create_helix_cusips_tab(excel_file)
+
+        # Save the file to the destination folder
+        destination_path = "S:/Lucid/Data/Bond Data/Price Source/Archives/"
+        formatted_date = datetime.strptime(price_date, '%Y-%m-%d').strftime('%m_%d_%Y')
+        destination_file = f"Price_Source_{formatted_date}.xlsx"
+        destination_full_path = os.path.join(destination_path, destination_file)
+
+        # Check if the destination folder exists, create it if not
+        if not os.path.exists(destination_path):
+            os.makedirs(destination_path)
+
+        # Save the workbook to the destination path
+        workbook = load_workbook(excel_file)
+        workbook.save(destination_full_path)
+        print(f"File saved to: {destination_full_path}")
 
 
 if __name__ == "__main__":

@@ -90,6 +90,7 @@
     "Python.Draft.executor": "Run",
     "Python.File Crawler.executor": "Run",
     "Python.Generate Price Source file.executor": "Run",
+    "Python.Generate_price_source_file (1).executor": "Run",
     "Python.Generate_price_source_file.executor": "Run",
     "Python.Gold Capacities.executor": "Run",
     "Python.Historical Returns.executor": "Run",
@@ -159,7 +160,7 @@
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting\Reports" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Generate_price_source_file">
+  <component name="RunManager" selected="Python.Generate_price_source_file (1)">
     <configuration name="Bronze_benchmark_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -235,7 +236,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Bronze_price_factor_bloomberg_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Generate_price_source_file (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -246,12 +247,12 @@
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="Python 3.12" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting/Bronze_tables" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_price_factor_bloomberg_table.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching/Generate_price_source_file.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -313,17 +314,17 @@
     <list>
       <item itemvalue="Python.Bronze_benchmark_table" />
       <item itemvalue="Python.Bronze_daily_prices_table" />
-      <item itemvalue="Python.Bronze_price_factor_bloomberg_table" />
       <item itemvalue="Python.Generate_price_source_file" />
+      <item itemvalue="Python.Generate_price_source_file (1)" />
       <item itemvalue="Python.Bronze_daily_price_IDC_table" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Generate_price_source_file (1)" />
         <item itemvalue="Python.Generate_price_source_file" />
         <item itemvalue="Python.Bronze_daily_price_IDC_table" />
         <item itemvalue="Python.Bronze_daily_prices_table" />
         <item itemvalue="Python.Bronze_benchmark_table" />
-        <item itemvalue="Python.Bronze_price_factor_bloomberg_table" />
       </list>
     </recent_temporary>
   </component>
@@ -354,7 +355,7 @@
       <workItem from="1713476345763" duration="2325000" />
       <workItem from="1713883578201" duration="7621000" />
       <workItem from="1714485798448" duration="36110000" />
-      <workItem from="1714591010844" duration="42622000" />
+      <workItem from="1714591010844" duration="45903000" />
     </task>
     <servers />
   </component>
@@ -413,6 +414,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$price_fetcher_v2.coverage" NAME="price_fetcher_v2 Coverage Results" MODIFIED="1714490437950" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Price" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_daily_NAV_table.coverage" NAME="Bronze_daily_NAV_table Coverage Results" MODIFIED="1714681950319" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_benchmark_table.coverage" NAME="Bronze_benchmark_table Coverage Results" MODIFIED="1714682310882" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
+    <SUITE FILE_PATH="coverage/LucidMA$Generate_price_source_file__1_.coverage" NAME="Generate_price_source_file (1) Coverage Results" MODIFIED="1714771749375" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___by_account__1_.coverage" NAME="Calculating Returns - by account (1) Coverage Results" MODIFIED="1712158155292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_daily_price_IDC_table.coverage" NAME="Bronze_daily_price_IDC_table Coverage Results" MODIFIED="1714684602473" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Cash_Balance.coverage" NAME="Bronze Cash Balance Coverage Results" MODIFIED="1712675292890" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
