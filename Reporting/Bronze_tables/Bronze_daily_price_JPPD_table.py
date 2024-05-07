@@ -100,7 +100,7 @@ def fetch_jppd(cusips, vdate):
         df = pd.DataFrame(data, columns=["bond_id", "price"])
         df["price_date"] = pd.to_datetime(vdate).strftime('%Y%m%d')
         df["price_id"] = df.apply(
-            lambda row: hash_string(f"{row['bond_id']}{'price_date'}"), axis=1)
+            lambda row: hash_string(f"{row['bond_id']}{row['price_date']}"), axis=1)
 
         current_time = time.time()
         current_datetime = datetime.fromtimestamp(current_time)

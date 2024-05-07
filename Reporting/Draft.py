@@ -1,4 +1,7 @@
 import pandas as pd
+
+from Utils.Hash import hash_string
+
 #
 # def read_and_compare(file1, file2):
 #     # Read the Excel files
@@ -46,26 +49,29 @@ import pandas as pd
 # # Show these unique CUSIPs with their origin (either left_only or right_only)
 # print(unique_cusips[['Cusip', '_merge']])
 
+#
+# # Paths to the Excel files
+# file_path_1 = '/Volumes/Sdrive$/Users/THoang/Data/Helix Factors 2024-05-03.xls'
+# file_path_2 = '/Volumes/Sdrive$/Users/THoang/Data/Helix Factors 2024-05-03_TEST.xls'
+#
+# # Load the Excel files
+# data_1 = pd.read_excel(file_path_1)
+# data_2 = pd.read_excel(file_path_2)
+#
+# # Filter out rows where 'Cusip' is None or NaN before merging
+# data_1 = data_1[data_1['Cusip'].notna()]
+# data_2 = data_2[data_2['Cusip'].notna()]
+#
+# # Merge the two datasets on 'Cusip'
+# merged_data = pd.merge(data_1, data_2, on='Cusip', suffixes=('_1', '_2'))
+#
+# print(merged_data[:10])
+# # Find discrepancies where the 'Factor' values do not match
+# # Ensure we consider only rows where both 'Factor' values are not NaN
+# discrepancies = merged_data[(merged_data['Factor_1'] != merged_data['Factor_2']) & merged_data['Factor_1'].notna() & merged_data['Factor_2'].notna()]
+#
+# # Display the CUSIPs with differing 'Factor' values
+# print(discrepancies[['Cusip', 'Factor_1', 'Factor_2']])
 
-# Paths to the Excel files
-file_path_1 = '/Volumes/Sdrive$/Users/THoang/Data/Helix Factors 2024-05-03.xls'
-file_path_2 = '/Volumes/Sdrive$/Users/THoang/Data/Helix Factors 2024-05-03_TEST.xls'
-
-# Load the Excel files
-data_1 = pd.read_excel(file_path_1)
-data_2 = pd.read_excel(file_path_2)
-
-# Filter out rows where 'Cusip' is None or NaN before merging
-data_1 = data_1[data_1['Cusip'].notna()]
-data_2 = data_2[data_2['Cusip'].notna()]
-
-# Merge the two datasets on 'Cusip'
-merged_data = pd.merge(data_1, data_2, on='Cusip', suffixes=('_1', '_2'))
-
-print(merged_data[:10])
-# Find discrepancies where the 'Factor' values do not match
-# Ensure we consider only rows where both 'Factor' values are not NaN
-discrepancies = merged_data[(merged_data['Factor_1'] != merged_data['Factor_2']) & merged_data['Factor_1'].notna() & merged_data['Factor_2'].notna()]
-
-# Display the CUSIPs with differing 'Factor' values
-print(discrepancies[['Cusip', 'Factor_1', 'Factor_2']])
+print(hash_string('2024-05-0633852DAD3'))
+print(hash_string('2024-05-0733852DAD3'))
