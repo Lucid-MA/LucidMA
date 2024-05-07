@@ -1011,7 +1011,48 @@ public class HoldingsModel {
 		boolean afterSweep = false;
 		
 		Cell currObserved = bnyTosht.getRow(4).getCell(CellReference.convertColStringToIndex("C")); // reset currObserved
+		// iterate through the expected flows and the actual flows from the BNYM report. For each expected flow, it tries to find a matching actual flow based on criteria like account number, amount, description, Helix ID, etc.
+
+//		// TONY //
+//		// Create workbooks and sheets for expected and actual flows
+//		Workbook expectedFlowsWorkbook = new XSSFWorkbook();
+//		Sheet expectedFlowsSheet = expectedFlowsWorkbook.createSheet("Expected Flows");
+//		Workbook actualFlowsWorkbook = new XSSFWorkbook();
+//		Sheet actualFlowsSheet = actualFlowsWorkbook.createSheet("Actual Flows");
+//
+//		// Write headers for expected flows
+//		Row expectedHeaderRow = expectedFlowsSheet.createRow(0);
+//		expectedHeaderRow.createCell(0).setCellValue("Account");
+//		expectedHeaderRow.createCell(1).setCellValue("Amount");
+//		expectedHeaderRow.createCell(2).setCellValue("Helix ID");
+//		expectedHeaderRow.createCell(3).setCellValue("Description");
+//
+//		// Write headers for actual flows
+//		Row actualHeaderRow = actualFlowsSheet.createRow(0);
+//		actualHeaderRow.createCell(0).setCellValue("Account");
+//		actualHeaderRow.createCell(1).setCellValue("Amount");
+//		actualHeaderRow.createCell(2).setCellValue("Description");
+//		actualHeaderRow.createCell(3).setCellValue("Reference");
+//
+//		int expectedRowIndex = 1;
+//		int actualRowIndex = 1;
+//		// TONY
+
+
+
 		while (!cellEmpty(currExpected)) {
+//			// TONY
+//			// Write expected flow to sheet
+//			Row expectedRow = expectedFlowsSheet.createRow(expectedRowIndex++);
+//			expectedRow.createCell(0).setCellValue(acct);
+//			expectedRow.createCell(1).setCellValue(amount);
+//			if (helixID.isPresent()) {
+//				expectedRow.createCell(2).setCellValue(helixID.get());
+//			}
+//			expectedRow.createCell(3).setCellValue(otherTag);
+//			//TONY
+
+
 			found = Optional.empty();
 			foundRef = "";
 			observedDesc = "";
@@ -1085,7 +1126,7 @@ public class HoldingsModel {
 			currObserved = bnyTosht.getRow(4).getCell(CellReference.convertColStringToIndex("C")); // reset currObserved
 			while (found.isEmpty() && !cellEmpty(currObserved)) {
 				
-				
+
 				boolean acctIsSame = ("" + currObserved.getStringCellValue().substring(0, 6)).equals(acct); // IMR level ignores 8400 vs 8401 
 				acctIsSame = acctIsSame || (acct.equals("277540") && currObserved.getStringCellValue().substring(0, 6).equals("223031")); // just for now, hacky way to enable ECL account. hardcoded
 				if (acctIsSame) {
@@ -1198,6 +1239,17 @@ public class HoldingsModel {
 					} catch (Exception e) {}
 					
 					if (check) {
+
+//						// TONY
+//						// Write actual flow to sheet
+//						Row actualRow = actualFlowsSheet.createRow(actualRowIndex++);
+//						actualRow.createCell(0).setCellValue(acct);
+//						actualRow.createCell(1).setCellValue(currObserved.getRow().getCell(CellReference.convertColStringToIndex("N")).getNumericCellValue());
+//						actualRow.createCell(2).setCellValue(observedDesc);
+//						actualRow.createCell(3).setCellValue(foundRef);
+//						// TONY
+
+
 						found = Optional.of(currObserved.getRow().getCell(CellReference.convertColStringToIndex("N")).getNumericCellValue());
 						try {
 							foundRef = currObserved.getRow().getCell(CellReference.convertColStringToIndex("T")).getStringCellValue();
@@ -1213,7 +1265,22 @@ public class HoldingsModel {
 				}
 				currObserved = bnyTosht.getRow(currObserved.getRowIndex() + 1).getCell(CellReference.convertColStringToIndex("C")); // move currObserved
 			}
-			
+
+//			// TONY
+//			// Save expected flows to file
+//			FileOutputStream expectedOutputStream = new FileOutputStream("Expected Flows.xlsx");
+//			expectedFlowsWorkbook.write(expectedOutputStream);
+//			expectedOutputStream.close();
+//			expectedFlowsWorkbook.close();
+//
+//			// Save actual flows to file
+//			FileOutputStream actualOutputStream = new FileOutputStream("Actual Flows.xlsx");
+//			actualFlowsWorkbook.write(actualOutputStream);
+//			actualOutputStream.close();
+//			actualFlowsWorkbook.close();
+//			//TONY
+
+
 			if (found.isPresent()) {
 				currExpected.getRow().getCell(CellReference.convertColStringToIndex("H"), MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(found.get());
 				currExpected.getRow().getCell(CellReference.convertColStringToIndex("I"), MissingCellPolicy.CREATE_NULL_AS_BLANK).setCellValue(Math.abs(found.get()) - Math.abs(amount));
@@ -1387,7 +1454,8 @@ public class HoldingsModel {
 		
 		String fopStr = "BNYMCashReconc.xlsx";
 		if (!sameDate(valDate,new Date())) {
-			fopStr = "S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\BNYMCashReconc_" + now + ".xlsx";
+//			fopStr = "S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\BNYMCashReconc_" + now + ".xlsx";
+			fopStr = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Output\\BNYMCashReconc_" + now + ".xlsx";
 		}
 		FileOutputStream fop = new FileOutputStream(fopStr); 
 		expectedCFTemplate.write(fop);
