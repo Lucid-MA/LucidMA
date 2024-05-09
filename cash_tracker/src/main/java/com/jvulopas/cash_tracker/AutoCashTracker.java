@@ -43,7 +43,7 @@ public class AutoCashTracker {
 			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Cash Blotter.xlsx", valDate);
 //			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Cash Blotter.xlsx", valDate);
 //			String bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\CashRecon_" + (new SimpleDateFormat("ddMMyyyy")).format(valDate) + ".xls";
-			String bnyFile = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\CashRecon_07052024.xls";
+			String bnyFile = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\CashRecon_08052024.xls";
 			//String bnyFile = "C:\\Users\\jvulopas\\Desktop\\tmp_trash\\CashRecon_15042021.xls";
 			File testFile = new File(bnyFile);
 			if (!testFile.exists()) {

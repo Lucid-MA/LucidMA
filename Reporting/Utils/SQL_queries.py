@@ -50,7 +50,6 @@ and (tradetypes.description = 'Reverse' or tradetypes.description = 'ReverseFree
 order by tradepieces.company asc, tradepieces.ledgername asc, tradepieces.contraname asc
 """
 
-
 all_securities_query = """
         SELECT DISTINCT CUSIP
         FROM ISSUES
@@ -67,4 +66,235 @@ daily_price_securities_helix_query = """
             and tradepieces.company in (44,45,46,48,49)
 	        and ltrim(rtrim(Tradepieces.ISIN)) not in ('HEXZETA01','HEXZT----','HZLNT----','MCHY-----','MNTNCHRY1','OLIVEEUR-','OLIVEUSD-','OPPOR----','OPPORTUN1','PAAPLEUR-','PAAPLUSD-','PFIR-----','SSPRUCE--','STAPL----','STHAPPLE1','TREATY---','TREATYUS1','ALM2EUR--','ALM2USD--','ALMNDUSD1','ALMONDEUR','ALMONDUSD','ECYP-----','EELM-----','EWILLEUR-','EWILLUSD-')
             order by Fund ASC
+        """
+
+# Query trade with trade_type in (22,23) excluding (37090, 37089, 37088, 37087, 37086, 37085, 37084, 37083, 37082, 37081)
+trade_helix_query = """
+        DECLARE @valdate DATE;
+        SET @valdate = ?; -- Replace with the desired date
+        
+        SELECT
+            CONCAT(
+                (CASE
+                    WHEN tradepieces.company IN (44, 46) THEN tradepieces.tradepiece
+                    WHEN LTRIM(RTRIM(tradepieces.ledgername)) = 'Master' AND tradepieces.company = 45 THEN Tradepieces.TRADEPIECE
+                    ELSE COALESCE(
+                        CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                        tradepiecexrefs.frontofficeid
+                    )
+                END),
+                ' ',
+                (CASE WHEN tradepieces.startdate = @valdate THEN 'TRANSMITTED' ELSE 'CLOSED' END)
+            ) AS action_id,
+            CASE
+                WHEN tradepieces.company = 44 THEN 'USG'
+                WHEN tradepieces.company = 45 THEN 'PRIME'
+                WHEN tradepieces.company = 46 THEN 'MMT'
+            END AS fund,
+            UPPER(LTRIM(RTRIM(ledgername))) AS series,
+            /* crucial column. if only one series in fund, this should be true, else false */
+            CASE WHEN tradepieces.company <> 45 THEN 1 ELSE 0 END AS is_also_master,
+            CASE
+                WHEN COALESCE(
+                    CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                    tradepiecexrefs.frontofficeid
+                ) <> 0 THEN tradepieces.par * 1.0 / masterpieces.masterpar
+                ELSE 1
+            END AS used_alloc,
+            tradepieces.tradetype AS trade_type,
+            tradepieces.startdate AS start_date,
+            CASE WHEN tradepieces.closedate IS NULL THEN tradepieces.enddate ELSE tradepieces.closedate END AS end_date,
+            CASE WHEN tradepieces.enddate = @valdate THEN 1 ELSE 0 END AS set_to_term_on_date,
+            tradepieces.cusip AS security,
+            tradepieces.isgscc AS is_buy_sell,
+            tradepieces.par AS quantity,
+            tradepieces.money,
+            (Tradepieces.money + TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD) AS end_money,
+            CASE
+                WHEN (tradepieces.company = 45 AND LTRIM(RTRIM(tradepieces.ledgername)) = 'Master') OR tradepieces.company IN (44, 46)
+                THEN COALESCE(
+                    CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                    tradepiecexrefs.frontofficeid
+                )
+                ELSE ''
+            END AS roll_of,
+            CASE WHEN LTRIM(RTRIM(Tradepieces.acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(Tradepieces.acct_number)) END AS counterparty,
+            Tradepieces.depository
+        FROM
+            tradepieces
+            JOIN TRADEPIECECALCDATAS ON tradepieces.tradepiece = TRADEPIECECALCDATAS.tradepiece
+            JOIN TRADECOMMISSIONPIECEINFO ON tradepieces.tradepiece = TRADECOMMISSIONPIECEINFO.TRADEPIECE
+            JOIN TRADEPIECEXREFS ON TRADEPIECES.TRADEPIECE = TRADEPIECEXREFS.TRADEPIECE
+            LEFT JOIN (
+                SELECT tradepiece AS masterpiece, par AS masterpar
+                FROM tradepieces
+            ) AS masterpieces ON COALESCE(
+                CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                tradepiecexrefs.frontofficeid
+            ) = masterpieces.masterpiece WHERE
+            (Tradepieces.startdate = @valdate OR CASE WHEN tradepieces.closedate IS NULL THEN tradepieces.enddate ELSE tradepieces.closedate END = @valdate)
+            AND tradepieces.company IN (44, 45)
+            AND tradepieces.statusmain NOT IN (6)
+            AND Tradepieces.tradetype IN (0, 1)
+            AND Tradepieces.tradepiece NOT IN (37090, 37089, 37088, 37087, 37086, 37085, 37084, 37083, 37082, 37081)
+            ORDER BY
+            tradepieces.company,
+            action_id,
+            CASE WHEN UPPER(LTRIM(RTRIM(tradepieces.ledgername))) = 'MASTER' THEN 0 ELSE 1 END;
+        """
+
+# result_df = execute_sql_query(trade_helix_query, "sql_server_1", params=[(valdate,)])
+
+# Query trade with trade_type in (0,1)
+trade_free_helix_query = """
+        DECLARE @valdate DATE;
+        SET @valdate = ?; -- Replace with the desired date
+        
+        SELECT
+            CONCAT(
+                (CASE
+                    WHEN tradepieces.company IN (44, 46) THEN tradepieces.tradepiece
+                    WHEN LTRIM(RTRIM(tradepieces.ledgername)) = 'Master' AND tradepieces.company = 45 THEN Tradepieces.TRADEPIECE
+                    ELSE COALESCE(
+                        CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                        tradepiecexrefs.frontofficeid
+                    )
+                END),
+                ' ',
+                (CASE WHEN tradepieces.startdate = @valdate THEN 'TRANSMITTED' ELSE 'CLOSED' END)
+            ) AS action_id,
+            CASE
+                WHEN tradepieces.company = 44 THEN 'USG'
+                WHEN tradepieces.company = 45 THEN 'PRIME'
+                WHEN tradepieces.company = 46 THEN 'MMT'
+            END AS fund,
+            UPPER(LTRIM(RTRIM(ledgername))) AS series,
+            CASE
+                WHEN COALESCE(
+                    CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                    tradepiecexrefs.frontofficeid
+                ) <> 0 THEN tradepieces.par * 1.0 / masterpieces.masterpar
+                ELSE 1
+            END AS used_alloc,
+            /* crucial column. if only one series in fund, this should be true, else false */
+            CASE WHEN tradepieces.company <> 45 THEN 1 ELSE 0 END AS is_also_master,
+            tradepieces.startdate AS start_date,
+            tradepieces.closedate AS close_date,
+            tradepieces.enddate AS end_date,
+            par * CASE
+                WHEN (tradepieces.tradetype = 23 AND tradepieces.startdate = @valdate) OR (tradepieces.tradetype = 22 AND (tradepieces.CLOSEDATE = @valdate OR tradepieces.enddate = @valdate)) THEN 1
+                WHEN (tradepieces.tradetype = 22 AND tradepieces.startdate = @valdate) OR (tradepieces.tradetype = 23 AND (tradepieces.CLOSEDATE = @valdate OR tradepieces.enddate = @valdate)) THEN -1
+                ELSE 0
+            END AS "amount",
+            tradepieces.tradetype AS trade_type,
+            tradepieces.cusip AS "security",
+            CASE WHEN LTRIM(RTRIM(Tradepieces.acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(Tradepieces.acct_number)) END AS "counterparty",
+            CONCAT(
+                CASE
+                    WHEN (tradepieces.tradetype = 23 AND tradepieces.startdate = @valdate) THEN 'Receive '
+                    WHEN (tradepieces.tradetype = 22 AND tradepieces.startdate = @valdate) THEN 'Pay '
+                    WHEN (tradepieces.tradetype = 23 AND (tradepieces.CLOSEDATE = @valdate OR tradepieces.enddate = @valdate)) THEN 'Return '
+                    WHEN (tradepieces.tradetype = 22 AND (tradepieces.CLOSEDATE = @valdate OR tradepieces.enddate = @valdate)) THEN 'Receive returned '
+                END,
+                CASE WHEN LTRIM(RTRIM(Tradepieces.acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(Tradepieces.acct_number)) END,
+                ' margin'
+            ) AS "description"
+        FROM
+            tradepieces
+            JOIN TRADEPIECECALCDATAS ON tradepieces.tradepiece = TRADEPIECECALCDATAS.tradepiece
+            JOIN TRADECOMMISSIONPIECEINFO ON tradepieces.tradepiece = TRADECOMMISSIONPIECEINFO.TRADEPIECE
+            JOIN TRADEPIECEXREFS ON TRADEPIECES.TRADEPIECE = TRADEPIECEXREFS.TRADEPIECE
+            LEFT JOIN (
+                SELECT tradepiece AS masterpiece, par AS masterpar
+                FROM tradepieces
+            ) AS masterpieces ON COALESCE(
+                CASE WHEN TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 THEN NULL ELSE TRADECOMMISSIONPIECEINFO.commissionvalue2 END,
+                tradepiecexrefs.frontofficeid
+            ) = masterpieces.masterpiece
+        WHERE
+            (Tradepieces.startdate = @valdate OR Tradepieces.enddate = @valdate OR Tradepieces.closedate = @valdate)
+            AND tradepieces.company IN (44, 45)
+            AND Tradepieces.tradetype IN (22, 23)
+            AND tradepieces.statusmain NOT IN (6)
+        ORDER BY
+            tradepieces.company,
+            CASE WHEN UPPER(LTRIM(RTRIM(tradepieces.ledgername))) = 'MASTER' THEN 0 ELSE 1 END;
+        """
+
+net_cash_by_counterparty_helix_query = """
+        DECLARE @valdate DATE;
+        SET @valdate = ?;
+        
+        SELECT
+            tbl1.fund,
+            CASE WHEN LTRIM(RTRIM(TBL1.acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(TBL1.acct_number)) END AS acct_number,
+            LTRIM(RTRIM(tbl1.ledgername)) AS ledgername,
+            tbl1.net_cash,
+            CASE WHEN tbl2.activity IS NULL THEN 0 ELSE tbl2.activity END AS activity,
+            tbl1.is_also_master
+        FROM
+            (SELECT
+                CASE
+                    WHEN company = 44 THEN 'USG'
+                    WHEN company = 45 THEN 'PRIME'
+                    WHEN tradepieces.company = 46 THEN 'MMT'
+                    ELSE 'Other'
+                END AS fund,
+                CASE WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(acct_number)) END AS acct_number,
+                LTRIM(RTRIM(ledgername)) AS ledgername,
+                ROUND(SUM(
+                    CASE WHEN tradetype = 22 THEN -1 ELSE 1 END *
+                    CASE WHEN (tradepieces.closedate = @valdate OR tradepieces.enddate = @valdate) THEN 0 ELSE 1 END *
+                    par
+                ), 2) AS 'net_cash',
+                CASE WHEN company <> 45 THEN 1 ELSE 0 END AS is_also_master
+            FROM
+                tradepieces
+            WHERE
+                (tradepieces.startdate <= @valdate AND (tradepieces.closedate >= @valdate OR ((tradepieces.enddate IS NULL OR tradepieces.enddate >= @valdate) AND tradepieces.closedate IS NULL))) AND
+                company IN (44, 45) AND
+                tradetype IN (22, 23) AND
+                cusip = 'CASHUSD01' AND
+                statusmain NOT IN (6)
+            GROUP BY
+                company,
+                ledgername,
+                CASE WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(acct_number)) END
+            ) tbl1
+            FULL OUTER JOIN
+            (SELECT
+                CASE
+                    WHEN company = 44 THEN 'USG'
+                    WHEN company = 45 THEN 'PRIME'
+                    WHEN tradepieces.company = 46 THEN 'MMT'
+                    ELSE 'Other'
+                END AS fund,
+                CASE WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(acct_number)) END AS acct_number,
+                LTRIM(RTRIM(ledgername)) AS ledgername,
+                ROUND(SUM(
+                    CASE WHEN tradetype = 22 THEN -1 ELSE 1 END *
+                    CASE WHEN startdate = @valdate THEN 1 ELSE -1 END *
+                    par
+                ), 2) AS 'activity',
+                CASE WHEN company <> 45 THEN 1 ELSE 0 END AS is_also_master
+            FROM
+                tradepieces
+            WHERE
+                (tradepieces.startdate = @valdate OR tradepieces.closedate = @valdate OR (tradepieces.enddate = @valdate AND tradepieces.closedate IS NULL)) AND
+                company IN (44, 45) AND
+                tradetype IN (22, 23) AND
+                cusip = 'CASHUSD01' AND
+                statusmain NOT IN (6)
+            GROUP BY
+                company,
+                LTRIM(RTRIM(ledgername)),
+                CASE WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(acct_number)) END
+            ) tbl2 ON
+            tbl1.fund = tbl2.fund AND
+            CASE WHEN LTRIM(RTRIM(TBL1.acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(TBL1.acct_number)) END =
+            CASE WHEN LTRIM(RTRIM(TBL2.acct_number)) = '400CAPTX' THEN 'TEX' ELSE LTRIM(RTRIM(TBL2.acct_number)) END AND
+            LTRIM(RTRIM(tbl1.ledgername)) = LTRIM(RTRIM(tbl2.ledgername))
+        ORDER BY
+            tbl1.fund,
+            CASE WHEN UPPER(LTRIM(RTRIM(tbl1.ledgername))) = 'MASTER' THEN 0 ELSE 1 END;
         """

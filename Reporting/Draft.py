@@ -1,6 +1,9 @@
 import pandas as pd
 
+from Utils.Common import print_df
 from Utils.Hash import hash_string
+from Utils.SQL_queries import trade_helix_query, net_cash_by_counterparty_helix_query, trade_free_helix_query
+from Utils.database_utils import execute_sql_query
 
 #
 # def read_and_compare(file1, file2):
@@ -75,3 +78,7 @@ from Utils.Hash import hash_string
 
 print(hash_string('2024-05-0633852DAD3'))
 print(hash_string('2024-05-0733852DAD3'))
+
+valdate = '2024-05-08'
+result_df = execute_sql_query(trade_free_helix_query, "sql_server_1", params=[(valdate,)])
+print_df(result_df)
