@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -18,7 +17,7 @@ public class AutoCashTracker {
 		try {
 			Date valDate = null;
 			try {
-				valDate = new SimpleDateFormat("yyyy-MM-dd").parse("2024-05-01");
+				valDate = new SimpleDateFormat("yyyy-MM-dd").parse("2024-05-08");
 			} catch (ParseException e) {
 				System.out.println("Error parsing the date: " + e.getMessage());
 				return;
@@ -32,10 +31,8 @@ public class AutoCashTracker {
 
 			String prevDateString = prevBusinessDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-			//Date valDate = new SimpleDateFormat("MM/dd/yyyy").parse("11/03/2023");
 			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\TrackerState_" +  prevDateString + ".xlsx", valDate);
 //			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\TrackerState.xlsx", valDate);
-			//Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\TrackerState_20210921.xlsx", valDate);
 			
 			System.out.println("Fetching trade data from Helix.");
 			court.connectToHelix();
@@ -46,7 +43,7 @@ public class AutoCashTracker {
 			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Cash Blotter.xlsx", valDate);
 //			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Cash Blotter.xlsx", valDate);
 //			String bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\CashRecon_" + (new SimpleDateFormat("ddMMyyyy")).format(valDate) + ".xls";
-			String bnyFile = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\CashRecon_01052024.xls";
+			String bnyFile = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\CashRecon_07052024.xls";
 			//String bnyFile = "C:\\Users\\jvulopas\\Desktop\\tmp_trash\\CashRecon_15042021.xls";
 			File testFile = new File(bnyFile);
 			if (!testFile.exists()) {

@@ -380,12 +380,7 @@ public class Court extends JPanel {
 		table.setVisible(true);
 		fundDropdown.setVisible(true);
 		fundChangeButton.setVisible(true);
-		
-//		try {
-//			connectToHelix();
-//		} catch (SQLException e) {
-//			
-//		}
+
 	}
 
 	/**
