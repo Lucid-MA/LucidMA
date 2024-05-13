@@ -1014,7 +1014,7 @@ public class HoldingsModel {
 		// iterate through the expected flows and the actual flows from the BNYM report. For each expected flow, it tries to find a matching actual flow based on criteria like account number, amount, description, Helix ID, etc.
 
 		// Create the output directory path
-		String outputDirectory = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Output\\";
+		String outputDirectory = "S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\";
 
 		// Create the directory if it doesn't exist
 		File directory = new File(outputDirectory);

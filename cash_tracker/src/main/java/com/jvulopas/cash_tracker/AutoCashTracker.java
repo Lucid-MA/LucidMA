@@ -31,7 +31,7 @@ public class AutoCashTracker {
 
 			String prevDateString = prevBusinessDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\TrackerState_" +  prevDateString + ".xlsx", valDate);
+			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\TrackerState_" +  prevDateString + ".xlsx", valDate);
 //			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\TrackerState.xlsx", valDate);
 			
 			System.out.println("Fetching trade data from Helix.");
@@ -40,15 +40,14 @@ public class AutoCashTracker {
 			court.disconnectFromHelix();
 			System.out.println("Helix connection is closed.");
 			System.out.println("Fetching expected swings and wires."); // MUST do this AFTER fetching data from helix
-			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Cash Blotter.xlsx", valDate);
+			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Cash Blotter.xlsx", valDate);
 //			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Cash Blotter.xlsx", valDate);
-//			String bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\CashRecon_" + (new SimpleDateFormat("ddMMyyyy")).format(valDate) + ".xls";
-			String bnyFile = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\CashRecon_09052024.xls";
+			String bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\CashRecon_" + localValDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".xls";
 			//String bnyFile = "C:\\Users\\jvulopas\\Desktop\\tmp_trash\\CashRecon_15042021.xls";
 			File testFile = new File(bnyFile);
 			if (!testFile.exists()) {
 				System.out.println("going manual");
-				bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\Archive\\CashRecon_" + (new SimpleDateFormat("ddMMyyyy")).format(valDate) + ".xls";
+				bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\Archive\\CashRecon_" + localValDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".xls";
 			}			
 			System.out.println("Comparing against BNYM.");
 			court.bnymCashReconc(bnyFile);
@@ -59,13 +58,13 @@ public class AutoCashTracker {
 			// Format the valDate as a string in the desired format (e.g., yyyyMMdd)
 			String valDateString = new SimpleDateFormat("yyyyMMdd").format(valDate);
 			// Update the savePath for OpenTrackerState
-			String openTrackerStatePath = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Output\\openTrackerState_" + valDateString + ".xlsx";
+			String openTrackerStatePath = "S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\openTrackerState_" + valDateString + ".xlsx";
 			court.saveStateToXLSX("S:\\Mandates\\Operations\\Daily Reconciliation\\TrackerState Template.xlsx", openTrackerStatePath, null);
 
 			// Update the savePath for OpenCashFlows
-			String openCashFlowsPath = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\Output\\openCashFlows_" + valDateString + ".xlsx";
+			String openCashFlowsPath = "S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\openCashFlows_" + valDateString + ".xlsx";
 			// Construct the prevPath dynamically based on the previous business date
-			String prevPath = "S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\CashFlows_" + prevDateString + ".xlsx";
+			String prevPath = "S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\CashFlows_" + prevDateString + ".xlsx";
 
 			court.saveCFsToXLSX(prevPath, openCashFlowsPath, null, false);
 			//court.saveCFsToXLSX("S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\CashFlows_20210921.xlsx", "openCashFlows.xlsx", null, false);
