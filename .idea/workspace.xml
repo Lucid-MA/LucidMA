@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="257a42c1-bed8-49df-9eea-21ae5ad300f2" name="Changes" comment="Minor">
+      <change afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_NEXEN_cash_balance_table.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Utils/Constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Constants.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,6 +50,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_ADD_EXTERNAL_FILES": "true",
+    "Python.Bronze_NEXEN_cash_balance_table.executor": "Run",
     "Python.Bronze_daily_price_IDC_table.executor": "Run",
     "Python.Bronze_daily_price_JPPD_table (1).executor": "Run",
     "Python.Bronze_daily_price_JPPD_table.executor": "Run",
@@ -62,7 +65,9 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "database.data.extractors.current.export.id": "Comma-separated (CSV)_id",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Tony.Hoang/Downloads",
+    "last_opened_file_path": "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "vcs.Perforce",
@@ -71,11 +76,12 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="S:\Users\THoang\Tech\LucidMA\Reporting\Bronze_tables" />
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting\Reports" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Draft">
-    <configuration name="Bronze_daily_price_JPPD_table (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.Bronze_NEXEN_cash_balance_table">
+    <configuration name="Bronze_NEXEN_cash_balance_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -84,12 +90,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting/Bronze_tables" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching/Bronze_daily_price_JPPD_table.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_NEXEN_cash_balance_table.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -191,7 +197,7 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.Bronze_daily_price_JPPD_table (1)" />
+      <item itemvalue="Python.Bronze_NEXEN_cash_balance_table" />
       <item itemvalue="Python.Check_used_price" />
       <item itemvalue="Python.Generate_price_source_file" />
       <item itemvalue="Python.Hash" />
@@ -199,11 +205,11 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Bronze_NEXEN_cash_balance_table" />
         <item itemvalue="Python.Draft" />
         <item itemvalue="Python.Hash" />
         <item itemvalue="Python.Check_used_price" />
         <item itemvalue="Python.Generate_price_source_file" />
-        <item itemvalue="Python.Bronze_daily_price_JPPD_table (1)" />
       </list>
     </recent_temporary>
   </component>
@@ -234,7 +240,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1715604964721</updated>
-      <workItem from="1715604966776" duration="310000" />
+      <workItem from="1715604966776" duration="21556000" />
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
@@ -299,6 +305,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_daily_price_IDC_table__1_.coverage" NAME="Bronze_daily_price_IDC_table (1) Coverage Results" MODIFIED="1714662303606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching" />
     <SUITE FILE_PATH="coverage/LucidMA$Test.coverage" NAME="Test Coverage Results" MODIFIED="1714577762994" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_price_factor_bloomberg_table.coverage" NAME="Bronze_price_factor_bloomberg_table Coverage Results" MODIFIED="1714674553832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
+    <SUITE FILE_PATH="coverage/LucidMA$Bronze_NEXEN_cash_balance_table.coverage" NAME="Bronze_NEXEN_cash_balance_table Coverage Results" MODIFIED="1715635313441" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/Code$Roll_Schedule.coverage" NAME="Roll Schedule Coverage Results" MODIFIED="1712939811008" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Generate_Price_Source_file.coverage" NAME="Generate Price Source file Coverage Results" MODIFIED="1714599781162" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Prices_Data.coverage" NAME="Bronze Prices Data Coverage Results" MODIFIED="1712582713044" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />

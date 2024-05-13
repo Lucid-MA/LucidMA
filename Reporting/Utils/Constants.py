@@ -60,6 +60,10 @@ cash_balance_column_order = [
     "Fund", "Series", "Account", "Cash Balance", "Sweep Balance", "Projected Total Balance"
 ]
 
+nexen_cash_balance_column_order = [
+    "Cash Account Number", "Cash Account Name", "Sweep Vehicle Number", "Sweep Vehicle Name", "Local Currency Code", "Cash Reporting Date", "Beginning Balance Local", "Net Activity Local", "Ending Balance Local", "Back Valued Amount"
+]
+
 investor_mapping = {'1000076533': 'The Nemours Foundation', '1000076536': 'Alfred I. duPont Charitable Trust',
                     '1000076535': 'The Nemours Foundation - Intermediate Account',
                     '1000076534': 'The Nemours Foundation Pension Plan', '1000075632': 'Prime Notes Series MIG-1',
