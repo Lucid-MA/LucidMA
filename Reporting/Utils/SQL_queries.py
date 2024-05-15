@@ -298,3 +298,178 @@ net_cash_by_counterparty_helix_query = """
             tbl1.fund,
             CASE WHEN UPPER(LTRIM(RTRIM(tbl1.ledgername))) = 'MASTER' THEN 0 ELSE 1 END;
         """
+
+daily_trade_helix_query = """
+DECLARE @valdate AS DATE
+SET @valdate = %s
+
+USE HELIXREPO_PROD_02
+
+IF OBJECT_ID('tempdb..#tradedata') IS NOT NULL DROP TABLE #tradedata
+
+SELECT
+    tradepieces.company,
+    Tradepieces.LEDGERNAME AS "Series",
+    Tradepieces.TRADEPIECE AS "Trade ID",
+    RTRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
+    tradepieces.TRADEDATE AS "Trade Date",
+    Tradepieces.STARTDATE AS "Start Date",
+    Tradepieces.CLOSEDATE AS "Close Date",
+    tradepieces.enddate AS "End Date",
+    Tradepieces.FX_MONEY AS "Money",
+    Tradepieces.CONTRANAME AS "Counterparty",
+    Tradepieces.REPORATE AS "Orig. Rate",
+    Tradepieces.PRICE AS "Orig. Price",
+    tradepiececalcdatas.CURRENTPRICE AS "Current Price",
+    tradepiececalcdatas.CURRENTMBSFACTOR AS "Current Factor",
+    LTRIM(RTRIM(Tradepieces.ISIN)) AS "BondID",
+    Tradepieces.statusmain AS "Status",
+    tradepiecexrefs.frontofficeid AS "Alloc Of",
+    Tradepieces.PAR * CASE WHEN tradepieces.tradetype IN (0, 22) THEN -1 ELSE 1 END AS "Par/Quantity",
+    CASE WHEN RTRIM(TRADETYPES.DESCRIPTION) IN ('ReverseFree', 'RepoFree') THEN 0 ELSE Tradepieces.HAIRCUT END AS "HairCut",
+    Tradecommissionpieceinfo.commissionvalue * 100 AS "Spread",
+    Tradepieces.PAR * tradepiececalcdatas.CURRENTPRICE * tradepiececalcdatas.CURRENTMBSFACTOR / 100 AS "Market Value",
+    Tradepieces.ACCT_NUMBER AS "CP Short",
+    tradepieces.comments AS "Comments",
+    Tradepieces.FX_MONEY + TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "End Money",
+    CASE
+        WHEN RTRIM(ISSUESUBTYPES3.DESCRIPTION) = 'CLO CRE' THEN 'CMBS'
+        ELSE RTRIM(CASE WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+                        ELSE ISSUESUBTYPES2.DESCRIPTION
+                   END)
+    END AS "Product Type",
+    RTRIM(CASE WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'Cash'
+               ELSE ISSUESUBTYPES3.DESCRIPTION
+          END) AS "Collateral Type"
+INTO #tradedata
+FROM tradepieces
+INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
+INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE = TRADEPIECES.SHELLTRADETYPE
+INNER JOIN ISSUES ON ISSUES.CUSIP = TRADEPIECES.CUSIP
+INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY = TRADEPIECES.CURRENCY_MONEY
+INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL = TRADEPIECES.STATUSDETAIL
+INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN = TRADEPIECES.STATUSMAIN
+INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY = TRADEPIECES.ISSUECATEGORY
+INNER JOIN ISSUESUBTYPES1 ON ISSUESUBTYPES1.ISSUESUBTYPE1 = ISSUECATEGORIES.ISSUESUBTYPE1
+INNER JOIN ISSUESUBTYPES2 ON ISSUESUBTYPES2.ISSUESUBTYPE2 = ISSUECATEGORIES.ISSUESUBTYPE2
+INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3 = ISSUECATEGORIES.ISSUESUBTYPE3
+INNER JOIN TRADEPIECEXREFS ON tradepieces.tradepiece = TRADEPIECEXREFS.TRADEPIECE
+LEFT JOIN (
+    SELECT DISTINCT history_tradepieces.tradepiece, history_tradepieces.comments AS rating
+    FROM history_tradepieces
+    INNER JOIN (
+        SELECT MAX(datetimeid) AS datetimeid, tradepiece
+        FROM history_tradepieces
+        INNER JOIN (
+            SELECT tradepiece AS tid
+            FROM tradepieces
+            WHERE isvisible = 1
+        ) AS vistbl
+        ON vistbl.tid = history_tradepieces.tradepiece
+        GROUP BY CAST(datetimeid AS DATE), tradepiece
+    ) AS maxtbl
+    ON history_tradepieces.datetimeid = maxtbl.datetimeid
+    AND history_tradepieces.tradepiece = maxtbl.tradepiece
+    INNER JOIN (
+        SELECT tradepiece AS tid
+        FROM tradepieces
+        WHERE isvisible = 1
+    ) AS vistbl
+    ON vistbl.tid = history_tradepieces.tradepiece
+    WHERE CAST(history_tradepieces.datetimeid AS DATE) = CAST(history_tradepieces.bookdate AS DATE)
+) AS ratings_tbl
+ON ratings_tbl.tradepiece = tradepieces.tradepiece
+WHERE tradepieces.enddate = @valdate
+OR tradepieces.closedate = @valdate
+OR tradepieces.startdate = @valdate
+ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC
+
+SELECT *
+FROM #tradedata
+ORDER BY [Start Date]
+"""
+
+daily_trade_helix_query_v2 = """
+DECLARE @valdate AS DATE
+SET @valdate = %s
+
+USE HELIXREPO_PROD_02
+
+SELECT
+    tradepieces.company,
+    Tradepieces.LEDGERNAME AS "Series",
+    Tradepieces.TRADEPIECE AS "Trade ID",
+    RTRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
+    tradepieces.TRADEDATE AS "Trade Date",
+    Tradepieces.STARTDATE AS "Start Date",
+    Tradepieces.CLOSEDATE AS "Close Date",
+    tradepieces.enddate AS "End Date",
+    Tradepieces.FX_MONEY AS "Money",
+    Tradepieces.CONTRANAME AS "Counterparty",
+    Tradepieces.REPORATE AS "Orig. Rate",
+    Tradepieces.PRICE AS "Orig. Price",
+    tradepiececalcdatas.CURRENTPRICE AS "Current Price",
+    tradepiececalcdatas.CURRENTMBSFACTOR AS "Current Factor",
+    LTRIM(RTRIM(Tradepieces.ISIN)) AS "BondID",
+    Tradepieces.statusmain AS "Status",
+    tradepiecexrefs.frontofficeid AS "Alloc Of",
+    Tradepieces.PAR * CASE WHEN tradepieces.tradetype IN (0, 22) THEN -1 ELSE 1 END AS "Par/Quantity",
+    CASE WHEN RTRIM(TRADETYPES.DESCRIPTION) IN ('ReverseFree', 'RepoFree') THEN 0 ELSE Tradepieces.HAIRCUT END AS "HairCut",
+    Tradecommissionpieceinfo.commissionvalue * 100 AS "Spread",
+    Tradepieces.PAR * tradepiececalcdatas.CURRENTPRICE * tradepiececalcdatas.CURRENTMBSFACTOR / 100 AS "Market Value",
+    Tradepieces.ACCT_NUMBER AS "CP Short",
+    tradepieces.comments AS "Comments",
+    Tradepieces.FX_MONEY + TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "End Money",
+    CASE
+        WHEN RTRIM(ISSUESUBTYPES3.DESCRIPTION) = 'CLO CRE' THEN 'CMBS'
+        ELSE RTRIM(CASE WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+                        ELSE ISSUESUBTYPES2.DESCRIPTION
+                   END)
+    END AS "Product Type",
+    RTRIM(CASE WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'Cash'
+               ELSE ISSUESUBTYPES3.DESCRIPTION
+          END) AS "Collateral Type"
+FROM tradepieces
+INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
+INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE = TRADEPIECES.SHELLTRADETYPE
+INNER JOIN ISSUES ON ISSUES.CUSIP = TRADEPIECES.CUSIP
+INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY = TRADEPIECES.CURRENCY_MONEY
+INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL = TRADEPIECES.STATUSDETAIL
+INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN = TRADEPIECES.STATUSMAIN
+INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY = TRADEPIECES.ISSUECATEGORY
+INNER JOIN ISSUESUBTYPES1 ON ISSUESUBTYPES1.ISSUESUBTYPE1 = ISSUECATEGORIES.ISSUESUBTYPE1
+INNER JOIN ISSUESUBTYPES2 ON ISSUESUBTYPES2.ISSUESUBTYPE2 = ISSUECATEGORIES.ISSUESUBTYPE2
+INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3 = ISSUECATEGORIES.ISSUESUBTYPE3
+INNER JOIN TRADEPIECEXREFS ON tradepieces.tradepiece = TRADEPIECEXREFS.TRADEPIECE
+LEFT JOIN (
+    SELECT DISTINCT history_tradepieces.tradepiece, history_tradepieces.comments AS rating
+    FROM history_tradepieces
+    INNER JOIN (
+        SELECT MAX(datetimeid) AS datetimeid, tradepiece
+        FROM history_tradepieces
+        INNER JOIN (
+            SELECT tradepiece AS tid
+            FROM tradepieces
+            WHERE isvisible = 1
+        ) AS vistbl
+        ON vistbl.tid = history_tradepieces.tradepiece
+        GROUP BY CAST(datetimeid AS DATE), tradepiece
+    ) AS maxtbl
+    ON history_tradepieces.datetimeid = maxtbl.datetimeid
+    AND history_tradepieces.tradepiece = maxtbl.tradepiece
+    INNER JOIN (
+        SELECT tradepiece AS tid
+        FROM tradepieces
+        WHERE isvisible = 1
+    ) AS vistbl
+    ON vistbl.tid = history_tradepieces.tradepiece
+    WHERE CAST(history_tradepieces.datetimeid AS DATE) = CAST(history_tradepieces.bookdate AS DATE)
+) AS ratings_tbl
+ON ratings_tbl.tradepiece = tradepieces.tradepiece
+WHERE tradepieces.enddate = @valdate
+OR tradepieces.closedate = @valdate
+OR tradepieces.startdate = @valdate
+ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC, [Start Date]
+"""

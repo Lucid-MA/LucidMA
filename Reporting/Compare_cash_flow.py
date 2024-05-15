@@ -1,9 +1,11 @@
 import os
 import smtplib
+import webbrowser
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+import msal
+import requests
 import pandas as pd
 
 from Utils.Common import get_file_path
@@ -109,6 +111,68 @@ df_diff['Difference'] = df_diff['Difference'].round(2)
 df_diff.to_excel(output_path, index=False)
 print(f"Output file created at: {output_path}")
 
+# # Highlight values in the 'Difference' column greater than 5 in red
+# def highlight_diff(value):
+#     if abs(value) > 5:
+#         return 'color: red'
+#     else:
+#         return ''
+#
+# df_diff_styled = df_diff.style.applymap(highlight_diff, subset=['Difference'])
+#
+# # Create the email message
+# msg = MIMEMultipart()
+# msg['From'] = 'tony.hoang@lucidma.com'
+# msg['To'] = 'tony.hoang@lucidma.com'
+# msg['Subject'] = f'Cash Comparison Report - {process_date}'
+#
+# # Convert the styled DataFrame to an HTML table
+# html_table = df_diff_styled.to_html(index=False)
+#
+# # Create the email body
+# body = f"""
+# <html>
+# <head>
+#     <style>
+#         table {{
+#             border-collapse: collapse;
+#             width: 100%;
+#         }}
+#         th, td {{
+#             text-align: left;
+#             padding: 8px;
+#             border-bottom: 1px solid #ddd;
+#         }}
+#         th {{
+#             background-color: #f2f2f2;
+#         }}
+#     </style>
+# </head>
+# <body>
+#     <h2>Cash Comparison Report - {process_date}</h2>
+#     {html_table}
+# </body>
+# </html>
+# """
+#
+# msg.attach(MIMEText(body, 'html'))
+#
+# # Send the email using Outlook SMTP settings
+# smtp_server = 'smtp.office365.com'
+# smtp_port = 587
+# smtp_username = 'tony.hoang@lucidma.com'
+# smtp_password = os.getenv("MY_PASSWORD")
+#
+#
+#
+# with smtplib.SMTP(smtp_server, smtp_port) as server:
+#     server.starttls()
+#     server.login(smtp_username, smtp_password)
+#     server.sendmail(msg['From'], msg['To'], msg.as_string())
+#
+# print("Email sent successfully.")
+
+
 # Highlight values in the 'Difference' column greater than 5 in red
 def highlight_diff(value):
     if abs(value) > 5:
@@ -116,56 +180,89 @@ def highlight_diff(value):
     else:
         return ''
 
-df_diff_styled = df_diff.style.applymap(highlight_diff, subset=['Difference'])
+df_diff_styled = df_diff.style.map(highlight_diff, subset=['Difference'])
 
-# Create the email message
-msg = MIMEMultipart()
-msg['From'] = 'tony.hoang@lucidma.com'
-msg['To'] = 'tony.hoang@lucidma.com'
-msg['Subject'] = f'Cash Comparison Report - {process_date}'
+# Azure AD app configuration
+client_id = 'ff3d6125-88c0-4d4d-9980-f276aebd5255'
+tenant_id = '86cd4a88-29b5-4f22-ab55-8d9b2c81f747'
+client_secret = 'y2I8Q~rQ7yIRJN-e_oN4-O47J6QHIP.2kBA07bRp'
+redirect_uri = 'http://localhost'  # Replace with your app's redirect URI
 
-# Convert the styled DataFrame to an HTML table
-html_table = df_diff_styled.to_html(index=False)
+# Authenticate and obtain an access token using client credentials flow
+authority = f'https://login.microsoftonline.com/{tenant_id}'
+scopes = ['https://graph.microsoft.com/.default']
 
-# Create the email body
-body = f"""
-<html>
-<head>
-    <style>
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-        }}
-        th, td {{
-            text-align: left;
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
-        }}
-        th {{
-            background-color: #f2f2f2;
-        }}
-    </style>
-</head>
-<body>
-    <h2>Cash Comparison Report - {process_date}</h2>
-    {html_table}
-</body>
-</html>
-"""
+app = msal.ConfidentialClientApplication(
+    client_id=client_id,
+    authority=authority,
+    client_credential=client_secret
+)
 
-msg.attach(MIMEText(body, 'html'))
+result = app.acquire_token_for_client(scopes=scopes)
 
-# Send the email using Outlook SMTP settings
-smtp_server = 'smtp.office365.com'
-smtp_port = 587
-smtp_username = 'tony.hoang@lucidma.com'
-smtp_password = os.getenv("MY_PASSWORD")
+if 'access_token' in result:
+    access_token = result['access_token']
 
+    # Send the email using Microsoft Graph API
+    graph_api_url = 'https://graph.microsoft.com/v1.0/users/tony.hoang@lucidma.com/sendMail'
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
 
+    # Convert the styled DataFrame to an HTML table
+    html_table = df_diff_styled.to_html(index=False)
 
-with smtplib.SMTP(smtp_server, smtp_port) as server:
-    server.starttls()
-    server.login(smtp_username, smtp_password)
-    server.sendmail(msg['From'], msg['To'], msg.as_string())
+    body = f"""
+    <html>
+    <head>
+        <style>
+            table {{
+                border-collapse: collapse;
+                width: 100%;
+            }}
+            th, td {{
+                text-align: left;
+                padding: 8px;
+                border-bottom: 1px solid #ddd;
+            }}
+            th {{
+                background-color: #f2f2f2;
+            }}
+        </style>
+    </head>
+    <body>
+        <h2>Cash Comparison Report - {process_date}</h2>
+        {html_table}
+    </body>
+    </html>
+    """
 
-print("Email sent successfully.")
+    payload = {
+        'message': {
+            'subject': f'Cash Comparison Report - {process_date}',
+            'body': {
+                'contentType': 'HTML',
+                'content': body
+            },
+            'toRecipients': [
+                {
+                    'emailAddress': {
+                        'address': 'tony.hoang@lucidma.com'
+                    }
+                }
+            ]
+        }
+    }
+
+    response = requests.post(graph_api_url, headers=headers, json=payload)
+
+    if response.status_code == 202:
+        print("Email sent successfully.")
+    else:
+        print(f"Failed to send email. Status code: {response.status_code}")
+        print(f"Error message: {response.text}")
+else:
+    print("Authentication failed.")
+    print(result.get("error"))
+    print(result.get("error_description"))

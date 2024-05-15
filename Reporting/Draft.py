@@ -2,8 +2,9 @@ import pandas as pd
 
 from Utils.Common import print_df
 from Utils.Hash import hash_string
-from Utils.SQL_queries import trade_helix_query, net_cash_by_counterparty_helix_query, trade_free_helix_query
-from Utils.database_utils import execute_sql_query
+from Utils.SQL_queries import trade_helix_query, net_cash_by_counterparty_helix_query, trade_free_helix_query, \
+    daily_trade_helix_query, daily_trade_helix_query_v2
+from Utils.database_utils import execute_sql_query, read_table_from_db, get_database_engine
 
 #
 # def read_and_compare(file1, file2):
@@ -76,9 +77,10 @@ from Utils.database_utils import execute_sql_query
 # # Display the CUSIPs with differing 'Factor' values
 # print(discrepancies[['Cusip', 'Factor_1', 'Factor_2']])
 
-print(hash_string('2024-05-0633852DAD3'))
-print(hash_string('2024-05-0733852DAD3'))
+# Set the valuation date
+valdate = '2024-05-10'
 
-valdate = '2024-05-08'
-result_df = execute_sql_query(trade_free_helix_query, "sql_server_1", params=[(valdate,)])
+# Execute the query using the execute_sql_query function
+result_df = execute_sql_query(daily_trade_helix_query, "sql_server_1", params=[(valdate,)])
 print_df(result_df)
+

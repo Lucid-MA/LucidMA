@@ -17,22 +17,24 @@ DB_CONFIG = {
         "db_name": "reporting",
     },
     "sql_server_1": {
-        # "driver": "{ODBC Driver 17 for SQL Server}",
         "driver": "ODBC+Driver+17+for+SQL+Server",
-        "server": "LUCIDSQL1",
+        "server_mac": "172.31.0.10",
+        "server_windows": "LUCIDSQL1",
         "database": "HELIXREPO_PROD_02",
         "trusted_connection": "yes",
-        "user": "tony.hoang",
+        "user_mac": "Lucid\\tony.hoang",
+        "user_windows": "tony.hoang",
         "password": os.getenv("MY_PASSWORD")
     },
     "sql_server_2": {
-        # "driver": "{ODBC Driver 17 for SQL Server}",
         "driver": "ODBC+Driver+17+for+SQL+Server",
-        "server": "LUCIDSQL2",
+        "server_mac": "172.31.32.100",
+        "server_windows": "LUCIDSQL2",
         "database": "Prod1",
         "trusted_connection": "yes",
-        "user":"tony.hoang",
-        "password":os.getenv("MY_PASSWORD")
+        "user_mac": "Lucid\\tony.hoang",
+        "user_windows": "tony.hoang",
+        "password": os.getenv("MY_PASSWORD")
     }
 }
 
@@ -41,23 +43,20 @@ def get_database_engine(db_type):
     if db_type == "postgres":
         database_url = f"postgresql://{DB_CONFIG['postgres']['db_user']}:{DB_CONFIG['postgres']['db_password']}@{DB_CONFIG['postgres']['db_endpoint']}:{DB_CONFIG['postgres']['db_port']}/{DB_CONFIG['postgres']['db_name']}"
         return create_engine(database_url)
+
     elif db_type.startswith("sql_server"):
         if platform.system() == 'Darwin':  # macOS
-            conn_str = (
-                DB_CONFIG[db_type]['server'],
-                DB_CONFIG[db_type]['user'],
-                DB_CONFIG[db_type]['password'],
-                DB_CONFIG[db_type]['database'],
-            )
-            return pymssql.connect(conn_str)
+            conn_str = f"mssql+pymssql://{DB_CONFIG[db_type]['user_mac']}:{DB_CONFIG[db_type]['password']}@{DB_CONFIG[db_type]['server_mac']}/{DB_CONFIG[db_type]['database']}"
+            return create_engine(conn_str)
+
         elif platform.system() == 'Windows':
             conn_str = (
-                f"mssql+pyodbc://{DB_CONFIG[db_type]['user']}:{DB_CONFIG[db_type]['password']}@"
-                f"{DB_CONFIG[db_type]['server']}/{DB_CONFIG[db_type]['database']}?"
+                f"mssql+pyodbc://{DB_CONFIG[db_type]['user_windows']}:{DB_CONFIG[db_type]['password']}@"
+                f"{DB_CONFIG[db_type]['server_windows']}/{DB_CONFIG[db_type]['database']}?"
                 f"driver={DB_CONFIG[db_type]['driver']}&Trusted_Connection={DB_CONFIG[db_type]['trusted_connection']}"
             )
-            # return pyodbc.connect(conn_str)
             return create_engine(conn_str)
+
         else:
             raise Exception('Unsupported platform')
 
