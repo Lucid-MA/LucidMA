@@ -1,16 +1,12 @@
-import os
-import smtplib
-import webbrowser
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
 import msal
-import requests
 import pandas as pd
+import requests
 
 from Utils.Common import get_file_path
 
-process_date = '2024-05-13'
+process_date = '2024-05-14'
 
 # Format the process_date for the input file names
 process_date_nexen = datetime.strptime(process_date, '%Y-%m-%d').strftime('%d%m%Y')  # (CashBal_DDMMYYYY.csv)
@@ -88,12 +84,12 @@ df_nexen['Account'] = df_nexen['Account Number'].map(
 
 # Create df_3 with the required columns
 df_diff = df_nexen[
-    ['Account Number', 'Fund', 'Account', 'Account Name', 'Cash Account Number', 'Ending Balance Reporting Currency', 'Cash Tracker Balance']]
+    ['Account Number', 'Fund', 'Account', 'Account Name', 'Cash Account Number', 'Ending Balance Reporting Currency',
+     'Cash Tracker Balance']]
 df_diff = df_diff.rename(columns={'Ending Balance Reporting Currency': 'Nexen Balance'})
 sort_order = [277540, 278204, 990457, 657720, 278207,
               278208, 657724, 657723, 278205, 657718]
 df_diff['Cash Account Number'] = pd.Categorical(df_diff['Account Number'], categories=sort_order, ordered=True)
-
 
 # Failing trade
 df_fail_trade = pd.read_excel(tracker_state_path, sheet_name='Main', skiprows=30, nrows=30, usecols='B:G')
@@ -111,74 +107,24 @@ df_diff['Difference'] = df_diff['Difference'].round(2)
 df_diff.to_excel(output_path, index=False)
 print(f"Output file created at: {output_path}")
 
-# # Highlight values in the 'Difference' column greater than 5 in red
-# def highlight_diff(value):
-#     if abs(value) > 5:
-#         return 'color: red'
-#     else:
-#         return ''
-#
-# df_diff_styled = df_diff.style.applymap(highlight_diff, subset=['Difference'])
-#
-# # Create the email message
-# msg = MIMEMultipart()
-# msg['From'] = 'tony.hoang@lucidma.com'
-# msg['To'] = 'tony.hoang@lucidma.com'
-# msg['Subject'] = f'Cash Comparison Report - {process_date}'
-#
-# # Convert the styled DataFrame to an HTML table
-# html_table = df_diff_styled.to_html(index=False)
-#
-# # Create the email body
-# body = f"""
-# <html>
-# <head>
-#     <style>
-#         table {{
-#             border-collapse: collapse;
-#             width: 100%;
-#         }}
-#         th, td {{
-#             text-align: left;
-#             padding: 8px;
-#             border-bottom: 1px solid #ddd;
-#         }}
-#         th {{
-#             background-color: #f2f2f2;
-#         }}
-#     </style>
-# </head>
-# <body>
-#     <h2>Cash Comparison Report - {process_date}</h2>
-#     {html_table}
-# </body>
-# </html>
-# """
-#
-# msg.attach(MIMEText(body, 'html'))
-#
-# # Send the email using Outlook SMTP settings
-# smtp_server = 'smtp.office365.com'
-# smtp_port = 587
-# smtp_username = 'tony.hoang@lucidma.com'
-# smtp_password = os.getenv("MY_PASSWORD")
-#
-#
-#
-# with smtplib.SMTP(smtp_server, smtp_port) as server:
-#     server.starttls()
-#     server.login(smtp_username, smtp_password)
-#     server.sendmail(msg['From'], msg['To'], msg.as_string())
-#
-# print("Email sent successfully.")
 
-
-# Highlight values in the 'Difference' column greater than 5 in red
 def highlight_diff(value):
-    if abs(value) > 5:
-        return 'color: red'
-    else:
+    try:
+        num_value = float(value.replace('$', '').replace(',', ''))
+        if abs(num_value) > 5:
+            return 'color: red'
+        else:
+            return ''
+    except ValueError:
         return ''
+
+
+# Format the numbers as dollar amounts with a maximum of 2 decimal places
+pd.options.display.float_format = '${:,.2f}'.format
+df_diff['Nexen Balance'] = df_diff['Nexen Balance'].apply(lambda x: f'${x:,.2f}')
+df_diff['Cash Tracker Balance'] = df_diff['Cash Tracker Balance'].apply(lambda x: f'${x:,.2f}')
+df_diff['Failed trade amount'] = df_diff['Failed trade amount'].apply(lambda x: f'${x:,.2f}')
+df_diff['Difference'] = df_diff['Difference'].apply(lambda x: f'${x:,.2f}')
 
 df_diff_styled = df_diff.style.map(highlight_diff, subset=['Difference'])
 
@@ -213,6 +159,10 @@ if 'access_token' in result:
     # Convert the styled DataFrame to an HTML table
     html_table = df_diff_styled.to_html(index=False)
 
+    # Convert df_fail_trade to an HTML table
+    fail_trade = pd.read_excel(tracker_state_path, sheet_name='Main', skiprows=30, nrows=30, usecols='B:G')
+    fail_trade_table = fail_trade.to_html(index=False)
+
     body = f"""
     <html>
     <head>
@@ -234,6 +184,9 @@ if 'access_token' in result:
     <body>
         <h2>Cash Comparison Report - {process_date}</h2>
         {html_table}
+
+        <h3>Failed trade details</h3>
+        {fail_trade_table}
     </body>
     </html>
     """
@@ -246,6 +199,16 @@ if 'access_token' in result:
                 'content': body
             },
             'toRecipients': [
+                {
+                    'emailAddress': {
+                        'address': 'operations@lucidma.com'
+                    }
+                },
+                {
+                    'emailAddress': {
+                        'address': 'Heather.Campbell@lucidma.com'
+                    }
+                },
                 {
                     'emailAddress': {
                         'address': 'tony.hoang@lucidma.com'
