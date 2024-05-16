@@ -3,7 +3,7 @@ import pandas as pd
 from Utils.Common import print_df
 from Utils.Hash import hash_string
 from Utils.SQL_queries import trade_helix_query, net_cash_by_counterparty_helix_query, trade_free_helix_query, \
-    daily_trade_helix_query, daily_trade_helix_query_v2
+     daily_report_helix_trade_query
 from Utils.database_utils import execute_sql_query, read_table_from_db, get_database_engine
 
 #
@@ -78,9 +78,9 @@ from Utils.database_utils import execute_sql_query, read_table_from_db, get_data
 # print(discrepancies[['Cusip', 'Factor_1', 'Factor_2']])
 
 # Set the valuation date
-valdate = '2024-05-10'
+valdate = '2024-05-15'
 
-# Execute the query using the execute_sql_query function
-result_df = execute_sql_query(daily_trade_helix_query, "sql_server_1", params=[(valdate,)])
-print_df(result_df)
+
+result_df_2 = execute_sql_query(daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
+print_df(result_df_2)
 

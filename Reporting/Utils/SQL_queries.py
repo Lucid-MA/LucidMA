@@ -299,9 +299,10 @@ net_cash_by_counterparty_helix_query = """
             CASE WHEN UPPER(LTRIM(RTRIM(tbl1.ledgername))) = 'MASTER' THEN 0 ELSE 1 END;
         """
 
-daily_trade_helix_query = """
+# Yating's original query on all trade
+daily_report_helix_trade_query_original = """
 DECLARE @valdate AS DATE
-SET @valdate = %s
+SET @valdate = ?
 
 USE HELIXREPO_PROD_02
 
@@ -390,11 +391,10 @@ FROM #tradedata
 ORDER BY [Start Date]
 """
 
-daily_trade_helix_query_v2 = """
+# Use for reporting
+daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
-SET @valdate = %s
-
-USE HELIXREPO_PROD_02
+SET @valdate = ?
 
 SELECT
     tradepieces.company,
@@ -429,7 +429,10 @@ SELECT
     END AS "Product Type",
     RTRIM(CASE WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'Cash'
                ELSE ISSUESUBTYPES3.DESCRIPTION
-          END) AS "Collateral Type"
+          END) AS "Collateral Type",
+    Tradepieces.USERNAME AS "User",
+    Tradepieces.ISSUEDESCRIPTION AS "Issue Description",
+    Tradepieces.ENTERDATETIMEID AS "Entry Time"
 FROM tradepieces
 INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
 INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
@@ -468,8 +471,6 @@ LEFT JOIN (
     WHERE CAST(history_tradepieces.datetimeid AS DATE) = CAST(history_tradepieces.bookdate AS DATE)
 ) AS ratings_tbl
 ON ratings_tbl.tradepiece = tradepieces.tradepiece
-WHERE tradepieces.enddate = @valdate
-OR tradepieces.closedate = @valdate
-OR tradepieces.startdate = @valdate
+WHERE CAST(tradepieces.ENTERDATETIMEID AS DATE) = @valdate
 ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC, [Start Date]
 """

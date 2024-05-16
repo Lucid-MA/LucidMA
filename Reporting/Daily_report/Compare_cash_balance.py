@@ -6,7 +6,7 @@ import requests
 
 from Utils.Common import get_file_path
 
-process_date = '2024-05-14'
+process_date = '2024-05-15'
 
 # Format the process_date for the input file names
 process_date_nexen = datetime.strptime(process_date, '%Y-%m-%d').strftime('%d%m%Y')  # (CashBal_DDMMYYYY.csv)
