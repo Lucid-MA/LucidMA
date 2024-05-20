@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 from Utils.Common import print_df
@@ -77,10 +79,97 @@ from Utils.database_utils import execute_sql_query, read_table_from_db, get_data
 # # Display the CUSIPs with differing 'Factor' values
 # print(discrepancies[['Cusip', 'Factor_1', 'Factor_2']])
 
-# Set the valuation date
-valdate = '2024-05-15'
+# # Set the valuation date
+# valdate = '2024-05-15'
+#
+#
+# result_df_2 = execute_sql_query(daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
+# print_df(result_df_2)
 
+import msal
+import requests
+import json
 
-result_df_2 = execute_sql_query(daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
-print_df(result_df_2)
+# Azure AD app configuration
+client_id = 'ff3d6125-88c0-4d4d-9980-f276aebd5255'
+tenant_id = '86cd4a88-29b5-4f22-ab55-8d9b2c81f747'
+# client_secret = 'y2I8Q~rQ7yIRJN-e_oN4-O47J6QHIP.2kBA07bRp'
+client_secret = 'dE18Q~3YqyaVlUE1FCqlsu_E-VJxN_7yhKUAnbVD'
 
+client_id_v2 = '10b66482-7a87-40ec-a409-4635277f3ed5'
+tenant_id_v2 = '86cd4a88-29b5-4f22-ab55-8d9b2c81f747'
+client_secret_v2 = '4Y68Q~324xoMlM.1-FxZeOovx639gxJO5IU6abHI'
+uri = 'http://localhost:8080'  # Replace with your app's redirect URI
+
+config = {
+    "client_id": client_id_v2,
+    "authority": f"https://login.microsoftonline.com/{tenant_id_v2}",
+    "scope": ["https://graph.microsoft.com/Mail.Send"],
+    "redirect_uri": "http://localhost:8080"  # Add the redirect URL here
+}
+
+cache_file = "token_cache.bin"
+token_cache = msal.SerializableTokenCache()
+
+if os.path.exists(cache_file):
+    with open(cache_file, "r") as f:
+        token_cache.deserialize(f.read())
+
+client = msal.PublicClientApplication(
+    config["client_id"],
+    authority=config["authority"],
+    token_cache=token_cache
+)
+
+accounts = client.get_accounts()
+if accounts:
+    result = client.acquire_token_silent(config["scope"], account=accounts[0])
+else:
+    print("No cached accounts found. Authenticating interactively...")
+    result = client.acquire_token_interactive(scopes=config["scope"])
+
+if "access_token" not in result:
+    print("Error: Access token not found in the authentication response.")
+    print("Authentication result:", result)
+    exit(1)
+
+with open(cache_file, "w") as f:
+    f.write(token_cache.serialize())
+
+access_token = result["access_token"]
+
+url = 'https://graph.microsoft.com/v1.0/me/sendMail'
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json'
+}
+message = {
+    'subject': 'Test Email',
+    'body': {
+        'contentType': 'Text',
+        'content': 'This is a test email sent using the Microsoft Graph API with MSAL.'
+    },
+    'from': {
+        'emailAddress': {
+            'address': 'operations@lucidma.com'  # Replace with the sender's email address
+        }
+    },
+    'toRecipients': [
+        {
+            'emailAddress': {
+                'address': 'tony.hoang@lucidma.com'
+            }
+        }
+    ]
+}
+
+data = {
+    'message': message
+}
+
+response = requests.post(url, headers=headers, data=json.dumps(data))
+
+if response.status_code == 202:
+    print('Email sent successfully.')
+else:
+    print(f'Error sending email: {response.status_code} - {response.text}')

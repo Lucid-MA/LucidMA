@@ -1,4 +1,5 @@
-from datetime import datetime
+import os
+from datetime import datetime, timedelta
 
 import msal
 import pandas as pd
@@ -6,7 +7,12 @@ import requests
 
 from Utils.Common import get_file_path
 
-process_date = '2024-05-15'
+# Custom run date
+# process_date = '2024-05-17'
+
+# Get the current date and format it
+current_date = datetime.now().strftime('%Y-%m-%d')
+process_date = current_date
 
 # Format the process_date for the input file names
 process_date_nexen = datetime.strptime(process_date, '%Y-%m-%d').strftime('%d%m%Y')  # (CashBal_DDMMYYYY.csv)
@@ -129,33 +135,58 @@ df_diff['Difference'] = df_diff['Difference'].apply(lambda x: f'${x:,.2f}')
 df_diff_styled = df_diff.style.map(highlight_diff, subset=['Difference'])
 
 # Azure AD app configuration
-client_id = 'ff3d6125-88c0-4d4d-9980-f276aebd5255'
+client_id = '10b66482-7a87-40ec-a409-4635277f3ed5'
 tenant_id = '86cd4a88-29b5-4f22-ab55-8d9b2c81f747'
-client_secret = 'y2I8Q~rQ7yIRJN-e_oN4-O47J6QHIP.2kBA07bRp'
-redirect_uri = 'http://localhost'  # Replace with your app's redirect URI
+uri = 'http://localhost:8080'  # Replace with your app's redirect URI
+config = {
+    "client_id": client_id,
+    "authority": f"https://login.microsoftonline.com/{tenant_id}",
+    "scope": ["https://graph.microsoft.com/Mail.Send"],
+    "redirect_uri": "http://localhost:8080"  # Add the redirect URL here
+}
 
-# Authenticate and obtain an access token using client credentials flow
-authority = f'https://login.microsoftonline.com/{tenant_id}'
-scopes = ['https://graph.microsoft.com/.default']
+cache_file = "token_cache.bin"
+token_cache = msal.SerializableTokenCache()
 
-app = msal.ConfidentialClientApplication(
-    client_id=client_id,
-    authority=authority,
-    client_credential=client_secret
+if os.path.exists(cache_file):
+    with open(cache_file, "r") as f:
+        token_cache.deserialize(f.read())
+
+client = msal.PublicClientApplication(
+    config["client_id"],
+    authority=config["authority"],
+    token_cache=token_cache
 )
 
-result = app.acquire_token_for_client(scopes=scopes)
+accounts = client.get_accounts()
+if accounts:
+    result = client.acquire_token_silent(config["scope"], account=accounts[0])
+    if not result:
+        print("No cached token found. Authenticating interactively...")
+        result = client.acquire_token_interactive(scopes=config["scope"])
+else:
+    print("No cached accounts found. Authenticating interactively...")
+    result = client.acquire_token_interactive(scopes=config["scope"])
+
+if "error" in result:
+    print(f"Authentication failed with error: {result['error']}")
+    print(f"Error description: {result.get('error_description')}")
+    exit(1)
+
+with open(cache_file, "w") as f:
+    f.write(token_cache.serialize())
+
+access_token = result["access_token"]
 
 if 'access_token' in result:
     access_token = result['access_token']
 
     # Send the email using Microsoft Graph API
-    graph_api_url = 'https://graph.microsoft.com/v1.0/users/tony.hoang@lucidma.com/sendMail'
+    graph_api_url = 'https://graph.microsoft.com/v1.0/me/sendMail'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json'
     }
-
     # Convert the styled DataFrame to an HTML table
     html_table = df_diff_styled.to_html(index=False)
 
@@ -183,6 +214,8 @@ if 'access_token' in result:
     </head>
     <body>
         <h2>Cash Comparison Report - {process_date}</h2>
+        <p>The following table compares the cash balances between the Nexen report (CashBal) and the Cash Tracker output (TrackerState) for each fund and account. 
+        It highlights any differences greater than $5 in red. The table also includes the failed trade amounts for each fund and account.</p>
         {html_table}
 
         <h3>Failed trade details</h3>
@@ -197,6 +230,11 @@ if 'access_token' in result:
             'body': {
                 'contentType': 'HTML',
                 'content': body
+            },
+            'from': {
+                'emailAddress': {
+                    'address': 'operations@lucidma.com'
+                }
             },
             'toRecipients': [
                 {
