@@ -3,40 +3,93 @@ from datetime import datetime
 
 import pandas as pd
 from Utils.Common import print_df, get_file_path
-from Utils.SQL_queries import current_trade_daily_report_helix_trade_query, as_of_trade_daily_report_helix_trade_query
+from Utils.SQL_queries import (
+    current_trade_daily_report_helix_trade_query,
+    as_of_trade_daily_report_helix_trade_query,
+)
 from Utils.database_utils import execute_sql_query
 
 # Get the current date and format it
-current_date = datetime.now().strftime('%Y-%m-%d')
+current_date = datetime.now().strftime("%Y-%m-%d")
 valdate = current_date
 
-df_helix_current_trade = execute_sql_query(current_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
-helix_cols = ['Series','Trade ID','Issue Description', 'TradeType','Trade Date','Money','Counterparty','Orig. Rate','Orig. Price','HairCut','Spread', 'BondID','Status','Par/Quantity','Market Value','Comments', 'User']
+df_helix_current_trade = execute_sql_query(
+    current_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,)
+)
+helix_cols = [
+    "Series",
+    "Trade ID",
+    "Issue Description",
+    "TradeType",
+    "Trade Date",
+    "Money",
+    "Counterparty",
+    "Orig. Rate",
+    "Orig. Price",
+    "HairCut",
+    "Spread",
+    "BondID",
+    "Status",
+    "Par/Quantity",
+    "Market Value",
+    "Comments",
+    "User",
+]
 df_helix_current_trade = df_helix_current_trade[helix_cols]
 
-df_helix_as_of_trade = execute_sql_query(as_of_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
-helix_cols = ['Series','Trade ID','Issue Description', 'TradeType','Trade Date','Money','Counterparty','Orig. Rate','Orig. Price','HairCut','Spread', 'BondID','Status','Par/Quantity','Market Value','Comments', 'User']
+df_helix_as_of_trade = execute_sql_query(
+    as_of_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,)
+)
+helix_cols = [
+    "Series",
+    "Trade ID",
+    "Issue Description",
+    "TradeType",
+    "Trade Date",
+    "Money",
+    "Counterparty",
+    "Orig. Rate",
+    "Orig. Price",
+    "HairCut",
+    "Spread",
+    "BondID",
+    "Status",
+    "Par/Quantity",
+    "Market Value",
+    "Comments",
+    "User",
+]
 df_helix_as_of_trade = df_helix_as_of_trade[helix_cols]
 
-nexen_path = get_file_path('S:/Users/THoang/Data/Cash_and_Security_Transactions.xls')
+nexen_path = get_file_path("S:/Users/THoang/Data/Cash_and_Security_Transactions.xls")
 df_cash_trade = pd.read_excel(nexen_path)
-cash_cols = ['Account Number', 'Account Name','Cash Post Date','Cash Value Date', 'Reporting Currency Amount', 'Status','Transaction Type Name','Detail Tran Type Description']
+cash_cols = [
+    "Account Number",
+    "Account Name",
+    "Cash Post Date",
+    "Cash Value Date",
+    "Reporting Currency Amount",
+    "Status",
+    "Transaction Type Name",
+    "Detail Tran Type Description",
+]
 df_cash_trade = df_cash_trade[cash_cols]
 
 import pandas as pd
 import msal
 import requests
 
+
 def send_email(df_helix_trade, df_cash_trade, report_date):
     # Azure AD app configuration
-    client_id = '10b66482-7a87-40ec-a409-4635277f3ed5'
-    tenant_id = '86cd4a88-29b5-4f22-ab55-8d9b2c81f747'
-    uri = 'http://localhost:8080'  # Replace with your app's redirect URI
+    client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
+    tenant_id = "86cd4a88-29b5-4f22-ab55-8d9b2c81f747"
+    uri = "http://localhost:8080"  # Replace with your app's redirect URI
     config = {
         "client_id": client_id,
         "authority": f"https://login.microsoftonline.com/{tenant_id}",
         "scope": ["https://graph.microsoft.com/Mail.Send"],
-        "redirect_uri": "http://localhost:8080"  # Add the redirect URL here
+        "redirect_uri": "http://localhost:8080",  # Add the redirect URL here
     }
 
     cache_file = "token_cache.bin"
@@ -47,9 +100,7 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
             token_cache.deserialize(f.read())
 
     client = msal.PublicClientApplication(
-        config["client_id"],
-        authority=config["authority"],
-        token_cache=token_cache
+        config["client_id"], authority=config["authority"], token_cache=token_cache
     )
 
     accounts = client.get_accounts()
@@ -70,15 +121,21 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
     with open(cache_file, "w") as f:
         f.write(token_cache.serialize())
 
-    if 'access_token' in result:
-        access_token = result['access_token']
+    if "access_token" in result:
+        access_token = result["access_token"]
 
         # Format the DataFrames
-        df_helix_trade['Trade ID'] = df_helix_trade['Trade ID'].astype(int)
-        df_helix_trade['Money'] = df_helix_trade['Money'].apply(lambda x: f'{x:,.2f}')
-        df_helix_trade['Par/Quantity'] = df_helix_trade['Par/Quantity'].apply(lambda x: f'{x:,.2f}')
-        df_helix_trade['Market Value'] = df_helix_trade['Market Value'].apply(lambda x: f'{x:,.2f}')
-        df_cash_trade['Reporting Currency Amount'] = df_cash_trade['Reporting Currency Amount'].apply(lambda x: f'{x:,.2f}')
+        df_helix_trade["Trade ID"] = df_helix_trade["Trade ID"].astype(int)
+        df_helix_trade["Money"] = df_helix_trade["Money"].apply(lambda x: f"{x:,.2f}")
+        df_helix_trade["Par/Quantity"] = df_helix_trade["Par/Quantity"].apply(
+            lambda x: f"{x:,.2f}"
+        )
+        df_helix_trade["Market Value"] = df_helix_trade["Market Value"].apply(
+            lambda x: f"{x:,.2f}"
+        )
+        df_cash_trade["Reporting Currency Amount"] = df_cash_trade[
+            "Reporting Currency Amount"
+        ].apply(lambda x: f"{x:,.2f}")
 
         # Create the email body
         body = f"""
@@ -112,43 +169,24 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
         </html>
         """
 
-        graph_api_url = 'https://graph.microsoft.com/v1.0/me/sendMail'
+        graph_api_url = "https://graph.microsoft.com/v1.0/me/sendMail"
         headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
         }
 
         payload = {
-            'message': {
-                'subject': f'[TEST] Daily Trade Report - {report_date.strftime("%m-%d-%Y")}',
-                'body': {
-                    'contentType': 'HTML',
-                    'content': body
-                },
-                'from': {
-                    'emailAddress': {
-                        'address': 'operations@lucidma.com'
-                    }
-                },
-                'toRecipients': [
-                    {
-                        'emailAddress': {
-                            'address': 'tony.hoang@lucidma.com'
-                        }
-                    },
-                    {
-                        'emailAddress': {
-                            'address': 'Heather.Campbell@lucidma.com'
-                        }
-                    },
+            "message": {
+                "subject": f'[TEST] Daily Trade Report - {report_date.strftime("%m-%d-%Y")}',
+                "body": {"contentType": "HTML", "content": body},
+                "from": {"emailAddress": {"address": "operations@lucidma.com"}},
+                "toRecipients": [
+                    {"emailAddress": {"address": "tony.hoang@lucidma.com"}},
+                    {"emailAddress": {"address": "Heather.Campbell@lucidma.com"}},
                 ],
-                'ccRecipients': [
-                    {
-                        'emailAddress': {
-                            'address': 'operations@lucidma.com'
-                        }
-                    }
-                ]
+                "ccRecipients": [
+                    {"emailAddress": {"address": "operations@lucidma.com"}}
+                ],
             }
         }
 
@@ -164,7 +202,7 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
         print(result.get("error"))
         print(result.get("error_description"))
 
-# Example usage
-report_date = pd.to_datetime('2024-05-15')
-send_email(df_helix_current_trade, df_cash_trade, report_date)
 
+# Example usage
+report_date = pd.to_datetime("2024-05-15")
+send_email(df_helix_current_trade, df_cash_trade, report_date)

@@ -24,6 +24,9 @@
       </list>
     </option>
   </component>
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -39,6 +42,9 @@
     &quot;accountId&quot;: &quot;d929ae66-f005-4b8e-8c20-f972792724c8&quot;
   }
 }</component>
+  <component name="OptimizeOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
 }</component>
@@ -74,10 +80,12 @@
     "git-widget-placeholder": "main",
     "last_opened_file_path": "S:/Users/THoang/Tech/LucidMA/Reporting/Daily_report",
     "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.stylelint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.stylelint": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.externalTools",
+    "settings.editor.selected.configurable": "actions.on.save",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -254,7 +262,7 @@
       <updated>1715604964721</updated>
       <workItem from="1715604966776" duration="46030000" />
       <workItem from="1715866593666" duration="26492000" />
-      <workItem from="1716224926524" duration="6375000" />
+      <workItem from="1716224926524" duration="7745000" />
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
