@@ -1,13 +1,22 @@
+import os
+from datetime import datetime
+
 import pandas as pd
 from Utils.Common import print_df, get_file_path
-from Utils.SQL_queries import daily_report_helix_trade_query
+from Utils.SQL_queries import current_trade_daily_report_helix_trade_query, as_of_trade_daily_report_helix_trade_query
 from Utils.database_utils import execute_sql_query
 
-valdate = '2024-05-15'
+# Get the current date and format it
+current_date = datetime.now().strftime('%Y-%m-%d')
+valdate = current_date
 
-df_helix_trade = execute_sql_query(daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
+df_helix_current_trade = execute_sql_query(current_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
 helix_cols = ['Series','Trade ID','Issue Description', 'TradeType','Trade Date','Money','Counterparty','Orig. Rate','Orig. Price','HairCut','Spread', 'BondID','Status','Par/Quantity','Market Value','Comments', 'User']
-df_helix_trade = df_helix_trade[helix_cols]
+df_helix_current_trade = df_helix_current_trade[helix_cols]
+
+df_helix_as_of_trade = execute_sql_query(as_of_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,))
+helix_cols = ['Series','Trade ID','Issue Description', 'TradeType','Trade Date','Money','Counterparty','Orig. Rate','Orig. Price','HairCut','Spread', 'BondID','Status','Par/Quantity','Market Value','Comments', 'User']
+df_helix_as_of_trade = df_helix_as_of_trade[helix_cols]
 
 nexen_path = get_file_path('S:/Users/THoang/Data/Cash_and_Security_Transactions.xls')
 df_cash_trade = pd.read_excel(nexen_path)
@@ -20,22 +29,46 @@ import requests
 
 def send_email(df_helix_trade, df_cash_trade, report_date):
     # Azure AD app configuration
-    client_id = 'ff3d6125-88c0-4d4d-9980-f276aebd5255'
+    client_id = '10b66482-7a87-40ec-a409-4635277f3ed5'
     tenant_id = '86cd4a88-29b5-4f22-ab55-8d9b2c81f747'
-    client_secret = 'y2I8Q~rQ7yIRJN-e_oN4-O47J6QHIP.2kBA07bRp'
-    redirect_uri = 'http://localhost'  # Replace with your app's redirect URI
+    uri = 'http://localhost:8080'  # Replace with your app's redirect URI
+    config = {
+        "client_id": client_id,
+        "authority": f"https://login.microsoftonline.com/{tenant_id}",
+        "scope": ["https://graph.microsoft.com/Mail.Send"],
+        "redirect_uri": "http://localhost:8080"  # Add the redirect URL here
+    }
 
-    # Authenticate and obtain an access token using client credentials flow
-    authority = f'https://login.microsoftonline.com/{tenant_id}'
-    scopes = ['https://graph.microsoft.com/.default']
+    cache_file = "token_cache.bin"
+    token_cache = msal.SerializableTokenCache()
 
-    app = msal.ConfidentialClientApplication(
-        client_id=client_id,
-        authority=authority,
-        client_credential=client_secret
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            token_cache.deserialize(f.read())
+
+    client = msal.PublicClientApplication(
+        config["client_id"],
+        authority=config["authority"],
+        token_cache=token_cache
     )
 
-    result = app.acquire_token_for_client(scopes=scopes)
+    accounts = client.get_accounts()
+    if accounts:
+        result = client.acquire_token_silent(config["scope"], account=accounts[0])
+        if not result:
+            print("No cached token found. Authenticating interactively...")
+            result = client.acquire_token_interactive(scopes=config["scope"])
+    else:
+        print("No cached accounts found. Authenticating interactively...")
+        result = client.acquire_token_interactive(scopes=config["scope"])
+
+    if "error" in result:
+        print(f"Authentication failed with error: {result['error']}")
+        print(f"Error description: {result.get('error_description')}")
+        exit(1)
+
+    with open(cache_file, "w") as f:
+        f.write(token_cache.serialize())
 
     if 'access_token' in result:
         access_token = result['access_token']
@@ -69,16 +102,17 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
         <body>
             <h2>Daily Trade Report - {report_date.strftime("%m-%d-%Y")}</h2>
             <h3>Helix trades</h3>
-            <p>All trades in Helix that were entered as of {report_date.strftime("%m-%d-%Y")}</p>
+            <h4>All current trades in Helix that were entered as of {report_date.strftime("%m-%d-%Y")}:</h4>
             {df_helix_trade.to_html(index=False)}
+            <h4>As of trades in Helix:</h4>
+            {df_helix_as_of_trade.to_html(index=False)}
             <h3>Cash trades</h3>
             {df_cash_trade.to_html(index=False)}
         </body>
         </html>
         """
 
-        # Send the email using Microsoft Graph API
-        graph_api_url = 'https://graph.microsoft.com/v1.0/users/tony.hoang@lucidma.com/sendMail'
+        graph_api_url = 'https://graph.microsoft.com/v1.0/me/sendMail'
         headers = {
             'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json'
@@ -90,6 +124,11 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
                 'body': {
                     'contentType': 'HTML',
                     'content': body
+                },
+                'from': {
+                    'emailAddress': {
+                        'address': 'operations@lucidma.com'
+                    }
                 },
                 'toRecipients': [
                     {
@@ -103,13 +142,13 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
                         }
                     },
                 ],
-                # 'ccRecipients': [
-                #     {
-                #         'emailAddress': {
-                #             'address': 'operations@lucidma.com'
-                #         }
-                #     }
-                # ]
+                'ccRecipients': [
+                    {
+                        'emailAddress': {
+                            'address': 'operations@lucidma.com'
+                        }
+                    }
+                ]
             }
         }
 
@@ -127,5 +166,5 @@ def send_email(df_helix_trade, df_cash_trade, report_date):
 
 # Example usage
 report_date = pd.to_datetime('2024-05-15')
-send_email(df_helix_trade, df_cash_trade, report_date)
+send_email(df_helix_current_trade, df_cash_trade, report_date)
 

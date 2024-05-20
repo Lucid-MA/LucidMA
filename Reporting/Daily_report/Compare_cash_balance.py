@@ -176,8 +176,6 @@ if "error" in result:
 with open(cache_file, "w") as f:
     f.write(token_cache.serialize())
 
-access_token = result["access_token"]
-
 if 'access_token' in result:
     access_token = result['access_token']
 
