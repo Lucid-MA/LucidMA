@@ -301,6 +301,8 @@ processed_files_tracker = "Bronze Table Processed NEXEN Cash Balance"
 pattern = "CashBal"
 # directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive")
 directory = get_file_path(r"S:/Users/THoang/Data")
+# Sample file path
+framework_file = "S:/Users/THoang/Data/CashBal_20052024.csv"
 
 
 def extract_date_and_indicator(filename):
@@ -346,7 +348,10 @@ def create_table_with_schema(tb_name, df):
     ]
 
     for column_name in df.columns:
-        column_name = column_name.lower().replace(" ", "_")
+        if column_name == "Account - GSP":
+            column_name = "account_gsp"
+        else:
+            column_name = re.sub(r"[-\s]+", "_", column_name.lower())
         columns.append(Column(column_name, String))
 
     table = Table(tb_name, metadata, *columns, extend_existing=True)
@@ -359,32 +364,42 @@ def upsert_data(tb_name, df):
         try:
             with conn.begin():  # Start a transaction
                 # Prepare a SQL MERGE statement using a subquery
-                column_names = [col.lower().replace(" ", "_") for col in df.columns]
+                column_names = []
+                for col in df.columns:
+                    if col == "Account - GSP":
+                        column_names.append("account_gsp")
+                    else:
+                        column_names.append(re.sub(r"[-\s]+", "_", col.lower()))
                 target_columns = ", ".join(
-                    [f"target.{col} = source.{col}" for col in column_names]
+                    [f'target."{col}" = source."{col}"' for col in column_names]
                 )
-                source_columns = ", ".join([f":{col} AS {col}" for col in column_names])
-                insert_columns = ", ".join(column_names)
-                insert_values = ", ".join([f"source.{col}" for col in column_names])
+                source_columns = ", ".join(
+                    [f':{col} AS "{col}"' for col in column_names]
+                )
+                insert_columns = ", ".join([f'"{col}"' for col in column_names])
+                insert_values = ", ".join([f'source."{col}"' for col in column_names])
                 upsert_sql = text(
                     f"""
                     MERGE INTO {tb_name} AS target
                     USING (
-                        SELECT {source_columns}, :balance_id AS balance_id, :source AS source, :timestamp AS timestamp
+                        SELECT {source_columns}, :balance_id AS "balance_id", :source AS "source", :timestamp AS "timestamp"
                     ) AS source
-                    ON target.balance_id = source.balance_id
+                    ON target."balance_id" = source."balance_id"
                     WHEN MATCHED THEN
-                        UPDATE SET {target_columns}, target.timestamp = source.timestamp, target.source = source.source
+                        UPDATE SET {target_columns}, target."timestamp" = source."timestamp", target."source" = source."source"
                     WHEN NOT MATCHED THEN
-                        INSERT ({insert_columns}, balance_id, source, timestamp)
-                        VALUES ({insert_values}, source.balance_id, source.source, source.timestamp);
+                        INSERT ({insert_columns}, "balance_id", "source", "timestamp")
+                        VALUES ({insert_values}, source."balance_id", source."source", source."timestamp");
                     """
                 )
 
                 # Execute the MERGE command for each row in the DataFrame
                 for _, row in df.iterrows():
                     try:
-                        conn.execute(upsert_sql, row.to_dict())
+                        row_data = row.rename(
+                            {"Account - GSP": "account_gsp"}
+                        ).to_dict()
+                        conn.execute(upsert_sql, row_data)
                     except pyodbc.ProgrammingError as e:
                         print(f"Error occurred for row: {row.to_dict()}")
                         print(f"Error message: {str(e)}")
@@ -400,7 +415,7 @@ def upsert_data(tb_name, df):
 tb_name = "bronze_nexen_cash_balance"
 inspector = inspect(engine)
 if not inspector.has_table("table_name"):
-    create_table_with_schema(tb_name, pd.DataFrame())
+    create_table_with_schema(tb_name, pd.read_csv(framework_file))
 
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
