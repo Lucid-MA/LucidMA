@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from time import strptime
 
 import pandas as pd
 
@@ -65,19 +64,28 @@ helix_cols = [
 df_helix_as_of_trade = df_helix_as_of_trade[helix_cols]
 
 nexen_path = get_file_path(
-    f"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/CashRecon_{strptime(valdate, "%Y-%m-%d").strftime("%d%m%Y")}.xls")
+    f"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/CashRecon_{datetime.strptime(valdate, "%Y-%m-%d").strftime("%d%m%Y")}.xls")
 df_cash_trade = pd.read_excel(nexen_path)
 cash_cols = [
-    "Account Number",
-    "Account Name",
-    "Cash Post Date",
-    "Cash Value Date",
-    "Reporting Currency Amount",
-    "Status",
-    "Transaction Type Name",
-    "Detail Tran Type Description",
+    "cash_account_number",
+    "cash_account_name",
+    # "Cash Post Date",
+    "cash_value_date",
+    "local_amount",
+    "status",
+    "transaction_type_name",
+    "detail_tran_type_description",
 ]
+
+cleaned_columns = [
+    col.rstrip('\n').replace(' ', '_').lower()
+    for col in df_cash_trade.columns
+]
+
+df_cash_trade.columns = cleaned_columns
+
 df_cash_trade = df_cash_trade[cash_cols]
+df_cash_trade = df_cash_trade[df_cash_trade['Transaction Type Name'] in ['CASH DEPOSIT', 'CASH WITHDRAW']]
 
 import pandas as pd
 import msal

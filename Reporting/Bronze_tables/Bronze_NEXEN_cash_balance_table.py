@@ -1,19 +1,20 @@
 import os
 import re
+import time
+from datetime import datetime
 
 import pandas as pd
 import pyodbc
-from sqlalchemy import text, Table, MetaData, Column, String, Integer, Float, Date, DateTime, inspect
+from sqlalchemy import text, Table, MetaData, Column, String, Date, DateTime, inspect
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime
+
 from Utils.Common import get_file_path
-from Utils.Constants import cash_balance_column_order, nexen_cash_balance_column_order
+from Utils.Constants import nexen_cash_balance_column_order
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
-import time
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine('sql_server_2')
+engine = get_database_engine("sql_server_2")
 
 # File to track processed files
 processed_files_tracker = "Bronze Table Processed NEXEN Cash Balance"
@@ -21,6 +22,7 @@ processed_files_tracker = "Bronze Table Processed NEXEN Cash Balance"
 # Directory and file pattern
 pattern = "CashBal"
 directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive")
+
 
 def extract_date_and_indicator(filename):
     """
@@ -40,46 +42,52 @@ def extract_date_and_indicator(filename):
         return date_formatted
     return None
 
+
 def read_processed_files():
     try:
-        with open(processed_files_tracker, 'r') as file:
+        with open(processed_files_tracker, "r") as file:
             return set(file.read().splitlines())
     except FileNotFoundError:
         return set()
 
 
 def mark_file_processed(filename):
-    with open(processed_files_tracker, 'a') as file:
-        file.write(filename + '\n')
+    with open(processed_files_tracker, "a") as file:
+        file.write(filename + "\n")
 
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
     metadata.bind = engine
-    table = Table(tb_name, metadata,
-                  Column("balance_id", String(255), primary_key=True),
-                  Column("cash_account_number", String),
-                  Column("cash_account_name", String),
-                  Column("sweep_vehicle_number", String),
-                  Column("sweep_vehicle_name", String),
-                  Column("local_currency_code", String),
-                  Column("cash_reporting_date", Date),
-                  Column("beginning_balance_local", Float),
-                  Column("net_activity_local", Float),
-                  Column("ending_balance_local", Float),
-                  Column("back_valued_amount", String),
-                  Column("timestamp", DateTime),
-                  Column("source", String),
-                  extend_existing=True)
+    table = Table(
+        tb_name,
+        metadata,
+        Column("balance_id", String(255), primary_key=True),
+        Column("cash_account_number", String),
+        Column("cash_account_name", String),
+        Column("sweep_vehicle_number", String),
+        Column("sweep_vehicle_name", String),
+        Column("local_currency_code", String),
+        Column("cash_reporting_date", Date),
+        Column("beginning_balance_local", String),
+        Column("net_activity_local", String),
+        Column("ending_balance_local", String),
+        Column("back_valued_amount", String),
+        Column("timestamp", DateTime),
+        Column("source", String),
+        extend_existing=True,
+    )
     metadata.create_all(engine)
     print(f"Table {tb_name} created successfully or already exists.")
+
 
 def upsert_data(tb_name, df):
     with engine.connect() as conn:
         try:
             with conn.begin():  # Start a transaction
                 # Prepare a SQL MERGE statement using a subquery
-                upsert_sql = text(f"""
+                upsert_sql = text(
+                    f"""
                                             MERGE INTO bronze_nexen_cash_balance AS target
                                             USING (
                                                 SELECT
@@ -144,7 +152,7 @@ def upsert_data(tb_name, df):
                                                     source.timestamp
                                                 );
                                             """
-                                  )
+                )
 
                 # Execute the MERGE command for each row in the DataFrame
                 for _, row in df.iterrows():
@@ -155,7 +163,8 @@ def upsert_data(tb_name, df):
                         print(f"Error message: {str(e)}")
                         raise
             print(
-                f"Data for {df['cash_reporting_date'][0]} upserted successfully into {tb_name}.")
+                f"Data for {df['cash_reporting_date'][0]} upserted successfully into {tb_name}."
+            )
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
             raise
@@ -163,13 +172,16 @@ def upsert_data(tb_name, df):
 
 tb_name = "bronze_nexen_cash_balance"
 inspector = inspect(engine)
-if not inspector.has_table('table_name'):
+if not inspector.has_table("table_name"):
     create_table_with_schema(tb_name)
-
 
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
-    if filename.startswith(pattern) and filename.endswith(".csv") and filename not in read_processed_files():
+    if (
+            filename.startswith(pattern)
+            and filename.endswith(".csv")
+            and filename not in read_processed_files()
+    ):
         filepath = os.path.join(directory, filename)
 
         date = extract_date_and_indicator(filename)
@@ -186,34 +198,51 @@ for filename in os.listdir(directory):
         )
 
         # Rename columns
-        df.rename(columns={
-            "Cash Account Number": "cash_account_number",
-            "Cash Account Name": "cash_account_name",
-            "Sweep Vehicle Number": "sweep_vehicle_number",
-            "Sweep Vehicle Name": "sweep_vehicle_name",
-            "Local Currency Code": "local_currency_code",
-            "Cash Reporting Date": "cash_reporting_date",
-            "Beginning Balance Local": "beginning_balance_local",
-            "Net Activity Local": "net_activity_local",
-            "Ending Balance Local": "ending_balance_local",
-            "Back Valued Amount": "back_valued_amount"
+        df.rename(
+            columns={
+                "Cash Account Number": "cash_account_number",
+                "Cash Account Name": "cash_account_name",
+                "Sweep Vehicle Number": "sweep_vehicle_number",
+                "Sweep Vehicle Name": "sweep_vehicle_name",
+                "Local Currency Code": "local_currency_code",
+                "Cash Reporting Date": "cash_reporting_date",
+                "Beginning Balance Local": "beginning_balance_local",
+                "Net Activity Local": "net_activity_local",
+                "Ending Balance Local": "ending_balance_local",
+                "Back Valued Amount": "back_valued_amount",
             },
-            inplace=True)
+            inplace=True,
+        )
 
         # Create Balance_ID
-        df["balance_id"] = df.apply(lambda row: hash_string(f"{row['cash_account_number']}{row['sweep_vehicle_number']}{row['cash_reporting_date']}"), axis=1)
+        df["balance_id"] = df.apply(
+            lambda row: hash_string(
+                f"{row['cash_account_number']}{row['sweep_vehicle_number']}{row['cash_reporting_date']}"
+            ),
+            axis=1,
+        )
         df["source"] = filename
         current_time = time.time()
         current_datetime = datetime.fromtimestamp(current_time)
-        df['beginning_balance_local'] = pd.to_numeric(df['beginning_balance_local'], errors='coerce').fillna(0)
-        df['net_activity_local'] = pd.to_numeric(df['net_activity_local'], errors='coerce').fillna(0)
-        df['ending_balance_local'] = pd.to_numeric(df['ending_balance_local'], errors='coerce').fillna(0)
-        df['cash_reporting_date'] = pd.to_datetime(df['cash_reporting_date']).dt.date
-        df['sweep_vehicle_number'] = df['sweep_vehicle_number'].where(pd.notnull(df['sweep_vehicle_number']), None)
-        df['sweep_vehicle_name'] = df['sweep_vehicle_name'].where(pd.notnull(df['sweep_vehicle_name']), None)
+        df["beginning_balance_local"] = pd.to_numeric(
+            df["beginning_balance_local"], errors="coerce"
+        ).fillna(0)
+        df["net_activity_local"] = pd.to_numeric(
+            df["net_activity_local"], errors="coerce"
+        ).fillna(0)
+        df["ending_balance_local"] = pd.to_numeric(
+            df["ending_balance_local"], errors="coerce"
+        ).fillna(0)
+        df["cash_reporting_date"] = pd.to_datetime(df["cash_reporting_date"]).dt.date
+        df["sweep_vehicle_number"] = df["sweep_vehicle_number"].where(
+            pd.notnull(df["sweep_vehicle_number"]), None
+        )
+        df["sweep_vehicle_name"] = df["sweep_vehicle_name"].where(
+            pd.notnull(df["sweep_vehicle_name"]), None
+        )
 
         # Format datetime object to string in the desired format
-        formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
         # Assign formatted datetime to a new column in the DataFrame
         df["timestamp"] = formatted_datetime
 
@@ -231,7 +260,7 @@ for filename in os.listdir(directory):
             "ending_balance_local",
             "back_valued_amount",
             "timestamp",
-            "source"
+            "source",
         ]
 
         # Reorder the columns in the DataFrame
