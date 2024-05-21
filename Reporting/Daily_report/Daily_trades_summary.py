@@ -1,8 +1,10 @@
 import os
 from datetime import datetime
+from time import strptime
 
 import pandas as pd
-from Utils.Common import print_df, get_file_path
+
+from Utils.Common import get_file_path
 from Utils.SQL_queries import (
     current_trade_daily_report_helix_trade_query,
     as_of_trade_daily_report_helix_trade_query,
@@ -11,7 +13,8 @@ from Utils.database_utils import execute_sql_query
 
 # Get the current date and format it
 current_date = datetime.now().strftime("%Y-%m-%d")
-valdate = current_date
+# valdate = current_date
+valdate = '2024-05-10'
 
 df_helix_current_trade = execute_sql_query(
     current_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,)
@@ -61,7 +64,8 @@ helix_cols = [
 ]
 df_helix_as_of_trade = df_helix_as_of_trade[helix_cols]
 
-nexen_path = get_file_path("S:/Users/THoang/Data/Cash_and_Security_Transactions.xls")
+nexen_path = get_file_path(
+    f"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/CashRecon_{strptime(valdate, "%Y-%m-%d").strftime("%d%m%Y")}.xls")
 df_cash_trade = pd.read_excel(nexen_path)
 cash_cols = [
     "Account Number",
