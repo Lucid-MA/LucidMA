@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, DateTime, inspect
+from sqlalchemy import text, Table, MetaData, Column, String, DateTime, inspect, Date
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path
@@ -61,18 +61,26 @@ def create_table_with_schema(tb_name, df):
     metadata = MetaData()
     metadata.bind = engine
 
-    columns = [
-        Column("balance_id", String(255), primary_key=True),
-        Column("timestamp", DateTime),
-        Column("source", String),
-    ]
+    # Define 'balance_id' first
+    columns = [Column("balance_id", String(255), primary_key=True)]
 
+    # Define other columns from DataFrame, excluding the ones to be added last
     for column_name in df.columns:
-        if column_name == "Account - GSP":
-            column_name = "account_gsp"
-        else:
-            column_name = re.sub(r"[-\s]+", "_", column_name.lower())
-        columns.append(Column(column_name, String, nullable=True))
+        if column_name not in ["balance_id", "timestamp", "source", "report_date"]:
+            if column_name == "Account - GSP":
+                column_name = "account_gsp"
+            else:
+                column_name = re.sub(r"[-\s]+", "_", column_name.lower())
+            columns.append(Column(column_name, String, nullable=True))
+
+    # Add 'timestamp', 'source', 'report_date' at the end
+    columns.extend(
+        [
+            Column("timestamp", DateTime),
+            Column("source", String),
+            Column("report_date", Date),
+        ]
+    )
 
     table = Table(tb_name, metadata, *columns, extend_existing=True)
     metadata.create_all(engine)
@@ -84,14 +92,18 @@ def upsert_data(tb_name, df):
         try:
             with conn.begin():  # Start a transaction
                 # Prepare a SQL MERGE statement using a subquery
-                column_names = []
-                for col in df.columns:
-                    if col == "Account - GSP":
-                        column_names.append("account_gsp")
-                    elif col not in ["balance_id", "source", "timestamp"]:
-                        column_names.append(re.sub(r"[-\s]+", "_", col.lower()))
+                column_names = ["balance_id"]  # Start with 'balance_id'
 
-                column_names.extend(["balance_id", "source", "timestamp"])
+                # Add other columns, maintaining the order
+                for col in df.columns:
+                    if col not in ["balance_id", "timestamp", "source", "report_date"]:
+                        if col == "Account - GSP":
+                            column_names.append("account_gsp")
+                        else:
+                            column_names.append(re.sub(r"[-\s]+", "_", col.lower()))
+
+                # Append 'timestamp', 'source', 'report_date' at the end
+                column_names.extend(["timestamp", "source", "report_date"])
 
                 target_columns = ", ".join(
                     [f'target."{col}" = source."{col}"' for col in column_names]
@@ -101,6 +113,7 @@ def upsert_data(tb_name, df):
                 )
                 insert_columns = ", ".join([f'"{col}"' for col in column_names])
                 insert_values = ", ".join([f'source."{col}"' for col in column_names])
+
                 upsert_sql = text(
                     f"""
                     MERGE INTO {tb_name} AS target
@@ -186,16 +199,30 @@ for filename in os.listdir(directory):
         formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
         # Assign formatted datetime to a new column in the DataFrame
         df["timestamp"] = formatted_datetime
-
+        df["report_date"] = date
         # Replace NaN values with None
-        df = df.applymap(replace_nan_with_none)
+        df = df.apply(lambda x: x.map(replace_nan_with_none))
 
         # Example usage before upserting data
-        numeric_columns = ['transaction_count', 'beginning_balance_local', 'net_activity_local', 'ending_balance_local',
-                           'beginning_balance_reporting_currency', 'net_activity_reporting_currency',
-                           'ending_balance_reporting_currency', 'back_valued_amount', 'exchange_rate', 'account_gsp',
-                           'location_code', 'extended_account', 'entity_cid', 'immediate_parent_ipid',
-                           'ias_account_number', 'cid', 'balance_id']
+        numeric_columns = [
+            "transaction_count",
+            "beginning_balance_local",
+            "net_activity_local",
+            "ending_balance_local",
+            "beginning_balance_reporting_currency",
+            "net_activity_reporting_currency",
+            "ending_balance_reporting_currency",
+            "back_valued_amount",
+            "exchange_rate",
+            "account_gsp",
+            "location_code",
+            "extended_account",
+            "entity_cid",
+            "immediate_parent_ipid",
+            "ias_account_number",
+            "cid",
+            "balance_id",
+        ]
         df = convert_numeric_to_string(df, numeric_columns)
 
         try:
