@@ -21,8 +21,8 @@ valdate = current_date
 
 recipients = [
     "tony.hoang@lucidma.com",
-    # "Heather.Campbell@lucidma.com",
-    # "operations@lucidma.com",
+    "Heather.Campbell@lucidma.com",
+    "operations@lucidma.com",
 ]
 
 df_helix_current_trade = execute_sql_query(
