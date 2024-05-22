@@ -399,7 +399,7 @@ ORDER BY [Start Date]
 # Use for reporting
 current_trade_daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
-SET @valdate = %s;
+SET @valdate = ?
 
 SELECT
     case 
@@ -489,7 +489,7 @@ ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contra
 # Use for reporting
 as_of_trade_daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
-SET @valdate = %s;
+SET @valdate = ?
 
 SELECT
     case 

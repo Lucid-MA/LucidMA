@@ -12,8 +12,8 @@ from Utils.SQL_queries import (
 )
 from Utils.database_utils import execute_sql_query
 
-# Custom run date
-# val_date = '2024-05-17'
+# # Custom run date
+# valdate = "2024-05-20"
 
 # Get the current date and format it
 current_date = datetime.now().strftime("%Y-%m-%d")
@@ -21,8 +21,8 @@ valdate = current_date
 
 recipients = [
     "tony.hoang@lucidma.com",
-    "Heather.Campbell@lucidma.com",
-    "operations@lucidma.com",
+    # "Heather.Campbell@lucidma.com",
+    # "operations@lucidma.com",
 ]
 
 df_helix_current_trade = execute_sql_query(
