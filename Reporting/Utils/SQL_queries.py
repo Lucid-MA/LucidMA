@@ -309,7 +309,12 @@ USE HELIXREPO_PROD_02
 IF OBJECT_ID('tempdb..#tradedata') IS NOT NULL DROP TABLE #tradedata
 
 SELECT
-    tradepieces.company,
+    case 
+        when tradepieces.company = 44 then 'USG' 
+        when tradepieces.company = 45 then 'Prime' 
+        when tradepieces.company = 46 then 'MMT' 
+        when tradepieces.company = 48 then 'LMCP' 
+    end "Fund",
     Tradepieces.LEDGERNAME AS "Series",
     Tradepieces.TRADEPIECE AS "Trade ID",
     RTRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
@@ -394,10 +399,15 @@ ORDER BY [Start Date]
 # Use for reporting
 current_trade_daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
-SET @valdate = ?
+SET @valdate = %s;
 
 SELECT
-    tradepieces.company,
+    case 
+        when tradepieces.company = 44 then 'USG' 
+        when tradepieces.company = 45 then 'Prime' 
+        when tradepieces.company = 46 then 'MMT' 
+        when tradepieces.company = 48 then 'LMCP' 
+    end "Fund",
     Tradepieces.LEDGERNAME AS "Series",
     Tradepieces.TRADEPIECE AS "Trade ID",
     RTRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
@@ -476,14 +486,18 @@ AND CAST(tradepieces.STARTDATE AS DATE) >= @valdate
 ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC, [Start Date]
 """
 
-
 # Use for reporting
 as_of_trade_daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
-SET @valdate = ?
+SET @valdate = %s;
 
 SELECT
-    tradepieces.company,
+    case 
+        when tradepieces.company = 44 then 'USG' 
+        when tradepieces.company = 45 then 'Prime' 
+        when tradepieces.company = 46 then 'MMT' 
+        when tradepieces.company = 48 then 'LMCP' 
+    end "Fund",
     Tradepieces.LEDGERNAME AS "Series",
     Tradepieces.TRADEPIECE AS "Trade ID",
     RTRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
