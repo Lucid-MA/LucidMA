@@ -25,6 +25,14 @@ recipients = [
     "operations@lucidma.com",
 ]
 
+recipients_mmt = [
+    "tony.hoang@lucidma.com",
+    "Heather.Campbell@lucidma.com",
+    "martin.stpierre@lucidma.com",
+    "mattias.almers@lucidma.com",
+    "david.carlson@lucidma.com",
+]
+
 df_helix_current_trade = execute_sql_query(
     current_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,)
 )
@@ -181,6 +189,7 @@ def send_daily_trade_report(
         df_helix_trade, df_helix_as_of_trade, df_cash_trade, report_date, type
 ):
     global recipients
+    global recipients_mmt
 
     if df_helix_failed_to_transmitted_trade.empty:
         failed_trades_message = "There are no failed to transmit trades."
@@ -197,6 +206,7 @@ def send_daily_trade_report(
         df_cash_trade = df_cash_trade[
             ~df_cash_trade["cash_account_number"].isin(mmt_lcmp_accounts)
         ]
+        email_recipients = recipients
     else:
         df_helix_trade = df_helix_trade[df_helix_trade["Fund"].isin(["LMCP", "MMT"])]
         df_helix_as_of_trade = df_helix_as_of_trade[
@@ -205,6 +215,7 @@ def send_daily_trade_report(
         df_cash_trade = df_cash_trade[
             df_cash_trade["cash_account_number"].isin(mmt_lcmp_accounts)
         ]
+        email_recipients = recipients_mmt
 
     # Ensure df_helix_trade and df_helix_as_of_trade are not views of other DataFrames
     df_helix_trade = df_helix_trade.copy()
@@ -265,7 +276,7 @@ def send_daily_trade_report(
     """
 
     subject = f"Daily Trade Report for {type} - {valdate}"
-    recipients = recipients
+    recipients = email_recipients
     send_email(subject, body, recipients)
 
 
