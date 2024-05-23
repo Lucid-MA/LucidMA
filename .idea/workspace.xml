@@ -65,7 +65,7 @@
     "Python.Check_used_price.executor": "Run",
     "Python.Compare_cash_balance (1).executor": "Run",
     "Python.Compare_cash_flow.executor": "Run",
-    "Python.Daily_trades_summary.executor": "Debug",
+    "Python.Daily_trades_summary.executor": "Run",
     "Python.Draft.executor": "Run",
     "Python.Generate_price_source_file.executor": "Run",
     "Python.Hash.executor": "Run",
@@ -99,7 +99,7 @@
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Bronze_NEXEN_cash_balance_table">
+  <component name="RunManager" selected="Python.Daily_trades_summary">
     <configuration name="Bronze_NEXEN_cash_balance_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -224,8 +224,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.Bronze_NEXEN_cash_balance_table" />
         <item itemvalue="Python.Daily_trades_summary" />
+        <item itemvalue="Python.Bronze_NEXEN_cash_balance_table" />
         <item itemvalue="Python.Compare_cash_balance (1)" />
         <item itemvalue="Python.Draft" />
         <item itemvalue="Python.SQL_queries" />
@@ -261,7 +261,7 @@
       <updated>1715604964721</updated>
       <workItem from="1715604966776" duration="46030000" />
       <workItem from="1715866593666" duration="26492000" />
-      <workItem from="1716224926524" duration="24866000" />
+      <workItem from="1716224926524" duration="27795000" />
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
@@ -282,18 +282,8 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Reporting/Daily_report/Daily_trades_summary.py</url>
-          <line>218</line>
+          <line>292</line>
           <option name="timeStamp" value="3" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Reporting/Daily_report/Daily_trades_summary.py</url>
-          <line>87</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Reporting/Daily_report/Daily_trades_summary.py</url>
-          <line>86</line>
-          <option name="timeStamp" value="5" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_NEXEN_cash_balance_table.py</url>
@@ -317,7 +307,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_daily_price_IDC_table.coverage" NAME="Bronze_daily_price_IDC_table Coverage Results" MODIFIED="1715089068919" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Cash_Balance.coverage" NAME="Bronze Cash Balance Coverage Results" MODIFIED="1712675292890" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns.coverage" NAME="Calculating Returns Coverage Results" MODIFIED="1712080460907" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Daily_trades_summary.coverage" NAME="Daily_trades_summary Coverage Results" MODIFIED="1716324197848" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Daily_report" />
+    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Daily_trades_summary.coverage" NAME="Daily_trades_summary Coverage Results" MODIFIED="1716497713484" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Daily_report" />
     <SUITE FILE_PATH="coverage/LucidMA$Hash.coverage" NAME="Hash Coverage Results" MODIFIED="1715278264386" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Utils" />
     <SUITE FILE_PATH="coverage/LucidMA$Check_used_price.coverage" NAME="Check_used_price Coverage Results" MODIFIED="1715205974795" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Silver_OC_table__1_.coverage" NAME="Silver_OC_table (1) Coverage Results" MODIFIED="1713385145109" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
