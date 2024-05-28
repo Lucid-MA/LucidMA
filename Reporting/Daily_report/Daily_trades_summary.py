@@ -48,6 +48,8 @@ helix_cols = [
     "Issue Description",
     "TradeType",
     "Trade Date",
+    "Start Date",
+    "End Date",
     "Money",
     "Counterparty",
     "Orig. Rate",
@@ -60,6 +62,7 @@ helix_cols = [
     "Market Value",
     "Comments",
     "User",
+    "Entry Time",
 ]
 
 df_helix_current_trade = df_helix_current_trade[helix_cols]
