@@ -3,36 +3,45 @@ from sqlalchemy import text, Table, MetaData, Column, String, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates
-from Utils.database_utils import get_database_engine, read_table_from_db
+from Utils.SQL_queries import OC_query
+from Utils.database_utils import (
+    get_database_engine,
+    read_table_from_db,
+    execute_sql_query,
+)
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine('postgres')
+engine = get_database_engine("postgres")
 
 """
 This script creates a table 'oc_rates' in the database
 """
 
+
 def create_table_with_schema(tb_name):
     metadata = MetaData()
     metadata.bind = engine
-    table = Table(tb_name, metadata,
-                  Column("oc_rates_id", String, primary_key=True),
-                  Column("fund", String),
-                  Column("series", String),
-                  Column("report_date", Date),
-                  Column("rating_buckets", String),
-                  Column("oc_rate", Float),
-                  Column("investment_amount", Float),
-                  Column("collateral_mv", Float),
-                  Column("wtd_avg_rate", Float),
-                  Column("wtd_avg_spread", Float),
-                  Column("wtd_avg_haircut", Float),
-                  Column("percentage_of_series_portfolio", Float),
-                  Column("trade_invest", Float),
-                  Column("pledged_cash_margin", Float),
-                  Column("projected_total_balance", Float),
-                  Column("total_invest", Float),
-                  extend_existing=True)
+    table = Table(
+        tb_name,
+        metadata,
+        Column("oc_rates_id", String, primary_key=True),
+        Column("fund", String),
+        Column("series", String),
+        Column("report_date", Date),
+        Column("rating_buckets", String),
+        Column("oc_rate", Float),
+        Column("investment_amount", Float),
+        Column("collateral_mv", Float),
+        Column("wtd_avg_rate", Float),
+        Column("wtd_avg_spread", Float),
+        Column("wtd_avg_haircut", Float),
+        Column("percentage_of_series_portfolio", Float),
+        Column("trade_invest", Float),
+        Column("pledged_cash_margin", Float),
+        Column("projected_total_balance", Float),
+        Column("total_invest", Float),
+        extend_existing=True,
+    )
     metadata.create_all(engine)
     print(f"Table {tb_name} created successfully or already exists.")
 
@@ -48,7 +57,8 @@ def upsert_data(tb_name, df):
                     [
                         f'"{col}"=EXCLUDED."{col}"'
                         for col in df.columns
-                        if col != "oc_rates_id"  # Assuming "Factor_ID" is unique and used for conflict resolution
+                        if col
+                           != "oc_rates_id"  # Assuming "Factor_ID" is unique and used for conflict resolution
                     ]
                 )
 
@@ -64,49 +74,110 @@ def upsert_data(tb_name, df):
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
             print(
-                f"Data for {df['report_date'][0]} upserted successfully into {tb_name}.")
+                f"Data for {df['report_date'][1]} upserted successfully into {tb_name}."
+            )
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
 
 
-tb_name = "oc_rates"
-create_table_with_schema(tb_name)
+table_name = "oc_rates"
+create_table_with_schema(table_name)
 
-# Input database tables
+## Input database tables ##
 db_type = "postgres"
-table_name = "bronze_oc_rates"
-df_bronze = read_table_from_db(table_name, db_type)
+
+# OC Rates
+
+# Option 1: Getting it from bronze
+# bronze_table_name = "bronze_oc_rates"
+# df_bronze = read_table_from_db(bronze_table_name, db_type)
+
+# Option 2: Getting it directly
+db_type_oc_rate = "sql_server_1"
+sql_query = OC_query
+df_bronze = execute_sql_query(sql_query, db_type_oc_rate, params=[])
+
+# Check for duplicates in 'Trade ID' column
+duplicates = df_bronze.duplicated(subset="Trade ID")
+
+# If there are duplicates, print a message
+if duplicates.any():
+    print("There are duplicates in the 'Trade ID' column.")
+else:
+    print("There are no duplicates in the 'Trade ID' column.")
+
+# Define the data type dictionary
+dtype_dict = {
+    "fund": "string",
+    "Series": "string",
+    "TradeType": "string",
+    "Counterparty": "string",
+    "cp short": "string",
+    "Comments": "string",
+    "Product Type": "string",
+    "Collateral Type": "string",
+    "Start Date": "datetime64[ns]",
+    "End Date": "datetime64[ns]",
+    "Trade ID": "int64",
+    "BondID": "string",
+    "Money": "float64",
+    "Orig. Rate": "float64",
+    "Orig. Price": "float64",
+    "Par/Quantity": "float64",
+    "HairCut": "float64",
+    "Spread": "float64",
+    "End Money": "float64",
+}
+
+# Apply the data type conversion
+df_bronze = df_bronze.astype(dtype_dict)
+df_bronze = df_bronze.replace({pd.NaT: None})
+
+# Price
 df_price = read_table_from_db("bronze_daily_price", db_type)
-df_factor = read_table_from_db('bronze_bond_data_bloomberg', db_type)
-df_factor = df_factor[df_factor['is_am'] == 0][['bond_id','factor','bond_data_date']]
-df_cash_balance = read_table_from_db('bronze_cash_balance', db_type)
 
-# Create a dataframe for each date column
-df_price_dates = df_price[['Price_date']].drop_duplicates()
-df_factor_dates = df_factor[['bond_data_date']].drop_duplicates()
-df_cash_balance_dates = df_cash_balance[['Balance_date']].drop_duplicates()
+# Factor
+df_factor = read_table_from_db("bronze_bond_data_bloomberg", db_type)
+df_factor = df_factor[df_factor["is_am"] == 0][["bond_id", "factor", "bond_data_date"]]
 
-# Rename the date columns to the same name for merging
-df_price_dates.rename(columns={'Price_date': 'date'}, inplace=True)
-df_factor_dates.rename(columns={'bond_data_date': 'date'}, inplace=True)
-df_cash_balance_dates.rename(columns={'Balance_date': 'date'}, inplace=True)
+# Cash balance
+df_cash_balance = read_table_from_db("bronze_cash_balance", db_type)
 
-# Merge the dataframes on the date column
-merged_dates = df_price_dates.merge(df_factor_dates, on='date').merge(df_cash_balance_dates, on='date')
+# # Create a dataframe for each date column
+# df_price_dates = df_price[["Price_date"]].drop_duplicates()
+# df_factor_dates = df_factor[["bond_data_date"]].drop_duplicates()
+# df_cash_balance_dates = df_cash_balance[["Balance_date"]].drop_duplicates()
+#
+# # Rename the date columns to the same name for merging
+# df_price_dates.rename(columns={"Price_date": "date"}, inplace=True)
+# df_factor_dates.rename(columns={"bond_data_date": "date"}, inplace=True)
+# df_cash_balance_dates.rename(columns={"Balance_date": "date"}, inplace=True)
+#
+# # Merge the dataframes on the date column
+# merged_dates = df_price_dates.merge(df_factor_dates, on="date").merge(
+#     df_cash_balance_dates, on="date"
+# )
 
 # Convert the dataframe to a list
 # report_dates = merged_dates['date'].dt.strftime('%Y-%m-%d').tolist()
 # report_dates.sort()
 
-report_dates = ['2024-04-05']
-# Main loop to update table
-for report_date in report_dates:
-    df = generate_silver_oc_rates(df_bronze, df_price, df_factor, df_cash_balance, report_date)
 
-    if df is None or df.empty:
-        print(f"No data to upsert for date {report_date}")
-    else:
-        # Insert into PostgreSQL table
-        upsert_data(tb_name, df)
+report_date = "2024-05-28"
+
+# Filter out relevant data
+df_factor = df_factor[df_factor["bond_data_date"] == report_date]
+df_price = df_price[df_price["Price_date"] == report_date]
+df_cash_balance = df_cash_balance[df_cash_balance["Balance_date"] == report_date]
+
+df = generate_silver_oc_rates(
+    df_bronze, df_price, df_factor, df_cash_balance, report_date
+)
+
+if df is None or df.empty:
+    print(f"No data to upsert for date {report_date}")
+else:
+    # Insert into PostgreSQL table
+    upsert_data(table_name, df)
 
 print("Process completed.")
