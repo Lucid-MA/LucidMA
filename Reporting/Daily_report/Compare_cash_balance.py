@@ -72,7 +72,7 @@ df_nexen = df_nexen[df_nexen["Cash Account Number"].isin(cash_account_numbers)]
 df_nexen = df_nexen[
     (df_nexen["Cash Account Number"].isin(cash_account_numbers))
     & (df_nexen["Ending Balance Reporting Currency"] > 0)
-    ]
+]
 
 # # If there are duplicates, keep only the first occurrence
 # df_nexen = df_nexen.drop_duplicates(subset='Cash Account Number', keep='first')
@@ -85,40 +85,40 @@ df_tracker_state = pd.read_excel(
 # Create a mapping dictionary for 'Cash Account Number' and corresponding conditions
 mapping = {
     277540: (
-            (df_tracker_state["Fund"] == "PRIME") & (df_tracker_state["Account"] == "MAIN")
+        (df_tracker_state["Fund"] == "PRIME") & (df_tracker_state["Account"] == "MAIN")
     ),
     278204: (
-            (df_tracker_state["Fund"] == "PRIME")
-            & (df_tracker_state["Account"] == "MARGIN")
+        (df_tracker_state["Fund"] == "PRIME")
+        & (df_tracker_state["Account"] == "MARGIN")
     ),
     990457: (
-            (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "MAIN")
+        (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "MAIN")
     ),
     657720: (
-            (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "MARGIN")
+        (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "MARGIN")
     ),
     278207: (
-            (df_tracker_state["Fund"] == "PRIME")
-            & (df_tracker_state["Account"] == "EXPENSE")
+        (df_tracker_state["Fund"] == "PRIME")
+        & (df_tracker_state["Account"] == "EXPENSE")
     ),
     278208: (
-            (df_tracker_state["Fund"] == "PRIME")
-            & (df_tracker_state["Account"] == "MANAGEMENT")
+        (df_tracker_state["Fund"] == "PRIME")
+        & (df_tracker_state["Account"] == "MANAGEMENT")
     ),
     657724: (
-            (df_tracker_state["Fund"] == "USG")
-            & (df_tracker_state["Account"] == "MANAGEMENT")
+        (df_tracker_state["Fund"] == "USG")
+        & (df_tracker_state["Account"] == "MANAGEMENT")
     ),
     657723: (
-            (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "EXPENSE")
+        (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "EXPENSE")
     ),
     278205: (
-            (df_tracker_state["Fund"] == "PRIME")
-            & (df_tracker_state["Account"] == "SUBSCRIPTION")
+        (df_tracker_state["Fund"] == "PRIME")
+        & (df_tracker_state["Account"] == "SUBSCRIPTION")
     ),
     657718: (
-            (df_tracker_state["Fund"] == "USG")
-            & (df_tracker_state["Account"] == "SUBSCRIPTION")
+        (df_tracker_state["Fund"] == "USG")
+        & (df_tracker_state["Account"] == "SUBSCRIPTION")
     ),
 }
 
@@ -216,9 +216,9 @@ df_diff = pd.merge(df_diff, df_fail_trade, on=["Fund", "Account"], how="left")
 df_diff = df_diff.rename(columns={"Amount": "Failed trade amount"})
 df_diff["Failed trade amount"] = df_diff["Failed trade amount"].fillna(0)
 df_diff["Difference"] = (
-        df_diff["Nexen Balance"]
-        - df_diff["Cash Tracker Balance"]
-        + df_diff["Failed trade amount"]
+    df_diff["Nexen Balance"]
+    - df_diff["Cash Tracker Balance"]
+    + df_diff["Failed trade amount"]
 )
 df_diff["Difference"] = df_diff["Difference"].round(2)
 

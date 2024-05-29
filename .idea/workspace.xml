@@ -6,16 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="257a42c1-bed8-49df-9eea-21ae5ad300f2" name="Changes" comment="Minor">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_OC_rates_table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_OC_rates_table.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_bond_data_table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_bond_data_table.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Daily_report/Compare_cash_balance.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Daily_report/Compare_cash_balance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Daily_report/Daily_trades_summary.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Daily_report/Daily_trades_summary.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Roll_and_notice_dates_table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Silver_tables/Silver_roll_and_notice_dates_table.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Silver_returns_calculation.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Silver_tables/Silver_returns_calculation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Reporting/Draft.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Draft.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Silver_tables/Silver OC Rates Tracker" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Silver_tables/Silver OC Rates Tracker" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_processing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_table.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_table.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Reporting/Utils/Common.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Common.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Reporting/Utils/Constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/Reporting/Utils/Constants.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,7 +74,7 @@
     "Python.Compare_cash_balance.executor": "Run",
     "Python.Compare_cash_flow.executor": "Run",
     "Python.Daily_trades_summary.executor": "Run",
-    "Python.Draft.executor": "Run",
+    "Python.Draft.executor": "Debug",
     "Python.Generate_price_source_file.executor": "Run",
     "Python.Hash.executor": "Run",
     "Python.Investor_Statements_v2.executor": "Run",
@@ -97,7 +94,7 @@
     "node.js.selected.package.stylelint": "",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "actions.on.save",
+    "settings.editor.selected.configurable": "com.jetbrains.python.black.configuration.BlackFormatterConfigurable",
     "vue.rearranger.settings.migration": "true"
   },
   "keyToStringList": {
@@ -188,7 +185,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Compare_cash_balance" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Draft" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -197,12 +194,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting/Daily_report" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Daily_report/Compare_cash_balance.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Draft.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -235,19 +232,19 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.Draft" />
       <item itemvalue="Python.Bronze_bond_data_table" />
       <item itemvalue="Python.Bronze_cash_balance_table" />
       <item itemvalue="Python.Bronze_daily_prices_table" />
-      <item itemvalue="Python.Compare_cash_balance" />
       <item itemvalue="Python.Silver_OC_table" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.Silver_OC_table" />
+        <item itemvalue="Python.Draft" />
         <item itemvalue="Python.Bronze_daily_prices_table" />
         <item itemvalue="Python.Bronze_bond_data_table" />
         <item itemvalue="Python.Bronze_cash_balance_table" />
-        <item itemvalue="Python.Compare_cash_balance" />
       </list>
     </recent_temporary>
   </component>
@@ -281,7 +278,8 @@
       <workItem from="1715604966776" duration="46030000" />
       <workItem from="1715866593666" duration="26492000" />
       <workItem from="1716224926524" duration="29364000" />
-      <workItem from="1716914645773" duration="22887000" />
+      <workItem from="1716914645773" duration="26767000" />
+      <workItem from="1717003758167" duration="16599000" />
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
@@ -306,24 +304,24 @@
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file:////luciddc1.lucidma.com/sdrive$/Users/THoang/Tech/LucidMA/Reporting/Silver_tables/Silver_OC_processing.py</url>
-          <line>61</line>
-          <option name="timeStamp" value="12" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Reporting/Daily_report/Daily_trades_summary.py</url>
           <line>295</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_processing.py</url>
-          <line>249</line>
-          <option name="timeStamp" value="15" />
+          <url>file://$PROJECT_DIR$/Reporting/Draft.py</url>
+          <line>85</line>
+          <option name="timeStamp" value="30" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_table.py</url>
-          <line>181</line>
-          <option name="timeStamp" value="17" />
+          <url>file://$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_processing.py</url>
+          <line>271</line>
+          <option name="timeStamp" value="44" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_processing.py</url>
+          <line>54</line>
+          <option name="timeStamp" value="45" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -355,7 +353,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$Historical_Returns.coverage" NAME="Historical Returns Coverage Results" MODIFIED="1711997245743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Compare_cash_balance.coverage" NAME="Compare_cash_balance Coverage Results" MODIFIED="1716985427185" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Daily_report" />
     <SUITE FILE_PATH="coverage/LucidMA$Investor_Statements_test_0403.coverage" NAME="Investor_Statements_test_0403 Coverage Results" MODIFIED="1712604966814" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Funds/Fund Reporting/Monthly Reports/python" />
-    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Silver_OC_table.coverage" NAME="Silver_OC_table Coverage Results" MODIFIED="1716996038147" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Silver_tables" />
+    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Silver_OC_table.coverage" NAME="Silver_OC_table Coverage Results" MODIFIED="1717023652693" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Silver_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$Compare_cash_flow.coverage" NAME="Compare_cash_flow Coverage Results" MODIFIED="1715867983942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_cash_balance_table.coverage" NAME="Bronze_cash_balance_table Coverage Results" MODIFIED="1714674340565" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$report_generator.coverage" NAME="report_generator Coverage Results" MODIFIED="1715014751096" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Reports" />
@@ -372,7 +370,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$Generate_price_source_file__1_.coverage" NAME="Generate_price_source_file (1) Coverage Results" MODIFIED="1714771749375" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Mandates/Operations/Script Files/PriceFetching" />
     <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Bronze_roll_schedule_table.coverage" NAME="Bronze_roll_schedule_table Coverage Results" MODIFIED="1716920261090" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___by_account__1_.coverage" NAME="Calculating Returns - by account (1) Coverage Results" MODIFIED="1712158155292" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Draft.coverage" NAME="Draft Coverage Results" MODIFIED="1716226314748" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Draft.coverage" NAME="Draft Coverage Results" MODIFIED="1717017783797" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns___test.coverage" NAME="Calculating Returns - test Coverage Results" MODIFIED="1712090394998" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Bloomberg_Price_Factor.coverage" NAME="Bronze Bloomberg Price Factor Coverage Results" MODIFIED="1712614159411" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$generate_report.coverage" NAME="generate_report Coverage Results" MODIFIED="1715026083436" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Reports" />
