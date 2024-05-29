@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import msal
 import pandas as pd
@@ -11,8 +11,8 @@ from Utils.Common import get_file_path
 # process_date = '2024-05-17'
 
 # Get the current date and format it
-current_date = datetime.now().strftime("%Y-%m-%d")
-process_date = current_date
+current_date = datetime.now() - timedelta(1)
+process_date = current_date.strftime("%Y-%m-%d")
 
 # Format the process_date for the input file names
 process_date_nexen = datetime.strptime(process_date, "%Y-%m-%d").strftime(
@@ -33,9 +33,12 @@ output_path = get_file_path(
 # Read File 1 (CashBal_09052024.csv)
 df_nexen = pd.read_csv(nexen_report_path)
 
-# Convert 'Ending Balance Reporting Currency' to a numeric type
 df_nexen["Ending Balance Reporting Currency"] = (
-    df_nexen["Ending Balance Reporting Currency"].str.replace(",", "").astype(float)
+    df_nexen["Ending Balance Reporting Currency"]
+    .str.replace(",", "")  # Remove commas
+    .apply(
+        lambda x: -float(x[1:-1]) if x.startswith("(") and x.endswith(")") else float(x)
+    )
 )
 
 # Filter rows based on the specified 'Cash Account Number' values

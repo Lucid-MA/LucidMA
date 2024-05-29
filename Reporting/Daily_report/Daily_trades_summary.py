@@ -39,7 +39,7 @@ df_helix_current_trade = execute_sql_query(
 
 df_helix_failed_to_transmitted_trade = df_helix_current_trade[
     df_helix_current_trade["Status"] == 15
-    ]
+]
 
 helix_cols = [
     "Fund",
@@ -189,7 +189,7 @@ def format_dataframe_as_html(df):
 
 
 def send_daily_trade_report(
-        df_helix_trade, df_helix_as_of_trade, df_cash_trade, report_date, type
+    df_helix_trade, df_helix_as_of_trade, df_cash_trade, report_date, type
 ):
     global recipients
     global recipients_mmt
