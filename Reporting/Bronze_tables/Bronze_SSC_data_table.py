@@ -1,5 +1,3 @@
-# Note: This code is a template and needs to be executed in an appropriate environment with the necessary libraries installed.
-
 import os
 import re
 import time
@@ -14,10 +12,38 @@ from Utils.Constants import needed_columns
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
+"""
+This script depends on Bronze_returns_SSC_file_crawler.py to generate excel file in the specified directories by crawling through 
+    "S:/Mandates/Funds/Fund NAV Calculations/USG/USG NAV Packets/End of Month",
+    "S:/Mandates/Funds/Fund NAV Calculations/Prime/Prime NAV Packets/End of Month"
+     
+Then it processes Excel files from the specified directories and updates a PostgreSQL database table with the data. 
+
+The specific steps are:
+
+1. Connect to the PostgreSQL database.
+2. Define utility functions and classes for file processing and database operations.
+3. Create the target database table `bronze_ssc_data` if it does not already exist.
+4. Iterate through the specified directories to find Excel files:
+    "S:/Users/THoang/Data/SSC/Prime"
+    "S:/Users/THoang/Data/SSC/USG"
+5. For each Excel file:
+   a. Extract the date from the filename.
+   b. Check if the file has already been processed with `Bronze Table Processed Files`
+   c. Validate the schema of the Excel file against the required columns.
+   d. Read the data from the Excel file.
+   e. Add additional columns (FileName, FileDate) to the data.
+   f. Generate a unique TransactionID for each row.
+   g. Upsert the data into the database table.
+   h. Mark the file as processed in `Bronze Table Processed Files`.
+6. Log the processing time for each file.
+"""
+
 # Connect to the PostgreSQL database
-engine = get_database_engine('postgres')
+engine = get_database_engine("postgres")
 # File to track processed files
 bronze_table_tracker = "Bronze Table Processed Files"
+
 
 # Function to extract date from filename using regex
 def extract_file_date(file_name):
@@ -27,17 +53,19 @@ def extract_file_date(file_name):
         return datetime.strptime(match.group(1), "%m-%d-%y").date()
     return None
 
+
 def read_processed_files():
     try:
-        with open(bronze_table_tracker, 'r') as file:
+        with open(bronze_table_tracker, "r") as file:
             return set(file.read().splitlines())
     except FileNotFoundError:
         return set()
 
 
 def mark_file_processed(filename):
-    with open(bronze_table_tracker, 'a') as file:
-        file.write(filename + '\n')
+    with open(bronze_table_tracker, "a") as file:
+        file.write(filename + "\n")
+
 
 # Context manager for database connection
 class DatabaseConnection:
@@ -111,11 +139,11 @@ def upsert_data(tb_name, df):
                 )
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
-            print(
-                f"Data for {df['FileDate'][0]} upserted successfully into {tb_name}.")
+            print(f"Data for {df['FileDate'][0]} upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
             raise
+
 
 # Function to validate schema consistency and update database
 def validate_schema_and_update_db(excel_dirs, tb_name):
@@ -185,7 +213,7 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 
 
 # Main execution
-TABLE_NAME = "bronze_returns"
+TABLE_NAME = "bronze_ssc_data"
 base_directories = [
     r"S:/Users/THoang/Data/SSC/Prime",
     r"S:/Users/THoang/Data/SSC/USG",

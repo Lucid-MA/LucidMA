@@ -21,8 +21,8 @@ def run_script(script_path):
 
 
 # Path to the scripts
-transform_script = get_file_path("/Bronze_tables/Bronze_returns_transform.py")
-calculation_script = get_file_path("/Bronze_tables/Bronze_returns_calculation.py")
+transform_script = get_file_path("Silver_SSC_data_table.py")
+calculation_script = get_file_path("Silver_returns_table.py")
 
 # Run the first script
 if run_script(transform_script):
