@@ -11,7 +11,8 @@ from Utils.Common import get_file_path
 # process_date = '2024-05-17'
 
 # Get the current date and format it
-current_date = datetime.now() - timedelta(1)
+day_to_offset = 0
+current_date = datetime.now() - timedelta(day_to_offset)
 process_date = current_date.strftime("%Y-%m-%d")
 
 # Format the process_date for the input file names
