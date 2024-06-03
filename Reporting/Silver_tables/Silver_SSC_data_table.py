@@ -27,7 +27,6 @@ The script performs the following steps:
 The script is part of a larger data processing pipeline and is used for generating a report on series returns for the period 2021-2024.
 """
 
-
 # Specify your table name and schema
 db_type = "postgres"
 table_name = "bronze_ssc_data"
@@ -57,7 +56,7 @@ df["Amount"] = df["Amt1"].astype(float)
 # Step 1: Filter the DataFrame for the specified date range
 df = df[
     (df["Start_date"] >= pd.Timestamp("2021-01-01"))
-    & (df["End_date"] <= pd.Timestamp("2024-03-31"))
+    # & (df["End_date"] <= pd.Timestamp("2024-03-31"))
     # & (df["PoolDescription"] == "Lucid Prime Fund LLC")
 ]
 
@@ -76,7 +75,6 @@ deduplicated_df = df.drop_duplicates(subset=subset_cols)
 deduplicated_df = (
     deduplicated_df.groupby(subset_cols[:-1])["Amount"].sum().reset_index()
 )
-
 
 # Pivot the DataFrame
 pivot_df = deduplicated_df.pivot_table(
@@ -156,7 +154,6 @@ pivot_df = pivot_df.drop("Unmapped / Others", axis=1)
 pivot_df["Start_date"] = pivot_df["Start_date"].dt.strftime("%m/%d/%Y")
 pivot_df["End_date"] = pivot_df["End_date"].dt.strftime("%m/%d/%Y")
 
-
 # ## (OPTIONAL) Write output to local file ##
 # # Export the DataFrame to Excel
 # export_pivot = pivot_df
@@ -216,7 +213,7 @@ pivot_df["End_date"] = pivot_df["End_date"].dt.strftime("%m/%d/%Y")
 
 end_time = time.time()  # Capture end time
 process_time = end_time - start_time
-print(f"Processing time: {process_time:.2f} seconds")
+print(f"Data processing time: {process_time:.2f} seconds")
 
 ## CLEAN UP DATAFRAME FOR TABLE UPLOAD ##
 pivot_df["ID"] = pivot_df.apply(
@@ -390,3 +387,7 @@ if not inspector.has_table(table_name):
 pivot_df["timestamp"] = datetime.now().strftime("%B-%d-%y %H:%M:%S")
 
 upsert_data(table_name, pivot_df[new_columns + ["timestamp"]])
+
+end_time_2 = time.time()
+process_time = end_time_2 - end_time
+print(f"Table uploading time: {process_time:.2f} seconds")
