@@ -1,4 +1,5 @@
-from Utils.SQL_queries import OC_query
+from Utils.Common import print_df
+from Utils.SQL_queries import OC_query, OC_query_historical_v2
 from Utils.database_utils import execute_sql_query
 
 #
@@ -83,4 +84,11 @@ from Utils.database_utils import execute_sql_query
 db_type_oc_rate = "sql_server_1"
 sql_query = OC_query
 df_bronze = execute_sql_query(sql_query, db_type_oc_rate, params=[])
-print(df_bronze)
+print_df(df_bronze)
+
+
+# Option 2: Getting it directly
+sql_query = OC_query_historical_v2
+valdate = "2024-05-31"
+df_oc_rate = execute_sql_query(sql_query, db_type_oc_rate, params=[(valdate,)])
+print_df(df_oc_rate)

@@ -144,7 +144,7 @@ df_factor = df_factor[df_factor["is_am"] == 0][["bond_id", "factor", "bond_data_
 # Cash balance
 df_cash_balance = read_table_from_db("bronze_cash_balance", db_type)
 
-report_date = "2024-05-28"
+report_date = "2024-05-31"
 
 # Filter out relevant data
 df_factor = df_factor[df_factor["bond_data_date"] == report_date]

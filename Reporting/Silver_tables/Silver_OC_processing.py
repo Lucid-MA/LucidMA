@@ -257,16 +257,20 @@ def generate_silver_oc_rates(
 
         # Create the 'Margin_RCV_allocation' column using numpy.where
         df_bronze["Margin_RCV_allocation"] = np.where(
-            df_bronze["Net_margin_MV"] > 0,
-            df_bronze["Trade_level_negative_exposure_percentage"]
-            * df_bronze["Net_margin_MV"],
-            df_bronze["Net_margin_MV"]
-            * df_bronze["Trade_level_positive_exposure_percentage"],
+            df_bronze["Money"] == 0,
+            -df_bronze["Collateral_MV"],
+            np.where(
+                df_bronze["Net_margin_MV"] > 0,
+                df_bronze["Trade_level_negative_exposure_percentage"]
+                * df_bronze["Net_margin_MV"],
+                df_bronze["Net_margin_MV"]
+                * df_bronze["Trade_level_positive_exposure_percentage"],
+            ),
         )
 
-        df_bronze["Collateral_value_allocated"] = df_bronze[
-            "Margin_RCV_allocation"
-        ] + np.where(df_bronze["Money"] == 0, 0, df_bronze["Collateral_MV"])
+        df_bronze["Collateral_value_allocated"] = (
+            df_bronze["Margin_RCV_allocation"] + df_bronze["Collateral_MV"]
+        )
 
         # Group by 'Comments' and calculate the sum of 'Money' and sum of 'Collateral_MV'
         df_result = (
