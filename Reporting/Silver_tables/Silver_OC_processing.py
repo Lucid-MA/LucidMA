@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 
 import numpy as np
@@ -7,33 +6,57 @@ import pandas as pd
 from Utils.Common import format_decimal
 from Utils.Hash import hash_string
 
+# Constants
+OC_RATES_TRACKER = "Silver OC Rates Tracker"
+
 
 def calculate_collateral_mv(row):
-    """
-    This function calculates the 'Collateral_MV' column.
-    TODO: Review the formula when Factor == 0
-    """
     if row["Factor"] == 0:
         return (row["Par/Quantity"] * row["Price"] * row["Factor"] / 100) + 0.001
-    else:
-        return row["Par/Quantity"] * row["Price"] * row["Factor"] / 100
-
-
-# File to track processed files
-oc_rates_tracker = "Silver OC Rates Tracker"
+    return row["Par/Quantity"] * row["Price"] * row["Factor"] / 100
 
 
 def read_processed_files():
     try:
-        with open(oc_rates_tracker, "r") as file:
+        with open(OC_RATES_TRACKER, "r") as file:
             return set(file.read().splitlines())
     except FileNotFoundError:
         return set()
 
 
 def mark_file_processed(filename):
-    with open(oc_rates_tracker, "a") as file:
+    with open(OC_RATES_TRACKER, "a") as file:
         file.write(filename + "\n")
+
+
+def update_cash_balance_table(cash_balance_table, report_date):
+    return cash_balance_table[
+        (cash_balance_table["Balance_date"] == report_date)
+        & (cash_balance_table["Account"] == "MAIN")
+    ]
+
+
+def update_price_table(price_table, report_date):
+    df_price = price_table[
+        (price_table["Price_date"] == report_date) & (price_table["Is_AM"] == 0)
+    ]
+    return df_price[["Bond_ID", "Final_price"]].rename(columns={"Final_price": "Price"})
+
+
+def update_factor_table(factor_table, report_date):
+    return factor_table[factor_table["bond_data_date"] == report_date][
+        ["bond_id", "factor"]
+    ]
+
+
+def calculate_net_margin_mv(row, df_bronze):
+    filtered_df = df_bronze[
+        (df_bronze["BondID"] == "CASHUSD01")
+        & (df_bronze["Counterparty"] == row["Counterparty"])
+        & (df_bronze["Series"] == row["Series"])
+        & (df_bronze["fund"] == row["fund"])
+    ]
+    return filtered_df["Collateral_MV"].sum()
 
 
 def generate_silver_oc_rates(
@@ -41,16 +64,9 @@ def generate_silver_oc_rates(
 ):
     valdate = pd.to_datetime(report_date)
     df_results = []
-    ## UPDATE CASH BALANCE TABLE ##
-    df_cash_balance = cash_balance_table[
-        (cash_balance_table["Balance_date"] == report_date)
-        & (cash_balance_table["Account"] == "MAIN")
-    ]
-
-    """
-    Need to get a list of fund names and series names from cash balance on that date
-    """
+    df_cash_balance = update_cash_balance_table(cash_balance_table, report_date)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
+
     for fund_name, series_name in fund_series_pairs:
         oc_rate_id = f"{fund_name}_{series_name}_{report_date}"
         if oc_rate_id in read_processed_files():
@@ -66,91 +82,53 @@ def generate_silver_oc_rates(
             cash_balance_mask, "Projected_Total_Balance"
         ].values[0]
 
-        # Filter the OC rates for all trades that are still active, and happens before the valuation date
         mask_bronze_oc = (bronze_oc_table["End Date"] > valdate) | (
             bronze_oc_table["End Date"].isnull()
         )
         df_bronze = bronze_oc_table[mask_bronze_oc]
-
-        # Create a mask for the conditions
         mask = (
             (df_bronze["fund"].str.upper() == fund_name)
             & (df_bronze["Series"].str.upper() == series_name)
             & (df_bronze["Start Date"] <= valdate)
         )
-        # Use the mask to filter the DataFrame and calculate the sum
         df_bronze = df_bronze[mask]
 
-        ## UPDATE PRICE TABLE ##
-        # select price data from afternoon file
-        df_price = price_table[
-            (price_table["Price_date"] == report_date) & (price_table["Is_AM"] == 0)
-        ]
+        df_price = update_price_table(price_table, report_date)
         df_bronze = df_bronze.merge(
-            df_price[["Bond_ID", "Final_price"]],
-            left_on="BondID",
-            right_on="Bond_ID",
-            how="left",
-        )
-        # Rename 'Final_price' column to 'Price'
-        df_bronze.rename(columns={"Final_price": "Price"}, inplace=True)
-        # Replace missing values in 'Price' column with 100
+            df_price, left_on="BondID", right_on="Bond_ID", how="left"
+        ).drop(columns="Bond_ID")
         df_bronze["Price"] = df_bronze["Price"].fillna(100)
-        # Drop the 'Bond_ID' column as it's no longer needed
-        df_bronze.drop(columns="Bond_ID", inplace=True)
 
-        ## UPDATE FACTOR TABLE ##
-        df_factor = factor_table[(factor_table["bond_data_date"] == report_date)]
+        df_factor = update_factor_table(factor_table, report_date)
         df_bronze = df_bronze.merge(
-            df_factor[["bond_id", "factor"]],
-            left_on="BondID",
-            right_on="bond_id",
-            how="left",
-        )
-        df_bronze.rename(columns={"factor": "Factor"}, inplace=True)
+            df_factor, left_on="BondID", right_on="bond_id", how="left"
+        ).rename(columns={"factor": "Factor"})
         df_bronze["Factor"] = df_bronze["Factor"].astype(float)
 
-        # Add new columns to bronze table
         df_bronze["Collateral_MV"] = df_bronze.apply(calculate_collateral_mv, axis=1)
         df_bronze["WAR"] = df_bronze["Orig. Rate"] * df_bronze["Money"] / 100
         df_bronze["WAH"] = df_bronze["HairCut"] * df_bronze["Money"] / 100
         df_bronze["WAS"] = df_bronze["Spread"] * df_bronze["Money"] / 10000
 
-        ### CALCULATE NET CASH MARGIN BALANCE ###
-
-        # Filter df_bronze where 'BondID' equals 'CASHUSD01'
-        df_cash_margin = df_bronze[df_bronze["BondID"] == "CASHUSD01"]
-
-        # Group by 'Counterparty' and calculate the sum of 'Collateral_MV'
         df_cash_margin = (
-            df_cash_margin.groupby(["Counterparty", "fund", "Series"])["Collateral_MV"]
+            df_bronze[df_bronze["BondID"] == "CASHUSD01"]
+            .groupby(["Counterparty", "fund", "Series"])["Collateral_MV"]
             .sum()
             .reset_index()
+            .rename(columns={"Collateral_MV": "Net_cash_margin_balance"})
         )
-        df_cash_margin.rename(
-            columns={"Collateral_MV": "Net_cash_margin_balance"}, inplace=True
-        )
-
-        # Group df_bronze by 'Counterparty' and calculate the sum of 'Money'
         df_invest = (
             df_bronze.groupby(["Counterparty", "fund", "Series"])["Money"]
             .sum()
             .reset_index()
+            .rename(columns={"Money": "Net_invest"})
         )
-        df_invest.rename(columns={"Money": "Net_invest"}, inplace=True)
-
-        # Merge df_cash_margin and df_invest on 'Counterparty', 'Fund', 'Series' using an outer join
         df_margin = pd.merge(
             df_cash_margin,
             df_invest,
             on=["Counterparty", "fund", "Series"],
             how="outer",
-        )
-
-        # Fill NaN values in 'Net_cash_margin_balance' and 'Net_invest' with 0
-        df_margin[["Net_cash_margin_balance", "Net_invest"]] = df_margin[
-            ["Net_cash_margin_balance", "Net_invest"]
-        ].fillna(0)
+        ).fillna(0)
         pledged_cash_margin = df_margin.loc[
             df_margin["Net_cash_margin_balance"] <= 0, "Net_cash_margin_balance"
         ].sum()
@@ -158,9 +136,7 @@ def generate_silver_oc_rates(
         trade_invest = df_bronze["Money"].sum()
         total_invest = projected_total_balance + trade_invest + abs(pledged_cash_margin)
 
-        #### FINAL OC TABLE ###
         df_bronze["Days_Diff"] = (valdate - df_bronze["Start Date"]).dt.days
-
         df_bronze["Comments"] = df_bronze["Comments"].str.strip().str.upper()
         df_bronze["Trade_level_exposure"] = (
             df_bronze["Collateral_MV"] * (100 - df_bronze["HairCut"]) / 100
@@ -168,17 +144,15 @@ def generate_silver_oc_rates(
             1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
         )
 
-        # Step 1: Filter rows where 'Calculated_Value' is less than 0
         negative_exposures = df_bronze[df_bronze["Trade_level_exposure"] < 0]
         positive_exposures = df_bronze[df_bronze["Trade_level_exposure"] > 0]
-
-        # Step 2: Group by 'Counterparty', 'Series', and 'fund' and sum the 'Calculated_Value'
         sum_negative_exposures = (
             negative_exposures.groupby(["Counterparty", "Series", "fund"])[
                 "Trade_level_exposure"
             ]
             .sum()
             .reset_index()
+            .rename(columns={"Trade_level_exposure": "CP_total_negative_exposure"})
         )
         sum_positive_exposures = (
             positive_exposures.groupby(["Counterparty", "Series", "fund"])[
@@ -186,25 +160,14 @@ def generate_silver_oc_rates(
             ]
             .sum()
             .reset_index()
+            .rename(columns={"Trade_level_exposure": "CP_total_positive_exposure"})
         )
 
-        # Rename the summed column for clarity
-        sum_negative_exposures.rename(
-            columns={"Trade_level_exposure": "CP_total_negative_exposure"}, inplace=True
-        )
-        sum_positive_exposures.rename(
-            columns={"Trade_level_exposure": "CP_total_positive_exposure"}, inplace=True
-        )
-
-        # Step 3: Merge this summed data back to the original DataFrame
         df_bronze = df_bronze.merge(
             sum_negative_exposures, on=["Counterparty", "Series", "fund"], how="left"
-        )
-        df_bronze = df_bronze.merge(
+        ).merge(
             sum_positive_exposures, on=["Counterparty", "Series", "fund"], how="left"
         )
-
-        # Fill NaN values with 0 for the new column (if no negative exposure was found for some groups)
         df_bronze["CP_total_negative_exposure"] = df_bronze[
             "CP_total_negative_exposure"
         ].fillna(0)
@@ -242,20 +205,9 @@ def generate_silver_oc_rates(
             ),
         )
 
-        # Create a function to calculate Net_margin_MV for each row
-        def calculate_net_margin_mv(row):
-            filtered_df = df_bronze[
-                (df_bronze["BondID"] == "CASHUSD01")
-                & (df_bronze["Counterparty"] == row["Counterparty"])
-                & (df_bronze["Series"] == row["Series"])
-                & (df_bronze["fund"] == row["fund"])
-            ]
-            return filtered_df["Collateral_MV"].sum()
-
-        # Apply the function to each row to create the new column
-        df_bronze["Net_margin_MV"] = df_bronze.apply(calculate_net_margin_mv, axis=1)
-
-        # Create the 'Margin_RCV_allocation' column using numpy.where
+        df_bronze["Net_margin_MV"] = df_bronze.apply(
+            lambda row: calculate_net_margin_mv(row, df_bronze), axis=1
+        )
         df_bronze["Margin_RCV_allocation"] = np.where(
             df_bronze["Money"] == 0,
             -df_bronze["Collateral_MV"],
@@ -272,7 +224,6 @@ def generate_silver_oc_rates(
             df_bronze["Margin_RCV_allocation"] + df_bronze["Collateral_MV"]
         )
 
-        # Group by 'Comments' and calculate the sum of 'Money' and sum of 'Collateral_MV'
         df_result = (
             df_bronze.groupby("Comments")
             .agg(
@@ -286,11 +237,9 @@ def generate_silver_oc_rates(
                 }
             )
             .reset_index()
+            .rename(columns={"Money": "Investment_Amount"})
         )
 
-        # Rename the 'Money' column to 'Investment_Amount'
-        df_result = df_result.rename(columns={"Money": "Investment_Amount"})
-        # Calculate 'Wtd Avg Rate', 'Wtd Avg Spread', and 'Wtd Avg Haircut'
         df_result["Wtd_Avg_Rate"] = np.where(
             df_result["Investment_Amount"] != 0,
             df_result["WAR"] / df_result["Investment_Amount"],
@@ -306,7 +255,6 @@ def generate_silver_oc_rates(
             df_result["WAH"] / df_result["Investment_Amount"],
             None,
         )
-
         df_result["Percentage_of_Series_Portfolio"] = (
             df_result["Investment_Amount"] / total_invest
         )
@@ -315,7 +263,6 @@ def generate_silver_oc_rates(
             df_result["Collateral_MV"] / df_result["Investment_Amount"],
             None,
         )
-
         df_result["Current_OC_allocated"] = np.where(
             df_result["Investment_Amount"] != 0,
             df_result["Collateral_value_allocated"] / df_result["Investment_Amount"],
@@ -333,19 +280,13 @@ def generate_silver_oc_rates(
         df_result[columns_to_format] = df_result[columns_to_format].apply(
             format_decimal
         )
-
-        # Drop the 'WAR', 'WAS', and 'WAH' columns as they are no longer needed
         df_result.drop(columns=["WAR", "WAS", "WAH"], inplace=True)
-
-        # Lower all column names
         df_result.columns = [col.lower() for col in df_result.columns]
 
-        # Create new columns
         df_result["trade_invest"] = trade_invest
         df_result["pledged_cash_margin"] = pledged_cash_margin
         df_result["projected_total_balance"] = projected_total_balance
         df_result["total_invest"] = total_invest
-
         df_result["oc_rates_id"] = df_result.apply(
             lambda row: hash_string(
                 f"{fund_name}{series_name}{row['comments']}{report_date}"
@@ -394,17 +335,9 @@ def generate_silver_oc_rates(
             ]
             + ["timestamp"]
         )
-
-        current_time = time.time()
-        current_datetime = datetime.fromtimestamp(current_time)
-
-        # Format datetime object to string in the desired format
-        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
-        # Assign formatted datetime to a new column in the DataFrame
-        df_result["timestamp"] = formatted_datetime
+        df_result["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         df_result = df_result.reindex(columns=new_order)
         df_results.append(df_result)
-        # Mark file as processed
         mark_file_processed(oc_rate_id)
 
     if not df_results:
