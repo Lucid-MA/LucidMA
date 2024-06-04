@@ -360,15 +360,37 @@ def generate_silver_oc_rates(
                 "comments": "rating_buckets",
                 "current_oc": "oc_rate",
                 "current_oc_allocated": "oc_rate_allocated",
+                "collateral_value_allocated": "collateral_mv_allocated",
             }
         )
 
         new_order = (
-            ["oc_rates_id", "fund", "series", "report_date"]
+            [
+                "oc_rates_id",
+                "fund",
+                "series",
+                "report_date",
+                "rating_buckets",
+                "oc_rate",
+                "oc_rate_allocated",
+                "collateral_mv",
+                "collateral_mv_allocated",
+            ]
             + [
                 col
                 for col in df_result.columns
-                if col not in ["oc_rates_id", "fund", "series", "report_date"]
+                if col
+                not in [
+                    "oc_rates_id",
+                    "fund",
+                    "series",
+                    "report_date",
+                    "rating_buckets",
+                    "oc_rate",
+                    "oc_rate_allocated",
+                    "collateral_mv",
+                    "collateral_mv_allocated",
+                ]
             ]
             + ["timestamp"]
         )
@@ -381,7 +403,6 @@ def generate_silver_oc_rates(
         # Assign formatted datetime to a new column in the DataFrame
         df_result["timestamp"] = formatted_datetime
         df_result = df_result.reindex(columns=new_order)
-        df_result.drop(columns="collateral_value_allocated", inplace=True)
         df_results.append(df_result)
         # Mark file as processed
         mark_file_processed(oc_rate_id)

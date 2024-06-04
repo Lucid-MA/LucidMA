@@ -1,17 +1,20 @@
+from datetime import datetime
+
 import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates
-from Utils.SQL_queries import OC_query
+from Utils.SQL_queries import OC_query_historical
 from Utils.database_utils import (
     get_database_engine,
     read_table_from_db,
-    execute_sql_query,
 )
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 engine = get_database_engine("postgres")
+
+report_date = "2024-05-28"
 
 """
 This script creates a table 'oc_rates' in the database
@@ -31,8 +34,9 @@ def create_table_with_schema(tb_name):
         Column("rating_buckets", String),
         Column("oc_rate", Float),
         Column("oc_rate_allocated", Float),
-        Column("investment_amount", Float),
         Column("collateral_mv", Float),
+        Column("collateral_mv_allocated", Float),
+        Column("investment_amount", Float),
         Column("wtd_avg_rate", Float),
         Column("wtd_avg_spread", Float),
         Column("wtd_avg_haircut", Float),
@@ -89,18 +93,15 @@ create_table_with_schema(table_name)
 db_type = "postgres"
 
 # OC Rates
-
-# Option 1: Getting it from bronze
-# bronze_table_name = "bronze_oc_rates"
-# df_bronze = read_table_from_db(bronze_table_name, db_type)
-
-# Option 2: Getting it directly
 db_type_oc_rate = "sql_server_1"
-sql_query = OC_query
-df_bronze = execute_sql_query(sql_query, db_type_oc_rate, params=[])
+sql_query = OC_query_historical
+params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
+engine_oc_rate = get_database_engine(db_type_oc_rate)
+# Execute the combined query and load the result into a DataFrame
+df_bronze_oc = pd.read_sql(text(sql_query), con=engine_oc_rate, params=params)
 
 # Check for duplicates in 'Trade ID' column
-duplicates = df_bronze.duplicated(subset="Trade ID")
+duplicates = df_bronze_oc.duplicated(subset="Trade ID")
 
 # If there are duplicates, print a message
 if duplicates.any():
@@ -131,8 +132,8 @@ dtype_dict = {
 }
 
 # Apply the data type conversion
-df_bronze = df_bronze.astype(dtype_dict)
-df_bronze = df_bronze.replace({pd.NaT: None})
+df_bronze_oc = df_bronze_oc.astype(dtype_dict)
+df_bronze_oc = df_bronze_oc.replace({pd.NaT: None})
 
 # Price
 df_price = read_table_from_db("bronze_daily_price", db_type)
@@ -144,15 +145,13 @@ df_factor = df_factor[df_factor["is_am"] == 0][["bond_id", "factor", "bond_data_
 # Cash balance
 df_cash_balance = read_table_from_db("bronze_cash_balance", db_type)
 
-report_date = "2024-05-31"
-
 # Filter out relevant data
 df_factor = df_factor[df_factor["bond_data_date"] == report_date]
 df_price = df_price[df_price["Price_date"] == report_date]
 df_cash_balance = df_cash_balance[df_cash_balance["Balance_date"] == report_date]
 
 df = generate_silver_oc_rates(
-    df_bronze, df_price, df_factor, df_cash_balance, report_date
+    df_bronze_oc, df_price, df_factor, df_cash_balance, report_date
 )
 
 if df is None or df.empty:
