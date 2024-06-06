@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="257a42c1-bed8-49df-9eea-21ae5ad300f2" name="Changes" comment="Minor">
+      <change afterPath="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_series_attributes_table.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Reports/Test Latex.tex" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Reporting/Reports/Test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
@@ -77,6 +78,7 @@
     "Python.Bronze_returns_table.executor": "Run",
     "Python.Bronze_returns_transform.executor": "Debug",
     "Python.Bronze_roll_schedule_table.executor": "Run",
+    "Python.Bronze_series_attributes_table.executor": "Run",
     "Python.Check_used_price.executor": "Run",
     "Python.Compare_cash_balance (1).executor": "Run",
     "Python.Compare_cash_balance.executor": "Run",
@@ -130,7 +132,7 @@
       <recent name="S:\Users\THoang\Tech\LucidMA\Reporting" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Silver_roll_and_notice_dates_table">
+  <component name="RunManager" selected="Python.Bronze_series_attributes_table">
     <configuration name="Bronze_roll_schedule_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -146,6 +148,29 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_roll_schedule_table.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Bronze_series_attributes_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="LucidMA" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting/Bronze_tables" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Bronze_tables/Bronze_series_attributes_table.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -200,29 +225,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Silver_OC_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="LucidMA" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Reporting/Silver_tables" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Reporting/Silver_tables/Silver_OC_table.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="Silver_roll_and_notice_dates_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="LucidMA" />
       <option name="ENV_FILES" value="" />
@@ -248,18 +250,18 @@
     </configuration>
     <list>
       <item itemvalue="Python.Bronze_roll_schedule_table" />
+      <item itemvalue="Python.Bronze_series_attributes_table" />
       <item itemvalue="Python.Holiday_calendar_table" />
       <item itemvalue="Python.Investor_Statements_test_0403 (1)" />
       <item itemvalue="Python.Silver_roll_and_notice_dates_table" />
-      <item itemvalue="Python.Silver_OC_table" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Bronze_series_attributes_table" />
         <item itemvalue="Python.Silver_roll_and_notice_dates_table" />
         <item itemvalue="Python.Holiday_calendar_table" />
         <item itemvalue="Python.Bronze_roll_schedule_table" />
         <item itemvalue="Python.Investor_Statements_test_0403 (1)" />
-        <item itemvalue="Python.Silver_OC_table" />
       </list>
     </recent_temporary>
   </component>
@@ -294,7 +296,7 @@
       <workItem from="1715866593666" duration="26492000" />
       <workItem from="1716224926524" duration="29364000" />
       <workItem from="1716914645773" duration="26767000" />
-      <workItem from="1717003758167" duration="109188000" />
+      <workItem from="1717003758167" duration="113070000" />
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
@@ -361,6 +363,7 @@
     <SUITE FILE_PATH="coverage/LucidMA$Transform.coverage" NAME="Transform Coverage Results" MODIFIED="1712581375277" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/Code$Transform.coverage" NAME="Transform Coverage Results" MODIFIED="1712958152226" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$Calculating_Returns_v2.coverage" NAME="Calculating Returns v2 Coverage Results" MODIFIED="1712848684458" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
+    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Bronze_series_attributes_table.coverage" NAME="Bronze_series_attributes_table Coverage Results" MODIFIED="1717710481180" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Roll_and_notice_dates_table.coverage" NAME="Roll_and_notice_dates_table Coverage Results" MODIFIED="1716920437671" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/LucidMA$OC_Rates___temp.coverage" NAME="OC Rates - temp Coverage Results" MODIFIED="1712347357426" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Holiday_calendar_table.coverage" NAME="Holiday_calendar_table Coverage Results" MODIFIED="1717699442664" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
@@ -417,6 +420,6 @@
     <SUITE FILE_PATH="coverage/LucidMA$Silver_OC_table.coverage" NAME="Silver OC table Coverage Results" MODIFIED="1713275224935" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
     <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Bronze_NEXEN_cash_balance_table.coverage" NAME="Bronze_NEXEN_cash_balance_table Coverage Results" MODIFIED="1716387957096" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Bronze_tables" />
     <SUITE FILE_PATH="coverage/LucidMA$Bronze_Returns_Table.coverage" NAME="Bronze Returns Table Coverage Results" MODIFIED="1712177821378" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting" />
-    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Silver_roll_and_notice_dates_table.coverage" NAME="Silver_roll_and_notice_dates_table Coverage Results" MODIFIED="1717706517064" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Silver_tables" />
+    <SUITE FILE_PATH="coverage/PrimeFund_M_report_tex$Silver_roll_and_notice_dates_table.coverage" NAME="Silver_roll_and_notice_dates_table Coverage Results" MODIFIED="1717706633382" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Reporting/Silver_tables" />
   </component>
 </project>

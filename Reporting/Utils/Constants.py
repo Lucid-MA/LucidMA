@@ -506,6 +506,17 @@ holiday_data = {
     "2028-12-25": "Christmas Day",
 }
 
+# CONSTANT
+
+SOFR_1M = "1m SOFR"
+SOFR_3M = "3m SOFR"
+TBILL_1M = "1m T-Bills"
+TBILL_3M = "3m T-Bills"
+CP_1M = "1m A1/P1 CP"
+CP_3M = "3m A1/P1 CP"
+CRANE_IDX = "Crane Govt MM Index"
+EGAN_JONES = "Egan-Jones"
+
 """
 # Series Attributes
 cusip -> fund_name -> series_name ->  fund_description -> series_description -> benchmark_id -> benchmark -> benchmark_short -> interval_tuple -> rating -> rating_org -> calc_frequency -> min_invest -> legal_fundname -> fund_inception -> series_inception 
