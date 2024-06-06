@@ -1,0 +1,168 @@
+\documentclass[9pt]{article}
+\usepackage[T1]{fontenc}
+\hfuzz=27pt
+\usepackage{lmodern}
+\usepackage[dvipsnames,table,xcdraw]{xcolor}
+\definecolor{lucid_blue}{RGB}{0,18,82}
+\definecolor{light_grey}{RGB}{198,198,198}
+\definecolor{dark_red}{RGB}{144,8,8}
+\definecolor{dark_color}{RGB}{9,143,68}
+\definecolor{dark_grey}{RGB}{194,194,214}
+\usepackage[margin=0.7in,headsep=0.1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{colortbl}
+\usepackage{boldline}
+\graphicspath{{images/}}
+\pagestyle{fancy}
+\usepackage{adjustbox}
+\usepackage{pgfplots}
+\renewcommand{\familydefault}{\sfdefault} % make font nice non bitmap
+\renewcommand*{\thepage}{\small\arabic{page}}
+\usepgfplotslibrary{dateplot}
+\def\mywidth{17.6cm}
+\def\halfwidthb{12.4cm}
+\def\quarterwidthb{6cm}
+\def\quarterwidth{4.35cm}
+\def\eighthwidth{2.175cm}
+\def\quarterwidtha{3.41cm}
+\def\eighthwidtha{1.2cm}
+\def\lesswidth{10.9cm}
+\usetikzlibrary{shadows,shadows.blur,shapes.geometric}
+\pgfplotsset{compat=1.8}
+\pgfplotsset{every axis/.append style={
+    label style={font=\tiny},
+    tick label style={font=\tiny}
+}}
+\lhead{\includegraphics[width=9cm]{lucid_logo.png}}
+\rhead{Report Date: \{report\_date\}}
+\setlength{\columnsep}{3em}
+\begin{document}
+    \twocolumn[{
+        \begin{center}
+            \renewcommand{\arraystretch}{1.5}\begin{tabular}{!{\color{light_grey}\vrule}
+                    >{\columncolor{lucid_blue}}m{\mywidth} !{\color{light_grey}\vrule}}
+            {\color[HTML]{FFFFFF} \large \textbf{Monthly Report}}\\
+            \end{tabular}
+        \end{center}
+
+        \begin{tabular}{!{\color{light_grey}\vrule}
+                >{\columncolor{lucid_blue}}l !{\color{light_grey}\vrule}
+                >{\columncolor[HTML]{EFEFEF}}p{\quarterwidthb} !{\color{light_grey}\vrule}
+                >{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}}
+            \arrayrulecolor{light_grey}\hline
+            {\color[HTML]{FFFFFF} \textbf{Program Series}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{Lucid \{fundname\} - Series \{series\_abbrev\}}} \\[1.5mm]
+            {\color[HTML]{FFFFFF} \textbf{Objective and Strategy}} & \multicolumn{2}{p{\halfwidthb}!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF} \{fund\_description\}
+
+            \{series\_description\}} \\[\{toptableextraspace\}]
+            {\color[HTML]{FFFFFF} \textbf{Current Target Return}\textsuperscript{1}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{\{benchmark\} + \{tgt\_outperform\} bps}} \\
+            {\color[HTML]{FFFFFF} \textbf{Previous Period Return}} & \{prev\_pd\_start\} - \{this\_pd\_start\} & \textbf{\{prev\_pd\_return\}} (\{prev\_pd\_benchmark\} + \{prev\_pd\_outperform\}) \\
+            {\color[HTML]{FFFFFF} \textbf{Current Period Est'd Return}\textsuperscript{2}} & \{this\_pd\_start\} - \{this\_pd\_end\} & \textbf{\{this\_pd\_est\_return\}}  (\{benchmark\_short\} + \{this\_pd\_est\_outperform\} bps) \\ \arrayrulecolor{light_grey}\hline
+        \end{tabular}
+
+        \begin{center}
+            \noindent \renewcommand{\arraystretch}{\{tablevstretch\}}\begin{tabular}{!{\color{light_grey}\vrule}m{5.2cm}!{\color{light_grey}\vrule}m{\eighthwidth}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}m{\eighthwidtha}c!{\color{light_grey}\vrule}}
+                                                                         \arrayrulecolor{light_grey}\hline
+                                                                         \rowcolor{lucid_blue}
+                                                                         {\color[HTML]{FFFFFF} \textbf{Net Returns}\textsuperscript{3}}               & \multicolumn{2}{m{\quarterwidth}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{Previous Period}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{\{interval1\}}}} & \multicolumn{2}{m{\quarterwidtha}!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}\centering {\color[HTML]{FFFFFF} \textbf{\{interval2\}}}} \\
+                                                                         \rowcolor{lucid_blue}
+                                                                         {\color[HTML]{FFFFFF} Series / Comparables} & {\color[HTML]{FFFFFF} Return}                & {\color[HTML]{FFFFFF} Spread}               & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}        & {\color[HTML]{FFFFFF} Spread}        & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}       & {\color[HTML]{FFFFFF} Spread}       \\ \arrayrulecolor{light_grey}\hline
+                                                                         \{return\_table\_plot\}
+            \end{tabular}
+        \end{center}
+    }]
+    \hfill \break
+    \hfill \break
+
+    \noindent \renewcommand{\arraystretch}{\{descstretch\}}\begin{tabular}{!{\color{light_grey}\vrule}
+            >{\columncolor[HTML]{EFEFEF}}p{3.7cm}
+            >{\columncolor[HTML]{EFEFEF}}p{4cm}!{\color{light_grey}\vrule}}
+                                                               \arrayrulecolor{light_grey}\hline
+                                                               \multicolumn{2}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Fund and Series Details\textsuperscript{4}}}} \\
+                                                               Fund Size & \{fund\_size\}\\
+                                                               Series Size & \{series\_size\}\\
+                                                               Lucid AUM & \{lucid\_aum\}\\
+                                                               Series Rating & \{rating\} by \{rating\_org\}\\
+                                                               Series Withdrawal & \{calc\_frequency\}\\
+                                                               Next Withdrawal & \{next\_withdrawal\_date\}\\
+                                                               Next Notice Date & \{next\_notice\_date\}\\
+                                                               Min Investment & \{min\_invest\}\\
+                                                               Current WAL & \{wal\} days\\
+                                                               \noindent\parbox[b]{\hsize}{\vspace{1mm}Current Max Limit on all Series Assets} & \{next\_withdrawal\_date\}\\[-1mm]
+                                                               Fund Entity & \{legal\_fundname\}\\
+                                                               Fund Inception & \{fund\_inception\}\\
+                                                               Series Inception & \{series\_inception\}\\ \arrayrulecolor{light_grey}\hline
+    \end{tabular}
+    \hspace*{-0.2cm}\begin{tabular}{p{8.45cm}}
+                        \textit{\scriptsize Please see fund Offering Memorandum and related documents for complete terms and Important Disclaimer attached.}
+    \end{tabular}
+
+    \begin{figure}
+        \centering
+        \noindent\renewcommand{\arraystretch}{\{pcompstretch\}}\begin{tabular}{!{\color{light_grey}\vrule}
+                >{\columncolor[HTML]{EFEFEF}}p{3.5cm}
+                >{\columncolor[HTML]{EFEFEF}}c
+                >{\columncolor[HTML]{EFEFEF}}c!{\color{light_grey}\vrule}}
+                                                                   \arrayrulecolor{light_grey}\hline
+                                                                   \multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Portfolio Composition\textsuperscript{5}}}} \\
+                                                                   \textbf{Series Assets} & \textbf{\% Portfolio} & \textbf{O/C Rate}\\
+                                                                   \{usg\_aaa\_cat\} & \{alloc\_aaa\} & \{oc\_aaa\} \\
+                                                                   \{addl\_coll\_breakdown\}
+                                                                   T-Bills; Gov't MMF & \{alloc\_tbills\} & \{oc\_tbills\} \\ \cline{2-2} \cline{3-3}
+                                                                   \textbf{Total} & \{alloc\_total\} & \textbf{\{oc\_total\}} \\\arrayrulecolor{light_grey}\hline
+        \end{tabular}
+
+% \tikzfading[name=fade down,
+%     top color=transparent!30,
+%     bottom color=transparent!0]
+
+        \{performance\_graph\}
+    \end{figure}
+
+    \onecolumn
+
+    \pagebreak
+
+    \footnotesize
+    \noindent\textbf{\color{lucid_blue}Notes}
+
+    \begin{enumerate}
+        \item Target returns based on the program manager's estimate of the projected returns for the respective series based on current market conditions.
+
+        \item Current return (estimated) is based on the rates of the invested series portfolio as of the current period start date.  Actual period return based on the final net returns of portfolio.
+
+        \item Annualized net returns of Fund Series and comparables are for the entirety of each period and are quoted on an Act/360 basis for Lucid Prime Series and Act/365 for Lucid USG series. Any interperiod subscriptions will have different returns based upon the respective interperiod portfolio investments and allocations. Net returns include the applicable series expense ratio and include any management fee waivers or maximum expense caps. Historical returns assume reinvestment at the applicable Fund Series, Libor, T-Bill or MMF Index rate at the end of each period.  Money Market index returns based on the average of the daily rates for the respective period. SOFR is the term reference rate for the applicable period (e.g. 1m or 3m) as published by the CME Group. \{exp\_rat\_footnote\}
+
+        \item All Fund details as of the last period end date. Fund accepts new subscriptions and redemptions on each Withdrawal Date.  Manager may accept subscriptions on any other day with approval, as fully described in the private offering memorandum.
+
+        \item Portfolio composition and Over-Collateralization Rate (``O/C Rate'') of the repo investments as of the business day prior to the last day of the most recent period. O/C Rate equals the market value of the collateral as a proportion of the respective repo investments. Eligible repo collateral details and classifications for the Series as fully described in the private offering memorandum.
+
+    \end{enumerate}
+
+    \noindent\textbf{\color{lucid_blue}Important Disclaimer}
+
+    \scriptsize
+
+    \noindent This material has been prepared by Lucid Management and Capital Partners LP or one of its affiliates, principals or advisors (``Lucid'') and may contain ``forward-looking statements'' which are based on Lucid's beliefs, as well as on a number of assumptions concerning future events, based on information currently available to Lucid. Readers are cautioned not to put undue reliance on such forward-looking statements, which are not a guarantee of future performance, and are subject to a number of uncertainties and other factors, many of which are outside Lucid's control, which could cause actual results to differ materially from such statements. This material is for distribution only under such circumstances as may be permitted by applicable law and it is solely intended for qualified institutions and individuals with existing relationships with Lucid, its affiliates or advisers.  It has no regard to the specific investment objectives, financial situation or particular needs of any recipient. It is published solely for informational and discussion purposes only and is not to be construed as a solicitation or an offer to buy or sell any securities, related financial instruments, actual fund or specific transaction. No representation or warranty, either express or implied, is provided in relation to the accuracy, completeness or reliability of the information contained herein, nor is it intended to be a complete statement or summary of the securities, markets or developments referred to in the materials.  It should not be regarded by recipients as a substitute for the exercise of their own judgment. Any opinions expressed in this material are subject to change without notice and may differ or be contrary to opinions expressed by other business areas or groups of Lucid as a result of using different assumptions and criteria. Lucid is under no obligation to update or keep current the information contained herein. Lucid, its partners, officers and employees' or clients may have or have had interests or long or short positions in the securities or other financial instruments referred to herein and may at any time make purchases and/or sales in them as principal or agent. Neither Lucid nor any of its affiliates, nor any of Lucid or any of its affiliates, partners, employees or agents accepts any liability for any loss or damage arising out of the use of all or any part of this material. Money market investments including repurchase agreements are not suitable for all investors. Past performance is not necessarily indicative of future results.  Prior to entering into a transaction you should consult with your own legal, regulatory, tax, financial and accounting advisers to the extent you deem necessary to make your own investment, hedging and trading decisions. Any transaction between you and Lucid will be subject to the detailed provisions of a private placement memorandum or a managed account agreement relating to that transaction. Additional information will be made available upon request. The indicative information in this document (the ``Information'') are provided to you for information purposes only and may not be complete. Any redistribution of this document without express written consent of Lucid is prohibited.  No part of this material may be reproduced in any form, or referred to in any publication, without express written consent of Lucid.  This presentation should only be considered current as of the date of the publication without regard to the date on which you may have accessed or received the information. Unless required by law or specifically agreed in writing, we have no obligation to continue to provide to you the Information, and we may cease doing so at any time in our sole discretion. \underline{\textit{Targeted Return Disclosure}} \textit{The targeted returns included in this presentation are not intended as, and must not be regarded as, a representation, warranty or prediction that any Fund (or series thereof) will achieve any particular rate of return over any particular time period or that any Fund (or series thereof) will not incur losses. Although Lucid believes, based on these factors, that the referenced return targets are reasonable, return targets are subject to inherent limitations including, without limitation, the fact they cannot take into account the impact of future economic events on future trading and investment decisions. These events may include changes in interest rates and/or benchmarks greater than those occurring within the historical time period examined when developing the return targets, or future changes in laws or regulations. All targeted returns are net of Lucid's anticipated fees and expenses.}}
+
+\vspace{1mm}
+\noindent SEC ADV Part 2 firm brochure: \underline{https://files.adviserinfo.sec.gov/IAPD/Content/Common/crd\_iapd\_Brochure.aspx?BRCHR\_VRSN\_ID=903911}}
+
+\scriptsize
+\begin{center}
+\renewcommand{\arraystretch}{1.2}\begin{tabular}{!{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}p{8cm}
+>{\columncolor[HTML]{EFEFEF}}l !{\color{light_grey}\vrule}
+>{\columncolor[HTML]{EFEFEF}}p{9cm}  !{\color{light_grey}\vrule}}
+\multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Contact Information}}} \\ \arrayrulecolor{light_grey}\hline
+\textbf{Investment Manager} &  & \textbf{For Investors (Subscriptions \& Withdrawals)} \\\arrayrulecolor{light_grey}\hline
+Lucid Management and Capital Partners LP &  & \underline{Lucid.IR@sscinc.com} with copy to: \\
+295 Madison Avenue, 39th Floor &  & \underline{operations@lucidma.com} \\
+New York, New York 10017 &  & \\
+T: +1-212-551-1702 &  &  \\
+Investor Relations: \underline{carolina.siles@lucidma.com} &  & \\
+\textbf{Fund Auditor:} KPMG & & \textbf{Fund Custodian:} Bank of NY Mellon\\ \arrayrulecolor{light_grey}\hline
+\end{tabular}
+\end{center}
+\end{document}

@@ -1,6 +1,7 @@
 import platform
 import sys
 
+import holidays
 import pandas as pd
 
 
@@ -48,3 +49,19 @@ def format_decimal(value):
             return f"{value:.4f}"
         else:
             return None
+
+
+def get_trading_days(start_date, end_date):
+    # Generate a range of dates
+    all_days = pd.date_range(start=start_date, end=end_date, freq="B")
+
+    # Get US holidays
+    us_holidays = holidays.US(years=all_days.year.unique())
+
+    # Filter out holidays
+    trading_days = [day for day in all_days if day not in us_holidays]
+
+    # Convert to the desired format
+    trading_days_str = [day.strftime("%Y-%m-%d") for day in trading_days]
+
+    return trading_days_str

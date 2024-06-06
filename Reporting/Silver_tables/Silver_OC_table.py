@@ -6,12 +6,12 @@ from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateT
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_trading_days
 from Utils.SQL_queries import OC_query_historical
 from Utils.database_utils import get_database_engine, read_table_from_db
 
 # Constants
-REPORT_DATE = "2024-04-30"
+# REPORT_DATE = "2024-04-30"
 TABLE_NAME = "oc_rates"
 
 # Database engines
@@ -203,17 +203,21 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine)
-    df_bronze_oc, df_price, df_factor, df_cash_balance = fetch_and_prepare_data(
-        REPORT_DATE
-    )
-    df = generate_silver_oc_rates(
-        df_bronze_oc, df_price, df_factor, df_cash_balance, REPORT_DATE
-    )
+    start_date = "2023-01-01"
+    end_date = "2024-06-04"
+    trading_days = get_trading_days(start_date, end_date)
+    for REPORT_DATE in trading_days:
+        df_bronze_oc, df_price, df_factor, df_cash_balance = fetch_and_prepare_data(
+            REPORT_DATE
+        )
+        df = generate_silver_oc_rates(
+            df_bronze_oc, df_price, df_factor, df_cash_balance, REPORT_DATE
+        )
 
-    if df is None or df.empty:
-        print(f"No data to upsert for date {REPORT_DATE}")
-    else:
-        upsert_data(TABLE_NAME, df, engine)
+        if df is None or df.empty:
+            print(f"No data to upsert for date {REPORT_DATE}")
+        else:
+            upsert_data(TABLE_NAME, df, engine)
 
     print("Process completed.")
 
