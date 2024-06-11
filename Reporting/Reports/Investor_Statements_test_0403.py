@@ -1,459 +1,295 @@
-# import sys
+import platform
 import subprocess
 from datetime import datetime
 from pathlib import Path, PureWindowsPath
 
 import openpyxl as op
+import pandas as pd
+
+from Reporting.Utils.Common import get_file_path
+from Reporting.Utils.Constants import (
+    lucid_series,
+    benchmark_shortern,
+    reverse_cusip_mapping,
+)
+from Reporting.Utils.database_utils import get_database_engine, read_table_from_db
+from Reports.Constants import fund_report_template, note_report_template
+from Reports.Utils import (
+    diff_period_rate,
+    heightmap,
+    stretches,
+    hspacemap,
+    xmap,
+    barwidthmap,
+    tablevstretch,
+    form_as_percent,
+    accs_since_start,
+    month_wordify,
+    benchmark_shorten,
+    bps_spread,
+)
+
+# CONSTANT
+reporting_series = [
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    "PRIME-Q10",
+    "PRIME-Q10",
+    "PRIME-Q36",
+    "PRIME-QX0",
+    "USGFD-M00",
+]
+
+# Variable
+# current_date = datetime.now()
+current_date = datetime.strptime("2024-05-16", "%Y-%m-%d")
+report_date_formal = current_date.strftime("%B %d, %Y")
+report_date = current_date.strftime("%Y-%m-%d")
+reporting_fund = reporting_series[-1]
+reporting_fund_name = lucid_series[reporting_fund]
+
+# Table names
+db_type = "postgres"
+attributes_table_name = "bronze_series_attributes"
+historical_returns_table_name = "historical_returns"
+target_return_table_name = "target_returns"
+benchmark_table_name = "bronze_benchmark"
+oc_rate_table_name = "oc_rates"
+daily_nav_table_name = "bronze_daily_nav"
+roll_schedule_table_name = "roll_schedule"
+cash_balance_table_name = "bronze_cash_balance"
+
+# Connect to the PostgreSQL database
+engine = get_database_engine("postgres")
+
+# Read the table into a pandas DataFrame
+df_attributes = read_table_from_db(attributes_table_name, db_type)
+
+df_historical_returns = read_table_from_db(historical_returns_table_name, db_type)
+
+df_target_return = read_table_from_db(target_return_table_name, db_type)
+
+df_benchmark = read_table_from_db(benchmark_table_name, db_type)
+
+df_oc_rates = read_table_from_db(oc_rate_table_name, db_type)
+
+df_daily_nav = read_table_from_db(daily_nav_table_name, db_type)
+
+df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
+
+df_cash_balance = read_table_from_db(cash_balance_table_name, db_type)
+## Reporting variable ##
+
+# DATES
+roll_schedule_condition = df_roll_schedule["series_id"] == reporting_fund
+df_roll_schedule = df_roll_schedule[roll_schedule_condition]
+
+
+def get_current_reporting_dates(reporting_date):
+    reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
+    current = df_roll_schedule[
+        (df_roll_schedule["start_date"] <= reporting_date.strftime("%Y-%m-%d"))
+        & (df_roll_schedule["end_date"] >= reporting_date.strftime("%Y-%m-%d"))
+    ]
+    if not current.empty:
+        current_row = current.iloc[0]
+        return (
+            current_row["start_date"].strftime("%Y-%m-%d"),
+            current_row["end_date"].strftime("%Y-%m-%d"),
+            current_row["withdrawal_date"].strftime("%Y-%m-%d"),
+            current_row["notice_date"].strftime("%Y-%m-%d"),
+        )
+    return (None, None, None, None)
+
+
+def get_previous_reporting_dates(reporting_date):
+    reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
+    previous = df_roll_schedule[
+        df_roll_schedule["end_date"] < reporting_date.strftime("%Y-%m-%d")
+    ]
+    if not previous.empty:
+        previous = previous.sort_values(by="end_date", ascending=False)
+        previous_row = previous.iloc[0]
+        return (
+            previous_row["start_date"].strftime("%Y-%m-%d"),
+            previous_row["end_date"].strftime("%Y-%m-%d"),
+        )
+    return (None, None)
+
+
+def get_next_reporting_dates(reporting_date):
+    reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
+    next_dates = df_roll_schedule[
+        df_roll_schedule["start_date"] > reporting_date.strftime("%Y-%m-%d")
+    ]
+    if not next_dates.empty:
+        next_dates = next_dates.sort_values(by="start_date")
+        next_row = next_dates.iloc[0]
+        return (
+            next_row["start_date"].strftime("%Y-%m-%d"),
+            next_row["end_date"].strftime("%Y-%m-%d"),
+            next_row["withdrawal_date"].strftime("%Y-%m-%d"),
+            next_row["notice_date"].strftime("%Y-%m-%d"),
+        )
+    return (None, None, None, None)
+
+
+curr_start, curr_end, curr_withdrawal, curr_notice = get_current_reporting_dates(
+    report_date
+)
+prev_start, prev_end = get_previous_reporting_dates(report_date)
+next_start, next_end, next_withdrawal, next_notice = get_next_reporting_dates(
+    report_date
+)
+
+
+# TARGET RETURN
+curr_target_return_condition = (df_target_return["security_id"] == reporting_fund) & (
+    df_target_return["date"] == curr_start
+)
+benchmark_name = df_target_return[curr_target_return_condition]["benchmark_name"].iloc[
+    0
+]
+benchmark_short = benchmark_shortern[benchmark_name]
+target_outperform_range = df_target_return[curr_target_return_condition][
+    "target_range"
+].iloc[0]
+target_outperform_net = df_target_return[curr_target_return_condition][
+    "net_spread"
+].iloc[0]
+benchmark = df_target_return[curr_target_return_condition]["benchmark"].iloc[0]
+
+current_target_return = form_as_percent(benchmark, 2)
+
+
+prev_target_return_condition = (df_target_return["security_id"] == reporting_fund) & (
+    df_target_return["date"] == prev_start
+)
+prev_target_outperform = (
+    str(df_target_return[prev_target_return_condition]["net_spread"].iloc[0]) + " bps"
+)
+
+# HISTORICAL RETURN
+pool_name_encoded = reverse_cusip_mapping[reporting_fund]
+historical_return_condition = (df_historical_returns["end_date"] == prev_end) & (
+    df_historical_returns["pool_name"] == pool_name_encoded
+)
+df_historical_returns = df_historical_returns[historical_return_condition]
+prev_return = form_as_percent(
+    df_historical_returns["annualized_returns_360"].iloc[0], 2
+)
+
+
+# FUND ATTRIBUTES
+fund_attribute_condition = df_attributes["security_id"] == reporting_fund
+df_attributes = df_attributes[fund_attribute_condition]
+fund_name = df_attributes["fund_name"].iloc[0]
+series_name = df_attributes["series_name"].iloc[0]
+expense_ratio_footnote_text = f"Fund Series expense ratio currently capped at an all-in ratio of {df_attributes['expense_ratio_cap'].iloc[0]} bps and can vary over time."
+series_abbrev = df_attributes["series_abbreviation"].iloc[0]
+
+
+# OC RATES
+oc_rate_condition = (
+    (df_oc_rates["fund"] == fund_name.upper())
+    & (df_oc_rates["series"] == series_name.upper())
+    & (df_oc_rates["report_date"] == report_date)
+)
+df_oc_rates = df_oc_rates[oc_rate_condition]
+
+# CASH BALANCE
+cash_balance_condition = (
+    (df_cash_balance["Fund"] == fund_name.upper())
+    & (df_cash_balance["Series"] == series_name.upper())
+    & (df_cash_balance["Balance_date"] == report_date)
+    & (df_cash_balance["Account"] == "MAIN")
+)
+
+df_cash_balance = df_cash_balance[cash_balance_condition]
+cash_balance = df_cash_balance["Sweep_Balance"].iloc[0]
+
+
+def calculate_oc_metrics(data):
+    global cash_balance
+
+    total_investment = data["investment_amount"].sum() + cash_balance
+
+    def get_values(rating):
+        if rating in data["rating_buckets"].values:
+            row = data[data["rating_buckets"] == rating].iloc[0]
+            return row["collateral_mv_allocated"], row["investment_amount"]
+        return 0, 0
+
+    col_mv_allocated_aaa, inv_aaa = get_values("AAA")
+    col_mv_allocated_aa, inv_aa = get_values("AA")
+    col_mv_allocated_a, inv_a = get_values("A")
+    col_mv_allocated_bbb, inv_bbb = get_values("BBB")
+    col_mv_allocated_usg, inv_usg = get_values("USG")
+    col_mv_allocated_usgcmo, inv_usgcmo = get_values("USGCMO")
+
+    oc_total = data["collateral_mv_allocated"].sum() / data["investment_amount"].sum()
+
+    oc_usg_aaa = (
+        (col_mv_allocated_aaa + col_mv_allocated_usg + col_mv_allocated_usgcmo)
+        / (inv_aaa + inv_usg + inv_usgcmo)
+        if (inv_aaa + inv_usg + inv_usgcmo) != 0
+        else 0
+    )
+    oc_aa_a = (
+        (col_mv_allocated_aa + col_mv_allocated_a) / (inv_aa + inv_a)
+        if (inv_aa + inv_a) != 0
+        else 0
+    )
+    oc_bbb = col_mv_allocated_bbb / inv_bbb if inv_bbb != 0 else 0
+    oc_tbills = 0
+
+    aloc_usg_aaa = (inv_aaa + inv_usg + inv_usgcmo) / total_investment
+    aloc_aa_a = (inv_aa + inv_a) / total_investment
+    aloc_bbb = inv_bbb / total_investment
+    aloc_tbills = cash_balance / total_investment
+
+    return (
+        oc_total,
+        oc_usg_aaa,
+        oc_aa_a,
+        oc_bbb,
+        oc_tbills,
+        aloc_usg_aaa,
+        aloc_aa_a,
+        aloc_bbb,
+        aloc_tbills,
+    )
+
+
+(
+    oc_total,
+    oc_usg_aaa,
+    oc_aa_a,
+    oc_bbb,
+    oc_tbills,
+    aloc_usg_aaa,
+    aloc_aa_a,
+    aloc_bbb,
+    aloc_tbills,
+) = calculate_oc_metrics(df_oc_rates)
+
+
+def get_fund_size(fund_name, report_date):
+    # use df_daily_nav
+    return
+
+
+def get_series_size(fund_name, report_date):
+    # use df_daily_nav
+    return
+
+
+def get_aum(report_date):
+    return
+
 
 # intialize script templates
-fund_report_template = r"""
-\documentclass[9pt]{{article}}
-\usepackage[T1]{{fontenc}}
-\hfuzz=27pt 
-\usepackage{{lmodern}}
-\usepackage[dvipsnames,table,xcdraw]{{xcolor}}
-\definecolor{{lucid_blue}}{{RGB}}{{0,18,82}}
-\definecolor{{light_grey}}{{RGB}}{{198,198,198}}
-\definecolor{{dark_red}}{{RGB}}{{144,8,8}}
-\definecolor{{dark_color}}{{RGB}}{{9,143,68}}
-\definecolor{{dark_grey}}{{RGB}}{{194,194,214}}
-\usepackage[margin=0.7in,headsep=0.1in]{{geometry}}
-\usepackage{{fancyhdr}}
-\usepackage{{graphicx}}
-\usepackage{{listings}}
-\usepackage{{colortbl}}
-\usepackage{{boldline}}
-\graphicspath{{ {{images/}} }}
-\pagestyle{{fancy}}
-\usepackage{{adjustbox}}
-\usepackage{{pgfplots}}
-\renewcommand{{\familydefault}}{{\sfdefault}} % make font nice non bitmap
-\renewcommand*{{\thepage}}{{\small\arabic{{page}}}}
-\usepgfplotslibrary{{dateplot}}
-\def\mywidth{{17.6cm}}
-\def\halfwidthb{{12.4cm}}
-\def\quarterwidthb{{6cm}}
-\def\quarterwidth{{4.35cm}}
-\def\eighthwidth{{2.175cm}}
-\def\quarterwidtha{{3.41cm}}
-\def\eighthwidtha{{1.2cm}}
-\def\lesswidth{{10.9cm}}
-\usetikzlibrary{{shadows,shadows.blur,shapes.geometric}}
-\pgfplotsset{{compat=1.8}}
-\pgfplotsset{{every axis/.append style={{
-					label style={{font=\tiny}},
-					tick label style={{font=\tiny}}  
-					}}}}
-\lhead{{\includegraphics[width=9cm]{{lucid_logo.png}}}}
-\rhead{{Report Date: {report_date}}}
-\setlength{{\columnsep}}{{3em}}
-\begin{{document}}
-\twocolumn[{{
-\begin{{center}}
-\renewcommand{{\arraystretch}}{{1.5}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor{{lucid_blue}}}}m{{\mywidth}} !{{\color{{light_grey}}\vrule}}}}
-{{\color[HTML]{{FFFFFF}} \large \textbf{{Monthly Report}}}}\\
-\end{{tabular}}
-\end{{center}}
-
-\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor{{lucid_blue}}}}l !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{\quarterwidthb}} !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}l !{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-{{\color[HTML]{{FFFFFF}} \textbf{{Program Series}}}} & \multicolumn{{2}}{{p{{\halfwidthb}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{Lucid {fundname} - Series {series_abbrev}}}}} \\[1.5mm]
-{{\color[HTML]{{FFFFFF}} \textbf{{Objective and Strategy}}}} & \multicolumn{{2}}{{p{{\halfwidthb}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} {fund_description} 
-
-{series_description}}} \\[{toptableextraspace}]
-{{\color[HTML]{{FFFFFF}} \textbf{{Current Target Return}}\textsuperscript{{1}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{benchmark} + {tgt_outperform} bps}}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Previous Period Return}}}} & {prev_pd_start} - {this_pd_start} & \textbf{{{prev_pd_return}}} ({prev_pd_benchmark} + {prev_pd_outperform}) \\ 
-{{\color[HTML]{{FFFFFF}} \textbf{{Current Period Est'd Return}}\textsuperscript{{2}}}} & {this_pd_start} - {this_pd_end} & \textbf{{{this_pd_est_return}}}  ({benchmark_short} + {this_pd_est_outperform} bps) \\ \arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-
-\begin{{center}}
-\noindent \renewcommand{{\arraystretch}}{{{tablevstretch}}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}m{{5.2cm}}!{{\color{{light_grey}}\vrule}}m{{\eighthwidth}}c!{{\color{{light_grey}}\vrule}}m{{\eighthwidtha}}c!{{\color{{light_grey}}\vrule}}m{{\eighthwidtha}}c!{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-\rowcolor{{lucid_blue}} 
-{{\color[HTML]{{FFFFFF}} \textbf{{Net Returns}}\textsuperscript{{3}}}}               & \multicolumn{{2}}{{m{{\quarterwidth}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}\centering {{\color[HTML]{{FFFFFF}} \textbf{{Previous Period}}}}}} & \multicolumn{{2}}{{m{{\quarterwidtha}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}\centering {{\color[HTML]{{FFFFFF}} \textbf{{{interval1}}}}}}} & \multicolumn{{2}}{{m{{\quarterwidtha}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}\centering {{\color[HTML]{{FFFFFF}} \textbf{{{interval2}}}}}}} \\
-\rowcolor{{lucid_blue}}  
-{{\color[HTML]{{FFFFFF}} Series / Comparables}} & {{\color[HTML]{{FFFFFF}} Return}}                & {{\color[HTML]{{FFFFFF}} Spread}}               & {{\color[HTML]{{FFFFFF}} Return\textsuperscript{{1}}}}        & {{\color[HTML]{{FFFFFF}} Spread}}        & {{\color[HTML]{{FFFFFF}} Return\textsuperscript{{1}}}}       & {{\color[HTML]{{FFFFFF}} Spread}}       \\ \arrayrulecolor{{light_grey}}\hline
-{return_table_plot}
-\end{{tabular}}
-\end{{center}}
-}}]
-\hfill \break
-\hfill \break
-
-\noindent \renewcommand{{\arraystretch}}{{{descstretch}}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{3.7cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{4cm}}!{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-\multicolumn{{2}}{{!{{\color{{light_grey}}\vrule}}l!{{\color{{light_grey}}\vrule}}}}{{\rowcolor{{lucid_blue}}{{ \color[HTML]{{FFFFFF}}\textbf{{Fund and Series Details\textsuperscript{{4}}}}}}}} \\
-Fund Size & {fund_size}\\
-Series Size & {series_size}\\
-Lucid AUM & {lucid_aum}\\
-Series Rating & {rating} by {rating_org}\\
-Series Withdrawal & {calc_frequency}\\
-Next Withdrawal & {next_withdrawal_date}\\
-Next Notice Date & {next_notice_date}\\
-Min Investment & {min_invest}\\
-Current WAL & {wal} days\\
-\noindent\parbox[b]{{\hsize}}{{\vspace{{1mm}}Current Max Limit on all Series Assets}} & {next_withdrawal_date}\\[-1mm]
-Fund Entity & {legal_fundname}\\
-Fund Inception & {fund_inception}\\
-Series Inception & {series_inception}\\ \arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-\hspace*{{-0.2cm}}\begin{{tabular}}{{p{{8.45cm}}}}
-\textit{{\scriptsize Please see fund Offering Memorandum and related documents for complete terms and Important Disclaimer attached.}}
-\end{{tabular}}
-
-
-\begin{{figure}}
-\centering
-\noindent\renewcommand{{\arraystretch}}{{{pcompstretch}}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{3.5cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}c
->{{\columncolor[HTML]{{EFEFEF}}}}c!{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-\multicolumn{{3}}{{!{{\color{{light_grey}}\vrule}}l!{{\color{{light_grey}}\vrule}}}}{{\rowcolor{{lucid_blue}}{{ \color[HTML]{{FFFFFF}}\textbf{{Portfolio Composition\textsuperscript{{5}}}}}}}} \\
-\textbf{{Series Assets}} & \textbf{{\% Portfolio}} & \textbf{{O/C Rate}}\\
-{usg_aaa_cat} & {alloc_aaa} & {oc_aaa} \\
-{addl_coll_breakdown}
-T-Bills; Gov't MMF & {alloc_tbills} & {oc_tbills} \\ \cline{{2-2}} \cline{{3-3}} 
-\textbf{{Total}} & {alloc_total} & \textbf{{{oc_total}}} \\\arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-
-% \tikzfading[name=fade down,
-%     top color=transparent!30,
-%     bottom color=transparent!0]
-
-{performance_graph}
-\end{{figure}}
-
-
-\onecolumn
-
-
-
-\pagebreak 
-
-\footnotesize
-\noindent\textbf{{\color{{lucid_blue}}Notes}}
-
-\begin{{enumerate}}
-\item Target returns based on the program manager's estimate of the projected returns for the respective series based on current market conditions. 
-
-\item Current return (estimated) is based on the rates of the invested series portfolio as of the current period start date.  Actual period return based on the final net returns of portfolio.   
-
-\item Annualized net returns of Fund Series and comparables are for the entirety of each period and are quoted on an Act/360 basis for Lucid Prime Series and Act/365 for Lucid USG series. Any interperiod subscriptions will have different returns based upon the respective interperiod portfolio investments and allocations. Net returns include the applicable series expense ratio and include any management fee waivers or maximum expense caps. Historical returns assume reinvestment at the applicable Fund Series, Libor, T-Bill or MMF Index rate at the end of each period.  Money Market index returns based on the average of the daily rates for the respective period. SOFR is the term reference rate for the applicable period (e.g. 1m or 3m) as published by the CME Group. {exp_rat_footnote}
-
-\item All Fund details as of the last period end date. Fund accepts new subscriptions and redemptions on each Withdrawal Date.  Manager may accept subscriptions on any other day with approval, as fully described in the private offering memorandum.
-
-\item Portfolio composition and Over-Collateralization Rate (``O/C Rate'') of the repo investments as of the business day prior to the last day of the most recent period. O/C Rate equals the market value of the collateral as a proportion of the respective repo investments. Eligible repo collateral details and classifications for the Series as fully described in the private offering memorandum.
-
-\end{{enumerate}}
-
-\noindent\textbf{{\color{{lucid_blue}}Important Disclaimer}}
-
-\scriptsize
-
-\noindent This material has been prepared by Lucid Management and Capital Partners LP or one of its affiliates, principals or advisors (``Lucid'') and may contain ``forward-looking statements'' which are based on Lucid's beliefs, as well as on a number of assumptions concerning future events, based on information currently available to Lucid. Readers are cautioned not to put undue reliance on such forward-looking statements, which are not a guarantee of future performance, and are subject to a number of uncertainties and other factors, many of which are outside Lucid's control, which could cause actual results to differ materially from such statements. This material is for distribution only under such circumstances as may be permitted by applicable law and it is solely intended for qualified institutions and individuals with existing relationships with Lucid, its affiliates or advisers.  It has no regard to the specific investment objectives, financial situation or particular needs of any recipient. It is published solely for informational and discussion purposes only and is not to be construed as a solicitation or an offer to buy or sell any securities, related financial instruments, actual fund or specific transaction. No representation or warranty, either express or implied, is provided in relation to the accuracy, completeness or reliability of the information contained herein, nor is it intended to be a complete statement or summary of the securities, markets or developments referred to in the materials.  It should not be regarded by recipients as a substitute for the exercise of their own judgment. Any opinions expressed in this material are subject to change without notice and may differ or be contrary to opinions expressed by other business areas or groups of Lucid as a result of using different assumptions and criteria. Lucid is under no obligation to update or keep current the information contained herein. Lucid, its partners, officers and employees' or clients may have or have had interests or long or short positions in the securities or other financial instruments referred to herein and may at any time make purchases and/or sales in them as principal or agent. Neither Lucid nor any of its affiliates, nor any of Lucid or any of its affiliates, partners, employees or agents accepts any liability for any loss or damage arising out of the use of all or any part of this material. Money market investments including repurchase agreements are not suitable for all investors. Past performance is not necessarily indicative of future results.  Prior to entering into a transaction you should consult with your own legal, regulatory, tax, financial and accounting advisers to the extent you deem necessary to make your own investment, hedging and trading decisions. Any transaction between you and Lucid will be subject to the detailed provisions of a private placement memorandum or a managed account agreement relating to that transaction. Additional information will be made available upon request. The indicative information in this document (the ``Information'') are provided to you for information purposes only and may not be complete. Any redistribution of this document without express written consent of Lucid is prohibited.  No part of this material may be reproduced in any form, or referred to in any publication, without express written consent of Lucid.  This presentation should only be considered current as of the date of the publication without regard to the date on which you may have accessed or received the information. Unless required by law or specifically agreed in writing, we have no obligation to continue to provide to you the Information, and we may cease doing so at any time in our sole discretion. \underline{{\textit{{Targeted Return Disclosure}}}} \textit{{The targeted returns included in this presentation are not intended as, and must not be regarded as, a representation, warranty or prediction that any Fund (or series thereof) will achieve any particular rate of return over any particular time period or that any Fund (or series thereof) will not incur losses. Although Lucid believes, based on these factors, that the referenced return targets are reasonable, return targets are subject to inherent limitations including, without limitation, the fact they cannot take into account the impact of future economic events on future trading and investment decisions. These events may include changes in interest rates and/or benchmarks greater than those occurring within the historical time period examined when developing the return targets, or future changes in laws or regulations. All targeted returns are net of Lucid's anticipated fees and expenses.}}
-
-\vspace{{1mm}}
-\noindent SEC ADV Part 2 firm brochure: \underline{{https://files.adviserinfo.sec.gov/IAPD/Content/Common/crd\_iapd\_Brochure.aspx?BRCHR\_VRSN\_ID=903911}}}}
-
-
-\scriptsize
-\begin{{center}}
-\renewcommand{{\arraystretch}}{{1.2}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{8cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}l !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{9cm}}  !{{\color{{light_grey}}\vrule}}}}
-\multicolumn{{3}}{{!{{\color{{light_grey}}\vrule}}l!{{\color{{light_grey}}\vrule}}}}{{\rowcolor{{lucid_blue}}{{ \color[HTML]{{FFFFFF}}\textbf{{Contact Information}}}}}} \\ \arrayrulecolor{{light_grey}}\hline
-\textbf{{Investment Manager}} &  & \textbf{{For Investors (Subscriptions \& Withdrawals)}} \\\arrayrulecolor{{light_grey}}\hline
-Lucid Management and Capital Partners LP &  & \underline{{Lucid.IR@sscinc.com}} with copy to: \\
-295 Madison Avenue, 39th Floor &  & \underline{{operations@lucidma.com}} \\
-New York, New York 10017 &  & \\
-T: +1-212-551-1702 &  &  \\
-Investor Relations: \underline{{carolina.siles@lucidma.com}} &  & \\
-\textbf{{Fund Auditor:}} KPMG & & \textbf{{Fund Custodian:}} Bank of NY Mellon\\ \arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-\end{{center}}
-\end{{document}}
-"""
-
-note_report_template = r"""
-
-\documentclass[9pt]{{article}}
-\usepackage[T1]{{fontenc}}
-\hfuzz=27pt 
-\usepackage{{lmodern}}
-\usepackage[dvipsnames,table,xcdraw]{{xcolor}}
-\definecolor{{lucid_blue}}{{RGB}}{{0,18,82}}
-\definecolor{{light_grey}}{{RGB}}{{198,198,198}}
-\definecolor{{dark_red}}{{RGB}}{{144,8,8}}
-\definecolor{{dark_color}}{{RGB}}{{9,143,68}}
-\definecolor{{dark_grey}}{{RGB}}{{194,194,214}}
-\definecolor{{darker_grey}}{{RGB}}{{143,143,143}}
-\usepackage[margin=0.7in,headsep=0.1in]{{geometry}}
-\usepackage{{fancyhdr}}
-\usepackage{{graphicx}}
-\usepackage{{subfig}}
-\usepackage{{colortbl}}
-\usepackage{{listings}}
-\usepackage{{boldline}}
-\usepackage{{ragged2e}}
-\graphicspath{{ {{images/}} }}
-\pagestyle{{fancy}}
-\usepackage{{adjustbox}}
-\usepackage{{pgfplots}}
-\renewcommand{{\familydefault}}{{\sfdefault}} % make font nice non bitmap
-\renewcommand*{{\thepage}}{{\small\arabic{{page}}}}
-\usepgfplotslibrary{{dateplot}}
-\def\mywidth{{17.6cm}}
-\def\halfwidthb{{11.2cm}}
-\def\quarterwidthb{{4cm}}
-\def\quarterwidth{{4.35cm}}
-\def\eighthwidth{{2.175cm}}
-\def\quarterwidtha{{3.41cm}}
-\def\eighthwidtha{{1.2cm}}
-\usetikzlibrary{{shadows,shadows.blur,shapes.geometric}}
-\pgfplotsset{{compat=1.8}}
-\pgfplotsset{{every axis/.append style={{
-					label style={{font=\tiny}},
-					tick label style={{font=\tiny}}  
-					}}}}
-\lhead{{\includegraphics[width=9cm]{{lucid_logo.png}}}}
-\rhead{{Report Date: {report_date}}}
-\setlength{{\columnsep}}{{3em}}
-\begin{{document}}
-\
-
-\noindent\renewcommand{{\arraystretch}}{{1.5}}\begin{{tabular}}{{
->{{\columncolor[HTML]{{8F8F8F}}}}p{{8.3cm}} 
->{{\columncolor[HTML]{{8F8F8F}}}}p{{5.5cm}} 
->{{\columncolor[HTML]{{8F8F8F}}}}r}}
-\textbf{{\large Lucid Medium Term Notes}} &  & \textbf{{Noteholder Report}} \\
-\end{{tabular}}
-
-\begin{{center}}
-\renewcommand{{\arraystretch}}{{1.3}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor{{lucid_blue}}}}l !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{\quarterwidthb}} !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}l !{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-%\cline{{2-3}}
-
-
-{{\color[HTML]{{FFFFFF}} \textbf{{Program Series}}}} & \multicolumn{{2}}{{p{{11.78cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
-\textbf{{Lucid {fundname} Series {series_abbrev} / Note Series {note_abbrev}}}
-}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Issuer}}}} & \multicolumn{{2}}{{p{{11.78cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
-{issuer_name}
-}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Redemption \& Coupon Frequency}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{frequency}}}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Rating}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{rating}}} by {rating_org}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Current Target Return of Notes}}\textsuperscript{{1}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{benchmark} + {tgt_outperform} bps}}}}\\
-{{\color[HTML]{{FFFFFF}} \textbf{{Previous Coupon Period}}}} & {prev_pd_start} - {this_pd_start} & \textbf{{{prev_pd_return}}} ({prev_pd_benchmark} + {prev_pd_outperform}) \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Current Period Est'd Coupon}}\textsuperscript{{2}}}} & {this_pd_start} - {this_pd_end} & \textbf{{{this_pd_est_return}}}  ({benchmark_short} + {this_pd_est_outperform} bps) \\ \arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-\end{{center}}
-
-\noindent{{\color{{lucid_blue}}\textbf{{Historical Performance of Program Series vs Benchmarks}} \textit{{(all-in net returns)}}\textsuperscript{{3}}}}
-
-\noindent\renewcommand{{\arraystretch}}{{1.3}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}m{{5.2cm}}!{{\color{{light_grey}}\vrule}}m{{\eighthwidth}}c!{{\color{{light_grey}}\vrule}}m{{\eighthwidtha}}c!{{\color{{light_grey}}\vrule}}m{{\eighthwidtha}}c!{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-\rowcolor{{lucid_blue}} 
-{{\color[HTML]{{FFFFFF}} \textbf{{ Series / Comparables}}}}               & \multicolumn{{2}}{{m{{\quarterwidth}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}\centering {{\color[HTML]{{FFFFFF}} \textbf{{Previous Period}}}}}} & \multicolumn{{2}}{{m{{\quarterwidtha}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}\centering {{\color[HTML]{{FFFFFF}} \textbf{{{interval1}}}}}}} & \multicolumn{{2}}{{m{{\quarterwidtha}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}\centering {{\color[HTML]{{FFFFFF}} \textbf{{{interval2}}}}}}} \\ 
-\rowcolor{{lucid_blue}}  
-{{\color[HTML]{{FFFFFF}}}} & {{\color[HTML]{{FFFFFF}} Return\textsuperscript{{1}}}}                & {{\color[HTML]{{FFFFFF}} Spread}}               & {{\color[HTML]{{FFFFFF}} Return\textsuperscript{{1}}}}        & {{\color[HTML]{{FFFFFF}} Spread}}        & {{\color[HTML]{{FFFFFF}} Return\textsuperscript{{1}}}}       & {{\color[HTML]{{FFFFFF}} Spread}}       \\ \arrayrulecolor{{light_grey}}\hline
-{return_table_plot}
-\end{{tabular}}
-
-\vspace{{.8cm}}
-
-\noindent\adjustbox{{valign=t}}{{\begin{{minipage}}{{9.5cm}}
-\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor{{lucid_blue}}}}m{{8.2cm}} !{{\color{{light_grey}}\vrule}}}}
-{{\color[HTML]{{FFFFFF}} \small \textbf{{Most Recent Period Returns vs Benchmarks\textsuperscript{{3}}}}}}\\
-\end{{tabular}}
-{performance_graph}
-\end{{minipage}}}}%
-\hfill
-\adjustbox{{valign=t}}{{\begin{{minipage}}[t]{{15cm}}
-	{colltable}
-\end{{minipage}}}}
-
-\begin{{center}}
-\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{5.05cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{3.05cm}} !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{4.05cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{4.35cm}} !{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-\multicolumn{{4}}{{!{{\color{{light_grey}}\vrule}}l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor{{lucid_blue}}{{\color[HTML]{{FFFFFF}}\textbf{{Program Overview\textsuperscript{{5}}}}}}}} \\ \arrayrulecolor{{light_grey}}\hline
-\textbf{{Related Fund Series Size}} & \textbf{{{series_size}}} & Issuing \& Paying Agent & Bank of NY Mellon \\ 
-\textbf{{Lucid {fundname} Program Size}} & \textbf{{{fund_size}}} & Collateral Agent & Bank of NY Mellon \\ 
-\textbf{{Lucid Platform AUM}} & \textbf{{{lucid_aum}}} & Auditor & KPMG \\ 
-{fundname} Program Inception & {fund_inception} & & \\ \arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-\end{{center}}
-
-\begin{{center}}
-	\noindent{{\small Please see page 2 for Coupons by CUSIP, program documents for complete terms, and Important Disclaimer attached.}}
-\end{{center}}
-
-
-\pagebreak 
-
-\noindent\renewcommand{{\arraystretch}}{{1.5}}\begin{{tabular}}{{
->{{\columncolor[HTML]{{8F8F8F}}}}m{{\mywidth}}}}
-{{\large \textbf{{Coupons by CUSIP}}}}\\
-\end{{tabular}}
-
-
-\begin{{center}}
-\noindent\renewcommand{{\arraystretch}}{{1.3}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
->{{\columncolor{{lucid_blue}}}}l !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1cm}} !{{\color{{light_grey}}\vrule}}
->{{\columncolor[HTML]{{EFEFEF}}}}l !{{\color{{light_grey}}\vrule}}}}
-\arrayrulecolor{{light_grey}}\hline
-%\cline{{2-3}}
-{{\color[HTML]{{FFFFFF}} \textbf{{CUSIP}}}} & \multicolumn{{2}}{{p{{11.56cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
-\textbf{{{cusip}}}
-}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Note Series}}}} & \multicolumn{{2}}{{p{{11.56cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
-\textbf{{{note_abbrev}}} (Secured by related fund series {series_abbrev})
-}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Current Principal}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{principal_outstanding}}}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Original Issue Date}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}{issue_date}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Final Maturity Date}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}{maturity_date}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Next Coupon Payment Date}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}{pd_end_date_long}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Next Redemption Date (Put Date)}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{pd_end_date_long}}}}} \\
-{{\color[HTML]{{FFFFFF}} \textbf{{Next Notice Date for Redemption}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}{next_notice_date}}} \\ \arrayrulecolor{{light_grey}}\hline
-\end{{tabular}}
-\end{{center}}
-
-\begin{{center}}{{\footnotesize
-\noindent\begin{{tabular}}{{
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1.45cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1.45cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1.70cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1.6cm}} 
->{{\columncolor[HTML]{{EFEFEF}}\RaggedLeft\arraybackslash}}p{{2cm}} 
->{{\columncolor[HTML]{{EFEFEF}}\RaggedLeft\arraybackslash}}p{{1.52cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1.52cm}} 
->{{\columncolor[HTML]{{EFEFEF}}\RaggedLeft\arraybackslash}}p{{1.64cm}} 
->{{\columncolor[HTML]{{EFEFEF}}}}p{{1.40cm}} }}
-\textbf{{Interest Period Start}} & \textbf{{Interest Period End}} & \textbf{{Interest Rate}} & \textbf{{Spread\hphantom{{A}} to\hphantom{{A}}\hphantom{{A}} Benchmark}} & \RaggedRight\arraybackslash\textbf{{Note\hphantom{{A}} Series\hphantom{{A}}\hphantom{{A}} Principal}} & \RaggedRight\arraybackslash\textbf{{Interest Paid}} & \textbf{{Interest Payment Date}} & \RaggedRight\arraybackslash\textbf{{Related Fund Capital Account}} & \textbf{{Collateral O/C Rate}} \\ \arrayrulecolor{{light_grey}}\hline
-{coupon_plot}
-\end{{tabular}}
-}}\end{{center}}
-
-
-{{\small
-\color{{gray}}
-	\noindent\textbf{{Note:}}  The Series Portfolio (which includes the Collateral Securities) is pledged to BNYM as the Collateral Agent for the Noteholders and equals the Note Principal Amount. A copy of the most recent capital account statement is available by request at \underline{{operations@lucidma.com}}.{rets_disclaimer_if_m1}
-}}
-
-\pagebreak
-
-\footnotesize
-\noindent\textbf{{\color{{lucid_blue}}Report Notes}}
-
-\begin{{enumerate}}
-\item Target returns based on the program manager's estimate of the projected returns for the respective series based on current market conditions. 
-
-\item Current coupon (estimated) is based on the rates of the invested portfolio of the Related Fund Interest as of the current period start date.  Actual rate set in arrears based on the final net returns of portfolio.  
-
-\item Annualized net returns quoted on an Act/360 basis after all program costs. Historical returns assume reinvestment at the respective Series return, money market index, Libor rate or T-Bill Index rate at the end of each period.  Libor is the applicable USD London Interbank offered Rate for each calculation period, as published by the ICE Benchmark Administration Fixing. T-Bill is the offer rate for the T-Bills with a maturity matching the respective coupon period (or interpolated rate if the dates do not match). Crane Prime Institutional Money Market Index adjusted to an Actual/360 basis (for Prime notes) and Act/365 for USG Notes, based on the daily average for the periods. A1/P1 CP is dealer placed commercial paper corresponding to the period as published by Bloomberg. SOFR is the term reference rate for the applicable period (e.g. 1m or 3m) as published by the CME Group.
-
-\item Over-Collateralization Rate (``O/C Rate'') of the repo investments securing the notes in the Related Fund Interest as of the business day prior to the end of the most recent period. O/C Rates will vary each period based on the specific risk characteristics of the collateral securities that meet the Lucid risk management standards. O/C Rate equals the market value of the collateral as a proportion of the respective repo investments. Eligible repo collateral details and classifications for the respective Series as fully described in the private offering memorandum. Historical Returns based on the investment program series performance since inception in the related fund series or notes; accordingly, specific Secured Notes that reference the series (e.g. M-1, M-2) purchased in the middle of coupon dates or issued after the inception date may have different returns based on inter-period issuances or different holding periods. Please review the specific interest rates for the respective secured note CUSIP on page 2 for the specific returns applicable to the note.
-
-\item Program AUM based on the amounts invested in the series strategy through the Secured Notes or directly in the related fund entity (Lucid Prime Fund LLC).  For each program series (e.g. Series M), the returns of the Secured Notes and direct investments in the related fund are the same given the program structure. Lucid Platform AUM is the contracted assets under management as of the report date.
-
-\end{{enumerate}}
-
-\noindent Please refer to the Private Placement Memorandum and the Series Supplement for complete details. 
-
-{{\color{{gray}} \noindent The SEC ADV Part 2 firm brochure on the administrator can be accessed via the the following link:
-
-\noindent\underline{{https://files.adviserinfo.sec.gov/IAPD/Content/Common/crd\_iapd\_Brochure.aspx?BRCHR\_VRSN\_ID=903911}}}}
-
-\begin{{center}}\noindent\begin{{tabular}}{{p{{\textwidth}}}}
-\rowcolor{{lucid_blue}} 
-{{\color[HTML]{{FFFFFF}} \textbf{{Contact Information}}}} \\
-\rowcolor[HTML]{{EFEFEF}} 
- \\
-\rowcolor[HTML]{{EFEFEF}} 
-\textbf{{{issuer_name}, issuer}} \\
-\rowcolor[HTML]{{EFEFEF}} 
- c/o Lucid Management and Capital Partners as administrator\\
-\rowcolor[HTML]{{EFEFEF}} 
- 295 Madison Avenue, 39th Floor\\
-\rowcolor[HTML]{{EFEFEF}} 
- New York, NY 10017\\
-\rowcolor[HTML]{{EFEFEF}} 
- T: +1-212-551-1704\\
-\rowcolor[HTML]{{EFEFEF}} 
- Redemption Notices: \underline{{operations@lucidma.com}}\\
-\rowcolor[HTML]{{EFEFEF}} 
- Investor Relations: \underline{{carolina.siles@lucidma.com}}\\
-\rowcolor[HTML]{{EFEFEF}} 
- \\
-\rowcolor[HTML]{{EFEFEF}} 
-\textbf{{Bank of New York Mellon, Issuing \& Paying Agent / Collateral Agent}} \\
-\rowcolor[HTML]{{EFEFEF}} 
- 240 Greenwich Street, Suite 7E\\
-\rowcolor[HTML]{{EFEFEF}} 
- New York, NY 10286\\
-\rowcolor[HTML]{{EFEFEF}} 
- T: +1-212-815-5837\\
-\rowcolor[HTML]{{EFEFEF}} 
- \underline{{audrey.williams@bnymellon.com}}\\
-\rowcolor[HTML]{{EFEFEF}} 
- \\
-\rowcolor[HTML]{{EFEFEF}} 
- \textbf{{KPMG, Auditor and Tax Reporting}}\\
-\rowcolor[HTML]{{EFEFEF}} 
- 345 Park Avenue\\
-\rowcolor[HTML]{{EFEFEF}} 
- New York, NY 10154\\
-\rowcolor[HTML]{{EFEFEF}} 
- \\
-\rowcolor[HTML]{{EFEFEF}} 
-
-\end{{tabular}}
-\end{{center}}
-
-\pagebreak
-
- \ \\
-  \ \\
-  \ \\
-   \ \\
-  \ \\
-  \ \\
-
-\noindent\textbf{{\color{{lucid_blue}}Important Disclaimer}}
-
-\small
-
-\noindent This material has been prepared by Lucid Management and Capital Partners LP or one of its affiliates, principals or advisors (``Lucid'') and may contain ``forward-looking statements'' which are based on Lucid's beliefs, as well as on a number of assumptions concerning future events, based on information currently available to Lucid. Readers are cautioned not to put undue reliance on such forward-looking statements, which are not a guarantee of future performance, and are subject to a number of uncertainties and other factors, many of which are outside Lucid's control, which could cause actual results to differ materially from such statements.
-
-\noindent This material is for distribution only under such circumstances as may be permitted by applicable law and it is solely intended for qualified institutions and individuals with existing relationships with Lucid, its affiliates or advisers.  It has no regard to the specific investment objectives, financial situation or particular needs of any recipient. It is published solely for informational and discussion purposes only and is not to be construed as a solicitation or an offer to buy or sell any securities, related financial instruments, actual fund or specific transaction. No representation or warranty, either express or implied, is provided in relation to the accuracy, completeness or reliability of the information contained herein, nor is it intended to be a complete statement or summary of the securities, markets or developments referred to in the materials.  It should not be regarded by recipients as a substitute for the exercise of their own judgment. Any opinions expressed in this material are subject to change without notice and may differ or be contrary to opinions expressed by other business areas or groups of Lucid as a result of using different assumptions and criteria. Lucid is under no obligation to update or keep current the information contained herein. Lucid, its partners, officers and employees' or clients may have or have had interests or long or short positions in the securities or other financial instruments referred to herein and may at any time make purchases and/or sales in them as principal or agent. Neither Lucid nor any of its affiliates, nor any of Lucid or any of its affiliates, partners, employees or agents accepts any liability for any loss or damage arising out of the use of all or any part of this material.
-
-\noindent Money market investments including repurchase agreements are not suitable for all investors. Past performance is not necessarily indicative of future results.  Prior to entering into a transaction you should consult with your own legal, regulatory, tax, financial and accounting advisers to the extent you deem necessary to make your own investment, hedging and trading decisions. Any transaction between you and Lucid will be subject to the detailed provisions of a private placement memorandum or a managed account agreement relating to that transaction. Additional information will be made available upon request.
-
-\noindent The indicative information in this document (the ``Information'') are provided to you for information purposes only and may not be complete. Any redistribution of this document without express written consent of Lucid is prohibited.  No part of this material may be reproduced in any form, or referred to in any publication, without express written consent of Lucid.  This presentation should only be considered current as of the date of the publication without regard to the date on which you may have accessed or received the information. Unless required by law or specifically agreed in writing, we have no obligation to continue to provide to you the Information, and we may cease doing so at any time in our sole discretion.
-
-\noindent\underline{{\textit{{Targeted Return Disclosure}}}}
-
-\noindent\textit{{The targeted returns included in this presentation are not intended as, and must not be regarded as, a representation, warranty or prediction that any Fund (or series thereof) will achieve any particular rate of return over any particular time period or that any Fund (or series thereof) will not incur losses. Although Lucid believes, based on these factors, that the referenced return targets are reasonable, return targets are subject to inherent limitations including, without limitation, the fact they cannot take into account the impact of future economic events on future trading and investment decisions. These events may include changes in interest rates and/or benchmarks greater than those occurring within the historical time period examined when developing the return targets, or future changes in laws or regulations. All targeted returns are net of Lucid's anticipated fees and expenses.}}
-
-\end{{document}}
-
-"""
 
 # only thing hardwired: descriptions for various entities. currently most match but might change in future
 fund_descriptions = dict()
@@ -533,188 +369,20 @@ m1_1230_128_rets_disclaimer = r"""\\
 """
 
 
-def secured_by_from(f, s):
-    if f == "USG":
-        return "US Government backed (USG) securities only"
-    else:
-        if s == "M":
-            return "Highly Rated Investment Grade Collateral securities (at least 75\\% must be rated between AAA and A- or USG securities)"
-        elif s == "Q1":
-            return "Investment Grade Collateral securities only"
-        elif s == "QX":
-            return "Investment Grade and BB rated Collateral securities (subject to a 50\\% limit on BB collateral)"
-        else:
-            return "Highly Rated Investment Grade Collateral securities"
-
-
-def accs_since_start(ws, r_col, tstart_col, tend_col, end, start, daycount):
-    if end < start:
-        return 1
-    try:
-        r = float(ws[r_col + str(end)].value)
-        dt = (ws[tend_col + str(end)].value - ws[tstart_col + str(end)].value).days
-        return accs_since_start(
-            ws, r_col, tstart_col, tend_col, end - 1, start, daycount
-        ) * (1 + r * dt / daycount)
-    except:
-        print(
-            "Breaking accrual recursion: "
-            + ws.title
-            + " "
-            + r_col
-            + str(start)
-            + ":"
-            + r_col
-            + str(end)
-        )
-        return 1
-
-
-def diff_period_rate(t1, t2, daycount, r1, r2):
-    try:
-        dt = (t2 - t1).days
-        outp = ((1.0 * r2 / r1) - 1) * daycount / dt
-        return form_as_percent(outp, 2)
-    except:
-        return "n/a"
-
-
-def form_as_percent(val, rnd):
-    try:
-        if float(val) == 0:
-            return "-"
-        return ("{:." + str(rnd) + "f}").format(100 * val) + "\\%"
-    except:
-        return "n/a"
-
-
-def xl_average(ws, col, start, end):
-    sum = 0
-    count = 0
-    for row in range(start, end + 1):
-        if ws[col + str(row)].value:
-            sum = sum + ws[col + str(row)].value
-            count = count + 1
-    if count == 0:
-        return 1
-    return 1.0 * sum / count
-
-
 # graph dimension adjustments
-maxchars = 385
-
-
-def extraspacefromdesc(varistring):
-    if len(varistring) > 500:
-        return "9.4em"
-    return "5.5em"
-
-
-def heightmap(varistring):
-    if len(varistring) > maxchars:
-        return 6.676
-    else:
-        return 8
-
 
 # fund & series details , portfolio comp table array stretches
-def stretches(varistring):
-    if len(varistring) > 500:
-        return [1.6, 1.5]  # prime fund m
-    return [1.72, 2.55]  # usg fund m
-
-
-def hspacemap(varistring, nbars):
-    if len(varistring) > maxchars:
-        if nbars == 8:
-            return -0.77
-        if nbars == 7:
-            return -0.88
-        return -0.77  # default here, if 16
-    else:
-        return -0.9  # default here, if 16
 
 
 # space between bars in bar chart (mm)
 # Terri 02/05/2024 change spacing on M graph from 1.7 to
 # return [1.7,1.7,1.7,1.36,0.942,0.674,0.558,0.471,0.395,0.35,0.314,0.103,0.255,0.234,0.215,0.198,0.188][nbars]
 # return 0.156 # default here, if 16
-def xmap(varistring, nbars):
-    # max 16
-    nbars = min(nbars, 16)
-    if len(varistring) > maxchars:
-        return [
-            1.7,
-            1.7,
-            1.7,
-            1.40,
-            0.942,
-            0.674,
-            0.558,
-            0.471,
-            0.395,
-            0.35,
-            0.103,
-            0.103,
-            0.255,
-            0.234,
-            0.215,
-            0.198,
-            0.188,
-        ][nbars]
-    else:
-        return 0.150  # default here, if 16
 
-    # width of each bar in bar chart (mm) Terri was 2.50 default
-
-
-def barwidthmap(varistring, nbars):
-    # max 16
-    nbars = min(nbars, 16)
-    if len(varistring) > maxchars:
-        return [8, 8, 8, 8, 8, 6, 6, 6, 3, 3, 3, 3, 3, 3, 2.5, 2.5, 2.0][nbars]
-    else:
-        return 2.5  # default here, if 16
+# width of each bar in bar chart (mm) Terri was 2.50 default
 
 
 # for notes
-def notehspacemap(nbars):
-    return -0.79
-
-
-def notexmap(nbars):
-    if nbars == 10:
-        return 0.284
-    if nbars == 11:
-        return 0.258
-    if nbars == 12:
-        return 0.231
-    if nbars == 4:
-        return 0.615
-    return 0.17
-
-
-def notebarwidthmap(nbars):
-    if nbars == 10:
-        return 4
-    if nbars == 4 or nbars == 5:
-        return 4
-    return 2
-
-
-def xl_max(fn, ws, col, start, end):
-    if fn == "USG":
-        return 3
-    if fn == "Prime":
-        return 3.3
-    return 3
-
-
-def tablevstretch(fund_name):
-    if fund_name == "USG":
-        return 1.2
-    else:
-        return 1
 
 
 def return_table_plot(
@@ -1301,224 +969,19 @@ def performance_graph_v2(
     )
 
 
-def coupon_plotify(ws, crow, daycount):
-    outp = r""""""
-    maxrows = 12
-    startrow = max(7, crow - maxrows + 1)
-    remaining_rows = max(0, maxrows - (crow + 2 - startrow))
-    for i in range(startrow, crow + 2):
-        addl = ws["E" + str(i)].value.strftime("%m/%d/%y") + " &"
-        addl = (
-            addl
-            + r"""\textbf{{"""
-            + ws["F" + str(i)].value.strftime("%m/%d/%y")
-            + r"""}} &"""
-        )
-        addl = (
-            addl
-            + r"""\textbf{{"""
-            + form_as_percent(ws[("N" if daycount == 360 else "O") + str(i)].value, 2)
-            + (r"""{{\tiny (Est'd)}}""" if i == crow + 1 else "")
-            + (
-                "*"
-                if ws["C12"].value == "Monthly1"
-                and ws["E" + str(i)].value.strftime("%m/%d/%y") == "12/30/20"
-                else ""
-            )
-            + r"""}} &"""
-        )
-        addl = (
-            addl
-            + benchmark_shorten(ws["U" + str(i)].value)
-            + ("+" if int(10000 * ws["W" + str(i)].value) > 0 else "-")
-            + str(int(abs(ws["X" + str(i)].value)))
-            + " &"
-        )
-        addl = (
-            addl
-            + (r"\$" if i == startrow else r"\hphantom{{\$}}")
-            + "{:,.0f}".format(ws["R" + str(i)].value)
-            + " &"
-        )
-        addl = (
-            addl
-            + (
-                r"\hphantom{{\$}}n/a"
-                if i == crow + 1
-                else (
-                    (r"\$" if i == startrow else r"\hphantom{{\$}}")
-                    + "{:,.2f}".format(ws["T" + str(i)].value)
-                )
-            )
-            + " &"
-        )
-        addl = (
-            addl
-            + ws[("S" if i < crow + 1 else "F") + str(i)].value.strftime("%m/%d/%y")
-            + " &"
-        )
-        addl = (
-            addl
-            + (r"\$" if i == startrow else r"\hphantom{{\$}}")
-            + "{:,.0f}".format(ws["R" + str(i)].value)
-            + " &"
-        )
-        addl = (
-            addl
-            + form_as_percent(ws["AP" + str(i)].value, 1)
-            + (r" \\" if i <= crow + 1 or remaining_rows > 0 else " ")
-        )
-        outp = outp + addl
-
-    for i in range(remaining_rows):
-        addl = r"""
-		"""
-        addl = addl + (
-            r"""& & & & & & & &      \\ """ if i < remaining_rows - 1 else ""
-        )
-        outp = (
-            outp
-            + addl
-            + r"""
-
-		"""
-        )
-    return outp
-
-
-def hardcoded_exp_cap(f, s):
-    if f.upper() == "USG":
-        return 24.5
-    if f.upper() == "PRIME":
-        if s == "MIG":
-            return 39.75
-        if s == "Q1":
-            return 49.75
-        if s == "QX":
-            return 49.75
-    return 32.75  # default
-
-
-def exp_rat_footnote(incl, cap, rat):
-    if False:
-        out = r"""Fund Series expense ratio currently capped at an all-in ratio of {cap} bps and can vary over time. The average expense ratio has been {rat} bps since inception."""
-        return out.format(cap=cap, rat=rat)
-    else:
-        out = r"""Fund Series expense ratio currently capped at an all-in ratio of {cap} bps and can vary over time."""
-        return out.format(cap=cap)
-
-
-def wordify(val):
-    try:
-        prefix = 0
-        if val >= 10**9:
-            prefix = round(round(val, 9) / (10**9), 2)
-            suffix = " billion"
-        elif val >= 10**6:
-            prefix = round(round(val, 6) / (10**6), 1)
-            suffix = " million"
-        elif val >= 10**3:
-            prefix = int(round(val, 3) / (10**3))
-            suffix = ",000"
-        return r"\$" + str(prefix) + suffix
-    except:
-        return "n/a"
-
-
-def month_wordify(months):
-    if months < 12:
-        return str(int(months)) + " Months" if int(months) != 1 else " Month"
-    else:
-        return (
-            str(int(months / 12))
-            + (" Years" if int(months / 12) != 1 else " Year")
-            + ("" if months % 12 == 0 else (str(months % 12) + " Months"))
-        )
-
-
-def benchmark_shorten(s):
-    if s == None:
-        print("benchmark none")
-        return ""
-    if "1" in s.upper() and "LIBOR" in s.upper():
-        return "1mL"
-    if "3" in s.upper() and "LIBOR" in s.upper():
-        return "3mL"
-    if "1" in s.upper() and "BILL" in s.upper():
-        return "1m TB"
-    if "3" in s.upper() and "BILL" in s.upper():
-        return "3m TB"
-    if "CRANE GOV" in s.upper():
-        return "Crane Govt"
-    if "CRANE PRIME" in s.upper():
-        return "Crane Prime"
-    return s
-
-
 # assumes each is in format "-4.342 \\%"
-def bps_spread(t, b):
-    try:
-        val = round(float(t[0 : t.index("\\")]) - float(b[0 : b.index("\\")]), 2)
-        return (
-            "-"
-            if int(abs(val) * 100) == 0
-            else (
-                ("+" if int(val * 100) > 0 else "-") + str(int(abs(val) * 100)) + " bps"
-            )
-        )
-    except:
-        return "n/a"
-
-
-def issuer_from_fundname(f):
-    if f == None:
-        print("issuer none")
-    if f.upper() == "USG":
-        return "USG Assets LLC"
-    if f.upper() == "PRIME":
-        return "Prime Notes LLC"
-    return f
-
-
-def declare_ratings_org(r):
-    if r == None:
-        return ""
-    if "EGAN JONES" in r.upper():
-        return r + " (NAIC 1)"
-    return r
-
-
-def series_from_note(f, ent_name):
-    if ent_name == "Monthly":
-        return "M"
-    elif ent_name == "Quarterly" or ent_name == "Quarterly1":
-        return "Q1"
-    elif ent_name == "Monthly1":
-        return "M1"
-    elif ent_name == "MonthlyIG":
-        return "MIG"
-    elif ent_name == "QuarterlyX":
-        return "QX"
-    elif ent_name == "Custom1":
-        return "C1"
-    else:
-        return ""
-
-
-def fund_inception_from_name(fund):
-    if fund == "USG":
-        return "June 29, 2017"
-    if fund == "Prime":
-        return "July 20, 2018"
-        return "n/a"
 
 
 print("Fetching data...")
 
 try:
-    MASTER_FILEPATH = "S:/Mandates/Funds/Fund Reporting/Master Data.xlsx"
+    MASTER_FILEPATH = get_file_path("S:/Mandates/Funds/Fund Reporting/Master Data.xlsx")
     # MASTER_FILEPATH = "C:/Users/Lucid Trading/Desktop/tmp_trash/Master Data.xlsx"
-    wb = op.load_workbook(PureWindowsPath(Path(MASTER_FILEPATH)))
+    if platform.system() == "Darwin":  # macOS
+        wb = op.load_workbook(Path(MASTER_FILEPATH))
+    elif platform.system() == "Windows":
+        wb = op.load_workbook(PureWindowsPath(Path(MASTER_FILEPATH)))
+
 except:
     print("Error fetching data.")
     exit()
@@ -1553,8 +1016,8 @@ for ws in wb.worksheets:
                 crow = crow + 1
             # crow = 88
 
-            prev_pd_start = ws["E" + str(crow)].value
-            this_pd_start = ws["F" + str(crow)].value
+            prev_pd_start = prev_start
+            this_pd_start = curr_start
             print(
                 "For period "
                 + prev_pd_start.strftime("%m/%d")
@@ -1571,7 +1034,6 @@ for ws in wb.worksheets:
                 print("ERROR: Overview row not found for this period. Continuing...")
                 continue
 
-            report_date = datetime.now()
             lucid_aum = bigsheet["H" + str(overview_row)].value  # post sub/redemp
             program_size = 0
             for col in "CDEFG":
@@ -1745,53 +1207,111 @@ for ws in wb.worksheets:
             print("Populating report template...")
 
             report_data_fund = {
-                "report_date": report_date.strftime("%B %d, %Y"),
-                "fundname": "Test Fund Name",
+                "report_date": report_date,  # done
+                "fundname": fund_name,  # done
                 "toptableextraspace": "5.5em",
-                "series_abbrev": "M-8",
-                "port_limit": "Monthly",
-                "seriesname": "Monthly",
-                "fund_description": "There is no fund!",
-                "series_description": "There is no series!",
-                "benchmark": "1m T-Bills",
-                "tgt_outperform": "15-20",
-                "exp_rat_footnote": "There is no footnote!",
-                "prev_pd_start": "April 15, 1990",
-                "this_pd_start": "May 15, 1990",
-                "prev_pd_return": "5.55\\%",
-                "prev_pd_benchmark": "1m TB",
-                "prev_pd_outperform": "99 bps",
-                "this_pd_end": "July 13",
-                "this_pd_est_return": "5.55\\%",
-                "this_pd_est_outperform": "99",
-                "benchmark_short": "1m TBoo",
-                "interval1": "12 Months",
-                "interval2": "12 Years",
-                "descstretch": 1.72,
-                "pcompstretch": 2.55,
+                "series_abbrev": series_abbrev,
+                "port_limit": (
+                    "Quarterly"
+                    if "Q" in df_attributes["series_abbreviation"].iloc[0]
+                    else "Monthly"
+                ),
+                "seriesname": df_attributes["series_name"].iloc[0],
+                "fund_description": df_attributes["fund_description"].iloc[0],
+                "series_description": df_attributes["series_description"].iloc[0],
+                "benchmark": benchmark_name,  # done
+                "tgt_outperform": target_outperform_range,  # done
+                "exp_rat_footnote": expense_ratio_footnote_text,
+                "prev_pd_start": pd.to_datetime(prev_start).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "this_pd_start": pd.to_datetime(curr_start).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "prev_pd_return": prev_return,  # done
+                "prev_pd_benchmark": benchmark_short,  # done
+                "prev_pd_outperform": prev_target_outperform,  # done
+                "this_pd_end": pd.to_datetime(curr_end).strftime("%B %d, %Y"),  # done
+                "this_pd_est_return": current_target_return,  # done
+                "this_pd_est_outperform": target_outperform_net,  # done
+                "benchmark_short": benchmark_short,  # done
+                "interval1": month_wordify(interval_tuple[0]),  # TODO: review this
+                "interval2": month_wordify(interval_tuple[1]),  # TODO: review this
+                "descstretch": stretches(
+                    df_attributes["fund_description"].iloc[0]
+                    + df_attributes["series_description"].iloc[0]
+                )[0],
+                "pcompstretch": stretches(
+                    df_attributes["fund_description"].iloc[0]
+                    + df_attributes["series_description"].iloc[0]
+                )[1],
                 "addl_coll_breakdown": "",
-                "oc_aaa": "107.0\\%",
+                "oc_aaa": form_as_percent(oc_usg_aaa, 2),  # TODO: review
                 "oc_tbills": "-",
-                "oc_total": "107.0\\%",
-                "usg_aaa_cat": "US Govt Repo",
-                "alloc_aaa": "98.8\\%",
-                "alloc_tbills": "1.2\\%",
-                "alloc_total": "100.0\\%",
-                "tablevstretch": 1.2,
-                "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
-                "fund_size": "\\$123.0 million",
-                "series_size": "\\$123.0 million",
-                "lucid_aum": "\\$4.65 billion",
-                "rating": "AAA",
-                "rating_org": "Egan Jones",
-                "calc_frequency": "Monthly at par",
-                "next_withdrawal_date": "May 15, 1990",
-                "next_notice_date": "June 10, 21990",
-                "min_invest": "\\$500,000",
+                "oc_total": form_as_percent(oc_total, 2),  # TODO: review
+                "usg_aaa_cat": (
+                    "US Govt Repo" if fund_name == "USG" else "US Govt/AAA Repo"
+                ),  # done
+                "alloc_aaa": form_as_percent(aloc_usg_aaa, 2),  # TODO: review
+                "alloc_tbills": form_as_percent(aloc_tbills, 2),  # TODO: review
+                "alloc_total": form_as_percent(1, 1),  # TODO: review
+                "tablevstretch": tablevstretch(fund_name),  # done
+                # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
+                "return_table_plot": return_table_plot(
+                    fund_name=fund_name,  # done
+                    prev_pd_return=prev_return,
+                    series_abbrev=series_abbrev,
+                    r_this_1=r_this_1,
+                    r_this_2=r_this_2,
+                    comp_a=ws["Y6"].value,
+                    comp_b=ws["Z6"].value,
+                    comp_c=ws["AA6"].value,
+                    r_a=r_a,
+                    r_b=r_b,
+                    r_c=r_c,
+                    s_a_0=bps_spread(
+                        form_as_percent(
+                            ws[("N" if daycount == 360 else "O") + str(crow)].value, 2
+                        ),
+                        form_as_percent(r_a[0], 2),
+                    ),  # TODO daycounts for spreads and round to 2 places
+                    s_a_1=bps_spread(r_this_1, r_a[1]),
+                    s_a_2=bps_spread(r_this_2, r_a[2]),
+                    s_b_0=bps_spread(
+                        form_as_percent(
+                            ws[("N" if daycount == 360 else "O") + str(crow)].value, 2
+                        ),
+                        form_as_percent(r_b[0], 2),
+                    ),
+                    s_b_1=bps_spread(r_this_1, r_b[1]),
+                    s_b_2=bps_spread(r_this_2, r_b[2]),
+                    s_c_0=bps_spread(
+                        form_as_percent(
+                            ws[("N" if daycount == 360 else "O") + str(crow)].value, 2
+                        ),
+                        form_as_percent(r_c[0], 2),
+                    ),
+                    s_c_1=bps_spread(r_this_1, r_c[1]),
+                    s_c_2=bps_spread(r_this_2, r_c[2]),
+                ),
+                "fund_size": get_fund_size(reporting_fund, report_date),
+                "series_size": get_series_size(reporting_series, report_date),
+                "lucid_aum": get_aum(report_date),
+                "rating": df_attributes["rating"].iloc[0],  # done
+                "rating_org": df_attributes["rating_org"].iloc[0],  # done
+                "calc_frequency": "Monthly at par",  # done
+                "next_withdrawal_date": curr_withdrawal,  # done
+                "next_notice_date": curr_notice,  # done
+                "min_invest": "$"
+                + str(df_attributes["minimum_investment"].iloc[0]),  # done
                 "wal": "28",
-                "legal_fundname": "Lucid Cash Fund USG LLC",
-                "fund_inception": "June 29 1990",
-                "series_inception": "June 29 1990",
+                "legal_fundname": df_attributes["legal_fund_name"].iloc[0],  # done
+                "fund_inception": df_attributes["fund_inception"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),  # done
+                "series_inception": df_attributes["series_inception"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),  # done
                 "performance_graph": "\n\t\t\t  \\hspace*{-0.9cm}\\resizebox {!} {8cm} {\\begin{tikzpicture}\n\t\t\\begin{axis}[\n\t\t\ttitle style = {font = \\small},\n\t\t\taxis line style = {light_grey},\n\t\ttitle={{Performance vs Benchmark}},\n\t\t\tdate coordinates in=x, date ZERO=2023-02-09,\n\t\t\txticklabel=\\month/\\day/\\year,  \n\t\t\tymin=3, ymax=7, %MAXRETURN HERE\n\t\t\tlegend cell align = {left},\n\t\t\tlegend style={at={(0.3,1)},\n\t\t\t  anchor=north east, font=\\tiny, draw=none,fill=none},\n\t\t\t  x=0.15mm, %CHANGE THIS to tighten in graph, eg if quarterly\n\t\t\tbar width=2.5mm, ybar=2pt, %bar width is width, ybar is space between\n\t\t   % symbolic x coords={Firm 1, Firm 2, Firm 3, Firm 4, Firm 5},\n\t\t\txtick=data,\n\t\t\tx tick label style={rotate=90,anchor=east,font=\\tiny,/pgf/number format/assume math mode},\n\t\t\t\t yticklabel=\\pgfmathparse{\\tick}\\pgfmathprintnumber{\\pgfmathresult}\\,\\%,\n\t\t\ty tick label style = {/pgf/number format/.cd,\n\t\t\t\t\tfixed,\n\t\t\t\t\tfixed zerofill,\n\t\t\t\t\tprecision=2,\n\t\t\t\t\t/pgf/number format/assume math mode\n\t\t\t},\n\t\t\tnodes near coords align={vertical},\n\t\t\tytick distance=0.5,\n\t\t\txtick pos=bottom,ytick pos=left,\n\t\t\tevery node near coord/.append style={font=\\fontsize{6}{6}\\selectfont,/pgf/number format/.cd,\n\t\t\t\t\tfixed,\n\t\t\t\t\tfixed zerofill,\n\t\t\t\t\tprecision=2,/pgf/number format/assume math mode},\n\t\t\t]\n\t\t%\\addplot[ybar, nodes near coords, fill=blue] \n\t\t\\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.44) (2023-03-09,4.718) (2023-04-13,4.85) (2023-05-11,5.0) (2023-06-15,5.2) (2023-07-20,5.23) (2023-08-17,5.41) (2023-09-14,5.5) (2023-10-19,5.53) (2023-11-16,5.53) (2023-12-14,5.53) (2024-01-18,5.53) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) \n\t\t\t};\n\t\t\\addplot[draw=dark_red,ultra thick,smooth] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.22) (2023-03-09,4.53) (2023-04-13,4.63) (2023-05-11,3.96) (2023-06-15,5.17) (2023-07-20,5.04) (2023-08-17,5.25) (2023-09-14,5.35) (2023-10-19,5.37) (2023-11-16,5.38) (2023-12-14,5.36) (2024-01-18,5.33) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) \n\t\t\t};\n\t\t\\addplot[draw=dark_color,ultra thick,smooth] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.105) (2023-03-09,4.307) (2023-04-13,4.491) (2023-05-11,4.667) (2023-06-15,4.87) (2023-07-20,4.893) (2023-08-17,5.035) (2023-09-14,5.112) (2023-10-19,5.137) (2023-11-16,5.156) (2023-12-14,5.16) (2024-01-18,5.151) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) \n\t\t\t};\n\t\t\\legend{\\hphantom{A}USG Series M,\\hphantom{A}1m T-Bills,\\hphantom{A}Crane Govt MM Index}\n\t\t\\end{axis}\n\t\t\t\\end{tikzpicture}}\n\n\t\t\t",
             }
 
@@ -1999,7 +1519,7 @@ for ws in wb.worksheets:
             elif ws["C5"].value.upper() == "NOTE":  # note report template
 
                 report_data_note = {
-                    "report_date": report_date.strftime("%B %d, %Y"),
+                    "report_date": report_date_formal,
                     "fundname": "Test Fund Name",
                     "series_abbrev": "M",
                     "port_limit": "Monthly",
