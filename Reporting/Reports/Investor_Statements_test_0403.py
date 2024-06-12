@@ -59,6 +59,7 @@ oc_rate_table_name = "oc_rates"
 daily_nav_table_name = "bronze_daily_nav"
 roll_schedule_table_name = "roll_schedule"
 cash_balance_table_name = "bronze_cash_balance"
+benchmark_comparison_table_name = "silver_return_by_series"
 
 # Connect to the PostgreSQL database
 engine = get_database_engine("postgres")
@@ -79,8 +80,10 @@ df_daily_nav = read_table_from_db(daily_nav_table_name, db_type)
 df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
 
 df_cash_balance = read_table_from_db(cash_balance_table_name, db_type)
-## Reporting variable ##
 
+df_benchmark_comparison = read_table_from_db(benchmark_comparison_table_name, db_type)
+
+## REPORTING VARIABLE ##
 # DATES
 roll_schedule_condition = df_roll_schedule["series_id"] == reporting_fund
 df_roll_schedule = df_roll_schedule[roll_schedule_condition]
@@ -208,6 +211,26 @@ cash_balance_condition = (
 
 df_cash_balance = df_cash_balance[cash_balance_condition]
 cash_balance = df_cash_balance["Sweep_Balance"].iloc[0]
+
+
+# RETURN COMPARISON
+benchmark_comparison_condition = (
+    df_benchmark_comparison["series_id"] == reporting_fund
+) & (df_benchmark_comparison["start_date"] == curr_start)
+df_benchmark_comparison = df_benchmark_comparison[benchmark_comparison_condition]
+
+benchmark_dictionary = {
+    "PRIME-C10":[],
+    "PRIME-M00":["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "PRIME-MIG":[],
+    "PRIME-Q10":[],
+    "PRIME-Q36":[],
+    "PRIME-QX0":[],
+    "USGFD-M00":[],
+}
+r_a =
+r_b =
+r_c =
 
 
 def calculate_oc_metrics(data):

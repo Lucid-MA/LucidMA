@@ -1,8 +1,20 @@
 import pandas as pd
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Float,
+    Date,
+    DateTime,
+    MetaData,
+    Table,
+    inspect,
+)
+from sqlalchemy.dialects.postgresql import insert
 
-from Utils.Common import print_df, current_timestamp
+from Utils.Common import current_timestamp
 from Utils.Constants import reverse_cusip_mapping, series_return_intervals
-from Utils.database_utils import read_table_from_db
+from Utils.database_utils import read_table_from_db, get_database_engine
 
 
 def calculate_growth_rates(subset_df, period, column):
@@ -188,11 +200,43 @@ reporting_series = [
     "USGFD-M00",
 ]
 
+engine = get_database_engine(db_type)
+metadata = MetaData()
+tb_name = "silver_return_by_series"
+
+columns = [
+    Column("series_id", String, primary_key=True),
+    Column("pool_name", String),
+    Column("start_date", Date, primary_key=True),
+    Column("end_date", Date),
+    Column("day_count", Integer),
+    Column("return_360", Float),
+    Column("1m A1/P1 CP", Float),
+    Column("1m SOFR", Float),
+    Column("3m_return", Float),
+    Column("1m A1/P1 CP_3m_return", Float),
+    Column("1m SOFR_3m_return", Float),
+    Column("6m_return", Float),
+    Column("1m A1/P1 CP_6m_return", Float),
+    Column("1m SOFR_6m_return", Float),
+    Column("12m_return", Float),
+    Column("1m A1/P1 CP_12m_return", Float),
+    Column("1m SOFR_12m_return", Float),
+    Column("timestamp", DateTime),
+]
+
+silver_return_by_series_table = Table(tb_name, metadata, *columns)
+
+inspector = inspect(engine)
+if not inspector.has_table(tb_name):
+    metadata.create_all(engine)
+print(f"Table {tb_name} created successfully or already exists.")
+
+
 for series_id in reporting_series:
     df["start_date"] = pd.to_datetime(df["start_date"])
     df["end_date"] = pd.to_datetime(df["end_date"])
     if series_id in ["PRIME-C10", "PRIME-M00", "PRIME-MIG", "USGFD-M00"]:
-        # Define the benchmark columns to populate
         benchmark_columns = ["1m A1/P1 CP", "1m SOFR"]
     else:
         benchmark_columns = ["3m A1/P1 CP", "3m SOFR"]
@@ -206,4 +250,29 @@ for series_id in reporting_series:
     )
     subset_df = subset_df.dropna(subset=["series_id"])
     subset_df["timestamp"] = current_timestamp()
-    print_df(subset_df.tail(30))
+
+    # Fill missing columns with None
+    missing_columns = set(silver_return_by_series_table.columns.keys()) - set(
+        subset_df.columns
+    )
+    for column in missing_columns:
+        subset_df[column] = None
+
+    # Reorder columns to match the table schema
+    subset_df = subset_df[silver_return_by_series_table.columns.keys()]
+
+    # Upsert data to the table
+    insert_stmt = insert(silver_return_by_series_table).values(
+        subset_df.to_dict("records")
+    )
+    upsert_stmt = insert_stmt.on_conflict_do_update(
+        index_elements=["series_id", "start_date"],
+        set_={
+            c.key: c
+            for c in insert_stmt.excluded
+            if c.key not in ["series_id", "start_date"]
+        },
+    )
+    with engine.begin() as conn:
+        conn.execute(upsert_stmt)
+        print(f"Data for {series_id} upserted successfully into {tb_name}.")
