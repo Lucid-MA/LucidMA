@@ -1,5 +1,6 @@
 import platform
 import sys
+from datetime import datetime
 
 import holidays
 import pandas as pd
@@ -12,7 +13,7 @@ def print_df(df):
         "display.width",
         1000,
         "display.float_format",
-        "{:.4f}".format,
+        "{:.6f}".format,
     ):
         print(df)
 
@@ -65,3 +66,7 @@ def get_trading_days(start_date, end_date):
     trading_days_str = [day.strftime("%Y-%m-%d") for day in trading_days]
 
     return trading_days_str
+
+
+def current_timestamp():
+    return datetime.now().strftime("%B-%d-%y %H:%M:%S")
