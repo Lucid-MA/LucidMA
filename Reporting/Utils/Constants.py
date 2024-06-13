@@ -540,6 +540,7 @@ CRANE_IDX = "Crane Govt MM Index"
 EGAN_JONES = "Egan-Jones"
 
 benchmark_shortern = {
+    SOFR_1M: "1m SOFR",
     TBILL_1M: "1m TB",
     TBILL_3M: "3m TB",
 }

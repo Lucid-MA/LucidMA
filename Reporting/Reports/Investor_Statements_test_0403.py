@@ -15,7 +15,6 @@ from Reporting.Utils.Constants import (
 from Reporting.Utils.database_utils import get_database_engine, read_table_from_db
 from Reports.Constants import fund_report_template, note_report_template
 from Reports.Utils import (
-    diff_period_rate,
     heightmap,
     stretches,
     hspacemap,
@@ -23,7 +22,6 @@ from Reports.Utils import (
     barwidthmap,
     tablevstretch,
     form_as_percent,
-    accs_since_start,
     month_wordify,
     benchmark_shorten,
     bps_spread,
@@ -34,20 +32,40 @@ reporting_series = [
     "PRIME-C10",
     "PRIME-M00",
     "PRIME-MIG",
-    "PRIME-Q10",
-    "PRIME-Q10",
-    "PRIME-Q36",
-    "PRIME-QX0",
+    # "PRIME-Q10",
+    # "PRIME-Q36",
+    # "PRIME-QX0",
     "USGFD-M00",
 ]
 
-# Variable
+##############################################################################
+############################## VARIABLES #####################################
+##############################################################################
+
 # current_date = datetime.now()
-current_date = datetime.strptime("2024-05-16", "%Y-%m-%d")
+current_date = datetime.strptime("2024-03-15", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
-reporting_fund = reporting_series[-1]
-reporting_fund_name = lucid_series[reporting_fund]
+reporting_series_id = reporting_series[-1]
+reporting_series_name = lucid_series[reporting_series_id]
+fund_size_dict = {
+    "PRIME": "3.03 billion",
+    "USG": "123.0 million",
+}
+
+series_size_dict = {
+    "PRIME-C10": "115.9 million",
+    "PRIME-M00": "123.0 million",
+    "PRIME-MIG": "602.1 million",
+    # "PRIME-Q10",
+    # "PRIME-Q36",
+    # "PRIME-QX0",
+    "USGFD-M00": "123.0 million",
+}
+
+lucid_aum = "4.7 billion"
+
+##############################################################################
 
 # Table names
 db_type = "postgres"
@@ -85,7 +103,7 @@ df_benchmark_comparison = read_table_from_db(benchmark_comparison_table_name, db
 
 ## REPORTING VARIABLE ##
 # DATES
-roll_schedule_condition = df_roll_schedule["series_id"] == reporting_fund
+roll_schedule_condition = df_roll_schedule["series_id"] == reporting_series_id
 df_roll_schedule = df_roll_schedule[roll_schedule_condition]
 
 
@@ -147,10 +165,10 @@ next_start, next_end, next_withdrawal, next_notice = get_next_reporting_dates(
 )
 
 
-# TARGET RETURN
-curr_target_return_condition = (df_target_return["security_id"] == reporting_fund) & (
-    df_target_return["date"] == curr_start
-)
+############################## TARGET RETURN #####################################
+curr_target_return_condition = (
+    df_target_return["security_id"] == reporting_series_id
+) & (df_target_return["date"] == curr_start)
 benchmark_name = df_target_return[curr_target_return_condition]["benchmark_name"].iloc[
     0
 ]
@@ -162,19 +180,19 @@ target_outperform_net = df_target_return[curr_target_return_condition][
     "net_spread"
 ].iloc[0]
 benchmark = df_target_return[curr_target_return_condition]["benchmark"].iloc[0]
+target_return = df_target_return[curr_target_return_condition]["net_return"].iloc[0]
+current_target_return = form_as_percent(target_return, 2)
 
-current_target_return = form_as_percent(benchmark, 2)
 
-
-prev_target_return_condition = (df_target_return["security_id"] == reporting_fund) & (
-    df_target_return["date"] == prev_start
-)
+prev_target_return_condition = (
+    df_target_return["security_id"] == reporting_series_id
+) & (df_target_return["date"] == prev_start)
 prev_target_outperform = (
     str(df_target_return[prev_target_return_condition]["net_spread"].iloc[0]) + " bps"
 )
 
-# HISTORICAL RETURN
-pool_name_encoded = reverse_cusip_mapping[reporting_fund]
+############################## HISTORICAL RETURN #####################################
+pool_name_encoded = reverse_cusip_mapping[reporting_series_id]
 historical_return_condition = (df_historical_returns["end_date"] == prev_end) & (
     df_historical_returns["pool_name"] == pool_name_encoded
 )
@@ -184,8 +202,8 @@ prev_return = form_as_percent(
 )
 
 
-# FUND ATTRIBUTES
-fund_attribute_condition = df_attributes["security_id"] == reporting_fund
+############################## FUND ATTRIBUTES #####################################
+fund_attribute_condition = df_attributes["security_id"] == reporting_series_id
 df_attributes = df_attributes[fund_attribute_condition]
 fund_name = df_attributes["fund_name"].iloc[0]
 series_name = df_attributes["series_name"].iloc[0]
@@ -193,7 +211,7 @@ expense_ratio_footnote_text = f"Fund Series expense ratio currently capped at an
 series_abbrev = df_attributes["series_abbreviation"].iloc[0]
 
 
-# OC RATES
+############################## OC RATES #####################################
 oc_rate_condition = (
     (df_oc_rates["fund"] == fund_name.upper())
     & (df_oc_rates["series"] == series_name.upper())
@@ -201,7 +219,7 @@ oc_rate_condition = (
 )
 df_oc_rates = df_oc_rates[oc_rate_condition]
 
-# CASH BALANCE
+############################## CASH BALANCE #####################################
 cash_balance_condition = (
     (df_cash_balance["Fund"] == fund_name.upper())
     & (df_cash_balance["Series"] == series_name.upper())
@@ -213,24 +231,97 @@ df_cash_balance = df_cash_balance[cash_balance_condition]
 cash_balance = df_cash_balance["Sweep_Balance"].iloc[0]
 
 
-# RETURN COMPARISON
+############################## RETURN COMPARISON #####################################
+tbill_data = [0.0529, 0.0530, 0.0518]
+crane_data = [0.0512, 0.0516, 0.0510]
+fhlb_data = [0, 0, 0]
+
 benchmark_comparison_condition = (
-    df_benchmark_comparison["series_id"] == reporting_fund
+    df_benchmark_comparison["series_id"] == reporting_series_id
 ) & (df_benchmark_comparison["start_date"] == curr_start)
-df_benchmark_comparison = df_benchmark_comparison[benchmark_comparison_condition]
+df_benchmark_comparison_curr = df_benchmark_comparison[benchmark_comparison_condition]
+
+benchmark_comparison_condition_prev = (
+    df_benchmark_comparison["series_id"] == reporting_series_id
+) & (df_benchmark_comparison["start_date"] == prev_start)
+df_benchmark_comparison_prev = df_benchmark_comparison[
+    benchmark_comparison_condition_prev
+]
 
 benchmark_dictionary = {
-    "PRIME-C10":[],
-    "PRIME-M00":["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-    "PRIME-MIG":[],
-    "PRIME-Q10":[],
-    "PRIME-Q36":[],
-    "PRIME-QX0":[],
-    "USGFD-M00":[],
+    "PRIME-C10": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "PRIME-M00": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "PRIME-MIG": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    # "PRIME-Q10":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
+    # "PRIME-Q36":[],
+    # "PRIME-QX0":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
+    "USGFD-M00": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
 }
-r_a =
-r_b =
-r_c =
+
+benchmark_to_use = benchmark_dictionary[reporting_series_id]
+
+# T-Bill (previous, 3 month, 1 year)
+# 1m SOFR
+if reporting_series_id == "USGFD-M00":
+    r_a = tbill_data
+else:
+    r_a = []
+    r_a.append(round(df_benchmark_comparison_curr[benchmark_to_use[0]].iloc[0], 4))
+    r_a.append(
+        round(
+            df_benchmark_comparison_prev[benchmark_to_use[0] + "_3m_return"].iloc[0], 4
+        )
+    )
+    r_a.append(
+        round(
+            df_benchmark_comparison_prev[benchmark_to_use[0] + "_12m_return"].iloc[0], 4
+        )
+    )
+r_a[1] = form_as_percent(r_a[1], 2)
+r_a[2] = form_as_percent(r_a[2], 2)
+# Crane Govt MM Index
+# 1m A1/P1 CP
+if reporting_series_id == "USGFD-M00":
+    r_b = crane_data
+else:
+    r_b = []
+    r_b.append(round(df_benchmark_comparison_curr[benchmark_to_use[1]].iloc[0], 4))
+    r_b.append(
+        round(
+            df_benchmark_comparison_prev[benchmark_to_use[1] + "_3m_return"].iloc[0], 4
+        )
+    )
+    r_b.append(
+        round(
+            df_benchmark_comparison_prev[benchmark_to_use[1] + "_12m_return"].iloc[0], 4
+        )
+    )
+r_b[1] = form_as_percent(r_b[1], 2)
+r_b[2] = form_as_percent(r_b[2], 2)
+
+# 1m T-Bill
+if reporting_series_id == "USGFD-M00":
+    r_c = fhlb_data
+else:
+    r_c = tbill_data
+r_c[1] = form_as_percent(r_c[1], 2)
+r_c[2] = form_as_percent(r_c[2], 2)
+
+r_this_1 = form_as_percent(df_benchmark_comparison_prev["3m_return"].iloc[0], 2)
+r_this_2 = form_as_percent(df_benchmark_comparison_prev["12m_return"].iloc[0], 2)
+
+## CALCULATE SPREAD
+s_a_0 = bps_spread(prev_return, form_as_percent(r_a[0], 2))
+s_a_1 = bps_spread(r_this_1, r_a[1])
+s_a_2 = bps_spread(r_this_2, r_a[2])
+
+s_b_0 = bps_spread(prev_return, form_as_percent(r_b[0], 2))
+s_b_1 = bps_spread(r_this_1, r_b[1])
+s_b_2 = bps_spread(r_this_2, r_b[2])
+
+s_c_0 = bps_spread(prev_return, form_as_percent(r_c[0], 2))
+s_c_1 = bps_spread(r_this_1, r_c[1])
+s_c_2 = bps_spread(r_this_2, r_c[2])
 
 
 def calculate_oc_metrics(data):
@@ -300,16 +391,16 @@ def calculate_oc_metrics(data):
 
 def get_fund_size(fund_name, report_date):
     # use df_daily_nav
-    return
+    return fund_size_dict[fund_name]
 
 
 def get_series_size(fund_name, report_date):
     # use df_daily_nav
-    return
+    return series_size_dict[reporting_series_id]
 
 
 def get_aum(report_date):
-    return
+    return lucid_aum
 
 
 # intialize script templates
@@ -1039,8 +1130,8 @@ for ws in wb.worksheets:
                 crow = crow + 1
             # crow = 88
 
-            prev_pd_start = prev_start
-            this_pd_start = curr_start
+            prev_pd_start = pd.to_datetime(prev_start)
+            this_pd_start = pd.to_datetime(curr_start)
             print(
                 "For period "
                 + prev_pd_start.strftime("%m/%d")
@@ -1072,136 +1163,136 @@ for ws in wb.worksheets:
             interval_tuple = (3, 12)
             if "QUARTERLY" in ws["C15"].value.upper():
                 interval_tuple = (2, 4)  # because one row = 3 months
-            r_a = (
-                ws["Y" + str(crow)].value,
-                (
-                    diff_period_rate(
-                        ws["F" + str(crow - interval_tuple[0])].value,
-                        this_pd_start,
-                        daycount,
-                        accs_since_start(
-                            ws, "Y", "E", "F", crow - interval_tuple[0], 7, daycount
-                        ),
-                        accs_since_start(ws, "Y", "E", "F", crow, 7, daycount),
-                    )
-                    if (crow - interval_tuple[0] >= 7)
-                    else "n/a"
-                ),
-                (
-                    diff_period_rate(
-                        ws["F" + str(crow - interval_tuple[1])].value,
-                        this_pd_start,
-                        daycount,
-                        accs_since_start(
-                            ws, "Y", "E", "F", crow - interval_tuple[1], 7, daycount
-                        ),
-                        accs_since_start(ws, "Y", "E", "F", crow, 7, daycount),
-                    )
-                    if (crow - interval_tuple[1] >= 7)
-                    else "n/a"
-                ),
-            )
-            r_b = (
-                ws["Z" + str(crow)].value,
-                (
-                    diff_period_rate(
-                        ws["F" + str(crow - interval_tuple[0])].value,
-                        this_pd_start,
-                        daycount,
-                        accs_since_start(
-                            ws, "Z", "E", "F", crow - interval_tuple[0], 7, daycount
-                        ),
-                        accs_since_start(ws, "Z", "E", "F", crow, 7, daycount),
-                    )
-                    if (crow - interval_tuple[0] >= 7)
-                    else "n/a"
-                ),
-                (
-                    diff_period_rate(
-                        ws["F" + str(crow - interval_tuple[1])].value,
-                        this_pd_start,
-                        daycount,
-                        accs_since_start(
-                            ws, "Z", "E", "F", crow - interval_tuple[1], 7, daycount
-                        ),
-                        accs_since_start(ws, "Z", "E", "F", crow, 7, daycount),
-                    )
-                    if (crow - interval_tuple[1] >= 7)
-                    else "n/a"
-                ),
-            )
-            r_c = (
-                ws["AA" + str(crow)].value,
-                (
-                    diff_period_rate(
-                        ws["F" + str(crow - interval_tuple[0])].value,
-                        this_pd_start,
-                        daycount,
-                        accs_since_start(
-                            ws, "AA", "E", "F", crow - interval_tuple[0], 7, daycount
-                        ),
-                        accs_since_start(ws, "AA", "E", "F", crow, 7, daycount),
-                    )
-                    if (crow - interval_tuple[0] >= 7)
-                    else "n/a"
-                ),
-                (
-                    diff_period_rate(
-                        ws["F" + str(crow - interval_tuple[1])].value,
-                        this_pd_start,
-                        daycount,
-                        accs_since_start(
-                            ws, "AA", "E", "F", crow - interval_tuple[1], 7, daycount
-                        ),
-                        accs_since_start(ws, "AA", "E", "F", crow, 7, daycount),
-                    )
-                    if (crow - interval_tuple[1] >= 7)
-                    else "n/a"
-                ),
-            )
-            r_this_1 = (
-                diff_period_rate(
-                    ws["F" + str(crow - interval_tuple[0])].value,
-                    this_pd_start,
-                    daycount,
-                    accs_since_start(
-                        ws,
-                        "N" if daycount == 360 else "O",
-                        "E",
-                        "F",
-                        crow - interval_tuple[0],
-                        7,
-                        daycount,
-                    ),
-                    accs_since_start(
-                        ws, "N" if daycount == 360 else "O", "E", "F", crow, 7, daycount
-                    ),
-                )
-                if (crow - interval_tuple[0] >= 7)
-                else "n/a"
-            )
-
-            r_this_2 = (
-                diff_period_rate(
-                    ws["F" + str(crow - interval_tuple[1])].value,
-                    this_pd_start,
-                    daycount,
-                    accs_since_start(
-                        ws,
-                        "N" if daycount == 360 else "O",
-                        "E",
-                        "F",
-                        crow - interval_tuple[1],
-                        7,
-                        daycount,
-                    ),
-                    accs_since_start(
-                        ws, "N" if daycount == 360 else "O", "E", "F", crow, 7, daycount
-                    ),
-                )
-                if (crow - interval_tuple[1] >= 7)
-                else "n/a"
-            )
+            # r_a = (
+            #     ws["Y" + str(crow)].value,
+            #     (
+            #         diff_period_rate(
+            #             ws["F" + str(crow - interval_tuple[0])].value,
+            #             this_pd_start,
+            #             daycount,
+            #             accs_since_start(
+            #                 ws, "Y", "E", "F", crow - interval_tuple[0], 7, daycount
+            #             ),
+            #             accs_since_start(ws, "Y", "E", "F", crow, 7, daycount),
+            #         )
+            #         if (crow - interval_tuple[0] >= 7)
+            #         else "n/a"
+            #     ),
+            #     (
+            #         diff_period_rate(
+            #             ws["F" + str(crow - interval_tuple[1])].value,
+            #             this_pd_start,
+            #             daycount,
+            #             accs_since_start(
+            #                 ws, "Y", "E", "F", crow - interval_tuple[1], 7, daycount
+            #             ),
+            #             accs_since_start(ws, "Y", "E", "F", crow, 7, daycount),
+            #         )
+            #         if (crow - interval_tuple[1] >= 7)
+            #         else "n/a"
+            #     ),
+            # )
+            # r_b = (
+            #     ws["Z" + str(crow)].value,
+            #     (
+            #         diff_period_rate(
+            #             ws["F" + str(crow - interval_tuple[0])].value,
+            #             this_pd_start,
+            #             daycount,
+            #             accs_since_start(
+            #                 ws, "Z", "E", "F", crow - interval_tuple[0], 7, daycount
+            #             ),
+            #             accs_since_start(ws, "Z", "E", "F", crow, 7, daycount),
+            #         )
+            #         if (crow - interval_tuple[0] >= 7)
+            #         else "n/a"
+            #     ),
+            #     (
+            #         diff_period_rate(
+            #             ws["F" + str(crow - interval_tuple[1])].value,
+            #             this_pd_start,
+            #             daycount,
+            #             accs_since_start(
+            #                 ws, "Z", "E", "F", crow - interval_tuple[1], 7, daycount
+            #             ),
+            #             accs_since_start(ws, "Z", "E", "F", crow, 7, daycount),
+            #         )
+            #         if (crow - interval_tuple[1] >= 7)
+            #         else "n/a"
+            #     ),
+            # )
+            # r_c = (
+            #     ws["AA" + str(crow)].value,
+            #     (
+            #         diff_period_rate(
+            #             ws["F" + str(crow - interval_tuple[0])].value,
+            #             this_pd_start,
+            #             daycount,
+            #             accs_since_start(
+            #                 ws, "AA", "E", "F", crow - interval_tuple[0], 7, daycount
+            #             ),
+            #             accs_since_start(ws, "AA", "E", "F", crow, 7, daycount),
+            #         )
+            #         if (crow - interval_tuple[0] >= 7)
+            #         else "n/a"
+            #     ),
+            #     (
+            #         diff_period_rate(
+            #             ws["F" + str(crow - interval_tuple[1])].value,
+            #             this_pd_start,
+            #             daycount,
+            #             accs_since_start(
+            #                 ws, "AA", "E", "F", crow - interval_tuple[1], 7, daycount
+            #             ),
+            #             accs_since_start(ws, "AA", "E", "F", crow, 7, daycount),
+            #         )
+            #         if (crow - interval_tuple[1] >= 7)
+            #         else "n/a"
+            #     ),
+            # )
+            # r_this_1 = (
+            #     diff_period_rate(
+            #         ws["F" + str(crow - interval_tuple[0])].value,
+            #         this_pd_start,
+            #         daycount,
+            #         accs_since_start(
+            #             ws,
+            #             "N" if daycount == 360 else "O",
+            #             "E",
+            #             "F",
+            #             crow - interval_tuple[0],
+            #             7,
+            #             daycount,
+            #         ),
+            #         accs_since_start(
+            #             ws, "N" if daycount == 360 else "O", "E", "F", crow, 7, daycount
+            #         ),
+            #     )
+            #     if (crow - interval_tuple[0] >= 7)
+            #     else "n/a"
+            # )
+            #
+            # r_this_2 = (
+            #     diff_period_rate(
+            #         ws["F" + str(crow - interval_tuple[1])].value,
+            #         this_pd_start,
+            #         daycount,
+            #         accs_since_start(
+            #             ws,
+            #             "N" if daycount == 360 else "O",
+            #             "E",
+            #             "F",
+            #             crow - interval_tuple[1],
+            #             7,
+            #             daycount,
+            #         ),
+            #         accs_since_start(
+            #             ws, "N" if daycount == 360 else "O", "E", "F", crow, 7, daycount
+            #         ),
+            #     )
+            #     if (crow - interval_tuple[1] >= 7)
+            #     else "n/a"
+            # )
 
             # plotting info
             ts_row_start = max(7, crow - 15)  #######################################
@@ -1286,39 +1377,24 @@ for ws in wb.worksheets:
                     series_abbrev=series_abbrev,
                     r_this_1=r_this_1,
                     r_this_2=r_this_2,
-                    comp_a=ws["Y6"].value,
-                    comp_b=ws["Z6"].value,
-                    comp_c=ws["AA6"].value,
+                    comp_a=benchmark_to_use[0],
+                    comp_b=benchmark_to_use[1],
+                    comp_c=benchmark_to_use[2],
                     r_a=r_a,
                     r_b=r_b,
                     r_c=r_c,
-                    s_a_0=bps_spread(
-                        form_as_percent(
-                            ws[("N" if daycount == 360 else "O") + str(crow)].value, 2
-                        ),
-                        form_as_percent(r_a[0], 2),
-                    ),  # TODO daycounts for spreads and round to 2 places
-                    s_a_1=bps_spread(r_this_1, r_a[1]),
-                    s_a_2=bps_spread(r_this_2, r_a[2]),
-                    s_b_0=bps_spread(
-                        form_as_percent(
-                            ws[("N" if daycount == 360 else "O") + str(crow)].value, 2
-                        ),
-                        form_as_percent(r_b[0], 2),
-                    ),
-                    s_b_1=bps_spread(r_this_1, r_b[1]),
-                    s_b_2=bps_spread(r_this_2, r_b[2]),
-                    s_c_0=bps_spread(
-                        form_as_percent(
-                            ws[("N" if daycount == 360 else "O") + str(crow)].value, 2
-                        ),
-                        form_as_percent(r_c[0], 2),
-                    ),
-                    s_c_1=bps_spread(r_this_1, r_c[1]),
-                    s_c_2=bps_spread(r_this_2, r_c[2]),
+                    s_a_0=s_a_0,
+                    s_a_1=s_a_1,
+                    s_a_2=s_a_2,
+                    s_b_0=s_b_0,
+                    s_b_1=s_b_1,
+                    s_b_2=s_b_2,
+                    s_c_0=s_c_0,
+                    s_c_1=s_c_1,
+                    s_c_2=s_c_2,
                 ),
-                "fund_size": get_fund_size(reporting_fund, report_date),
-                "series_size": get_series_size(reporting_series, report_date),
+                "fund_size": get_fund_size(fund_name, report_date),
+                "series_size": get_series_size(reporting_series_id, report_date),
                 "lucid_aum": get_aum(report_date),
                 "rating": df_attributes["rating"].iloc[0],  # done
                 "rating_org": df_attributes["rating_org"].iloc[0],  # done
