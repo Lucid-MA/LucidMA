@@ -538,11 +538,14 @@ CP_1M = "1m A1/P1 CP"
 CP_3M = "3m A1/P1 CP"
 CRANE_IDX = "Crane Govt MM Index"
 EGAN_JONES = "Egan-Jones"
+FHLB_NOTES = "FHLB 1m Discount Notes"
 
 benchmark_shortern = {
-    SOFR_1M: "1m SOFR",
+    SOFR_1M: SOFR_1M,
     TBILL_1M: "1m TB",
     TBILL_3M: "3m TB",
+    CRANE_IDX: "Crane MM",
+    CP_1M: CP_1M,
 }
 """
 # Series Attributes

@@ -1,103 +1,69 @@
-from Utils.database_utils import read_table_from_db
-
-#
-# file_path = "/Volumes/Sdrive$/Users/THoang/Data/Calculating lag rate.xlsx"
-#
-# df = pd.read_excel(file_path)
-#
-# Convert 'Start Date' and 'End Date' columns to datetime format
-df["Start Date"] = pd.to_datetime(df["start_date"])
-df["End Date"] = pd.to_datetime(df["end_date"])
-
-# Calculate the actual number of days between start and end dates
-df["Day count"] = (df["End Date"] - df["Start Date"]).dt.days
-
-# Calculate the accrual period return
-df["Accrual period return"] = df["annualized_return"].astype("float") * (
-    df["Day count"] / 360
-)
-
-# Calculate the growth of $1
-df["Growth of $1"] = (1 + df["Accrual period return"]).cumprod()
-
-# Initialize the '3-month growth rate' and 'Annualized 3-month growth rate' columns
-df["3-month"] = pd.Series([None] * len(df))
-df["Annualized 3-month"] = pd.Series([None] * len(df))
-
-df["12-month"] = pd.Series([None] * len(df))
-df["Annualized 12-month"] = pd.Series([None] * len(df))
-
-n = 3
-# Calculate the 3-month growth rate and annualized 3-month growth rate
-for i in range(len(df)):
-    if i >= n:
-        start_date = df.iloc[i - n]["End Date"]
-        end_date = df.iloc[i]["End Date"]
-        growth_rate = df.iloc[i]["Growth of $1"] / df.iloc[i - n]["Growth of $1"] - 1
-        df.at[i, "3-month"] = growth_rate
-
-        # Calculate the actual number of days in the 3-month period
-        days_in_period = (end_date - start_date).days
-
-        # Calculate the annualized 3-month growth rate
-        annualized_growth_rate = growth_rate * (360 / days_in_period)
-        df.at[i, "Annualized 3-month"] = annualized_growth_rate
-
-    elif i == (n - 1):
-        # Calculate the growth rate and annualized growth rate from the start of the data
-        start_date = df.iloc[0]["Start Date"]
-        end_date = df.iloc[i]["End Date"]
-        growth_rate = df.iloc[i]["Growth of $1"] - 1
-        df.at[i, "3-month"] = growth_rate
-
-        # Calculate the actual number of days from the start of the data
-        days_in_period = (end_date - start_date).days
-
-        # Calculate the annualized growth rate from the start of the data
-        annualized_growth_rate = growth_rate * (360 / days_in_period)
-        df.at[i, "Annualized 3-month"] = annualized_growth_rate
-
-
-n = 12
-for i in range(len(df)):
-    if i >= n:
-        start_date = df.iloc[i - n]["End Date"]
-        end_date = df.iloc[i]["End Date"]
-        growth_rate = df.iloc[i]["Growth of $1"] / df.iloc[i - n]["Growth of $1"] - 1
-        df.at[i, "12-month"] = growth_rate
-
-        # Calculate the actual number of days in the 3-month period
-        days_in_period = (end_date - start_date).days
-
-        # Calculate the annualized 3-month growth rate
-        annualized_growth_rate = growth_rate * (360 / days_in_period)
-        df.at[i, "Annualized 12-month"] = annualized_growth_rate
-    elif i == (n - 1):
-        # Calculate the growth rate and annualized growth rate from the start of the data
-        start_date = df.iloc[0]["Start Date"]
-        end_date = df.iloc[i]["End Date"]
-        growth_rate = df.iloc[i]["Growth of $1"] - 1
-        df.at[i, "12-month"] = growth_rate
-
-        # Calculate the actual number of days from the start of the data
-        days_in_period = (end_date - start_date).days
-
-        # Calculate the annualized growth rate from the start of the data
-        annualized_growth_rate = growth_rate * (360 / days_in_period)
-        df.at[i, "Annualized 12-month"] = annualized_growth_rate
-# # Print the resulting DataFrame
-# print_df(df[:60])
-
-
-# Read the CSV file into a DataFrame
-df = read_table_from_db("historical_returns", "postgres")
-
-
 import pandas as pd
 
-# Convert 'start_date' and 'end_date' columns to datetime
-df["start_date"] = pd.to_datetime(df["start_date"])
-df["end_date"] = pd.to_datetime(df["end_date"])
+from Utils.database_utils import read_table_from_db, get_database_engine
 
-# Sort the DataFrame by 'start_date' and 'end_date'
-df = df.sort_values(["start_date", "end_date"])
+# Table names
+db_type = "postgres"
+attributes_table_name = "bronze_series_attributes"
+historical_returns_table_name = "historical_returns"
+target_return_table_name = "target_returns"
+benchmark_table_name = "bronze_benchmark"
+oc_rate_table_name = "oc_rates"
+daily_nav_table_name = "bronze_daily_nav"
+roll_schedule_table_name = "roll_schedule"
+cash_balance_table_name = "bronze_cash_balance"
+benchmark_comparison_table_name = "silver_return_by_series"
+
+# Connect to the PostgreSQL database
+engine = get_database_engine("postgres")
+
+# Read the table into a pandas DataFrame
+df_attributes = read_table_from_db(attributes_table_name, db_type)
+
+df_historical_returns = read_table_from_db(historical_returns_table_name, db_type)
+
+df_target_return = read_table_from_db(target_return_table_name, db_type)
+
+df_benchmark = read_table_from_db(benchmark_table_name, db_type)
+
+df_oc_rates = read_table_from_db(oc_rate_table_name, db_type)
+
+df_daily_nav = read_table_from_db(daily_nav_table_name, db_type)
+
+df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
+
+df_cash_balance = read_table_from_db(cash_balance_table_name, db_type)
+
+df_benchmark_comparison = read_table_from_db(benchmark_comparison_table_name, db_type)
+
+df_historical_returns_plot = read_table_from_db(historical_returns_table_name, db_type)
+
+
+def get_historical_returns(df_historical_returns, end_date, offset):
+    # Convert 'end_date' to datetime
+    end_date = pd.to_datetime(end_date)
+
+    # Filter the DataFrame based on 'end_date'
+    filtered_df = df_historical_returns[df_historical_returns["end_date"] <= end_date]
+
+    # Sort the filtered DataFrame by 'end_date' in descending order
+    sorted_df = filtered_df.sort_values("end_date", ascending=False)
+
+    # Take the last 'offset' number of rows
+    result_df = sorted_df.head(offset)
+
+    # Format the result as a string
+    result_str = " ".join(
+        [
+            f"({row['end_date'].strftime('%Y-%m-%d')}, {row['annualized_returns_365'] * 100:.2f})"
+            for _, row in result_df.iterrows()
+        ]
+    )
+
+    return result_str
+
+
+curr_end = "2024-04-18"
+plot_data = get_historical_returns(df_historical_returns_plot, curr_end, 12)
+
+print(plot_data)

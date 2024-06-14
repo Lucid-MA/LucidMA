@@ -399,3 +399,488 @@ def fund_inception_from_name(fund):
     if fund == "Prime":
         return "July 20, 2018"
         return "n/a"
+
+
+def return_table_plot(
+    fund_name,
+    prev_pd_return,
+    series_abbrev,
+    r_this_1,
+    r_this_2,
+    comp_a,
+    comp_b,
+    comp_c,
+    r_a,
+    r_b,
+    r_c,
+    s_a_0,
+    s_a_1,
+    s_a_2,
+    s_b_0,
+    s_b_1,
+    s_b_2,
+    s_c_0,
+    s_c_1,
+    s_c_2,
+):
+    if fund_name == "USG":
+        out = r"""
+	\textbf{{Lucid {fund_name} - Series {series_abbrev}}}                    & \textbf{{{prev_pd_return}}}                              & \textbf{{-}}                                  & \textbf{{{r_this_1}}}                               & \textbf{{-}}                           & \textbf{{{r_this_2}}}                             & \textbf{{-}}                          \\
+{comp_a}                       & {r_a_0}                                       & \textbf{{{s_a_0}}}                            & {r_a_1}                               & \textbf{{{s_a_1}}}                     & {r_a_2}                              & \textbf{{{s_a_2}}}                    \\
+{comp_b}                       & {r_b_0}                                       & \textbf{{{s_b_0}}}                           & {r_b_1}                               & \textbf{{{s_b_1}}}                     & {r_b_2}                              & \textbf{{{s_b_2}}}                    \\ \arrayrulecolor{{light_grey}}\hline
+	"""
+        return out.format(
+            fund_name=fund_name,
+            prev_pd_return=prev_pd_return,
+            series_abbrev=series_abbrev,
+            r_this_1=r_this_1,
+            r_this_2=r_this_2,
+            comp_a=comp_a,
+            comp_b=comp_b,
+            r_a_0=form_as_percent(r_a[0], 2),
+            r_a_1=r_a[1],  # already percent
+            r_a_2=r_a[2],
+            r_b_0=form_as_percent(r_b[0], 2),
+            r_b_1=r_b[1],
+            r_b_2=r_b[2],
+            s_a_0=s_a_0,
+            s_a_1=s_a_1,
+            s_a_2=s_a_2,
+            s_b_0=s_b_0,
+            s_b_1=s_b_1,
+            s_b_2=s_b_2,
+        )
+    else:
+        out = r"""
+	\textbf{{Lucid {fund_name} - Series {series_abbrev}}}                    & \textbf{{{prev_pd_return}}}                              & \textbf{{-}}                                  & \textbf{{{r_this_1}}}                               & \textbf{{-}}                           & \textbf{{{r_this_2}}}                             & \textbf{{-}}                          \\
+{comp_a}                       & {r_a_0}                                       & \textbf{{{s_a_0}}}                            & {r_a_1}                               & \textbf{{{s_a_1}}}                     & {r_a_2}                              & \textbf{{{s_a_2}}}                    \\
+{comp_b}                       & {r_b_0}                                       & \textbf{{{s_b_0}}}                           & {r_b_1}                               & \textbf{{{s_b_1}}}                     & {r_b_2}                              & \textbf{{{s_b_2}}}                    \\
+{comp_c}                       & {r_c_0}                                       & \textbf{{{s_c_0}}}                            & {r_c_1}                               & \textbf{{{s_c_1}}}                     & {r_c_2}                              & \textbf{{{s_c_2}}}                    \\ \arrayrulecolor{{light_grey}}\hline
+	"""
+        return out.format(
+            fund_name=fund_name,
+            prev_pd_return=prev_pd_return,
+            series_abbrev=series_abbrev,
+            r_this_1=r_this_1,
+            r_this_2=r_this_2,
+            comp_a=comp_a,
+            comp_b=comp_b,
+            comp_c=comp_c,
+            r_a_0=form_as_percent(r_a[0], 2),
+            r_a_1=r_a[1],  # already percent
+            r_a_2=r_a[2],
+            r_b_0=form_as_percent(r_b[0], 2),
+            r_b_1=r_b[1],
+            r_b_2=r_b[2],
+            r_c_0=form_as_percent(r_c[0], 2),
+            r_c_1=r_c[1],
+            r_c_2=r_c[2],
+            s_a_0=s_a_0,
+            s_a_1=s_a_1,
+            s_a_2=s_a_2,
+            s_b_0=s_b_0,
+            s_b_1=s_b_1,
+            s_b_2=s_b_2,
+            s_c_0=s_c_0,
+            s_c_1=s_c_1,
+            s_c_2=s_c_2,
+        )
+
+
+def addl_coll_breakdown(alloc_aa_a, oc_aa_a, alloc_bbb, oc_bbb, alloc_bb, oc_bb):
+    if alloc_aa_a == "n/a":
+        return ""
+    else:
+        outp = r"""IG Repo: AA to A & {alloc_aa_a} & {oc_aa_a} \\
+		IG Repo: BBB & {alloc_bbb} & {oc_bbb} \\
+		Repo: BB & {alloc_bb} & {oc_bb} \\"""
+        return outp.format(
+            alloc_aa_a=alloc_aa_a,
+            oc_aa_a=oc_aa_a,
+            alloc_bbb=alloc_bbb,
+            oc_bbb=oc_bbb,
+            alloc_bb=alloc_bb,
+            oc_bb=oc_bb,
+        )
+
+
+def colltable(
+    inclextra,
+    secured_by,
+    series_abbrev,
+    include_aaa_in_usg_bucket,
+    alloc_aaa,
+    alloc_aa_a,
+    alloc_bbb,
+    alloc_bb,
+    alloc_tbills,
+    alloc_total,
+    oc_total,
+    oc_tbills,
+    oc_bb,
+    oc_bbb,
+    oc_aa_a,
+    oc_aaa,
+):
+    if inclextra:
+        out = r"""
+		\renewcommand{{\arraystretch}}{{{vstretch}}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
+		>{{\columncolor[HTML]{{EFEFEF}}}}p{{3.5cm}} 
+		>{{\columncolor[HTML]{{EFEFEF}}}}c
+		>{{\columncolor[HTML]{{EFEFEF}}}}c!{{\color{{light_grey}}\vrule}}}}
+		\arrayrulecolor{{light_grey}}\hline
+		\multicolumn{{3}}{{!{{\color{{light_grey}}\vrule}}l!{{\color{{light_grey}}\vrule}}}}{{\rowcolor{{lucid_blue}}{{\color[HTML]{{FFFFFF}}\textbf{{Series Collateral Overview\textsuperscript{{4}}}}}}}} \\
+		\multicolumn{{3}}{{!{{\color{{light_grey}}\vrule}}p{{8.2cm}}!{{\color{{light_grey}}\vrule}}}}{{\rowcolor[HTML]{{EFEFEF}}{{\textbf{{Series {series_abbrev}}}: Secured by \textbf{{{secured_by}}}, with daily valuations \& margining.}}}} \\
+		& & \\
+		 & \textbf{{\% Portfolio}} & \textbf{{O/C Rate}}\\
+		{usg_aaa_cat} & {alloc_aaa} & {oc_aaa} \\
+		IG Repo: AA to A & {alloc_aa_a} & {oc_aa_a} \\
+		IG Repo: BBB & {alloc_bbb} & {oc_bbb} \\
+		Repo: BB & {alloc_bb} & {oc_bb} \\
+		T-Bills; Gov't MMF & {alloc_tbills} & {oc_tbills} \\ \cline{{2-2}} \cline{{3-3}} 
+		\textbf{{Total}} & {alloc_total} & \textbf{{{oc_total}}} \\\arrayrulecolor{{light_grey}}\hline
+		\end{{tabular}}
+		"""
+        return out.format(
+            vstretch=1.48,
+            secured_by=secured_by,
+            series_abbrev=series_abbrev,
+            usg_aaa_cat=(
+                "US Govt/AAA Repo" if include_aaa_in_usg_bucket else "US Govt Repo"
+            ),
+            alloc_aaa=alloc_aaa,
+            alloc_aa_a=alloc_aa_a,
+            alloc_bbb=alloc_bbb,
+            alloc_bb=alloc_bb,
+            alloc_tbills=alloc_tbills,
+            alloc_total=alloc_total,
+            oc_total=oc_total,
+            oc_tbills=oc_tbills,
+            oc_bb=oc_bb,
+            oc_bbb=oc_bbb,
+            oc_aa_a=oc_aa_a,
+            oc_aaa=oc_aaa,
+        )
+    else:
+        out = r"""
+		\renewcommand{{\arraystretch}}{{{vstretch}}}\begin{{tabular}}{{!{{\color{{light_grey}}\vrule}}
+		>{{\columncolor[HTML]{{EFEFEF}}}}p{{3.5cm}} 
+		>{{\columncolor[HTML]{{EFEFEF}}}}c
+		>{{\columncolor[HTML]{{EFEFEF}}}}c!{{\color{{light_grey}}\vrule}}}}
+		\arrayrulecolor{{light_grey}}\hline
+		\multicolumn{{3}}{{!{{\color{{light_grey}}\vrule}}l!{{\color{{light_grey}}\vrule}}}}{{\rowcolor{{lucid_blue}}{{\color[HTML]{{FFFFFF}}\textbf{{Series Collateral Overview\textsuperscript{{4}}}}}}}} \\
+		\multicolumn{{3}}{{!{{\color{{light_grey}}\vrule}}p{{8.2cm}}!{{\color{{light_grey}}\vrule}}}}{{\rowcolor[HTML]{{EFEFEF}}{{\textbf{{Series {series_abbrev}}}: Secured by \textbf{{{secured_by}}}, with daily valuations \& margining.}}}} \\
+		& & \\
+		 & \textbf{{\% Portfolio}} & \textbf{{O/C Rate}}\\
+		{usg_aaa_cat} & {alloc_aaa} & {oc_aaa} \\
+		T-Bills; Gov't MMF & {alloc_tbills} & {oc_tbills} \\ \cline{{2-2}} \cline{{3-3}} 
+		\textbf{{Total}} & {alloc_total} & \textbf{{{oc_total}}} \\\arrayrulecolor{{light_grey}}\hline
+		\end{{tabular}}
+		"""
+        return out.format(
+            vstretch=1.91,
+            secured_by=secured_by,
+            series_abbrev=series_abbrev,
+            usg_aaa_cat=(
+                "US Govt/AAA Repo" if include_aaa_in_usg_bucket else "US Govt Repo"
+            ),
+            alloc_aaa=alloc_aaa,
+            # alloc_cp=alloc_cp,
+            alloc_tbills=alloc_tbills,
+            alloc_total=alloc_total,
+            oc_total=oc_total,
+            oc_tbills=oc_tbills,
+            # oc_cp=oc_cp,
+            oc_aaa=oc_aaa,
+        )
+
+
+def plotify(ws, x_col, y_col, start, end):
+    outp = ""
+    for row in range(start, end + 1):
+        if ws[x_col + str(row)].value and ws[y_col + str(row)].value:
+            outp = (
+                outp
+                + "("
+                + ws[x_col + str(row)].value.strftime("%Y-%m-%d")
+                + ","
+                + str(round(100 * ws[y_col + str(row)].value, 3))
+                + ") "
+            )
+    return outp
+
+
+def snapshot_graph(
+    hspace,
+    graphwidth,
+    graphheight,
+    maxreturn,
+    series_abbrev,
+    comp_a,
+    comp_b,
+    comp_c,
+    this_r,
+    ra,
+    rb,
+    rc,
+):
+    if comp_c is not None:  # when we have 3 comparables - for all prime series
+        out = r"""
+		  \hspace*{{{hspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
+	\begin{{axis}}[
+		title style = {{font = \small}},
+		axis line style = {{light_grey}},
+		title={{{{Performance vs Benchmarks}}}},
+		ymin=3, ymax={maxreturn}, %MAXRETURN HERE
+	   symbolic x coords={{Series {series_abbrev},{comp_a},{comp_b},{comp_c}}},
+		xtick={{Series {series_abbrev},{comp_a},{comp_b},{comp_c}}},
+		x tick label style={{anchor=north,font=\scriptsize,/pgf/number format/assume math mode}},
+		yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
+		y tick label style = {{/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,
+				/pgf/number format/assume math mode
+		}},
+		ytick distance={tickdist},
+		bar width = 8mm, x = 2.46cm,
+		xtick pos=bottom,ytick pos=left,
+		every node near coord/.append style={{font=\fontsize{{8}}{{8}}\selectfont,/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,/pgf/number format/assume math mode}},
+		]
+	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			(Series {series_abbrev},{this_r}) 
+		}};
+	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			({comp_a},{ra}) 
+		}};
+	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			({comp_b},{rb}) 
+		}};
+	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			({comp_c},{rc}) 
+		}};
+	\end{{axis}}
+		\end{{tikzpicture}}}}
+
+		"""
+        return out.format(
+            hspace=hspace,
+            tickdist=0.5 if max(this_r, ra, rb, rc) + 0.1 >= 1 else 0.25,
+            graphwidth=graphwidth,
+            graphheight=graphheight,
+            maxreturn=max(this_r, ra, rb, rc) + 1,
+            series_abbrev=series_abbrev,
+            comp_a=benchmark_shorten(comp_a) if "CRANE" in comp_a.upper() else comp_a,
+            comp_b=benchmark_shorten(comp_b) if "CRANE" in comp_b.upper() else comp_b,
+            comp_c=benchmark_shorten(comp_c) if "CRANE" in comp_c.upper() else comp_c,
+            this_r=this_r,
+            ra=ra,
+            rb=rb,
+            rc=rc,
+        )
+    else:  # when we only have 2 comparables - for all usg
+        out = r"""
+		  \hspace*{{{hspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
+	\begin{{axis}}[
+		title style = {{font = \small}},
+		axis line style = {{light_grey}},
+			title={{{{Performance vs Benchmarks}}}},
+		ymin=2, ymax={maxreturn}, %MAXRETURN HERE
+	   symbolic x coords={{Series {series_abbrev},{comp_a},{comp_b}}},
+		xtick={{Series {series_abbrev},{comp_a},{comp_b}}},
+		x tick label style={{anchor=north,font=\scriptsize,/pgf/number format/assume math mode}},
+		yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
+		y tick label style = {{/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,
+				/pgf/number format/assume math mode
+		}},
+		ytick distance={tickdist},
+		bar width = 10mm, x = 3.7cm,
+		xtick pos=bottom,ytick pos=left,
+		every node near coord/.append style={{font=\fontsize{{8}}{{8}}\selectfont,/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,/pgf/number format/assume math mode}},
+		]
+	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			(Series {series_abbrev},{this_r}) 
+		}};
+	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			({comp_a},{ra}) 
+		}};
+	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			({comp_b},{rb}) 
+		}};
+	\end{{axis}}
+		\end{{tikzpicture}}}}
+	
+		"""
+        return out.format(
+            hspace=hspace,
+            tickdist=0.5 if maxreturn >= 1 else 0.25,
+            graphwidth=graphwidth,
+            graphheight=graphheight,
+            maxreturn=max(this_r, ra, rb, rc) + 1,
+            series_abbrev=series_abbrev,
+            comp_a=benchmark_shorten(comp_a) if "CRANE" in comp_a.upper() else comp_a,
+            comp_b=benchmark_shorten(comp_b) if "CRANE" in comp_b.upper() else comp_b,
+            this_r=this_r,
+            ra=ra,
+            rb=rb,
+        )
+
+
+def performance_graph(
+    titleincl,
+    graphhspace,
+    graphwidth,
+    graphheight,
+    fund_name,
+    zero_date,
+    min_return,
+    max_return,
+    graphx,
+    graphbarwidth,
+    return_plot,
+    comp_a_plot,
+    comp_b_plot,
+    series_abbrev,
+    comp_a,
+    comp_b,
+):
+    if fund_name.upper() == "USG":
+        out = r"""
+			  \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
+		\begin{{axis}}[
+			title style = {{font = \small}},
+			axis line style = {{light_grey}},{title}
+			date coordinates in=x, date ZERO={zero_date},
+			xticklabel=\month/\day/\year,  
+			ymin={min_return}, ymax={max_return}, %MAXRETURN HERE
+			legend cell align = {{left}},
+			legend style={{at={{(0.3,1)}},
+			  anchor=north east, font=\tiny, draw=none,fill=none}},
+			  x={graphx}mm, %CHANGE THIS to tighten in graph, eg if quarterly
+			bar width={graphbarwidth}mm, ybar=2pt, %bar width is width, ybar is space between
+		   % symbolic x coords={{Firm 1, Firm 2, Firm 3, Firm 4, Firm 5}},
+			xtick=data,
+			x tick label style={{rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode}},
+				 yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
+			y tick label style = {{/pgf/number format/.cd,
+					fixed,
+					fixed zerofill,
+					precision=2,
+					/pgf/number format/assume math mode
+			}},
+			nodes near coords align={{vertical}},
+			ytick distance=0.5,
+			xtick pos=bottom,ytick pos=left,
+			every node near coord/.append style={{font=\fontsize{{6}}{{6}}\selectfont,/pgf/number format/.cd,
+					fixed,
+					fixed zerofill,
+					precision=2,/pgf/number format/assume math mode}},
+			]
+		%\addplot[ybar, nodes near coords, fill=blue] 
+		\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+			coordinates {{
+				{return_plot}
+			}};
+		\addplot[draw=dark_red,ultra thick,smooth] 
+			coordinates {{
+				{comp_a_plot}
+			}};
+		\addplot[draw=dark_color,ultra thick,smooth] 
+			coordinates {{
+				{comp_b_plot}
+			}};
+		\legend{{\hphantom{{A}}{fund_name} Series {series_abbrev},\hphantom{{A}}{comp_a},\hphantom{{A}}{comp_b}}}
+		\end{{axis}}
+			\end{{tikzpicture}}}}
+
+			"""
+    else:
+        out = r"""
+		  \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
+	\begin{{axis}}[
+		title style = {{font = \small}},
+		axis line style = {{light_grey}},{title}
+		date coordinates in=x, date ZERO={zero_date},
+		xticklabel=\month/\day/\year,  
+		ymin={min_return}, ymax={max_return}, %MAXRETURN HERE
+		legend cell align = {{left}},
+		legend style={{at={{(0.2,1)}},
+		  anchor=north east, font=\tiny, draw=none,fill=none}},
+		  x={graphx}mm, %CHANGE THIS to tighten in graph, eg if quarterly
+		bar width={graphbarwidth}mm, ybar=2pt, %bar width is width, ybar is space between
+	   % symbolic x coords={{Firm 1, Firm 2, Firm 3, Firm 4, Firm 5}},
+		xtick=data,
+		x tick label style={{rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode}},
+			 yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
+		y tick label style = {{/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,
+				/pgf/number format/assume math mode
+		}},
+		nodes near coords align={{vertical}},
+		ytick distance=0.5,
+		xtick pos=bottom,ytick pos=left,
+		every node near coord/.append style={{font=\fontsize{{6}}{{6}}\selectfont,/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,/pgf/number format/assume math mode}},
+		]
+	%\addplot[ybar, nodes near coords, fill=blue] 
+	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			{return_plot}
+		}};
+	\addplot[draw=dark_red,ultra thick,smooth] 
+		coordinates {{
+			{comp_a_plot}
+		}};
+	\addplot[draw=dark_color,ultra thick,smooth] 
+		coordinates {{
+			{comp_b_plot}
+		}};
+	\legend{{\hphantom{{A}}{fund_name} Series {series_abbrev},\hphantom{{A}}{comp_a},\hphantom{{A}}{comp_b}}}
+	\end{{axis}}
+		\end{{tikzpicture}}}}
+	
+		"""
+    # Terri graph
+    return out.format(
+        graphhspace=graphhspace,
+        graphwidth=graphwidth,
+        graphheight=graphheight,
+        fund_name=fund_name,
+        title=(
+            r"""
+		title={{Performance vs Benchmark}},"""
+            if titleincl
+            else ""
+        ),
+        zero_date=zero_date,
+        min_return=min_return,
+        max_return=max_return,
+        graphx=graphx,
+        graphbarwidth=graphbarwidth,
+        return_plot=return_plot,
+        comp_a_plot=comp_a_plot,
+        comp_b_plot=comp_b_plot,
+        series_abbrev=series_abbrev,
+        comp_a=comp_a,
+        comp_b=comp_b,
+    )
