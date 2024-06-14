@@ -83,7 +83,9 @@ for pool in df["pool_description"].unique():
         by=["start_date", "end_date"]
     ).reset_index(drop=True)
     # For each date range, calculate the cumulative return
-    for start_period, end_period in df_roll_schedule.iterrows():
+    for index, row in df_roll_schedule.iterrows():
+        start_period = row["start_date"].strftime("%Y-%m-%d")
+        end_period = row["end_date"].strftime("%Y-%m-%d")
         start_period_dt = datetime.strptime(start_period, "%Y-%m-%d")
         end_period_dt = datetime.strptime(end_period, "%Y-%m-%d")
 

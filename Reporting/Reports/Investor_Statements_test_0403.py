@@ -69,7 +69,7 @@ report_names_dict = {
 ##############################################################################
 
 # current_date = datetime.now()
-current_date = datetime.strptime("2024-03-15", "%Y-%m-%d")
+current_date = datetime.strptime("2024-06-13", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:
