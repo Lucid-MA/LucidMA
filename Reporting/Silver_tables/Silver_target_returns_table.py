@@ -2,7 +2,7 @@ import time
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import Table, MetaData, Column, String, Float, Date, DateTime, text
+from sqlalchemy import Table, MetaData, Column, String, Float, Date, DateTime, text, Integer
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path
@@ -41,9 +41,13 @@ def create_table_with_schema(tb_name):
         metadata,
         Column("return_id", String(255), primary_key=True),
         Column("date", Date),
-        Column("cusip", String(12)),
+        Column("security_id", String(12)),
         Column("series", String),
-        Column("target", Float),
+        Column("net_return", Float),
+        Column("benchmark_name", String),
+        Column("benchmark", Float),
+        Column("target_range", String),
+        Column("net_spread", Integer),
         Column("timestamp", DateTime),
         extend_existing=True,
     )
@@ -83,6 +87,10 @@ create_table_with_schema(tb_name)
 
 df = pd.read_excel(directory)
 df.columns = [col.lower() for col in df.columns]  # Convert column names to lowercase
+df.rename(columns={"security id": "security_id", "net return": "net_return", "benchmark name": "benchmark_name",
+                   "target range": "target_range",
+                   "net spread": "net_spread"},
+          inplace=True)
 
 # Convert 'date' to datetime.date and format as 'YYYY-MM-DD'
 df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
@@ -92,7 +100,7 @@ col_order = ["return_id"] + list(df.columns) + ["timestamp"]
 
 # Generate "return_id" column
 df["return_id"] = df.apply(
-    lambda row: hash_string(str(row["date"]) + row["cusip"]), axis=1
+    lambda row: hash_string(str(row["date"]) + row["security_id"]), axis=1
 ).astype(str)
 
 # Generate "timestamp" column

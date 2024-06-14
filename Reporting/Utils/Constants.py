@@ -349,6 +349,18 @@ cusip_mapping = {
     "Lucid Prime Fund LLC_Q1": "PRIME-Q10",
 }
 
+reverse_cusip_mapping = {
+    "PRIME-A10": "Lucid Prime Fund LLC_A1",
+    "USGFD-M00": "Lucid Cash Fund USG LLC",
+    "PRIME-2YI": "Lucid Prime Fund LLC_2YIG",
+    "PRIME-C10": "Lucid Prime Fund LLC_C1",
+    "PRIME-M00": "Lucid Prime Fund LLC",
+    "PRIME-MIG": "Lucid Prime Fund LLC_MIG",
+    "PRIME-Q36": "Lucid Prime Fund LLC_Q364",
+    "PRIME-QX0": "Lucid Prime Fund LLC_QX",
+    "PRIME-Q10": "Lucid Prime Fund LLC_Q1",
+}
+
 lucid_series = {
     "PRIME-2YI": "Lucid Prime - Series 2YIG",
     "PRIME-A10": "Lucid Prime - Series A1",
@@ -359,6 +371,16 @@ lucid_series = {
     "PRIME-Q36": "Lucid Prime - Series Q364",
     "PRIME-QX0": "Lucid Prime - Series QX",
     "USGFD-M00": "Lucid USG - Series M",
+}
+
+series_return_intervals = {
+    "PRIME-C10": (3, 12),
+    "PRIME-M00": (3, 12),
+    "PRIME-MIG": (3, 12),
+    "PRIME-Q10": (2, 4),
+    "PRIME-Q36": (2, 4),
+    "PRIME-QX0": (2, 4),
+    "USGFD-M00": (3, 12),
 }
 
 NAV_name_mapping = {
@@ -510,13 +532,21 @@ holiday_data = {
 
 SOFR_1M = "1m SOFR"
 SOFR_3M = "3m SOFR"
-TBILL_1M = "1m T-Bills"
-TBILL_3M = "3m T-Bills"
+TBILL_1M = "1m T-Bill"
+TBILL_3M = "3m T-Bill"
 CP_1M = "1m A1/P1 CP"
 CP_3M = "3m A1/P1 CP"
 CRANE_IDX = "Crane Govt MM Index"
 EGAN_JONES = "Egan-Jones"
+FHLB_NOTES = "FHLB 1m Discount Notes"
 
+benchmark_shortern = {
+    SOFR_1M: SOFR_1M,
+    TBILL_1M: "1m TB",
+    TBILL_3M: "3m TB",
+    CRANE_IDX: "Crane MM",
+    CP_1M: CP_1M,
+}
 """
 # Series Attributes
 cusip -> fund_name -> series_name ->  fund_description -> series_description -> benchmark_id -> benchmark -> benchmark_short -> interval_tuple -> rating -> rating_org -> calc_frequency -> min_invest -> legal_fundname -> fund_inception -> series_inception 

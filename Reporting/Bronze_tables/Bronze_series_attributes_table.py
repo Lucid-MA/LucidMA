@@ -1,7 +1,17 @@
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Date, Integer
+from sqlalchemy import (
+    text,
+    Table,
+    MetaData,
+    Column,
+    String,
+    DateTime,
+    Date,
+    Integer,
+    Numeric,
+)
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path
@@ -26,6 +36,7 @@ def create_table_with_schema(tb_name):
         Column("legal_fund_name", String),
         Column("fund_inception", Date),
         Column("series_name", String),
+        Column("series_abbreviation", String),
         Column("series_description", String),
         Column("series_inception", Date),
         Column("benchmark_1", String),
@@ -35,6 +46,7 @@ def create_table_with_schema(tb_name):
         Column("rating_org", String),
         Column("minimum_investment", Integer),
         Column("series_withdrawal", String),
+        Column("expense_ratio_cap", Numeric(precision=5, scale=2)),
         Column("interval", String),
         Column("timestamp", DateTime),
         extend_existing=True,
@@ -90,6 +102,7 @@ try:
         "legal_fund_name",
         "fund_inception",
         "series_name",
+        "series_abbreviation",
         "series_description",
         "series_inception",
         "benchmark_1",
@@ -99,6 +112,7 @@ try:
         "rating_org",
         "minimum_investment",
         "series_withdrawal",
+        "expense_ratio_cap",
         "interval",
     ]
 

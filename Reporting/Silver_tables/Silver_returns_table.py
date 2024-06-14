@@ -6,7 +6,7 @@ import pandas as pd
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Constants import roll_schedule_mapping
+from Utils.Constants import cusip_mapping
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine, read_table_from_db
 
@@ -71,12 +71,19 @@ data_to_append = []
 # Convert dates in data to datetime objects for comparison
 df["start_date"] = pd.to_datetime(df["start_date"])
 
+roll_schedule_table_name = "roll_schedule"
+df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
+
 # Iterate through each unique pool description
 for pool in df["pool_description"].unique():
     pool_data = df[df["pool_description"] == pool]
-
+    series_id = cusip_mapping[pool]
+    df_roll_schedule = df_roll_schedule[df_roll_schedule["series_id"] == series_id]
+    df_roll_schedule = df_roll_schedule.sort_values(
+        by=["start_date", "end_date"]
+    ).reset_index(drop=True)
     # For each date range, calculate the cumulative return
-    for start_period, end_period in roll_schedule_mapping[pool]:
+    for start_period, end_period in df_roll_schedule.iterrows():
         start_period_dt = datetime.strptime(start_period, "%Y-%m-%d")
         end_period_dt = datetime.strptime(end_period, "%Y-%m-%d")
 
@@ -84,17 +91,17 @@ for pool in df["pool_description"].unique():
         period_data = pool_data[
             (pool_data["start_date"] > start_period_dt)
             & (pool_data["start_date"] < end_period_dt)
-            ]
+        ]
 
         # Filter 2: Exclude capital account that has intra-period contributions or withdrawals
         # (timings that are at the beginning of the evaluation period)
         exclusion_df = period_data[
             (period_data["start_date"] > start_period_dt + pd.Timedelta(days=1))
             & (
-                    (abs(period_data["withdrawal_bop"]) >= 1000)
-                    | (abs(period_data["contribution"]) >= 1000)
+                (abs(period_data["withdrawal_bop"]) >= 1000)
+                | (abs(period_data["contribution"]) >= 1000)
             )
-            ]
+        ]
         excluded_investors = exclusion_df["investor_description"].unique()
         period_data = period_data[
             ~period_data["investor_description"].isin(excluded_investors)
@@ -143,9 +150,9 @@ cumulative_returns_df = cumulative_returns_df.drop(columns=["relevant_returns"])
 # Calculate 'Calculated_Starting_Balance'
 def calculate_starting_balance(row):
     mask = (
-            (df["start_date"] == row["start_date"] + pd.Timedelta(days=1))
-            & (df["investor_description"] == row["investor_name"])
-            & (df["pool_description"] == row["pool_name"])
+        (df["start_date"] == row["start_date"] + pd.Timedelta(days=1))
+        & (df["investor_description"] == row["investor_name"])
+        & (df["pool_description"] == row["pool_name"])
     )
     starting_balance = df.loc[mask, "revised_beginning_cap_balance"]
     if starting_balance.empty:
@@ -162,9 +169,9 @@ cumulative_returns_df["calculated_starting_balance"] = cumulative_returns_df.app
 # Calculate 'Calculated_Ending_Balance'
 def calculate_ending_balance(row):
     mask = (
-            (df["end_date"] == row["end_date"])
-            & (df["investor_description"] == row["investor_name"])
-            & (df["pool_description"] == row["pool_name"])
+        (df["end_date"] == row["end_date"])
+        & (df["investor_description"] == row["investor_name"])
+        & (df["pool_description"] == row["pool_name"])
     )
     ending_balance_df = df.loc[mask, "revised_ending_cap_acct_balance"]
     if ending_balance_df.empty:
@@ -202,23 +209,23 @@ df_grouped["start_date"] = df_grouped["start_date"].dt.strftime("%Y-%m-%d")
 df_grouped["end_date"] = df_grouped["end_date"].dt.strftime("%Y-%m-%d")
 
 df_grouped["annualized_returns_360"] = (
-        (
-                df_grouped["calculated_ending_balance"]
-                - df_grouped["calculated_starting_balance"]
-        )
-        / df_grouped["calculated_starting_balance"]
-        * 360
-        / df_grouped["day_count"]
+    (
+        df_grouped["calculated_ending_balance"]
+        - df_grouped["calculated_starting_balance"]
+    )
+    / df_grouped["calculated_starting_balance"]
+    * 360
+    / df_grouped["day_count"]
 ).round(4)
 
 df_grouped["annualized_returns_365"] = (
-        (
-                df_grouped["calculated_ending_balance"]
-                - df_grouped["calculated_starting_balance"]
-        )
-        / df_grouped["calculated_starting_balance"]
-        * 365
-        / df_grouped["day_count"]
+    (
+        df_grouped["calculated_ending_balance"]
+        - df_grouped["calculated_starting_balance"]
+    )
+    / df_grouped["calculated_starting_balance"]
+    * 365
+    / df_grouped["day_count"]
 ).round(4)
 
 # file_path = get_file_path(
@@ -227,9 +234,9 @@ df_grouped["annualized_returns_365"] = (
 # df_grouped.to_excel(file_path, engine="openpyxl")
 
 df_grouped["return_id"] = (
-        df_grouped["pool_name"].astype(str)
-        + df_grouped["start_date"].astype(str)
-        + df_grouped["end_date"].astype(str)
+    df_grouped["pool_name"].astype(str)
+    + df_grouped["start_date"].astype(str)
+    + df_grouped["end_date"].astype(str)
 ).apply(hash_string)
 
 ## TABLE UPLOAD ##

@@ -22,10 +22,10 @@ def create_table_with_schema(tb_name):
     table = Table(
         tb_name,
         metadata,
-        Column("Series_ID", String, primary_key=True),
-        Column("Series_name", String),
-        Column("Start_date", Date, primary_key=True),
-        Column("End_date", Date),
+        Column("series_id", String, primary_key=True),
+        Column("series_name", String),
+        Column("start_date", Date, primary_key=True),
+        Column("end_date", Date),
         extend_existing=True,
     )
     metadata.create_all(engine)
@@ -39,10 +39,10 @@ def upsert_data(tb_name, df):
                 for _, row in df.iterrows():
                     upsert_sql = text(
                         f"""
-                        INSERT INTO {tb_name} ("Series_ID","Series_name", "Start_date", "End_date")
-                        VALUES (:Series_ID, :Series_name, :Start_date, :End_date)
-                        ON CONFLICT ("Series_ID", "Start_date")
-                        DO UPDATE SET "Series_name" = EXCLUDED."Series_name", "End_date" = EXCLUDED."End_date";
+                        INSERT INTO {tb_name} ("series_id","series_name", "start_date", "end_date")
+                        VALUES (:series_id, :series_name, :start_date, :end_date)
+                        ON CONFLICT ("series_id", "start_date")
+                        DO UPDATE SET "series_name" = EXCLUDED."series_name", "end_date" = EXCLUDED."end_date";
                         """
                     )
                     conn.execute(
@@ -67,18 +67,18 @@ data = []
 for i in range(0, df.shape[1], 2):
     series_name = df.columns[i].strip()
     periods_df = df.iloc[:, i : i + 2].dropna()
-    periods_df.columns = ["Start_date", "End_date"]
+    periods_df.columns = ["start_date", "end_date"]
     for _, row in periods_df.iterrows():
         data.append(
             {
-                "Series_name": series_name,
-                "Start_date": row["Start_date"],
-                "End_date": row["End_date"],
+                "series_name": series_name,
+                "start_date": row["start_date"],
+                "end_date": row["end_date"],
             }
         )
 reverse_lucid_series = {v: k for k, v in lucid_series.items()}
 
 transformed_df = pd.DataFrame(data)
-transformed_df["Series_ID"] = transformed_df["Series_name"].map(reverse_lucid_series)
+transformed_df["series_id"] = transformed_df["series_name"].map(reverse_lucid_series)
 
 upsert_data(tb_name, transformed_df)
