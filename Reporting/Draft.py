@@ -1,4 +1,4 @@
-import pandas as pd
+from datetime import datetime
 
 from Utils.database_utils import read_table_from_db, get_database_engine
 
@@ -39,31 +39,123 @@ df_benchmark_comparison = read_table_from_db(benchmark_comparison_table_name, db
 df_historical_returns_plot = read_table_from_db(historical_returns_table_name, db_type)
 
 
-def get_historical_returns(df_historical_returns, end_date, offset):
-    # Convert 'end_date' to datetime
-    end_date = pd.to_datetime(end_date)
+def calculate_oc_metrics(data):
+    global cash_balance
 
-    # Filter the DataFrame based on 'end_date'
-    filtered_df = df_historical_returns[df_historical_returns["end_date"] <= end_date]
+    total_investment = data["investment_amount"].sum() + cash_balance
 
-    # Sort the filtered DataFrame by 'end_date' in descending order
-    sorted_df = filtered_df.sort_values("end_date", ascending=False)
+    def get_values(rating):
+        if rating in data["rating_buckets"].values:
+            row = data[data["rating_buckets"] == rating].iloc[0]
+            return row["collateral_mv_allocated"], row["investment_amount"]
+        return 0, 0
 
-    # Take the last 'offset' number of rows
-    result_df = sorted_df.head(offset)
+    col_mv_allocated_aaa, inv_aaa = get_values("AAA")
+    col_mv_allocated_aa, inv_aa = get_values("AA")
+    col_mv_allocated_a, inv_a = get_values("A")
+    col_mv_allocated_bbb, inv_bbb = get_values("BBB")
+    col_mv_allocated_usg, inv_usg = get_values("USG")
+    col_mv_allocated_usgcmo, inv_usgcmo = get_values("USGCMO")
 
-    # Format the result as a string
-    result_str = " ".join(
-        [
-            f"({row['end_date'].strftime('%Y-%m-%d')}, {row['annualized_returns_365'] * 100:.2f})"
-            for _, row in result_df.iterrows()
-        ]
+    oc_total = data["collateral_mv_allocated"].sum() / data["investment_amount"].sum()
+
+    oc_usg_aaa = (
+        (col_mv_allocated_aaa + col_mv_allocated_usg + col_mv_allocated_usgcmo)
+        / (inv_aaa + inv_usg + inv_usgcmo)
+        if (inv_aaa + inv_usg + inv_usgcmo) != 0
+        else 0
+    )
+    oc_aa_a = (
+        (col_mv_allocated_aa + col_mv_allocated_a) / (inv_aa + inv_a)
+        if (inv_aa + inv_a) != 0
+        else 0
+    )
+    oc_bbb = col_mv_allocated_bbb / inv_bbb if inv_bbb != 0 else 0
+    oc_tbills = 0
+
+    aloc_usg_aaa = (inv_aaa + inv_usg + inv_usgcmo) / total_investment
+    aloc_aa_a = (inv_aa + inv_a) / total_investment
+    aloc_bbb = inv_bbb / total_investment
+    aloc_tbills = cash_balance / total_investment
+
+    return (
+        oc_total,
+        oc_usg_aaa,
+        oc_aa_a,
+        oc_bbb,
+        oc_tbills,
+        aloc_usg_aaa,
+        aloc_aa_a,
+        aloc_bbb,
+        aloc_tbills,
     )
 
-    return result_str
+
+def form_as_percent(val, rnd):
+    try:
+        if float(val) == 0:
+            return "-"
+        return ("{:." + str(rnd) + "f}").format(100 * val) + "\\%"
+    except:
+        return "n/a"
 
 
-curr_end = "2024-04-18"
-plot_data = get_historical_returns(df_historical_returns_plot, curr_end, 12)
+reporting_series = [
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    # "PRIME-Q10",
+    # "PRIME-Q36",
+    # "PRIME-QX0",
+    "USGFD-M00",
+]
 
-print(plot_data)
+current_date = datetime.strptime("2024-06-12", "%Y-%m-%d")
+report_date_formal = current_date.strftime("%B %d, %Y")
+report_date = current_date.strftime("%Y-%m-%d")
+
+for reporting_series_id in reporting_series:
+    fund_attribute_condition = df_attributes["security_id"] == reporting_series_id
+    print(reporting_series_id)
+    df_attributes_tmp = df_attributes[fund_attribute_condition]
+    fund_name = df_attributes_tmp["fund_name"].iloc[0]
+    series_name = df_attributes_tmp["series_name"].iloc[0]
+
+    cash_balance_condition = (
+        (df_cash_balance["Fund"] == fund_name.upper())
+        & (df_cash_balance["Series"] == series_name.upper().replace(" ", ""))
+        & (df_cash_balance["Balance_date"] == report_date)
+        & (df_cash_balance["Account"] == "MAIN")
+    )
+
+    df_cash_balance_tmp = df_cash_balance[cash_balance_condition]
+    cash_balance = df_cash_balance_tmp["Sweep_Balance"].iloc[0]
+
+    oc_rate_condition = (
+        (df_oc_rates["fund"] == fund_name.upper())
+        & (df_oc_rates["series"] == series_name.upper().replace(" ", ""))
+        & (df_oc_rates["report_date"] == report_date)
+    )
+    df_oc_rates_tmp = df_oc_rates[oc_rate_condition]
+
+    (
+        oc_total,
+        oc_usg_aaa,
+        oc_aa_a,
+        oc_bbb,
+        oc_tbills,
+        aloc_usg_aaa,
+        aloc_aa_a,
+        aloc_bbb,
+        aloc_tbills,
+    ) = calculate_oc_metrics(df_oc_rates_tmp)
+
+    print(f"oc_total = {form_as_percent(oc_total,2)}")
+    print(f"oc_usg_aaa = {form_as_percent(oc_usg_aaa,2)}")
+    print(f"oc_aa_a = {form_as_percent(oc_aa_a,2)}")
+    print(f"oc_bbb = {form_as_percent(oc_bbb,2)}")
+    print(f"oc_tbills = {form_as_percent(oc_tbills,2)}")
+    print(f"aloc_usg_aaa = {form_as_percent(aloc_usg_aaa,2)}")
+    print(f"aloc_aa_a = {form_as_percent(aloc_aa_a,2)}")
+    print(f"aloc_bbb = {form_as_percent(aloc_bbb,2)}")
+    print(f"aloc_tbills = {form_as_percent(aloc_tbills,2)}")

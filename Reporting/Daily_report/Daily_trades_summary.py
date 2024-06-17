@@ -13,24 +13,24 @@ from Utils.SQL_queries import (
 from Utils.database_utils import execute_sql_query
 
 # Custom run date
-# valdate = "2024-05-22"
+valdate = "2024-05-22"
 
-# # Get the current date and format it
-current_date = datetime.now().strftime("%Y-%m-%d")
-valdate = current_date
+# # # Get the current date and format it
+# current_date = datetime.now().strftime("%Y-%m-%d")
+# valdate = current_date
 
 recipients = [
     "tony.hoang@lucidma.com",
-    "Heather.Campbell@lucidma.com",
-    "operations@lucidma.com",
+    # "Heather.Campbell@lucidma.com",
+    # "operations@lucidma.com",
 ]
 
 recipients_mmt = [
     "tony.hoang@lucidma.com",
-    "Heather.Campbell@lucidma.com",
-    "martin.stpierre@lucidma.com",
-    "mattias.almers@lucidma.com",
-    "david.carlson@lucidma.com",
+    # "Heather.Campbell@lucidma.com",
+    # "martin.stpierre@lucidma.com",
+    # "mattias.almers@lucidma.com",
+    # "david.carlson@lucidma.com",
 ]
 
 df_helix_current_trade = execute_sql_query(
@@ -246,38 +246,85 @@ def send_daily_trade_report(
         df_helix_as_of_trade["Market Value"].astype(float).apply(lambda x: f"{x:,.2f}")
     )
 
-    body = f"""
-    <html>
-    <head>
-        <style>
-            table {{
-                border-collapse: collapse;
-                width: 100%;
-            }}
-            th, td {{
-                text-align: left;
-                padding: 8px;
-                border-bottom: 1px solid #ddd;
-            }}
-            th {{
-                background-color: #f2f2f2;
-            }}
-        </style>
-    </head>
-    <body>
-        <h2>Daily Trade Report - {report_date}</h2>
-        <h3>Helix trades</h3>
-        <h4>All current trades in Helix for {type} that were entered as of {report_date}:</h4>
-        {format_dataframe_as_html(df_helix_trade)}
-        <h4>As of trades in Helix:</h4>
-        {format_dataframe_as_html(df_helix_as_of_trade)}
-        <h3>Cash trades for {type}</h3>
-        {format_dataframe_as_html(df_cash_trade)}
-        <p>{failed_trades_message}</p>
-    </body>
-    </html>
-    """
-
+    if type == "Prime/USG":
+        # Split out into Prime and USG:
+        df_helix_trade_prime = df_helix_trade[df_helix_trade["Fund"] == "Prime"]
+        df_helix_trade_usg = df_helix_trade[df_helix_trade["Fund"] == "USG"]
+        df_helix_as_of_trade_prime = df_helix_as_of_trade[
+            df_helix_as_of_trade["Fund"] == "Prime"
+        ]
+        df_helix_as_of_trade_usg = df_helix_as_of_trade[
+            df_helix_as_of_trade["Fund"] == "USG"
+        ]
+        body = f"""
+        <html>
+        <head>
+            <style>
+                table {{
+                    border-collapse: collapse;
+                    width: 100%;
+                }}
+                th, td {{
+                    text-align: left;
+                    padding: 8px;
+                    border-bottom: 1px solid #ddd;
+                }}
+                th {{
+                    background-color: #f2f2f2;
+                }}
+            </style>
+        </head>
+        <body>
+            <h2>Daily Trade Report - {report_date}</h2>
+            <h3>Helix trades</h3>
+            <h4>All current trades in Helix for {type} that were entered as of {report_date}:</h4>
+            <h4>Prime trades:</h4>
+            {format_dataframe_as_html(df_helix_trade_prime)}
+            <h4>USG trades:</h4>
+            {format_dataframe_as_html(df_helix_trade_usg)}
+            <h4>As of trades in Helix:</h4>
+            <h4>Prime trades:</h4>
+            {format_dataframe_as_html(df_helix_as_of_trade_prime)}
+            <h4>USG trades:</h4>
+            {format_dataframe_as_html(df_helix_as_of_trade_usg)}
+            <h3>Cash trades for {type}</h3>
+            {format_dataframe_as_html(df_cash_trade)}
+            <p>{failed_trades_message}</p>
+        </body>
+        </html>
+        """
+    else:
+        body = f"""
+        <html>
+        <head>
+            <style>
+                table {{
+                    border-collapse: collapse;
+                    width: 100%;
+                }}
+                th, td {{
+                    text-align: left;
+                    padding: 8px;
+                    border-bottom: 1px solid #ddd;
+                }}
+                th {{
+                    background-color: #f2f2f2;
+                }}
+            </style>
+        </head>
+        <body>
+            <h2>Daily Trade Report - {report_date}</h2>
+            <h3>Helix trades</h3>
+            <h4>All current trades in Helix for {type} that were entered as of {report_date}:</h4>
+            {format_dataframe_as_html(df_helix_trade)}
+            <h4>As of trades in Helix:</h4>
+            {format_dataframe_as_html(df_helix_as_of_trade)}
+            <h3>Cash trades for {type}</h3>
+            {format_dataframe_as_html(df_cash_trade)}
+            <p>{failed_trades_message}</p>
+        </body>
+        </html>
+        """
     subject = f"Daily Trade Report for {type} - {valdate}"
     recipients = email_recipients
     send_email(subject, body, recipients)
