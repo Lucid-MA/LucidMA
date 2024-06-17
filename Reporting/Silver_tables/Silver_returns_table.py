@@ -78,12 +78,12 @@ df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
 for pool in df["pool_description"].unique():
     pool_data = df[df["pool_description"] == pool]
     series_id = cusip_mapping[pool]
-    df_roll_schedule = df_roll_schedule[df_roll_schedule["series_id"] == series_id]
-    df_roll_schedule = df_roll_schedule.sort_values(
+    df_roll_schedule_temp = df_roll_schedule[df_roll_schedule["series_id"] == series_id]
+    df_roll_schedule_temp = df_roll_schedule_temp.sort_values(
         by=["start_date", "end_date"]
     ).reset_index(drop=True)
     # For each date range, calculate the cumulative return
-    for index, row in df_roll_schedule.iterrows():
+    for index, row in df_roll_schedule_temp.iterrows():
         start_period = row["start_date"].strftime("%Y-%m-%d")
         end_period = row["end_date"].strftime("%Y-%m-%d")
         start_period_dt = datetime.strptime(start_period, "%Y-%m-%d")
@@ -142,7 +142,7 @@ for pool in df["pool_description"].unique():
                         "calculated_returns": calculated_returns,
                     }
                 )
-                # Append the data to the result DataFrame
+# Append the data to the result DataFrame
 cumulative_returns_df = pd.DataFrame(data_to_append)
 
 # Drop the 'Relevant returns' column from df_result

@@ -162,6 +162,10 @@ investor_mapping = {
     "155696001": "Children's Health System of Texas",
     "28966001": "Children's Medical Center Foundation",
     "167488001": "USG Assets Series M-9",
+    "170295001": "Prime Notes Series A1-2",
+    "153896001": "Mozilla Corporation",
+    "172035001": "TRIPARTNERS LLC",
+    "172035002": "TRIPARTNERS LLC",
 }
 
 period_mapping = {
