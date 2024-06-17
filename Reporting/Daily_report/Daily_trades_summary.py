@@ -13,24 +13,24 @@ from Utils.SQL_queries import (
 from Utils.database_utils import execute_sql_query
 
 # Custom run date
-valdate = "2024-06-10"
+# valdate = "2024-06-10"
 
-# # # Get the current date and format it
-# current_date = datetime.now().strftime("%Y-%m-%d")
-# valdate = current_date
+# # Get the current date and format it
+current_date = datetime.now().strftime("%Y-%m-%d")
+valdate = current_date
 
 recipients = [
     "tony.hoang@lucidma.com",
-    # "Heather.Campbell@lucidma.com",
-    # "operations@lucidma.com",
+    "Heather.Campbell@lucidma.com",
+    "operations@lucidma.com",
 ]
 
 recipients_mmt = [
     "tony.hoang@lucidma.com",
-    # "Heather.Campbell@lucidma.com",
-    # "martin.stpierre@lucidma.com",
-    # "mattias.almers@lucidma.com",
-    # "david.carlson@lucidma.com",
+    "Heather.Campbell@lucidma.com",
+    "martin.stpierre@lucidma.com",
+    "mattias.almers@lucidma.com",
+    "david.carlson@lucidma.com",
 ]
 
 
