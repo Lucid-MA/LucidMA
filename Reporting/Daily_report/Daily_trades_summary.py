@@ -13,7 +13,7 @@ from Utils.SQL_queries import (
 from Utils.database_utils import execute_sql_query
 
 # Custom run date
-valdate = "2024-05-22"
+valdate = "2024-06-10"
 
 # # # Get the current date and format it
 # current_date = datetime.now().strftime("%Y-%m-%d")
@@ -33,92 +33,59 @@ recipients_mmt = [
     # "david.carlson@lucidma.com",
 ]
 
-df_helix_current_trade = execute_sql_query(
-    current_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,)
-)
 
-df_helix_failed_to_transmitted_trade = df_helix_current_trade[
-    df_helix_current_trade["Status"] == 15
-]
+def get_helix_trades(query, params):
+    df_helix_trade = execute_sql_query(query, "sql_server_1", params=params)
+    helix_cols = [
+        "Fund",
+        "Series",
+        "Trade ID",
+        "Issue Description",
+        "TradeType",
+        "Trade Date",
+        "Start Date",
+        "End Date",
+        "Money",
+        "Counterparty",
+        "Orig. Rate",
+        "Orig. Price",
+        "HairCut",
+        "Spread",
+        "BondID",
+        "Status",
+        "Par/Quantity",
+        "Market Value",
+        "Comments",
+        "User",
+        "Entry Time",
+    ]
+    df_helix_trade = df_helix_trade[helix_cols]
+    return df_helix_trade
 
-helix_cols = [
-    "Fund",
-    "Series",
-    "Trade ID",
-    "Issue Description",
-    "TradeType",
-    "Trade Date",
-    "Start Date",
-    "End Date",
-    "Money",
-    "Counterparty",
-    "Orig. Rate",
-    "Orig. Price",
-    "HairCut",
-    "Spread",
-    "BondID",
-    "Status",
-    "Par/Quantity",
-    "Market Value",
-    "Comments",
-    "User",
-    "Entry Time",
-]
 
-df_helix_current_trade = df_helix_current_trade[helix_cols]
-df_helix_failed_to_transmitted_trade = df_helix_failed_to_transmitted_trade[helix_cols]
-
-df_helix_as_of_trade = execute_sql_query(
-    as_of_trade_daily_report_helix_trade_query, "sql_server_1", params=(valdate,)
-)
-
-df_helix_as_of_trade = df_helix_as_of_trade[helix_cols]
-
-nexen_path = get_file_path(
-    f"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/CashRecon_{datetime.strptime(valdate, '%Y-%m-%d').strftime('%d%m%Y')}.xls"
-)
-df_cash_trade = pd.read_excel(nexen_path)
-cash_cols = [
-    "cash_account_number",
-    "cash_account_name",
-    "cash_value_date",
-    "local_amount",
-    "status",
-    "transaction_type_name",
-    "detail_tran_type_description",
-]
-
-cleaned_columns = [
-    col.rstrip("\n").replace(" ", "_").lower() for col in df_cash_trade.columns
-]
-
-df_cash_trade.columns = cleaned_columns
-
-mmt_lcmp_accounts = [
-    4950878400,
-    4950878401,
-    5402009780,
-    5402009781,
-    5402008400,
-    5402008401,
-    5402138400,
-    5402138401,
-    5407198400,
-    5407198401,
-    5407308400,
-    5407308401,
-    5407558400,
-    5407558401,
-    5407568400,
-    5407568401,
-    5407608400,
-    5407608401,
-]
-
-df_cash_trade = df_cash_trade[cash_cols]
-df_cash_trade = df_cash_trade[
-    df_cash_trade["transaction_type_name"].isin(["CASH DEPOSIT", "CASH WITHDRAW"])
-]
+def get_cash_trades(valdate):
+    nexen_path = get_file_path(
+        f"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/CashRecon_{datetime.strptime(valdate, '%Y-%m-%d').strftime('%d%m%Y')}.xls"
+    )
+    df_cash_trade = pd.read_excel(nexen_path)
+    cash_cols = [
+        "cash_account_number",
+        "cash_account_name",
+        "cash_value_date",
+        "local_amount",
+        "status",
+        "transaction_type_name",
+        "detail_tran_type_description",
+    ]
+    cleaned_columns = [
+        col.rstrip("\n").replace(" ", "_").lower() for col in df_cash_trade.columns
+    ]
+    df_cash_trade.columns = cleaned_columns
+    df_cash_trade = df_cash_trade[cash_cols]
+    df_cash_trade = df_cash_trade[
+        df_cash_trade["transaction_type_name"].isin(["CASH DEPOSIT", "CASH WITHDRAW"])
+    ]
+    return df_cash_trade
 
 
 def authenticate_and_get_token():
@@ -219,43 +186,45 @@ def send_daily_trade_report(
             df_cash_trade["cash_account_number"].isin(mmt_lcmp_accounts)
         ]
         email_recipients = recipients_mmt
-
-    # Ensure df_helix_trade and df_helix_as_of_trade are not views of other DataFrames
     df_helix_trade = df_helix_trade.copy()
     df_helix_as_of_trade = df_helix_as_of_trade.copy()
-
-    # Explicitly cast columns to float64 before applying formatting
-    df_helix_trade["Trade ID"] = df_helix_trade["Trade ID"].astype(int)
-    df_helix_trade["Money"] = (
-        df_helix_trade["Money"].astype(float).apply(lambda x: f"{x:,.2f}")
-    )
-    df_helix_trade["Par/Quantity"] = (
-        df_helix_trade["Par/Quantity"].astype(float).apply(lambda x: f"{x:,.2f}")
-    )
-    df_helix_trade["Market Value"] = (
-        df_helix_trade["Market Value"].astype(float).apply(lambda x: f"{x:,.2f}")
-    )
-
-    df_helix_as_of_trade["Money"] = (
-        df_helix_as_of_trade["Money"].astype(float).apply(lambda x: f"{x:,.2f}")
-    )
-    df_helix_as_of_trade["Par/Quantity"] = (
-        df_helix_as_of_trade["Par/Quantity"].astype(float).apply(lambda x: f"{x:,.2f}")
-    )
-    df_helix_as_of_trade["Market Value"] = (
-        df_helix_as_of_trade["Market Value"].astype(float).apply(lambda x: f"{x:,.2f}")
-    )
+    # Format the numeric columns
+    numeric_cols = ["Money", "Par/Quantity", "Market Value"]
+    for col in numeric_cols:
+        df_helix_trade[col] = pd.to_numeric(df_helix_trade[col], errors="coerce").apply(
+            lambda x: f"{x:,.2f}"
+        )
+        df_helix_as_of_trade[col] = pd.to_numeric(
+            df_helix_as_of_trade[col], errors="coerce"
+        ).apply(lambda x: f"{x:,.2f}")
 
     if type == "Prime/USG":
+        # Custom sorting key function
+        def sort_key(series):
+            return (series == "Master").astype(int)
+
         # Split out into Prime and USG:
         df_helix_trade_prime = df_helix_trade[df_helix_trade["Fund"] == "Prime"]
+        df_helix_trade_prime = df_helix_trade_prime.sort_values(
+            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+        )
         df_helix_trade_usg = df_helix_trade[df_helix_trade["Fund"] == "USG"]
+        df_helix_trade_usg = df_helix_trade_usg.sort_values(
+            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+        )
         df_helix_as_of_trade_prime = df_helix_as_of_trade[
             df_helix_as_of_trade["Fund"] == "Prime"
         ]
+        df_helix_as_of_trade_prime = df_helix_as_of_trade_prime.sort_values(
+            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+        )
         df_helix_as_of_trade_usg = df_helix_as_of_trade[
             df_helix_as_of_trade["Fund"] == "USG"
         ]
+        df_helix_as_of_trade_usg = df_helix_as_of_trade_usg.sort_values(
+            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+        )
+
         body = f"""
         <html>
         <head>
@@ -272,20 +241,26 @@ def send_daily_trade_report(
                 th {{
                     background-color: #f2f2f2;
                 }}
+                .prime-trades {{
+                    color: blue;
+                }}
+                .usg-trades {{
+                    color: blue;
+                }}
             </style>
         </head>
         <body>
             <h2>Daily Trade Report - {report_date}</h2>
             <h3>Helix trades</h3>
             <h4>All current trades in Helix for {type} that were entered as of {report_date}:</h4>
-            <h4>Prime trades:</h4>
+            <h4 class="prime-trades">Prime trades:</h4>
             {format_dataframe_as_html(df_helix_trade_prime)}
-            <h4>USG trades:</h4>
+            <h4 class="usg-trades">USG trades:</h4>
             {format_dataframe_as_html(df_helix_trade_usg)}
             <h4>As of trades in Helix:</h4>
-            <h4>Prime trades:</h4>
+            <h4 class="prime-trades">Prime trades:</h4>
             {format_dataframe_as_html(df_helix_as_of_trade_prime)}
-            <h4>USG trades:</h4>
+            <h4 class="usg-trades">USG trades:</h4>
             {format_dataframe_as_html(df_helix_as_of_trade_usg)}
             <h3>Cash trades for {type}</h3>
             {format_dataframe_as_html(df_cash_trade)}
@@ -338,6 +313,41 @@ def send_fail_to_transmitted_email(valdate, df_helix_failed_to_transmitted_trade
         recipients = recipients
         send_email(subject, body, recipients)
 
+
+# Get Helix trades
+df_helix_current_trade = get_helix_trades(
+    current_trade_daily_report_helix_trade_query, (valdate,)
+)
+df_helix_as_of_trade = get_helix_trades(
+    as_of_trade_daily_report_helix_trade_query, (valdate,)
+)
+df_helix_failed_to_transmitted_trade = df_helix_current_trade[
+    df_helix_current_trade["Status"] == 15
+]
+
+# Get cash trades
+df_cash_trade = get_cash_trades(valdate)
+
+mmt_lcmp_accounts = [
+    4950878400,
+    4950878401,
+    5402009780,
+    5402009781,
+    5402008400,
+    5402008401,
+    5402138400,
+    5402138401,
+    5407198400,
+    5407198401,
+    5407308400,
+    5407308401,
+    5407558400,
+    5407558401,
+    5407568400,
+    5407568401,
+    5407608400,
+    5407608401,
+]
 
 # Example usage
 send_daily_trade_report(
