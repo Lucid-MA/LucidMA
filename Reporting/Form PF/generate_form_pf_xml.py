@@ -18,23 +18,14 @@ ALL OTHER PARAMETERS TO INITIALIZE UP TOP (INCLUDING init_filing() call near top
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-import win32com.client as win32
 from lxml import etree
-
-from Utils.Common import get_file_path
-
-# CONSTANTS
-path_prefix = get_file_path("S:/Users/THoang/Tech/LucidMA/")
 
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2023-12-29"  # quarter-end here as YYYY-MM-DD string
 DOING_HEDGE = True  # if y/e and doing MMT and other non liq-funds
-WORKBOOK_PATH = get_file_path(
-    path_prefix + "Form PF working files/2024/01.15.24/q63_book.xlsx"
-)
-XML_OUTPUT_PATH = get_file_path(
-    path_prefix
-    + "Form PF working files/2024/01.15.24/lucid_form_pf_"
+WORKBOOK_PATH = "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\q63_book.xlsx"
+XML_OUTPUT_PATH = (
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\lucid_form_pf_"
     + datetime.now().strftime("%Y%m%d_%H_%M_%S")
     + ".xml"
 )
@@ -79,18 +70,13 @@ SECTION_3_SHEETS2 = [
 # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
-    path_prefix
-    + "Form PF working files/2024/01.15.24/2023_10_11_12_Prime_Custom1.xlsx",
-    path_prefix
-    + "Form PF working files/2024/01.15.24/2023_10_11_12_Prime_Monthly.xlsx",
-    path_prefix
-    + "Form PF working files/2024/01.15.24/2023_10_11_12_Prime_MonthlyIG.xlsx",
-    path_prefix
-    + "Form PF working files/2024/01.15.24/2023_10_11_12_Prime_Quarterly1.xlsx",
-    path_prefix
-    + "Form PF working files/2024/01.15.24/2023_10_11_12_Prime_QuarterlyX.xlsx",
-    path_prefix + "Form PF working files/2024/01.15.24/2023_10_11_12_Prime_Q364.xlsx",
-    path_prefix + "Form PF working files/2024/01.15.24/2023_10_11_12_USG_Monthly.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Custom1.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Monthly.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_MonthlyIG.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Quarterly1.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_QuarterlyX.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Q364.xlsx",
+    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_USG_Monthly.xlsx",
 ]
 
 
@@ -114,12 +100,23 @@ if DOING_HEDGE:
 NA = -2146826246
 
 root = ET.Element("PFXMLFiling")
+# excel = win32.gencache.EnsureDispatch('Excel.Application')
+
+import win32com.client as win32
+from win32com.client import gencache
+
+# Use EnsureDispatch to create an Excel instance
+# Generate the module explicitly
+gencache.EnsureModule("{00020813-0000-0000-C000-000000000046}", 0, 1, 9)
 excel = win32.gencache.EnsureDispatch("Excel.Application")
 
 
 def main():
     print("Launching Excel...")
+    # excel = win32.gencache.EnsureDispatch('Excel.Application')
+    # Use EnsureDispatch to create an Excel instance
     excel = win32.gencache.EnsureDispatch("Excel.Application")
+
     excel.Interactive = False
     wb = open_workbook(excel, WORKBOOK_PATH)
     print("Preparing filing...")
