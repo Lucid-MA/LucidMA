@@ -63,6 +63,39 @@ report_names_dict = {
     "USGFD-M00": "USGFund M",
 }
 
+############## MANUAL INPUT##############
+# TODO: replace this with data from silver_returns_by_series
+historical_returns_temp = {
+    "PRIME-C10": [0.0585, 0.0597],
+    "PRIME-M00": [0.0585, 0.0597],
+    "PRIME-MIG": [0.0595, 0.0608],
+    # "PRIME-Q10",
+    # "PRIME-Q36",
+    # "PRIME-QX0",
+    "USGFD-M00": [0.0555, 0.0563],
+}
+
+# TODO: replace this with data from data from helix
+fund_size_dict = {
+    "PRIME": 3149816720.51731,
+    "USG": 123255192.977195,
+}
+# TODO: replace this with data from data from helix
+series_size_dict = {
+    "PRIME-C10": 116397204.440234,
+    "PRIME-M00": 771769755.296813,
+    "PRIME-MIG": 685176169.9099,
+    # "PRIME-Q10",
+    # "PRIME-Q36",
+    # "PRIME-QX0",
+    "USGFD-M00": 123255192.977195,
+}
+# TODO: replace this with data from data from helix
+lucid_aum = 4765143799.49
+daycount = 360
+interval_tuple = (3, 12)  # quarterly series: (6,12) but not important
+#########################################
+
 ##############################################################################
 ############################## VARIABLES #####################################
 ##############################################################################
@@ -75,24 +108,7 @@ for reporting_series_id in reporting_series:
     reporting_type = reporting_type_dict[reporting_series_id]
     reporting_series_name = lucid_series[reporting_series_id]
     report_name = report_names_dict[reporting_series_id]
-    fund_size_dict = {
-        "PRIME": 3028984664.83682,
-        "USG": 123033585.309436,
-    }
 
-    series_size_dict = {
-        "PRIME-C10": 115872687.431034,
-        "PRIME-M00": 768291953.777484,
-        "PRIME-MIG": 602070267.782659,
-        # "PRIME-Q10",
-        # "PRIME-Q36",
-        # "PRIME-QX0",
-        "USGFD-M00": 123033585.31,
-    }
-
-    lucid_aum = 4650035341.57626
-    daycount = 360
-    interval_tuple = (3, 12)  # quarterly series: (6,12) but not important
     ##############################################################################
 
     # Table names
@@ -267,10 +283,17 @@ for reporting_series_id in reporting_series:
     cash_balance = df_cash_balance["Sweep_Balance"].iloc[0]
 
     ############################## RETURN COMPARISON #####################################
-    tbill_data = [0.0529, 0.0530, 0.0518]
-    crane_data = [0.0512, 0.0516, 0.0510]
-    fhlb_data = [0, 0, 0]
 
+    ############## MANUAL INPUT##############
+    tbill_data = [0.0534, 0.0538, 0.0545]
+    tbill_data_prime = [0.0527, 0.0531, 0.0538]
+    crane_data = [0.0511, 0.0513, 0.0522]
+    fhlb_data = [0, 0, 0]
+    sofr_data = [0.0532, 0.0535, 0.0544]
+    cp_data = [0.0532, 0.0534, 0.0543]
+    #########################################
+
+    # TODO: Need to replace this with benchmark table
     benchmark_comparison_condition = (
         df_benchmark_comparison["series_id"] == reporting_series_id
     ) & (df_benchmark_comparison["start_date"] == curr_start)
@@ -302,24 +325,25 @@ for reporting_series_id in reporting_series:
     if reporting_series_id == "USGFD-M00":
         r_a = tbill_data
     else:
-        r_a = []
-        r_a.append(round(df_benchmark_comparison_curr[benchmark_to_use[0]].iloc[0], 4))
-        r_a.append(
-            round(
-                df_benchmark_comparison_prev[benchmark_to_use[0] + "_3m_return"].iloc[
-                    0
-                ],
-                4,
-            )
-        )
-        r_a.append(
-            round(
-                df_benchmark_comparison_prev[benchmark_to_use[0] + "_12m_return"].iloc[
-                    0
-                ],
-                4,
-            )
-        )
+        r_a = sofr_data
+    #     r_a = []
+    #     r_a.append(round(df_benchmark_comparison_curr[benchmark_to_use[0]].iloc[0], 4))
+    #     r_a.append(
+    #         round(
+    #             df_benchmark_comparison_prev[benchmark_to_use[0] + "_3m_return"].iloc[
+    #                 0
+    #             ],
+    #             4,
+    #         )
+    #     )
+    #     r_a.append(
+    #         round(
+    #             df_benchmark_comparison_prev[benchmark_to_use[0] + "_12m_return"].iloc[
+    #                 0
+    #             ],
+    #             4,
+    #         )
+    #     )
     r_a[1] = form_as_percent(r_a[1], 2)
     r_a[2] = form_as_percent(r_a[2], 2)
     # Crane Govt MM Index
@@ -327,24 +351,25 @@ for reporting_series_id in reporting_series:
     if reporting_series_id == "USGFD-M00":
         r_b = crane_data
     else:
-        r_b = []
-        r_b.append(round(df_benchmark_comparison_curr[benchmark_to_use[1]].iloc[0], 4))
-        r_b.append(
-            round(
-                df_benchmark_comparison_prev[benchmark_to_use[1] + "_3m_return"].iloc[
-                    0
-                ],
-                4,
-            )
-        )
-        r_b.append(
-            round(
-                df_benchmark_comparison_prev[benchmark_to_use[1] + "_12m_return"].iloc[
-                    0
-                ],
-                4,
-            )
-        )
+        r_b = cp_data
+        # r_b = []
+        # r_b.append(round(df_benchmark_comparison_curr[benchmark_to_use[1]].iloc[0], 4))
+        # r_b.append(
+        #     round(
+        #         df_benchmark_comparison_prev[benchmark_to_use[1] + "_3m_return"].iloc[
+        #             0
+        #         ],
+        #         4,
+        #     )
+        # )
+        # r_b.append(
+        #     round(
+        #         df_benchmark_comparison_prev[benchmark_to_use[1] + "_12m_return"].iloc[
+        #             0
+        #         ],
+        #         4,
+        #     )
+        # )
     r_b[1] = form_as_percent(r_b[1], 2)
     r_b[2] = form_as_percent(r_b[2], 2)
 
@@ -352,12 +377,15 @@ for reporting_series_id in reporting_series:
     if reporting_series_id == "USGFD-M00":
         r_c = fhlb_data
     else:
-        r_c = tbill_data
+        r_c = tbill_data_prime
     r_c[1] = form_as_percent(r_c[1], 2)
     r_c[2] = form_as_percent(r_c[2], 2)
 
-    r_this_1 = form_as_percent(df_benchmark_comparison_prev["3m_return"].iloc[0], 2)
-    r_this_2 = form_as_percent(df_benchmark_comparison_prev["12m_return"].iloc[0], 2)
+    # TODO: replace this with data from silver_returns_by_series_table
+    r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
+    r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
+    # r_this_1 = form_as_percent(df_benchmark_comparison_prev["3m_return"].iloc[0], 2)
+    # r_this_2 = form_as_percent(df_benchmark_comparison_prev["12m_return"].iloc[0], 2)
 
     ## CALCULATE SPREAD
     s_a_0 = bps_spread(prev_return, form_as_percent(r_a[0], 2))
