@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!--The XML file's encoding/header needs to match the above line-->
+<PFXMLFiling xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <FilingType>PF-TRANS</FilingType>
+
+    <PFSection1aItemASignatureFirmAndRelatedPersons>
+        <IndividualName>John Smith</IndividualName>
+        <Signature>/S/ (Signature of John Smith)</Signature>
+        <Title>Director</Title>
+        <EmailAddress>johnsmith@example.com</EmailAddress>
+        <TelephoneNumber>555-555-5555</TelephoneNumber>
+        <SignatureDate>2012-03-03</SignatureDate>
+    </PFSection1aItemASignatureFirmAndRelatedPersons>
+</PFXMLFiling>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:annotation>
+		<xsd:documentation xml:lang="en">
+      ©2024 Financial Industry Regulatory Authority, Inc. (FINRA). All rights reserved. Materials may not be reprinted or republished without the express permission of FINRA. This document contains FINRA Confidential and Proprietary information. FINRA provides this information to firms only for the firms' internal assessment or use of the Batch Filing and Data Download transfer functionality of the PFRD program. Any other use is strictly prohibited by FINRA. FINRA reserves the right to seek all injunctive and equitable relief available to it in the event FINRA Confidential or Proprietary information is released to a third party. A firm's use of this document demonstrates its acknowledgement that this document contains FINRA Confidential and Proprietary information, agreement that the firm will not reprint, republish or otherwise disclose this information to any third party and its agreement that FINRA may protect its rights, including but not limited to intellectual property rights.
+      Version:  Release 2024.06 (last updated on 01/25/2016)
+
+      Change History
+
+      
+      
+    </xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="PFXMLFilingResult">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="UploadID" type="xsd:unsignedInt" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>
+              Unique Upload ID assigned for this upload. This would be present for any valid/authorized upload ID.
+            </xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="FilingID" type="xsd:unsignedInt" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>
+              Unique Filing ID if the upload resulted in a successful filing creation.
+            </xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="OperationStatus" minOccurs="0">
+					<xsd:simpleType>
+						<xsd:annotation>
+							<xsd:documentation>
+                Status code for this upload. Allowed values (code-description) are:
+                PROCFAIL - Failed Processing
+                PROCPENDING - Pending Processing
+                SUCCESS - Successfully Processed
+                SCHEMAVAL - Validating Schema
+                SCHEMAVALFAIL - Failed Schema Validation
+              </xsd:documentation>
+						</xsd:annotation>
+						<xsd:restriction base="xs:NMTOKEN">
+							<xsd:enumeration value="PROCPENDING"/>
+							<xsd:enumeration value="PROCFAIL"/>
+							<xsd:enumeration value="SUCCESS"/>
+							<xsd:enumeration value="SCHEMAVAL"/>
+							<xsd:enumeration value="SCHEMAVALFAIL"/>
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+				<xsd:element name="UserReferenceID" type="xsd:string" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>
+              Reference ID provided by the user to track this upload. Manual uploads would have the file name.
+            </xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="ErrorMessages" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>
+              Collection of error messages (if any) for this upload.
+            </xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="ErrorMessage" type="ErrorMessageType" maxOccurs="unbounded"/>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:complexType name="ErrorMessageType">
+		<xsd:sequence>
+			<xsd:element name="Code" type="xsd:unsignedInt" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>
+              Error number.
+            </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Section" type="xsd:string" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>
+            Reference xml node name for this error.
+          </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Record" type="xsd:string" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>
+            Specific location for this error.
+          </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Description" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation>
+            Detailed error description. Contact FINRA/UAT support for General System Error.
+          </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Type">
+				<xsd:simpleType>
+					<xsd:annotation>
+						<xsd:documentation>
+              Error Type Code. Allowed values (code-description) are:
+              CC - Completeness Check Validation
+              FORM - Form Validation
+              SCHEMA - Schema Validation
+              SYSTEM - System Error
+            </xsd:documentation>
+					</xsd:annotation>
+					<xsd:restriction base="xs:NMTOKEN">
+						<xsd:enumeration value="CC"/>
+						<xsd:enumeration value="FORM"/>
+						<xsd:enumeration value="SCHEMA"/>
+						<xsd:enumeration value="SYSTEM"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="FundID" type="xsd:string" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>
+            805- Fund ID for this error, if applicable.
+          </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>
