@@ -438,14 +438,18 @@ for reporting_series_id in reporting_series:
 
     zero_date = get_new_end_date(df_roll_schedule, curr_end, 16)
 
-    df_historical_returns_plot = read_table_from_db(
+    df_returns_comparison_plot = read_table_from_db(
         historical_returns_table_name, db_type
     )
-    df_historical_returns_plot = df_historical_returns_plot[
-        df_historical_returns_plot["pool_name"] == pool_name_encoded
+    df_returns_comparison_plot = df_returns_comparison_plot[
+        df_returns_comparison_plot["pool_name"] == pool_name_encoded
     ]
 
-    def get_historical_returns_plot_data(
+    df_returns_comparison_plot.loc[
+        df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_360"
+    ] = target_return
+
+    def get_returns_comparison_plot_data(
         df, end_date_col, end_date_val, return_col, offset
     ):
         # Convert 'end_date_val' to datetime
@@ -470,8 +474,8 @@ for reporting_series_id in reporting_series:
 
         return result_str
 
-    plot_data_return = get_historical_returns_plot_data(
-        df_historical_returns_plot,
+    returns_comparison_plot_data = get_returns_comparison_plot_data(
+        df_returns_comparison_plot,
         "end_date",
         curr_end,
         "annualized_returns_360",
@@ -479,23 +483,23 @@ for reporting_series_id in reporting_series:
     )
 
     if fund_name == "USG":
-        plot_data_index_1 = get_historical_returns_plot_data(
+        plot_data_index_1 = get_returns_comparison_plot_data(
             df_benchmark_usg, "end_date", curr_end, "1m T-Bills", offset_val
         )
-        plot_data_index_2 = get_historical_returns_plot_data(
+        plot_data_index_2 = get_returns_comparison_plot_data(
             df_benchmark_usg, "end_date", curr_end, CRANE_IDX, offset_val
         )
-        plot_data_index_3 = get_historical_returns_plot_data(
+        plot_data_index_3 = get_returns_comparison_plot_data(
             df_benchmark_usg, "end_date", curr_end, FHLB_NOTES, offset_val
         )
     else:
-        plot_data_index_1 = get_historical_returns_plot_data(
+        plot_data_index_1 = get_returns_comparison_plot_data(
             df_benchmark_prime, "end_date", curr_end, SOFR_1M, offset_val
         )
-        plot_data_index_2 = get_historical_returns_plot_data(
+        plot_data_index_2 = get_returns_comparison_plot_data(
             df_benchmark_prime, "end_date", curr_end, CP_1M, offset_val
         )
-        plot_data_index_3 = get_historical_returns_plot_data(
+        plot_data_index_3 = get_returns_comparison_plot_data(
             df_benchmark_prime, "end_date", curr_end, "1m T-Bills", offset_val
         )
 
@@ -625,7 +629,7 @@ for reporting_series_id in reporting_series:
                 fund_description + series_description,
                 nbars_val,
             ),
-            plot_data_return,
+            returns_comparison_plot_data,
             plot_data_index_1,
             plot_data_index_2,
             series_abbrev,
@@ -903,7 +907,6 @@ for reporting_series_id in reporting_series:
                 x = subprocess.check_output(cmd_str)
             except:
                 print("File generated to {}.".format(pdf_file))
-                print(lucid_aum)
                 reports_generated.append(report_name)
         except:
             print("Error generating file {}.".format(pdf_file))
