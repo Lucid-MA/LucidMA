@@ -20,12 +20,18 @@ from datetime import datetime
 
 from lxml import etree
 
+from Utils.Common import get_file_path
+
+# CONSTANTS:
+prefix_path = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Form PF/")
+
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2023-12-29"  # quarter-end here as YYYY-MM-DD string
 DOING_HEDGE = True  # if y/e and doing MMT and other non liq-funds
-WORKBOOK_PATH = "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\q63_book.xlsx"
+WORKBOOK_PATH = prefix_path + "2024/01.15.24/q63_book.xlsx"
 XML_OUTPUT_PATH = (
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\lucid_form_pf_"
+    prefix_path
+    + "2024/01.15.24/lucid_form_pf_"
     + datetime.now().strftime("%Y%m%d_%H_%M_%S")
     + ".xml"
 )
@@ -70,13 +76,13 @@ SECTION_3_SHEETS2 = [
 # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Custom1.xlsx",
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Monthly.xlsx",
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_MonthlyIG.xlsx",
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Quarterly1.xlsx",
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_QuarterlyX.xlsx",
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_Prime_Q364.xlsx",
-    "S:\\Mandates\\Funds\\Fund Reporting\\Form PF working files\\2024\\01.15.24\\2023_10_11_12_USG_Monthly.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Custom1.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Monthly.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_MonthlyIG.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Quarterly1.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_QuarterlyX.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Q364.xlsx",
+    prefix_path + "2024/01.15.24/2023_10_11_12_USG_Monthly.xlsx",
 ]
 
 
@@ -549,124 +555,158 @@ def section3_itemABC(wb):
         # these values ought to be 0 if series undefined that month
         operation = ET.SubElement(operations, "PFSection3ItemALiquidityOperationalInfo")
         ET.SubElement(operation, "FundID").text = sheet.Range("D18").Value
-        ET.SubElement(operation, "UseAmortizedCostMethod").text = (
+        # TODO: New question 52a here
+        ET.SubElement(operation, "SeekToMaintainStablePrice").text = (
             "false" if sheet.Range("D20").Value == "No" else "true"
+        )
+        # TODO: New question 52b here
+        ET.SubElement(operation, "PriceSaughtToMaintain").text = str(
+            int(sheet.Range("D21").Value)
         )
         ET.SubElement(operation, "UsePennyRoundingMethod").text = (
             "false" if sheet.Range("D22").Value == "NA" else "true"
         )
-        ET.SubElement(operation, "ComplyRule2a7RiskCondition").text = (
-            "false" if sheet.Range("D24").Value == "No" else "true"
-        )
-        ET.SubElement(operation, "ComplyRule2a7DiversificationCondition").text = (
-            "false" if sheet.Range("D26").Value == "No" else "true"
-        )
-        ET.SubElement(operation, "ComplyRule2a7CreditQualityCondition").text = (
-            "false" if sheet.Range("D27").Value == "No" else "true"
-        )
-        ET.SubElement(operation, "ComplyRule2a7LiquidityCondition").text = (
-            "false" if sheet.Range("D28").Value == "No" else "true"
-        )
-        ET.SubElement(operation, "ComplyRule2a7MaturityCondition").text = (
-            "false" if sheet.Range("D29").Value == "No" else "true"
-        )
+        # TODO: Remove question 53
+        # ET.SubElement(operation, "ComplyRule2a7RiskCondition").text = (
+        #     "false" if sheet.Range("D24").Value == "No" else "true"
+        # )
+        # TODO: Remove question 54
+        # ET.SubElement(operation, "ComplyRule2a7DiversificationCondition").text = (
+        #     "false" if sheet.Range("D26").Value == "No" else "true"
+        # )
+        # ET.SubElement(operation, "ComplyRule2a7CreditQualityCondition").text = (
+        #     "false" if sheet.Range("D27").Value == "No" else "true"
+        # )
+        # ET.SubElement(operation, "ComplyRule2a7LiquidityCondition").text = (
+        #     "false" if sheet.Range("D28").Value == "No" else "true"
+        # )
+        # ET.SubElement(operation, "ComplyRule2a7MaturityCondition").text = (
+        #     "false" if sheet.Range("D29").Value == "No" else "true"
+        # )
 
         asset = ET.SubElement(assets, "PFSection3ItemBLiquidityAssets")
         ET.SubElement(asset, "FundID").text = sheet.Range("D18").Value
+        # TODO: Update question 55 (now 53)
         ET.SubElement(asset, "NAVMonth1Amount").text = str(
-            int(sheet.Range("D36").Value)
+            int(sheet.Range("D28").Value)
         )
         ET.SubElement(asset, "NAVMonth2Amount").text = str(
-            int(sheet.Range("E36").Value)
+            int(sheet.Range("E28").Value)
         )
         ET.SubElement(asset, "NAVMonth3Amount").text = str(
-            int(sheet.Range("F36").Value)
+            int(sheet.Range("F28").Value)
         )
         ET.SubElement(asset, "NAVPerShareMonth1Amount").text = (
             "0"
-            if sheet.Range("D37").Value == "NA"
+            if sheet.Range("D29").Value == "NA"
             else str(int(sheet.Range("D37").Value))
         )
         ET.SubElement(asset, "NAVPerShareMonth2Amount").text = (
             "0"
-            if sheet.Range("E37").Value == "NA"
-            else str(int(sheet.Range("E37").Value))
+            if sheet.Range("E29").Value == "NA"
+            else str(int(sheet.Range("E29").Value))
         )
         ET.SubElement(asset, "NAVPerShareMonth3Amount").text = (
             "0"
-            if sheet.Range("F37").Value == "NA"
-            else str(int(sheet.Range("F37").Value))
+            if sheet.Range("F29").Value == "NA"
+            else str(int(sheet.Range("F29").Value))
         )
         ET.SubElement(asset, "NAVPerShareMarketBasedMonth1Amount").text = (
             "0"
-            if sheet.Range("D38").Value == "NA"
-            else str(int(sheet.Range("D38").Value))
+            if sheet.Range("D30").Value == "NA"
+            else str(int(sheet.Range("D30").Value))
         )
         ET.SubElement(asset, "NAVPerShareMarketBasedMonth2Amount").text = (
             "0"
-            if sheet.Range("E38").Value == "NA"
-            else str(int(sheet.Range("E38").Value))
+            if sheet.Range("E30").Value == "NA"
+            else str(int(sheet.Range("E30").Value))
         )
         ET.SubElement(asset, "NAVPerShareMarketBasedMonth3Amount").text = (
             "0"
-            if sheet.Range("F38").Value == "NA"
-            else str(int(sheet.Range("F38").Value))
+            if sheet.Range("F30").Value == "NA"
+            else str(int(sheet.Range("F30").Value))
         )
-
         ET.SubElement(asset, "WAMMonth1Amount").text = str(
-            int(sheet.Range("D39").Value)
+            int(sheet.Range("D31").Value)
         )
         ET.SubElement(asset, "WAMMonth2Amount").text = str(
-            int(sheet.Range("E39").Value)
+            int(sheet.Range("E31").Value)
         )
 
         ET.SubElement(asset, "WAMMonth3Amount").text = str(
-            int(sheet.Range("F39").Value)
+            int(sheet.Range("F31").Value)
         )
         ET.SubElement(asset, "WALMonth1Amount").text = str(
-            int(sheet.Range("D40").Value)
+            int(sheet.Range("D32").Value)
         )
         ET.SubElement(asset, "WALMonth2Amount").text = str(
-            int(sheet.Range("E40").Value)
+            int(sheet.Range("E32").Value)
         )
         ET.SubElement(asset, "WALMonth3Amount").text = str(
-            int(sheet.Range("F40").Value)
+            int(sheet.Range("F32").Value)
         )
         ET.SubElement(asset, "SevenDayGrossYieldMonth1Amount").text = "{0:.2f}".format(
-            sheet.Range("D41").Value * 100
+            sheet.Range("D33").Value * 100
         )
         ET.SubElement(asset, "SevenDayGrossYieldMonth2Amount").text = "{0:.2f}".format(
-            sheet.Range("E41").Value * 100
+            sheet.Range("E33").Value * 100
         )
         ET.SubElement(asset, "SevenDayGrossYieldMonth3Amount").text = "{0:.2f}".format(
-            sheet.Range("F41").Value * 100
+            sheet.Range("F33").Value * 100
         )
         ET.SubElement(asset, "AssetsDailyLiquidMonth1Amount").text = str(
-            int(sheet.Range("D42").Value)
+            int(sheet.Range("D34").Value)
         )
         ET.SubElement(asset, "AssetsDailyLiquidMonth2Amount").text = str(
-            int(sheet.Range("E42").Value)
+            int(sheet.Range("E34").Value)
         )
         ET.SubElement(asset, "AssetsDailyLiquidMonth3Amount").text = str(
-            int(sheet.Range("F42").Value)
+            int(sheet.Range("F34").Value)
         )
         ET.SubElement(asset, "AssetsWeeklyLiquidMonth1Amount").text = str(
-            int(sheet.Range("D43").Value)
+            int(sheet.Range("D35").Value)
         )
         ET.SubElement(asset, "AssetsWeeklyLiquidMonth2Amount").text = str(
-            int(sheet.Range("E43").Value)
+            int(sheet.Range("E35").Value)
         )
         ET.SubElement(asset, "AssetsWeeklyLiquidMonth3Amount").text = str(
-            int(sheet.Range("F43").Value)
+            int(sheet.Range("F35").Value)
         )
         ET.SubElement(asset, "AssetsMaturityGreater397DaysMonth1Amount").text = str(
-            int(sheet.Range("D44").Value)
+            int(sheet.Range("D36").Value)
         )
         ET.SubElement(asset, "AssetsMaturityGreater397DaysMonth2Amount").text = str(
-            int(sheet.Range("E44").Value)
+            int(sheet.Range("E36").Value)
         )
         ET.SubElement(asset, "AssetsMaturityGreater397DaysMonth3Amount").text = str(
-            int(sheet.Range("F44").Value)
+            int(sheet.Range("F36").Value)
+        )
+        ET.SubElement(asset, "CashHeldByFundMonth1Amount").text = str(
+            int(sheet.Range("D37").Value)
+        )
+        ET.SubElement(asset, "CashHeldByFundMonth2Amount").text = str(
+            int(sheet.Range("E37").Value)
+        )
+        ET.SubElement(asset, "CashHeldByFundMonth3Amount").text = str(
+            int(sheet.Range("F37").Value)
+        )
+        ET.SubElement(asset, "TotGrossSubscriptionMonth1Amount").text = str(
+            int(sheet.Range("D38").Value)
+        )
+        ET.SubElement(asset, "TotGrossSubscriptionMonth2Amount").text = str(
+            int(sheet.Range("E38").Value)
+        )
+        ET.SubElement(asset, "TotGrossSubscriptionMonth3Amount").text = str(
+            int(sheet.Range("F38").Value)
+        )
+        ET.SubElement(asset, "TotGrossRedemptionsMonth1Amount").text = str(
+            int(sheet.Range("D39").Value)
+        )
+        ET.SubElement(asset, "TotGrossRedemptionsMonth2Amount").text = str(
+            int(sheet.Range("E39").Value)
+        )
+        ET.SubElement(asset, "TotGrossRedemptionsMonth3Amount").text = str(
+            int(sheet.Range("F39").Value)
         )
         financing = ET.SubElement(financings, "PFSection3ItemCLiquidityFinancingInfo")
         ET.SubElement(financing, "FundID").text = sheet.Range("D18").Value
