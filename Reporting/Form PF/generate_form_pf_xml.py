@@ -711,10 +711,10 @@ def section3_itemABC(wb):
         financing = ET.SubElement(financings, "PFSection3ItemCLiquidityFinancingInfo")
         ET.SubElement(financing, "FundID").text = sheet.Range("D18").Value
         ET.SubElement(financing, "BorrowedTotalAmountGreater5Percent").text = (
-            "false" if sheet.Range("D50").Value == "No" else "true"
+            "false" if sheet.Range("D43").Value == "No" else "true"
         )
         ET.SubElement(financing, "HasCommittedLiquidityFacilities").text = (
-            "false" if sheet.Range("D68").Value == "No" else "true"
+            "false" if sheet.Range("D61").Value == "No" else "true"
         )
 
 
@@ -734,51 +734,70 @@ def section3_itemD(wb):
             if sheet.Range("D5").Value == "NA"
             else str(int(sheet.Range("D5").Value))
         )
-        ET.SubElement(investor_info, "TopBeneficiallyOwnedEquityPercent").text = str(
-            int(sheet.Range("D9").Value)
+        # TODO: New question 57
+        ET.SubElement(investor_info, "IsFundACashManagementVehicle").text = (
+            "false" if sheet.Range("D8").Value == "No" else "true"
         )
-        ET.SubElement(
-            investor_info, "NumberOfInvestorsBeneficiallyOwnMore5Percent"
-        ).text = str(int(sheet.Range("D10").Value))
+        # TODO: Update question 58a (formerly question 59a)
+        ET.SubElement(investor_info, "TopBeneficiallyOwnedEquityPercent").text = str(
+            int(sheet.Range("D12").Value)
+        )
+        # TODO: Remove old question 58a
+        # ET.SubElement(
+        #     investor_info, "NumberOfInvestorsBeneficiallyOwnMore5Percent"
+        # ).text = str(int(sheet.Range("D10").Value))
+        # TODO: update this question with Thomas' spreadsheet
+        # def question_58():
+        #   return
+        # ET.SubElement(investor_info, "InvestorOwnedPercents").text = str(
+        #     int(sheet.Range("D10").Value)
+        # )
+
+        # Q60
         ET.SubElement(
             investor_info, "PercentEquityPurchasedUsingSecuritiesLendingCollateral"
-        ).text = str(int(sheet.Range("D12").Value))
+        ).text = str(int(sheet.Range("D20").Value))
+
+        # Q61
         ET.SubElement(
             investor_info, "WithdrawalSuspensionMaybeSubjectedPercent"
-        ).text = str(int(sheet.Range("D17").Value))
+        ).text = str(int(sheet.Range("D25").Value))
         ET.SubElement(
             investor_info, "WithdrawalMaterialRestrictionMaybeSubjectedPercent"
-        ).text = str(int(sheet.Range("D18").Value))
+        ).text = str(int(sheet.Range("D26").Value))
         ET.SubElement(investor_info, "WithdrawalSuspensionIsSubjectedPercent").text = (
-            str(int(sheet.Range("D19").Value))
+            str(int(sheet.Range("D27").Value))
         )
         ET.SubElement(
             investor_info, "WithdrawalMaterialRestrictionIsSubjectedPercent"
-        ).text = str(int(sheet.Range("D20").Value))
+        ).text = str(int(sheet.Range("D28").Value))
 
+        # Q62
         ET.SubElement(investor_info, "InvestorLiquidityInDays0To1Percent").text = str(
-            int(sheet.Range("D25").Value)
+            int(sheet.Range("D33").Value)
         )
         ET.SubElement(investor_info, "InvestorLiquidityInDays2To7Percent").text = str(
-            int(sheet.Range("D26").Value)
+            int(sheet.Range("D34").Value)
         )
         ET.SubElement(investor_info, "InvestorLiquidityInDays8To30Percent").text = str(
-            int(sheet.Range("D27").Value)
+            int(sheet.Range("D35").Value)
         )
         ET.SubElement(investor_info, "InvestorLiquidityInDays31To90Percent").text = str(
-            int(sheet.Range("D28").Value)
+            int(sheet.Range("D36").Value)
         )
         ET.SubElement(investor_info, "InvestorLiquidityInDays91To180Percent").text = (
-            str(int(sheet.Range("D29").Value))
+            str(int(sheet.Range("D37").Value))
         )
         ET.SubElement(investor_info, "InvestorLiquidityInDays181To365Percent").text = (
-            str(int(sheet.Range("D30").Value))
+            str(int(sheet.Range("D38").Value))
         )
         ET.SubElement(investor_info, "InvestorLiquidityInDays365MorePercent").text = (
-            str(int(sheet.Range("D31").Value))
+            str(int(sheet.Range("D39").Value))
         )
 
 
+# TODO: Review changes in this section
+# Q
 def section3_itemE():
     """
     Q63
@@ -811,16 +830,22 @@ def section3_itemE():
                 ET.SubElement(security, "ReportingPeriodMonth").text = str(
                     int(sheet.Range("A" + str(index)).Value)
                 )
+
+                # Q62a - Issuer name
                 ET.SubElement(security, "IssuerName").text = (
                     "NA"
                     if sheet.Range("E" + str(index)).Value == NA
                     else sheet.Range("E" + str(index)).Value
                 )
+
+                # Q62b - Issuer Title
                 ET.SubElement(security, "IssuerTitle").text = (
                     "NA"
                     if sheet.Range("F" + str(index)).Value == NA
                     else sheet.Range("F" + str(index)).Value
                 )
+
+                # Q62c - CUSIP
                 tmp_cusip = sheet.Range("G" + str(index)).Value
                 if tmp_cusip == NA:
                     ET.SubElement(security, "CUSIP").text = "NA"
@@ -840,41 +865,65 @@ def section3_itemE():
                         ET.SubElement(security, "CUSIP").text = str(tmp_cusip)
                         if len(str(tmp_cusip)) != 9:
                             print("WARNING: CUSIP wrong length: " + str(tmp_cusip))
-                ET.SubElement(security, "ISINNumber").text = (
+
+                # Q62d - LEI
+                ET.SubElement(security, "LegalEntityID").text = (
                     "NA"
                     if sheet.Range("H" + str(index)).Value == NA
                     else str(sheet.Range("H" + str(index)).Value)
                 )
-                ET.SubElement(security, "InvestmentCategory").text = (
+
+                # Q62e-i - ISIN
+                ET.SubElement(security, "ISINNumber").text = (
                     "NA"
                     if sheet.Range("I" + str(index)).Value == NA
-                    else sheet.Range("I" + str(index)).Value
-                )
-                if sheet.Range("I" + str(index)).Value == "OTHER":
-                    ET.SubElement(security, "InvestmentCategoryOther").text = (
-                        sheet.Range("Z" + str(index)).Value
-                    )
-                ET.SubElement(security, "HasNoRepo").text = (
-                    "true" if sheet.Range("J" + str(index)).Value == NA else "false"
+                    else str(sheet.Range("I" + str(index)).Value)
                 )
 
-                if sheet.Range("J" + str(index)).Value != NA:
+                # Q62f - Investment Category
+                ET.SubElement(security, "InvestmentCategory").text = (
+                    "NA"
+                    if sheet.Range("J" + str(index)).Value == NA
+                    else sheet.Range("J" + str(index)).Value
+                )
+                # Q62f - Investment Category - OTHER
+                if sheet.Range("J" + str(index)).Value == "OTHER":
+                    ET.SubElement(security, "InvestmentCategoryOther").text = (
+                        sheet.Range("AD" + str(index)).Value
+                    )
+
+                # Q62g - Has No repo
+                ET.SubElement(security, "HasNoRepo").text = (
+                    "true" if sheet.Range("K" + str(index)).Value == NA else "false"
+                )
+
+                # Q62g-i - Repo Open
+                if sheet.Range("K" + str(index)).Value != NA:
                     ET.SubElement(security, "RepoOpen").text = (
                         "false"
-                        if sheet.Range("J" + str(index)).Value == NA
-                        else str(sheet.Range("J" + str(index)).Value).lower()
+                        if sheet.Range("K" + str(index)).Value == NA
+                        else str(sheet.Range("K" + str(index)).Value).lower()
                     )
 
+                # Q62g- ii,iii,iv
+                ET.SubElement(security, "CentrallyCleared").text = "false"
+                ET.SubElement(security, "CCP").text = NA
+                ET.SubElement(security, "SettledOnTriPtyPl").text = "false"
+
+                # Q62g- v-xii
+                if sheet.Range("K" + str(index)).Value != NA:
                     repolist = ET.SubElement(security, "LiquiditySecurityReposList")
                     repo = ET.SubElement(
                         repolist, "PFSection3ItemELiquiditySecurityRepo"
                     )
+
                     ET.SubElement(repo, "IssuerName").text = (
                         "NA"
-                        if sheet.Range("K" + str(index)).Value == NA
-                        else sheet.Range("K" + str(index)).Value
+                        if sheet.Range("L" + str(index)).Value == NA
+                        else sheet.Range("L" + str(index)).Value
                     )
-                    tmp_cusip = sheet.Range("L" + str(index)).Value
+
+                    tmp_cusip = sheet.Range("M" + str(index)).Value
                     if tmp_cusip == NA:
                         ET.SubElement(repo, "CUSIP").text = "NA"
                     else:
@@ -884,8 +933,16 @@ def section3_itemE():
                             )  # if all numeric cusip
                         except ValueError:
                             ET.SubElement(repo, "CUSIP").text = str(tmp_cusip)
+
+                    # TODO: Might have to include check here
+                    ET.SubElement(repo, "LEI").text = (
+                        "NA"
+                        if sheet.Range("N" + str(index)).Value == NA
+                        else sheet.Range("N" + str(index)).Value
+                    )
+
                     md = ET.SubElement(repo, "MaturityDate")
-                    tmp_maty = sheet.Range("M" + str(index)).Value
+                    tmp_maty = sheet.Range("O" + str(index)).Value
                     if tmp_maty == NA or tmp_maty is None:
                         ET.SubElement(md, "Value").text = "NA"
                     else:
@@ -900,58 +957,63 @@ def section3_itemE():
                                 )
                         except ValueError:
                             ET.SubElement(md, "Value").text = tmp_maty
+
                     ET.SubElement(repo, "Coupon").text = (
                         "NA"
-                        if sheet.Range("N" + str(index)).Value == NA
+                        if sheet.Range("P" + str(index)).Value == NA
                         else (
-                            str(round(sheet.Range("N" + str(index)).Value * 100, 5))
+                            str(round(sheet.Range("P" + str(index)).Value * 100, 5))
                             + "%"
                         )
                     )
                     pa = ET.SubElement(repo, "PrincipalAmount")
                     ET.SubElement(pa, "Value").text = (
                         "NA"
-                        if sheet.Range("O" + str(index)).Value == NA
-                        or "{0:.2f}".format(sheet.Range("O" + str(index)).Value)
+                        if sheet.Range("Q" + str(index)).Value == NA
+                        or "{0:.2f}".format(sheet.Range("Q" + str(index)).Value)
                         == "0.00"
-                        else "{0:.2f}".format(sheet.Range("O" + str(index)).Value)
+                        else "{0:.2f}".format(sheet.Range("Q" + str(index)).Value)
                     )
+
                     cv = ET.SubElement(repo, "CollateralValue")
                     ET.SubElement(cv, "Value").text = (
                         "NA"
-                        if sheet.Range("P" + str(index)).Value == NA
-                        or "{0:.2f}".format(sheet.Range("P" + str(index)).Value)
+                        if sheet.Range("R" + str(index)).Value == NA
+                        or "{0:.2f}".format(sheet.Range("R" + str(index)).Value)
                         == "0.00"
-                        else "{0:.2f}".format(sheet.Range("P" + str(index)).Value)
+                        else "{0:.2f}".format(sheet.Range("R" + str(index)).Value)
                     )
+
                     ET.SubElement(repo, "Category").text = (
                         "NA"
-                        if sheet.Range("Q" + str(index)).Value == NA
-                        else sheet.Range("Q" + str(index)).Value
+                        if sheet.Range("S" + str(index)).Value == NA
+                        else sheet.Range("S" + str(index)).Value
                     )
-                    if sheet.Range("Q" + str(index)).Value == "OTHER":
-                        ET.SubElement(repo, "CategoryOtherDesc").text = sheet.Range(
-                            "AA" + str(index)
-                        ).Value
 
+                    if sheet.Range("S" + str(index)).Value == "OTHER":
+                        ET.SubElement(repo, "CategoryOtherDesc").text = sheet.Range(
+                            "AE" + str(index)
+                        ).Value
+                # TODO: Q62h check w Heather answer is #NA or yes no
                 ET.SubElement(security, "HasNoCreditAgency").text = "true"
+
                 wam = ET.SubElement(security, "WAMMaturityDate")
                 wal = ET.SubElement(security, "WALMaturityDate")
                 ulm = ET.SubElement(security, "UltimateLegalMaturityDate")
                 ET.SubElement(wam, "Value").text = (
                     "NA"
-                    if sheet.Range("R" + str(index)).Value == NA
-                    else str(sheet.Range("R" + str(index)).Value).split(" ")[0]
+                    if sheet.Range("T" + str(index)).Value == NA
+                    else str(sheet.Range("T" + str(index)).Value).split(" ")[0]
                 )
                 ET.SubElement(wal, "Value").text = (
                     "NA"
-                    if sheet.Range("S" + str(index)).Value == NA
-                    else str(sheet.Range("S" + str(index)).Value).split(" ")[0]
+                    if sheet.Range("U" + str(index)).Value == NA
+                    else str(sheet.Range("U" + str(index)).Value).split(" ")[0]
                 )
                 ET.SubElement(ulm, "Value").text = (
                     "NA"
-                    if sheet.Range("T" + str(index)).Value == NA
-                    else str(sheet.Range("T" + str(index)).Value).split(" ")[0]
+                    if sheet.Range("V" + str(index)).Value == NA
+                    else str(sheet.Range("V" + str(index)).Value).split(" ")[0]
                 )
                 ET.SubElement(security, "HasNoDemandFeatures").text = "true"
                 ET.SubElement(security, "HasNoGuarantee").text = "true"
@@ -959,7 +1021,7 @@ def section3_itemE():
                 sy = ET.SubElement(security, "SecurityYield")
                 ET.SubElement(sy, "Value").text = (
                     "NA"
-                    if sheet.Range("U" + str(index)).Value == NA
+                    if sheet.Range("W" + str(index)).Value == NA
                     else "{0:.2f}".format(
                         round(sheet.Range("U" + str(index)).Value * 100, 2)
                     )
@@ -967,31 +1029,31 @@ def section3_itemE():
                 ssv = ET.SubElement(security, "SponsorSupportValue")
                 ET.SubElement(ssv, "Value").text = (
                     "NA"
-                    if sheet.Range("W" + str(index)).Value == NA
+                    if sheet.Range("X" + str(index)).Value == NA
                     else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
                 )
                 ssav = ET.SubElement(security, "SponsorSupportAmortizedValue")
                 ET.SubElement(ssav, "Value").text = (
                     "NA"
-                    if sheet.Range("W" + str(index)).Value == NA
+                    if sheet.Range("Y" + str(index)).Value == NA
                     else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
                 )
                 ssve = ET.SubElement(security, "SponsorSupportValueExcluded")
                 ET.SubElement(ssve, "Value").text = (
                     "NA"
-                    if sheet.Range("W" + str(index)).Value == NA
+                    if sheet.Range("Z" + str(index)).Value == NA
                     else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
                 )
                 ssave = ET.SubElement(security, "SponsorSupportAmortizedValueExcluded")
                 ET.SubElement(ssave, "Value").text = (
                     "NA"
-                    if sheet.Range("W" + str(index)).Value == NA
+                    if sheet.Range("AA" + str(index)).Value == NA
                     else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
                 )
                 pns = ET.SubElement(security, "PercentNavSecurity")
                 ET.SubElement(pns, "Value").text = (
                     "NA"
-                    if sheet.Range("X" + str(index)).Value == NA
+                    if sheet.Range("AB" + str(index)).Value == NA
                     else "{0:.2f}".format(
                         round(sheet.Range("X" + str(index)).Value * 100, 2)
                     )
@@ -1000,13 +1062,13 @@ def section3_itemE():
                 ET.SubElement(security, "IsSecurityAssetOrLiabililty").text = "false"
                 ET.SubElement(security, "IsSecurityDailyAsset").text = (
                     "true"
-                    if sheet.Range("Y" + str(index)).Value == "daily"
+                    if sheet.Range("AC" + str(index)).Value == "daily"
                     else "false"
                 )
                 ET.SubElement(security, "IsSecurityWeeklyAsset").text = (
                     "true"
-                    if sheet.Range("Y" + str(index)).Value == "weekly"
-                    or sheet.Range("Y" + str(index)).Value == "daily"
+                    if sheet.Range("AC" + str(index)).Value == "weekly"
+                    or sheet.Range("AC" + str(index)).Value == "daily"
                     else "false"
                 )
                 ET.SubElement(security, "IsSecurityIlliquid").text = "false"
