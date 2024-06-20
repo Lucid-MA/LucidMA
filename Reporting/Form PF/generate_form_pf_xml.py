@@ -1081,9 +1081,9 @@ def section3_itemE():
 
 def section3_itemF(wb):
     infolist = ET.SubElement(
-        root, "PFSection3ItemFLiquidityParallelMoneyMarketInfoList"
+        root, "PFSection3ItemFDispositionOfPortfolioSecuritiesType"
     )
-
+    # TODO: This is a whole new question, do it again
     for sheet_name in SECTION_3_SHEETS2:
         sheet = wb.Worksheets(sheet_name)
         info = ET.SubElement(
