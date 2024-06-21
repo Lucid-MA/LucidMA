@@ -779,7 +779,7 @@ def section3_itemD(wb):
                 investor_percentage = ET.SubElement(investor_special_list, "PFSection3ItemDLiquidityInvestorPercent")
 
                 ET.SubElement(investor_percentage, "FundInvestorCode").text = str(
-                    int(sub_sheet.Range("B" + str(row_idx)).Value)
+                    sub_sheet.Range("B" + str(row_idx)).Value
                 )
 
                 # Q62a - Issuer name
