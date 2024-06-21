@@ -26,17 +26,17 @@ from Utils.Common import get_file_path
 prefix_path = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Form PF/")
 
 # PARAMETERS TO INITIALIZE
-FILING_DATE = "2023-12-29"  # quarter-end here as YYYY-MM-DD string
-DOING_HEDGE = True  # if y/e and doing MMT and other non liq-funds
-WORKBOOK_PATH = prefix_path + "2024/01.15.24/q63_book.xlsx"
+FILING_DATE = "2024-07-15"  # quarter-end here as YYYY-MM-DD string
+DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
+WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
 XML_OUTPUT_PATH = (
     prefix_path
-    + "2024/01.15.24/lucid_form_pf_"
+    + "2024/07.15.24/lucid_form_pf_"
     + datetime.now().strftime("%Y%m%d_%H_%M_%S")
     + ".xml"
 )
-XSD_PATH = "PFFormFiling.xsd"  # one of the JJV additions - used to validate the xml against the xsd schema
-FILING_TYPE = "PF-AMEND"  # one of PF-AMEND, PF-UPDATING, PF-INIT. PF-UPDATING if first one this quarter, else AMEND (INIT only used if first for this firm.)
+XSD_PATH = "PFFormFiling_v2.xsd"  # one of the JJV additions - used to validate the xml against the xsd schema
+FILING_TYPE = "PF-UPDATING"  # one of PF-AMEND, PF-UPDATING, PF-INIT. PF-UPDATING if first one this quarter, else AMEND (INIT only used if first for this firm.)
 FILING_FREQUENCY = "Q"
 
 SECTION_1B_SHEETS = [
@@ -86,13 +86,13 @@ Q58B_SHEETS = {
 # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
-    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Custom1.xlsx",
-    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Monthly.xlsx",
-    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_MonthlyIG.xlsx",
-    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Quarterly1.xlsx",
-    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_QuarterlyX.xlsx",
-    prefix_path + "2024/01.15.24/2023_10_11_12_Prime_Q364.xlsx",
-    prefix_path + "2024/01.15.24/2023_10_11_12_USG_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
 ]
 
 
@@ -136,7 +136,7 @@ def main():
     excel.Interactive = False
     wb = open_workbook(excel, WORKBOOK_PATH)
     print("Preparing filing...")
-    init_filing(FILING_TYPE, FILING_FREQUENCY, FILING_DATE, "1")
+    init_filing(FILING_TYPE, FILING_FREQUENCY, FILING_DATE, "2")
     print("1a_A")
     section1a_ItemA(wb)
     print("1a_B")
