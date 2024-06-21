@@ -23,7 +23,8 @@ from lxml import etree
 from Utils.Common import get_file_path
 
 # CONSTANTS:
-prefix_path = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Form PF/")
+# prefix_path = get_file_path("S:/Users/THoang/Tech/LucidMA/Reporting/Form PF/")
+prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working files/")
 
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2024-07-15"  # quarter-end here as YYYY-MM-DD string
