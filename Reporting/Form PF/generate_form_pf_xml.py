@@ -568,14 +568,19 @@ def section3_itemABC(wb):
         # these values ought to be 0 if series undefined that month
         operation = ET.SubElement(operations, "PFSection3ItemALiquidityOperationalInfo")
         ET.SubElement(operation, "FundID").text = sheet.Range("D18").Value
-        # TODO: New question 52a here
+
+        # Q52a
         ET.SubElement(operation, "SeekToMaintainStablePrice").text = (
             "false" if sheet.Range("D20").Value == "No" else "true"
         )
-        # TODO: New question 52b here
-        ET.SubElement(operation, "PriceSaughtToMaintain").text = str(
-            int(sheet.Range("D21").Value)
+
+        # Q52b
+        ET.SubElement(operation, "PriceSaughtToMaintain").text = (
+            "0"
+            if sheet.Range("D21").Value == "" or sheet.Range("D21").Value is None
+            else str(int(sheet.Range("D21").Value))
         )
+
         ET.SubElement(operation, "UsePennyRoundingMethod").text = (
             "false" if sheet.Range("D22").Value == "NA" else "true"
         )
