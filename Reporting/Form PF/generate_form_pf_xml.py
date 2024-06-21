@@ -767,7 +767,17 @@ def section3_itemD(wb):
         sub_sheet_name = Q58B_SHEETS[sheet_name]
         sub_sheet = wb.Worksheets(sub_sheet_name)
         starting_row = 2
-        last_row = sub_sheet.UsedRange.Rows.Count
+
+        # Find the last row where B, C, and D have values
+        last_row = starting_row
+        while (
+                sub_sheet.Range("B" + str(last_row)).Value
+                or sub_sheet.Range("C" + str(last_row)).Value
+                or sub_sheet.Range("D" + str(last_row)).Value
+        ):
+            last_row += 1
+        last_row -= 1
+
         if (
             sub_sheet.Range("B2").Value
             and sub_sheet.Range("C2").Value
