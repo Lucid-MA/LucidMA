@@ -88,12 +88,12 @@ Q58B_SHEETS = {
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
 ]
 
 
@@ -169,6 +169,7 @@ def main():
     wb = None
     excel = None
     tree = ET.ElementTree(root)
+    ET.dump(root)
     print("Writing XML output to " + XML_OUTPUT_PATH)
     tree.write(
         XML_OUTPUT_PATH, encoding="iso-8859-1", xml_declaration=True
@@ -581,9 +582,6 @@ def section3_itemABC(wb):
             else str(int(sheet.Range("D21").Value))
         )
 
-        ET.SubElement(operation, "UsePennyRoundingMethod").text = (
-            "false" if sheet.Range("D22").Value == "NA" else "true"
-        )
         # TODO: Remove question 53
         # ET.SubElement(operation, "ComplyRule2a7RiskCondition").text = (
         #     "false" if sheet.Range("D24").Value == "No" else "true"
@@ -878,7 +876,7 @@ def section3_itemE():
 
             index = 4
             infinite_loop_guard = 50
-            max_row = 100
+            max_row = 80
             while sheet.Range("A" + str(index)).Value is not None and index <= max_row:
                 security = ET.SubElement(
                     securitieslist, "PFSection3ItemELiquiditySecuritiesItem"
@@ -963,7 +961,7 @@ def section3_itemE():
 
                 # Q62g- ii,iii,iv
                 ET.SubElement(security, "CentrallyCleared").text = "false"
-                ET.SubElement(security, "CCP").text = NA
+                ET.SubElement(security, "CCP").text = "NA"
                 ET.SubElement(security, "SettledOnTriPtyPl").text = "false"
 
                 # Q62g- v-xii
@@ -1130,7 +1128,7 @@ def section3_itemE():
                 ET.SubElement(security, "IsSecurityIlliquid").text = "false"
                 if index == infinite_loop_guard:
                     print("On row " + str(index))
-                    infinite_loop_guard += 10
+                    infinite_loop_guard += 50
                 index += 1
         count += 1
 
