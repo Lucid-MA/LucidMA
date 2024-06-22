@@ -749,7 +749,7 @@ def section3_itemD(wb):
         ET.SubElement(investor_info, "FundID").text = sheet.Range("A1").Value
         ET.SubElement(investor_info, "NumberOfOutstandingShares").text = (
             "0"
-            if sheet.Range("D5").Value == "NA"
+            if (sheet.Range("D5").Value == "NA" or sheet.Range("D5").Value == "N/A")
             else str(int(sheet.Range("D5").Value))
         )
 
@@ -867,8 +867,8 @@ def section3_itemE():
                 info, "PFSection3ItemELiquiditySecuritiesList"
             )
 
-            index = 3
-            infinite_loop_guard = 500
+            index = 4
+            infinite_loop_guard = 50
             while sheet.Range("A" + str(index)).Value is not None:
                 security = ET.SubElement(
                     securitieslist, "PFSection3ItemELiquiditySecuritiesItem"
@@ -1069,39 +1069,39 @@ def section3_itemE():
                     "NA"
                     if sheet.Range("W" + str(index)).Value == NA
                     else "{0:.2f}".format(
-                        round(sheet.Range("U" + str(index)).Value * 100, 2)
+                        round(sheet.Range("W" + str(index)).Value * 100, 2)
                     )
                 )
                 ssv = ET.SubElement(security, "SponsorSupportValue")
                 ET.SubElement(ssv, "Value").text = (
                     "NA"
                     if sheet.Range("X" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
+                    else "{0:.2f}".format(round(sheet.Range("X" + str(index)).Value, 2))
                 )
                 ssav = ET.SubElement(security, "SponsorSupportAmortizedValue")
                 ET.SubElement(ssav, "Value").text = (
                     "NA"
                     if sheet.Range("Y" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
+                    else "{0:.2f}".format(round(sheet.Range("Y" + str(index)).Value, 2))
                 )
                 ssve = ET.SubElement(security, "SponsorSupportValueExcluded")
                 ET.SubElement(ssve, "Value").text = (
                     "NA"
                     if sheet.Range("Z" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
+                    else "{0:.2f}".format(round(sheet.Range("Z" + str(index)).Value, 2))
                 )
                 ssave = ET.SubElement(security, "SponsorSupportAmortizedValueExcluded")
                 ET.SubElement(ssave, "Value").text = (
                     "NA"
                     if sheet.Range("AA" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("W" + str(index)).Value, 2))
+                    else "{0:.2f}".format(round(sheet.Range("AA" + str(index)).Value, 2))
                 )
                 pns = ET.SubElement(security, "PercentNavSecurity")
                 ET.SubElement(pns, "Value").text = (
                     "NA"
                     if sheet.Range("AB" + str(index)).Value == NA
                     else "{0:.2f}".format(
-                        round(sheet.Range("X" + str(index)).Value * 100, 2)
+                        round(sheet.Range("AB" + str(index)).Value * 100, 2)
                     )
                 )
 
@@ -1120,7 +1120,7 @@ def section3_itemE():
                 ET.SubElement(security, "IsSecurityIlliquid").text = "false"
                 if index == infinite_loop_guard:
                     print("On row " + str(index))
-                    infinite_loop_guard += 500
+                    infinite_loop_guard += 10
                 index += 1
         count += 1
 
