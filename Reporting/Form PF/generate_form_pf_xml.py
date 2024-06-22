@@ -793,11 +793,20 @@ def section3_itemD(wb):
                 )
 
                 # Q62a - Issuer name
-                ET.SubElement(investor_percentage, "PercentageAmount").text = (
-                    "NA"
-                    if sub_sheet.Range("C" + str(row_idx)).Value == NA
-                    else sub_sheet.Range("C" + str(row_idx)).Value
-                )
+                # ET.SubElement(investor_percentage, "PercentageAmount").text = (
+                #     "NA"
+                #     if sub_sheet.Range("C" + str(row_idx)).Value == NA
+                #     else sub_sheet.Range("C" + str(row_idx)).Value
+                # )
+
+                percentage_amount = sub_sheet.Range("C" + str(row_idx)).Value
+                if percentage_amount == NA:
+                    ET.SubElement(investor_percentage, "PercentageAmount").text = "NA"
+                else:
+                    rounded_amount = round(percentage_amount)
+                    if rounded_amount > 100:
+                        rounded_amount = 100
+                    ET.SubElement(investor_percentage, "PercentageAmount").text = str(rounded_amount)
                 print(f"Update investor for {sub_sheet_name}: {sub_sheet.Range("B" + str(row_idx)).Value}, {sub_sheet.Range("C" + str(row_idx)).Value}")
 
         # Q59
