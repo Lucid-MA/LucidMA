@@ -11,7 +11,8 @@ from Utils.database_utils import get_database_engine
 engine = get_database_engine("postgres")
 tb_name = "bronze_benchmark"
 # Path to a test Excel file
-test_file_path = get_file_path(r"S:/Users/THoang/Data/Benchmark data_Apr 29 2024.xlsx")
+# test_file_path = get_file_path(r"S:/Users/THoang/Data/Benchmark data_Apr 29 2024.xlsx")
+benchmark_file_path = get_file_path(r"S:/Users/THoang/Data/Historical Benchmarks.xlsx")
 
 
 def create_table_with_schema(tb_name):
@@ -23,9 +24,12 @@ def create_table_with_schema(tb_name):
         Column("benchmark_date", String, primary_key=True),
         Column("1m A1/P1 CP", String),
         Column("3m A1/P1 CP", String),
+        Column("6m A1/P1 CP", String),
+        Column("9m A1/P1 CP", String),
         Column("1m SOFR", String),
         Column("3m SOFR", String),
         Column("6m SOFR", String),
+        Column("1y SOFR", String),
         Column("1m LIBOR", String),
         Column("3m LIBOR", String),
         Column("timestamp", DateTime),
@@ -72,9 +76,7 @@ def upsert_data(tb_name, df):
 
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
-            print(
-                f"Data for {df['benchmark_date'][0]} upserted successfully into {tb_name}."
-            )
+            print(f"Latest data upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
             raise
@@ -84,20 +86,23 @@ create_table_with_schema(tb_name)
 
 try:
     # Set the range of cells to read
-    start_row = 6  # Row number for the header
+    start_row = 5  # Row number for the header
     start_col = "B"  # Column letter for the start of the table
-    end_col = "I"  # Column letter for the end of the table
+    end_col = "L"  # Column letter for the end of the table
 
     # Create a list of column letters
     cols = [chr(i) for i in range(ord(start_col), ord(end_col) + 1)]
     col_range = "".join(cols)
 
     # Construct the range of cells
-    cell_range = f"{start_col}:{end_col}"  # e.g., 'B:Z'
+    cell_range = f"{start_col}:{end_col}"  # e.g., 'B:L'
 
     # Attempt to read the test Excel file
     benchmark_df = pd.read_excel(
-        test_file_path, sheet_name="Values", header=start_row - 1, usecols=cell_range
+        benchmark_file_path,
+        sheet_name="Historical Data",
+        header=start_row - 1,
+        usecols=cell_range,
     )
 
     # Rename the columns
@@ -105,9 +110,12 @@ try:
         "benchmark_date",
         "1m A1/P1 CP",
         "3m A1/P1 CP",
+        "6m A1/P1 CP",
+        "9m A1/P1 CP",
         "1m SOFR",
         "3m SOFR",
         "6m SOFR",
+        "1y SOFR",
         "1m LIBOR",
         "3m LIBOR",
     ]
@@ -118,6 +126,12 @@ try:
         "%Y-%m-%d"
     )
     benchmark_df["timestamp"] = datetime.now().strftime("%B-%d-%y %H:%M:%S")
+
+    # Divide the data by 100 (excluding the 'benchmark_date' and 'timestamp' columns)
+    for col in benchmark_df.columns[1:-1]:
+        benchmark_df[col] = benchmark_df[col].apply(
+            lambda x: x / 100 if pd.notna(x) and isinstance(x, (int, float)) else x
+        )
 
     print("Test file data loaded successfully. Here's a preview:")
     print(benchmark_df.head())
