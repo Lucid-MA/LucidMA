@@ -869,7 +869,8 @@ def section3_itemE():
 
             index = 4
             infinite_loop_guard = 50
-            while sheet.Range("A" + str(index)).Value is not None:
+            max_row = 100
+            while sheet.Range("A" + str(index)).Value is not None and index <= max_row:
                 security = ET.SubElement(
                     securitieslist, "PFSection3ItemELiquiditySecuritiesItem"
                 )
