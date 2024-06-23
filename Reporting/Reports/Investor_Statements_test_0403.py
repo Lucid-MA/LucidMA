@@ -198,7 +198,7 @@ for reporting_series_id in reporting_series:
     def get_next_reporting_dates(reporting_date):
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
         next_dates = df_roll_schedule[
-            df_roll_schedule["start_date"] > reporting_date.strftime("%Y-%m-%d")
+            df_roll_schedule["end_date"] > reporting_date.strftime("%Y-%m-%d")
         ]
         if not next_dates.empty:
             next_dates = next_dates.sort_values(by="start_date")
@@ -224,7 +224,7 @@ for reporting_series_id in reporting_series:
     ############################## TARGET RETURN #####################################
     curr_target_return_condition = (
         df_target_return["security_id"] == reporting_series_id
-    ) & (df_target_return["date"] == curr_start)
+    ) & (df_target_return["date"] == next_start)
     benchmark_name = df_target_return[curr_target_return_condition][
         "benchmark_name"
     ].iloc[0]
@@ -241,7 +241,7 @@ for reporting_series_id in reporting_series:
 
     prev_target_return_condition = (
         df_target_return["security_id"] == reporting_series_id
-    ) & (df_target_return["date"] == prev_start)
+    ) & (df_target_return["date"] == curr_start)
     prev_target_outperform = (
         str(df_target_return[prev_target_return_condition]["net_spread"].iloc[0])
         + " bps"
@@ -268,10 +268,13 @@ for reporting_series_id in reporting_series:
     series_description = df_attributes["series_description"].iloc[0]
 
     ############################## OC RATES #####################################
+    oc_date = (pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)).strftime(
+        "%Y-%m-%d"
+    )
     oc_rate_condition = (
         (df_oc_rates["fund"] == fund_name.upper())
         & (df_oc_rates["series"] == series_name.upper().replace(" ", ""))
-        & (df_oc_rates["report_date"] == report_date)
+        & (df_oc_rates["report_date"] == oc_date)
     )
     df_oc_rates = df_oc_rates[oc_rate_condition]
 
@@ -653,12 +656,12 @@ for reporting_series_id in reporting_series:
             "benchmark": benchmark_name,  # done
             "tgt_outperform": target_outperform_range,  # done
             "exp_rat_footnote": expense_ratio_footnote_text,
-            "prev_pd_start": pd.to_datetime(prev_start).strftime("%B %d, %Y"),  # done
-            "this_pd_start": pd.to_datetime(curr_start).strftime("%B %d, %Y"),  # done
+            "prev_pd_start": pd.to_datetime(curr_start).strftime("%B %d, %Y"),  # done
+            "this_pd_start": pd.to_datetime(next_start).strftime("%B %d, %Y"),  # done
             "prev_pd_return": prev_return,  # done
             "prev_pd_benchmark": benchmark_short,  # done
             "prev_pd_outperform": prev_target_outperform,  # done
-            "this_pd_end": pd.to_datetime(curr_end).strftime("%B %d, %Y"),  # done
+            "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),  # done
             "this_pd_est_return": current_target_return,  # done
             "this_pd_est_outperform": target_outperform_net,  # done
             "benchmark_short": benchmark_short,  # done
@@ -723,10 +726,10 @@ for reporting_series_id in reporting_series:
             "rating": df_attributes["rating"].iloc[0],  # done
             "rating_org": df_attributes["rating_org"].iloc[0],  # done
             "calc_frequency": "Monthly at par",  # done
-            "next_withdrawal_date": pd.to_datetime(curr_withdrawal).strftime(
+            "next_withdrawal_date": pd.to_datetime(next_withdrawal).strftime(
                 "%B %d, %Y"
             ),  # done
-            "next_notice_date": pd.to_datetime(curr_notice).strftime(
+            "next_notice_date": pd.to_datetime(next_notice).strftime(
                 "%B %d, %Y"
             ),  # done
             "min_invest": wordify(df_attributes["minimum_investment"].iloc[0]),  # done
