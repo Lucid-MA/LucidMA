@@ -38,7 +38,8 @@ def create_table_with_schema(tb_name):
         Column("series_name", String),
         Column("series_abbreviation", String),
         Column("series_description", String),
-        Column("series_inception", Date),
+        Column("series_inception", Date, nullable=True),
+        Column("final_maturity_date", Date, nullable=True),
         Column("benchmark_1", String),
         Column("benchmark_2", String),
         Column("benchmark_3", String),
@@ -105,6 +106,7 @@ try:
         "series_abbreviation",
         "series_description",
         "series_inception",
+        "final_maturity_date",
         "benchmark_1",
         "benchmark_2",
         "benchmark_3",
@@ -117,12 +119,33 @@ try:
     ]
 
     # Convert the 'fund_inception' and 'series_inception' columns to 'YYYY-MM-DD' format
-    series_attributes_df["fund_inception"] = pd.to_datetime(
-        series_attributes_df["fund_inception"]
-    ).dt.strftime("%Y-%m-%d")
-    series_attributes_df["series_inception"] = pd.to_datetime(
-        series_attributes_df["series_inception"]
-    ).dt.strftime("%Y-%m-%d")
+    series_attributes_df["fund_inception"] = series_attributes_df[
+        "fund_inception"
+    ].apply(
+        lambda x: (
+            pd.to_datetime(x).strftime("%Y-%m-%d")
+            if pd.notnull(x) and x != "NaT"
+            else None
+        )
+    )
+    series_attributes_df["series_inception"] = series_attributes_df[
+        "series_inception"
+    ].apply(
+        lambda x: (
+            pd.to_datetime(x).strftime("%Y-%m-%d")
+            if pd.notnull(x) and x != "NaT"
+            else None
+        )
+    )
+    series_attributes_df["final_maturity_date"] = series_attributes_df[
+        "final_maturity_date"
+    ].apply(
+        lambda x: (
+            pd.to_datetime(x).strftime("%Y-%m-%d")
+            if pd.notnull(x) and x != "NaT"
+            else None
+        )
+    )
 
     # Add the timestamp column
     series_attributes_df["timestamp"] = datetime.now().strftime("%B-%d-%y %H:%M:%S")
