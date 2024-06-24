@@ -88,12 +88,12 @@ Q58B_SHEETS = {
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
 ]
 
 
@@ -787,7 +787,7 @@ def section3_itemD(wb):
                 investor_percentage = ET.SubElement(investor_special_list, "PFSection3ItemDLiquidityInvestorPercent")
 
                 ET.SubElement(investor_percentage, "FundInvestorCode").text = str(
-                    sub_sheet.Range("B" + str(row_idx)).Value
+                    sub_sheet.Range("D" + str(row_idx)).Value
                 )
 
                 # Q62a - Issuer name
@@ -875,8 +875,8 @@ def section3_itemE():
             )
 
             index = 4
-            infinite_loop_guard = 50
-            max_row = 80
+            infinite_loop_guard = 500
+            max_row = 80000
             while sheet.Range("A" + str(index)).Value is not None and index <= max_row:
                 security = ET.SubElement(
                     securitieslist, "PFSection3ItemELiquiditySecuritiesItem"
@@ -1128,7 +1128,7 @@ def section3_itemE():
                 ET.SubElement(security, "IsSecurityIlliquid").text = "false"
                 if index == infinite_loop_guard:
                     print("On row " + str(index))
-                    infinite_loop_guard += 50
+                    infinite_loop_guard += 500
                 index += 1
         count += 1
 
