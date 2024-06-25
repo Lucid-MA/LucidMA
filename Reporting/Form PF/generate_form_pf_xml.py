@@ -88,12 +88,12 @@ Q58B_SHEETS = {
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
 ]
 
 
@@ -1045,9 +1045,15 @@ def section3_itemE():
                     )
 
                     if sheet.Range("S" + str(index)).Value == "OTHER":
-                        ET.SubElement(repo, "CategoryOtherDesc").text = sheet.Range(
-                            "AE" + str(index)
-                        ).Value
+                        try:
+                            other_desc = sheet.Range("AE" + str(index)).Value
+                            if other_desc is None or other_desc == NA:
+                                ET.SubElement(repo, "CategoryOtherDesc").text = ""
+                            else:
+                                ET.SubElement(repo, "CategoryOtherDesc").text = str(other_desc)
+                        except Exception as e:
+                            print(f"Error processing CategoryOtherDesc for row {index}: {e}")
+                            ET.SubElement(repo, "CategoryOtherDesc").text = ""
                 # TODO: Q62h check w Heather answer is #NA or yes no
                 ET.SubElement(security, "HasNoCreditAgency").text = "true"
 
