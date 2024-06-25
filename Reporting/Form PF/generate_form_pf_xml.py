@@ -924,6 +924,10 @@ def section3_itemE():
                 ET.SubElement(security, "LegalEntityID").text = (
                     "NA"
                     if sheet.Range("H" + str(index)).Value == NA
+                       or (
+                               sheet.Range("H" + str(index)).Value is not None
+                               and len(str(sheet.Range("H" + str(index)).Value)) < 4
+                       )
                     else str(sheet.Range("H" + str(index)).Value)
                 )
 
