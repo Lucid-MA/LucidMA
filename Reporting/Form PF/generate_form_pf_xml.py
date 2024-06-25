@@ -88,12 +88,12 @@ Q58B_SHEETS = {
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
-    # prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
 ]
 
 
@@ -734,6 +734,23 @@ def section3_itemABC(wb):
         )
 
 
+def is_effectively_zero(value):
+    if isinstance(value, str):
+        return value in ('0', '0.0', '0.00')
+    return isinstance(value, (int, float)) and abs(value) < 1e-10
+
+def is_effectively_zero_or_negative(value):
+    if isinstance(value, str):
+        return value in ('0', '0.0', '0.00') or value.startswith('-')
+    return isinstance(value, (int, float)) and value <= 1e-10
+
+def format_decimal(value, multiply_by_100=False):
+    if value == NA or is_effectively_zero_or_negative(value):
+        return "NA"
+    factor = 100 if multiply_by_100 else 1
+    formatted = "{:.2f}".format(round(value * factor, 2))
+    return formatted if formatted != '0.00' else "NA"
+
 def section3_itemD(wb):
 
     investor_info_list = ET.SubElement(root, "PFSection3ItemDLiquidityInvestorInfoList")
@@ -927,7 +944,7 @@ def section3_itemE():
                        or (
                                sheet.Range("H" + str(index)).Value is not None
                                and len(str(sheet.Range("H" + str(index)).Value)) < 4
-                       )
+                       ) or (sheet.Range("H" + str(index)).Value == "N/A") or  (sheet.Range("H" + str(index)).Value == "Look into")
                     else str(sheet.Range("H" + str(index)).Value)
                 )
 
@@ -939,10 +956,12 @@ def section3_itemE():
                 )
 
                 # Q62f - Investment Category
+                investment_category = sheet.Range("J" + str(index)).Value
+
                 ET.SubElement(security, "InvestmentCategory").text = (
-                    "NA"
-                    if sheet.Range("J" + str(index)).Value == NA
-                    else sheet.Range("J" + str(index)).Value
+                    "NA" if investment_category == NA else
+                    "OTHER" if investment_category == "OTHER Government 2a7 Funds" else
+                    str(investment_category)
                 )
                 # Q62f - Investment Category - OTHER
                 if sheet.Range("J" + str(index)).Value == "OTHER":
@@ -1082,46 +1101,75 @@ def section3_itemE():
                 ET.SubElement(security, "HasNoDemandFeatures").text = "true"
                 ET.SubElement(security, "HasNoGuarantee").text = "true"
                 ET.SubElement(security, "HasNoEnhancement").text = "true"
+                # sy = ET.SubElement(security, "SecurityYield")
+                # ET.SubElement(sy, "Value").text = (
+                #     "NA"
+                #     if sheet.Range("W" + str(index)).Value == NA
+                #     else "{0:.2f}".format(
+                #         round(sheet.Range("W" + str(index)).Value * 100, 2)
+                #     )
+                # )
+                # ssv = ET.SubElement(security, "SponsorSupportValue")
+                # ET.SubElement(ssv, "Value").text = (
+                #     "NA"
+                #     if sheet.Range("X" + str(index)).Value == NA
+                #     else "{0:.2f}".format(round(sheet.Range("X" + str(index)).Value, 2))
+                # )
+                # ssav = ET.SubElement(security, "SponsorSupportAmortizedValue")
+                # ET.SubElement(ssav, "Value").text = (
+                #     "NA"
+                #     if sheet.Range("Y" + str(index)).Value == NA
+                #     else "{0:.2f}".format(round(sheet.Range("Y" + str(index)).Value, 2))
+                # )
+                # ssve = ET.SubElement(security, "SponsorSupportValueExcluded")
+                # ET.SubElement(ssve, "Value").text = (
+                #     "NA"
+                #     if sheet.Range("Z" + str(index)).Value == NA
+                #     else "{0:.2f}".format(round(sheet.Range("Z" + str(index)).Value, 2))
+                # )
+                # ssave = ET.SubElement(security, "SponsorSupportAmortizedValueExcluded")
+                # ET.SubElement(ssave, "Value").text = (
+                #     "NA"
+                #     if sheet.Range("AA" + str(index)).Value == NA
+                #     else "{0:.2f}".format(round(sheet.Range("AA" + str(index)).Value, 2))
+                # )
+
+                # SecurityYield
                 sy = ET.SubElement(security, "SecurityYield")
-                ET.SubElement(sy, "Value").text = (
-                    "NA"
-                    if sheet.Range("W" + str(index)).Value == NA
-                    else "{0:.2f}".format(
-                        round(sheet.Range("W" + str(index)).Value * 100, 2)
-                    )
-                )
+                sy_value = sheet.Range("W" + str(index)).Value
+                ET.SubElement(sy, "Value").text = format_decimal(sy_value, multiply_by_100=True)
+
+                # SponsorSupportValue
                 ssv = ET.SubElement(security, "SponsorSupportValue")
-                ET.SubElement(ssv, "Value").text = (
-                    "NA"
-                    if sheet.Range("X" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("X" + str(index)).Value, 2))
-                )
+                ssv_value = sheet.Range("X" + str(index)).Value
+                ET.SubElement(ssv, "Value").text = format_decimal(ssv_value)
+
+                # SponsorSupportAmortizedValue
                 ssav = ET.SubElement(security, "SponsorSupportAmortizedValue")
-                ET.SubElement(ssav, "Value").text = (
-                    "NA"
-                    if sheet.Range("Y" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("Y" + str(index)).Value, 2))
-                )
+                ssav_value = sheet.Range("Y" + str(index)).Value
+                ET.SubElement(ssav, "Value").text = format_decimal(ssav_value)
+
+                # SponsorSupportValueExcluded
                 ssve = ET.SubElement(security, "SponsorSupportValueExcluded")
-                ET.SubElement(ssve, "Value").text = (
-                    "NA"
-                    if sheet.Range("Z" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("Z" + str(index)).Value, 2))
-                )
+                ssve_value = sheet.Range("Z" + str(index)).Value
+                ET.SubElement(ssve, "Value").text = format_decimal(ssve_value)
+
+                # SponsorSupportValueExcluded
                 ssave = ET.SubElement(security, "SponsorSupportAmortizedValueExcluded")
-                ET.SubElement(ssave, "Value").text = (
-                    "NA"
-                    if sheet.Range("AA" + str(index)).Value == NA
-                    else "{0:.2f}".format(round(sheet.Range("AA" + str(index)).Value, 2))
-                )
+                ssave_value = sheet.Range("AA" + str(index)).Value
+                ET.SubElement(ssave, "Value").text = format_decimal(ssave_value)
+
                 pns = ET.SubElement(security, "PercentNavSecurity")
-                ET.SubElement(pns, "Value").text = (
-                    "NA"
-                    if sheet.Range("AB" + str(index)).Value == NA
-                    else "{0:.2f}".format(
-                        round(sheet.Range("AB" + str(index)).Value * 100, 2)
-                    )
-                )
+                value = sheet.Range("AB" + str(index)).Value
+
+                if value == NA or is_effectively_zero(value):
+                    ET.SubElement(pns, "Value").text = "NA"
+                else:
+                    formatted_value = "{:.2f}".format(round(value * 100, 2))
+                    if formatted_value == '0.00':
+                        ET.SubElement(pns, "Value").text = "NA"
+                    else:
+                        ET.SubElement(pns, "Value").text = formatted_value
 
                 ET.SubElement(security, "IsSecurityAssetOrLiabililty").text = "false"
                 ET.SubElement(security, "IsSecurityDailyAsset").text = (
