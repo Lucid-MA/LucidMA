@@ -90,7 +90,7 @@ Q63_PATHS = [
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
