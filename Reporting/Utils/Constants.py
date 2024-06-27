@@ -377,6 +377,12 @@ lucid_series = {
     "PRIME-Q36": "Lucid Prime - Series Q364",
     "PRIME-QX0": "Lucid Prime - Series QX",
     "USGFD-M00": "Lucid USG - Series M",
+    # "74166WAE4",
+    "74166WAK0": "Lucid Prime Series MIG / Note Series M-2",
+    # "74166WAM6",
+    "74166WAN4": "Lucid Prime Series MIG / Note Series MIG-3",
+    "90366JAG2": "Lucid USG Series M / Note Series M-8",
+    "90366JAH0": "Lucid USG Series M / Note Series M-9",
 }
 
 series_return_intervals = {

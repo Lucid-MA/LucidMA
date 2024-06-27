@@ -37,12 +37,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
-    "PRIME-M00",
-    "PRIME-MIG",
-    # "PRIME-Q10",
-    # "PRIME-Q36",
-    # "PRIME-QX0",
+    # "PRIME-C10",
+    # "PRIME-M00",
+    # "PRIME-MIG",
+    # # "PRIME-Q10",
+    # # "PRIME-Q36",
+    # # "PRIME-QX0",
+    # # "74166WAE4",  # Prime Note QX-1
+    # "74166WAK0",  # Prime Note M-2
+    # # "74166WAM6",  # Prime Note Q1
+    # "74166WAN4",  # Prime Note MIG
+    "90366JAG2",  # USG Note M-8
+    "90366JAH0",  # USG Note M-9
     "USGFD-M00",
 ]
 
@@ -53,6 +59,12 @@ reporting_type_dict = {
     # "PRIME-Q10",
     # "PRIME-Q36",
     # "PRIME-QX0",
+    # "74166WAE4": "NOTE",  # Prime Note QX-1
+    "74166WAK0": "NOTE",  # Prime Note M-2
+    # "74166WAM6": "NOTE",  # Prime Note Q1
+    "74166WAN4": "NOTE",  # Prime Note MIG
+    "90366JAG2": "NOTE",  # USG Note M-8
+    "90366JAH0": "NOTE",  # USG Note M-9
     "USGFD-M00": "FUND",
 }
 
@@ -64,6 +76,12 @@ report_names_dict = {
     # "PRIME-Q10",
     # "PRIME-Q36",
     # "PRIME-QX0",
+    # "74166WAE4": "PrimeNote QX",  # Prime Note QX-1
+    "74166WAK0": "PrimeNote M2",  # Prime Note M-2
+    # "74166WAM6": "PrimeNote Q1",  # Prime Note Q1
+    "74166WAN4": "PrimeNote MIG",  # Prime Note MIG
+    "90366JAG2": "USGNote M8",  # USG Note M-8
+    "90366JAH0": "USGNote M9",  # USG Note M-9
     "USGFD-M00": "USGFund M",
 }
 
@@ -76,6 +94,12 @@ historical_returns_temp = {
     # "PRIME-Q10",
     # "PRIME-Q36",
     # "PRIME-QX0",
+    "74166WAE4": [0.0585, 0.0597],
+    "74166WAK0": [0.0585, 0.0597],
+    "74166WAM6": [0.0585, 0.0597],
+    "74166WAN4": [0.0585, 0.0597],
+    "90366JAG2": [0.0555, 0.0563],
+    "90366JAH0": [0.0555, 0.0563],
     "USGFD-M00": [0.0555, 0.0563],
 }
 
@@ -92,8 +116,42 @@ series_size_dict = {
     # "PRIME-Q10",
     # "PRIME-Q36",
     # "PRIME-QX0",
+    # "74166WAE4",
+    "74166WAK0": 768291953.78,
+    # "74166WAM6",
+    "74166WAN4": 602070267.782659,
+    "90366JAG2": 123033585.309436,
+    "90366JAH0": 123033585.309436,
     "USGFD-M00": 123255192.977195,
 }
+
+benchmark_dictionary = {
+    "PRIME-C10": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "PRIME-M00": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "PRIME-MIG": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    # "PRIME-Q10":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
+    # "PRIME-Q36":[],
+    # "PRIME-QX0":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
+    # "74166WAE4": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "74166WAK0": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    # "74166WAM6": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "74166WAN4": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
+    "90366JAG2": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
+    "90366JAH0": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
+    "USGFD-M00": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
+}
+temp_usg_ids = ["USGFD-M00", "90366JAG2", "90366JAH0"]
+temp_prime_ids = ["PRIME-C10", "PRIME-M00", "PRIME-MIG", "74166WAK0", "74166WAN4"]
+
+############## MANUAL INPUT##############
+tbill_data = [0.0534, 0.0538, 0.0545]
+tbill_data_prime = [0.0527, 0.0531, 0.0538]
+crane_data = [0.0511, 0.0513, 0.0522]
+fhlb_data = [0, 0, 0]
+sofr_data = [0.0532, 0.0535, 0.0544]
+cp_data = [0.0532, 0.0534, 0.0543]
+#########################################
+
 # TODO: replace this with data from data from helix
 lucid_aum = 4765143799.49
 daycount = 360
@@ -248,7 +306,16 @@ for reporting_series_id in reporting_series:
     )
 
     ############################## HISTORICAL RETURN #####################################
-    pool_name_encoded = reverse_cusip_mapping[reporting_series_id]
+    if reporting_type_dict[reporting_series_id] == "NOTE":
+        if reporting_series_id in temp_prime_ids:
+            pool_name_encoded = reverse_cusip_mapping["PRIME-M00"]
+        elif reporting_series_id in temp_usg_ids:
+            pool_name_encoded = reverse_cusip_mapping["USGFD-M00"]
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+    else:
+        pool_name_encoded = reverse_cusip_mapping[reporting_series_id]
+
     historical_return_condition = (df_historical_returns["end_date"] == prev_end) & (
         df_historical_returns["pool_name"] == pool_name_encoded
     )
@@ -268,6 +335,7 @@ for reporting_series_id in reporting_series:
     series_description = df_attributes["series_description"].iloc[0]
 
     ############################## OC RATES #####################################
+    # OC Rate should be 2 business days before the reporting date, or as of the date before the last date of current reporting period
     oc_date = (pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)).strftime(
         "%Y-%m-%d"
     )
@@ -279,6 +347,7 @@ for reporting_series_id in reporting_series:
     df_oc_rates = df_oc_rates[oc_rate_condition]
 
     ############################## CASH BALANCE #####################################
+    # TODO: Change inputs for note here
     cash_balance_condition = (
         (df_cash_balance["Fund"] == fund_name.upper())
         & (df_cash_balance["Series"] == series_name.upper().replace(" ", ""))
@@ -290,15 +359,6 @@ for reporting_series_id in reporting_series:
     cash_balance = df_cash_balance["Sweep_Balance"].iloc[0]
 
     ############################## RETURN COMPARISON #####################################
-
-    ############## MANUAL INPUT##############
-    tbill_data = [0.0534, 0.0538, 0.0545]
-    tbill_data_prime = [0.0527, 0.0531, 0.0538]
-    crane_data = [0.0511, 0.0513, 0.0522]
-    fhlb_data = [0, 0, 0]
-    sofr_data = [0.0532, 0.0535, 0.0544]
-    cp_data = [0.0532, 0.0534, 0.0543]
-    #########################################
 
     # TODO: Need to replace this with benchmark table
     benchmark_comparison_condition = (
@@ -315,21 +375,11 @@ for reporting_series_id in reporting_series:
         benchmark_comparison_condition_prev
     ]
 
-    benchmark_dictionary = {
-        "PRIME-C10": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-        "PRIME-M00": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-        "PRIME-MIG": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-        # "PRIME-Q10":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
-        # "PRIME-Q36":[],
-        # "PRIME-QX0":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
-        "USGFD-M00": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
-    }
-
     benchmark_to_use = benchmark_dictionary[reporting_series_id]
 
     # T-Bill (previous, 3 month, 1 year)
     # 1m SOFR
-    if reporting_series_id == "USGFD-M00":
+    if reporting_series_id in temp_usg_ids:
         r_a = tbill_data
     else:
         r_a = sofr_data
@@ -355,7 +405,7 @@ for reporting_series_id in reporting_series:
     r_a[2] = form_as_percent(r_a[2], 2)
     # Crane Govt MM Index
     # 1m A1/P1 CP
-    if reporting_series_id == "USGFD-M00":
+    if reporting_series_id in temp_usg_ids:
         r_b = crane_data
     else:
         r_b = cp_data
@@ -381,7 +431,7 @@ for reporting_series_id in reporting_series:
     r_b[2] = form_as_percent(r_b[2], 2)
 
     # 1m T-Bill
-    if reporting_series_id == "USGFD-M00":
+    if reporting_series_id in temp_usg_ids:
         r_c = fhlb_data
     else:
         r_c = tbill_data_prime
