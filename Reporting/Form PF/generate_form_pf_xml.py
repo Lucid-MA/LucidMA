@@ -27,7 +27,7 @@ from Utils.Common import get_file_path
 prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working files/")
 
 # PARAMETERS TO INITIALIZE
-FILING_DATE = "2024-07-15"  # quarter-end here as YYYY-MM-DD string
+FILING_DATE = "2024-03-31"  # quarter-end here as YYYY-MM-DD string
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
 XML_OUTPUT_PATH = (

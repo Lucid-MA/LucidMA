@@ -22,7 +22,7 @@ pattern = "CashBal"
 directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive")
 # directory = get_file_path(r"S:/Users/THoang/Data")
 # Sample file path
-framework_file = get_file_path(r"S:/Users/THoang/Data/CashBal_20052024.csv")
+framework_file = "S:/Users/THoang/Data/CashBal_20052024.csv"
 
 
 def extract_date_and_indicator(filename):
@@ -159,9 +159,9 @@ def convert_numeric_to_string(df, numeric_columns):
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
     if (
-            filename.startswith(pattern)
-            and filename.endswith(".csv")
-            and filename not in read_processed_files()
+        filename.startswith(pattern)
+        and filename.endswith(".csv")
+        and filename not in read_processed_files()
     ):
         filepath = os.path.join(directory, filename)
 
