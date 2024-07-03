@@ -44,10 +44,10 @@ SECTION_1B_SHEETS = [
     "Section 1b - Priv Fnd USG M",
     "Section 1b - Prv Fnd Prime M",
     "Section 1b - Prv Fnd Prime C1",
-    "Section 1b - Prv Fnd Prime Q1",
     "Section 1b - Prv Fnd Prime MIG",
-    "Section 1b - Prv Fnd Prime Q364",
-    "Section 1b - Prv Fnd Prime QX",
+    # "Section 1b - Prv Fnd Prime Q1",
+    # "Section 1b - Prv Fnd Prime Q364",
+    # "Section 1b - Prv Fnd Prime QX",
 ]
 
 if DOING_HEDGE:
@@ -59,52 +59,52 @@ SECTION_3_SHEETS1 = [
     "Sec 3 Item A-C USG M",
     "Sec 3 Item A-C Prime M",
     "Sec 3 Item A-C Prime C1",
-    "Sec 3 Item A-C Prime Q1",
     "Sec 3 Item A-C Prime MIG",
-    "Sec 3 Item A-C Prime Q364",
-    "Sec 3 Item A-C Prime QX",
+    # "Sec 3 Item A-C Prime Q1",
+    # "Sec 3 Item A-C Prime Q364",
+    # "Sec 3 Item A-C Prime QX",
 ]
 SECTION_3_SHEETS2 = [
     "Sec 3 Item D-E USG M",
     "Sec 3 Item D-E Prime M",
     "Sec 3 Item D-E Prime C1",
-    "Sec 3 Item D-E Prime Q1",
     "Sec 3 Item D-E Prime MIG",
-    "Sec 3 Item D-E Prime Q364",
-    "Sec 3 Item D-E Prime QX",
+    # "Sec 3 Item D-E Prime Q1",
+    # "Sec 3 Item D-E Prime Q364",
+    # "Sec 3 Item D-E Prime QX",
 ]
 
 Q58B_SHEETS = {
     "Sec 3 Item D-E USG M": "Q58-USG M",
     "Sec 3 Item D-E Prime M": "Q58-Prime M",
     "Sec 3 Item D-E Prime C1": "Q58-Prime C1",
-    "Sec 3 Item D-E Prime Q1": "Q58-Prime Q1",
     "Sec 3 Item D-E Prime MIG": "Q58-Prime MIG",
-    "Sec 3 Item D-E Prime Q364": "Q58-Prime Q364",
-    "Sec 3 Item D-E Prime QX": "Q58-Prime QX",
+    # "Sec 3 Item D-E Prime Q1": "Q58-Prime Q1",
+    # "Sec 3 Item D-E Prime Q364": "Q58-Prime Q364",
+    # "Sec 3 Item D-E Prime QX": "Q58-Prime QX",
 }
 
 # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
 # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
 Q63_PATHS = [
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
+    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
     prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
     # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
-    prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
+    # prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
 ]
 
 
 FUND_DATA = [
-    ["Lucid Prime Fund LLC [Series C1]", "805-3531452546", "LIQUIDITY"],
-    ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"],
-    ["Lucid Prime Fund LLC [Series MIG]", "805-1061582636", "LIQUIDITY"],
-    ["Lucid Prime Fund LLC [Series Q1]", "805-2093722753", "LIQUIDITY"],
-    ["Lucid Prime Fund LLC [Series QX]", "805-3603861400", "LIQUIDITY"],
-    ["Lucid Prime Fund LLC [Series Q364]", "805-5151206611", "LIQUIDITY"],
     ["Lucid Cash Fund USG LLC", "805-6455113436", "LIQUIDITY"],
+    ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"],
+    ["Lucid Prime Fund LLC [Series C1]", "805-3531452546", "LIQUIDITY"],
+    ["Lucid Prime Fund LLC [Series MIG]", "805-1061582636", "LIQUIDITY"],
+    # ["Lucid Prime Fund LLC [Series Q1]", "805-2093722753", "LIQUIDITY"],
+    # ["Lucid Prime Fund LLC [Series Q364]", "805-5151206611", "LIQUIDITY"],
+    # ["Lucid Prime Fund LLC [Series QX]", "805-3603861400", "LIQUIDITY"],
 ]
 
 if DOING_HEDGE:
@@ -130,7 +130,6 @@ excel = win32.gencache.EnsureDispatch("Excel.Application")
 
 def main():
     print("Launching Excel...")
-    # excel = win32.gencache.EnsureDispatch('Excel.Application')
     # Use EnsureDispatch to create an Excel instance
     excel = win32.gencache.EnsureDispatch("Excel.Application")
 
