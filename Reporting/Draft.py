@@ -213,3 +213,100 @@ while url:
 print(f"Total lines added: {total_added}")
 print(f"Total lines removed: {total_removed}")
 print(f"Net lines of code: {total_added - total_removed}")
+
+
+report_data_fund = {
+    "report_date": report_date,  # done
+    "fundname": fund_name,  # done
+    "toptableextraspace": "5.5em",
+    "series_abbrev": series_abbrev,
+    "port_limit": ("Quarterly" if "Q" in series_abbrev else "Monthly"),
+    "seriesname": series_name,
+    "fund_description": fund_description,
+    "series_description": series_description,
+    "benchmark": benchmark_name,  # done
+    "tgt_outperform": target_outperform_range,  # done
+    "exp_rat_footnote": expense_ratio_footnote_text,
+    "prev_pd_start": pd.to_datetime(curr_start).strftime("%B %d, %Y"),  # done
+    "this_pd_start": pd.to_datetime(next_start).strftime("%B %d, %Y"),  # done
+    "prev_pd_return": prev_return,  # done
+    "prev_pd_benchmark": benchmark_short,  # done
+    "prev_pd_outperform": prev_target_outperform,  # done
+    "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),  # done
+    "this_pd_est_return": current_target_return,  # done
+    "this_pd_est_outperform": target_outperform_net,  # done
+    "benchmark_short": benchmark_short,  # done
+    "interval1": month_wordify(interval_tuple[0]),  # TODO: review this
+    "interval2": month_wordify(interval_tuple[1]),  # TODO: review this
+    "descstretch": stretches(
+        df_attributes["fund_description"].iloc[0]
+        + df_attributes["series_description"].iloc[0]
+    )[0],
+    "pcompstretch": stretches(
+        df_attributes["fund_description"].iloc[0]
+        + df_attributes["series_description"].iloc[0]
+    )[1],
+    "addl_coll_breakdown": addl_coll_breakdown(
+        form_as_percent(aloc_aa_a, 1) if fund_name != "USG" else "n/a",
+        form_as_percent(oc_aa_a, 1) if fund_name != "USG" else "n/a",
+        form_as_percent(aloc_bbb, 1) if fund_name != "USG" else "n/a",
+        form_as_percent(oc_bbb, 1) if fund_name != "USG" else "n/a",
+        form_as_percent(0, 1) if fund_name != "USG" else "n/a",
+        form_as_percent(0, 1),
+    ),
+    "oc_aaa": form_as_percent(oc_usg_aaa, 2),  # TODO: review
+    "oc_tbills": "-",
+    "oc_total": form_as_percent(oc_total, 2),  # TODO: review
+    "usg_aaa_cat": (
+        "US Govt Repo" if fund_name == "USG" else "US Govt/AAA Repo"
+    ),  # done
+    "alloc_aaa": form_as_percent(aloc_usg_aaa, 2),  # TODO: review
+    "alloc_tbills": form_as_percent(aloc_tbills, 2),  # TODO: review
+    "alloc_total": form_as_percent(1, 1),  # TODO: review
+    "tablevstretch": tablevstretch(fund_name),  # done
+    # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
+    "return_table_plot": return_table_plot(
+        fund_name=fund_name,  # done
+        prev_pd_return=prev_return,
+        series_abbrev=series_abbrev,
+        r_this_1=r_this_1,
+        r_this_2=r_this_2,
+        comp_a=benchmark_to_use[0],
+        comp_b=benchmark_to_use[1],
+        comp_c=benchmark_to_use[2],
+        r_a=r_a,
+        r_b=r_b,
+        r_c=r_c,
+        s_a_0=s_a_0,
+        s_a_1=s_a_1,
+        s_a_2=s_a_2,
+        s_b_0=s_b_0,
+        s_b_1=s_b_1,
+        s_b_2=s_b_2,
+        s_c_0=s_c_0,
+        s_c_1=s_c_1,
+        s_c_2=s_c_2,
+    ),
+    "fund_size": get_fund_size(fund_name.upper(), report_date),  # TODO: update database
+    "series_size": get_series_size(
+        reporting_series_id, report_date
+    ),  # TODO: update database
+    "lucid_aum": wordify_aum(lucid_aum),  # TODO: update database
+    "rating": df_attributes["rating"].iloc[0],  # done
+    "rating_org": df_attributes["rating_org"].iloc[0],  # done
+    "calc_frequency": "Monthly at par",  # done
+    "next_withdrawal_date": pd.to_datetime(next_withdrawal).strftime(
+        "%B %d, %Y"
+    ),  # done
+    "next_notice_date": pd.to_datetime(next_notice).strftime("%B %d, %Y"),  # done
+    "min_invest": wordify(df_attributes["minimum_investment"].iloc[0]),  # done
+    "wal": wal,
+    "legal_fundname": df_attributes["legal_fund_name"].iloc[0],  # done
+    "fund_inception": df_attributes["fund_inception"]
+    .iloc[0]
+    .strftime("%B %d, %Y"),  # done
+    "series_inception": df_attributes["series_inception"]
+    .iloc[0]
+    .strftime("%B %d, %Y"),  # done
+    "performance_graph": performance_graph_data,
+}

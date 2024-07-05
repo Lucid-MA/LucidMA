@@ -29,7 +29,10 @@ from Reports.Utils import (
     return_table_plot,
     addl_coll_breakdown,
     performance_graph,
+    snapshot_graph,
     colltable,
+    plotify,
+    coupon_plotify,
     issuer_from_fundname,
     secured_by_from,
     series_from_note,
@@ -756,6 +759,13 @@ for reporting_series_id in reporting_series:
     def get_aum(report_date):
         return wordify_aum(lucid_aum)
 
+    def get_fund_inception_date(fund_name):
+        if fund_name == "USG":
+            inception_date = pd.to_datetime("06-29-2017").strftime("%B %d, %Y")
+        else:
+            inception_date = pd.to_datetime("07-20-2018").strftime("%B %d, %Y")
+        return inception_date
+
     reports_generated = []
     bad_reports = []
 
@@ -982,21 +992,25 @@ for reporting_series_id in reporting_series:
         elif reporting_type == "NOTE":  # note report template
 
             report_data_note = {
-                "report_date": report_date_formal,
-                "fundname": fund_name,
-                "series_abbrev": series_abbrev,
-                "issuer_name": issuer_from_fundname(fund_name),
-                "frequency": "Monthly",
-                "rating": df_attributes["rating"].iloc[0],
-                "rating_org": df_attributes["rating_org"].iloc[0],
-                "benchmark": benchmark_name,
-                "tgt_outperform": target_outperform_range,
-                "prev_pd_start": pd.to_datetime(prev_start).strftime("%B %d, %Y"),
-                "this_pd_start": pd.to_datetime(curr_start).strftime("%B %d, %Y"),
+                "report_date": report_date_formal,  # done
+                "fundname": fund_name,  # done
+                "series_abbrev": series_abbrev,  # done
+                "issuer_name": issuer_from_fundname(fund_name),  # done
+                "frequency": "Monthly",  # TODO: Review for quarterly
+                "rating": df_attributes["rating"].iloc[0],  # done
+                "rating_org": df_attributes["rating_org"].iloc[0],  # done
+                "benchmark": benchmark_name,  # done
+                "tgt_outperform": target_outperform_range,  # done
+                "prev_pd_start": pd.to_datetime(curr_start).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "this_pd_start": pd.to_datetime(next_start).strftime(
+                    "%B %d, %Y"
+                ),  # done
                 "prev_pd_return": prev_return,
                 "prev_pd_benchmark": benchmark_short,
                 "prev_pd_outperform": prev_target_outperform,
-                "this_pd_end": pd.to_datetime(curr_end).strftime("%B %d, %Y"),
+                "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),
                 "this_pd_est_return": current_target_return,
                 "this_pd_est_outperform": target_outperform_net,
                 "benchmark_short": benchmark_short,
@@ -1034,36 +1048,74 @@ for reporting_series_id in reporting_series:
                     ),
                     series_from_note(fund_name, series_name),
                     not (fund_name == "USG"),
-                    aloc_usg_aaa,
-                    aloc_aa_a,
-                    aloc_bbb,
+                    form_as_percent(aloc_usg_aaa, 1),
+                    form_as_percent(aloc_aa_a, 1),
+                    form_as_percent(aloc_bbb, 1),
                     form_as_percent(0, 1),  # high yield alloc, always 0%
-                    aloc_tbills,
+                    form_as_percent(aloc_tbills, 1),
                     form_as_percent(1, 1),
-                    oc_total,
+                    form_as_percent(oc_total, 1),
                     "-",
                     form_as_percent(0, 1),  # high yield OC, always 0%
-                    oc_bbb,
-                    oc_aa_a,
-                    oc_usg_aaa,
+                    form_as_percent(oc_bbb, 1),
+                    form_as_percent(oc_aa_a, 1),
+                    form_as_percent(oc_usg_aaa, 1),
                 ),
-                "zero_date": zero_date,
-                "max_return": 3,
+                "performance_graph": snapshot_graph(
+                    -0.86,
+                    "!",
+                    "6.676cm",
+                    max(
+                        round(
+                            0.06,  # TODO: Max return rate here - verify
+                            2,
+                        ),
+                        round(r_a[0] * 100, 2) if r_a[0] is not None else 0,
+                        round(r_b[0] * 100, 2) if r_b[0] is not None else 0,
+                        round(r_c[0] * 100, 2) if r_c[0] is not None else 0,
+                    )
+                    + 0.4,
+                    series_abbrev,
+                    benchmark_to_use[0],
+                    benchmark_to_use[1],
+                    benchmark_to_use[2] if fund_name != "USG" else None,
+                    round(
+                        0.06,  # TODO: Max return rate here - verify
+                        2,
+                    ),
+                    round(r_a[0] * 100, 2) if r_a[0] is not None else 0,
+                    round(r_b[0] * 100, 2) if r_b[0] is not None else 0,
+                    round(r_c[0] * 100, 2) if r_c[0] is not None else 0,
+                ),
+                # "performance_graph": "\n\t\t  \\hspace*{-0.86cm}\\resizebox {!} {6.676cm} {\\begin{tikzpicture}\n\t\\begin{axis}[\n\t\ttitle style = {font = \\small},\n\t\taxis line style = {light_grey},\n\t\t\ttitle={{Performance vs Benchmarks}},\n\t\tymin=2, ymax=6.53, %MAXRETURN HERE\n\t   symbolic x coords={Series M-8,1m T-Bills,Crane Govt},\n\t\txtick={Series M-8,1m T-Bills,Crane Govt},\n\t\tx tick label style={anchor=north,font=\\scriptsize,/pgf/number format/assume math mode},\n\t\tyticklabel=\\pgfmathparse{\\tick}\\pgfmathprintnumber{\\pgfmathresult}\\,\\%,\n\t\ty tick label style = {/pgf/number format/.cd,\n\t\t\t\tfixed,\n\t\t\t\tfixed zerofill,\n\t\t\t\tprecision=2,\n\t\t\t\t/pgf/number format/assume math mode\n\t\t},\n\t\tytick distance=0.5,\n\t\tbar width = 10mm, x = 3.7cm,\n\t\txtick pos=bottom,ytick pos=left,\n\t\tevery node near coord/.append style={font=\\fontsize{8}{8}\\selectfont,/pgf/number format/.cd,\n\t\t\t\tfixed,\n\t\t\t\tfixed zerofill,\n\t\t\t\tprecision=2,/pgf/number format/assume math mode},\n\t\t]\n\t\\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(Series M-8,5.53) \n\t\t};\n\t\\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(1m T-Bills,5.37) \n\t\t};\n\t\\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(Crane Govt,5.1) \n\t\t};\n\t\\end{axis}\n\t\t\\end{tikzpicture}}\n\t\n\t\t",
+                # TODO: Plot return like below
+                # "return_plot_temp": plotify(
+                #     ws,
+                #     "F",
+                #     "N" if daycount == 360 else "O",
+                #     ts_row_start,
+                #     ts_row_end,
+                # ),
                 "return_plot": "(2024-01-18,5.53) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) ",
                 "comp_a_plot": "(2024-01-18,5.33) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) ",
                 "comp_b_plot": "(2024-01-18,5.151) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) ",
-                "performance_graph": "\n\t\t  \\hspace*{-0.86cm}\\resizebox {!} {6.676cm} {\\begin{tikzpicture}\n\t\\begin{axis}[\n\t\ttitle style = {font = \\small},\n\t\taxis line style = {light_grey},\n\t\t\ttitle={{Performance vs Benchmarks}},\n\t\tymin=2, ymax=6.53, %MAXRETURN HERE\n\t   symbolic x coords={Series M-8,1m T-Bills,Crane Govt},\n\t\txtick={Series M-8,1m T-Bills,Crane Govt},\n\t\tx tick label style={anchor=north,font=\\scriptsize,/pgf/number format/assume math mode},\n\t\tyticklabel=\\pgfmathparse{\\tick}\\pgfmathprintnumber{\\pgfmathresult}\\,\\%,\n\t\ty tick label style = {/pgf/number format/.cd,\n\t\t\t\tfixed,\n\t\t\t\tfixed zerofill,\n\t\t\t\tprecision=2,\n\t\t\t\t/pgf/number format/assume math mode\n\t\t},\n\t\tytick distance=0.5,\n\t\tbar width = 10mm, x = 3.7cm,\n\t\txtick pos=bottom,ytick pos=left,\n\t\tevery node near coord/.append style={font=\\fontsize{8}{8}\\selectfont,/pgf/number format/.cd,\n\t\t\t\tfixed,\n\t\t\t\tfixed zerofill,\n\t\t\t\tprecision=2,/pgf/number format/assume math mode},\n\t\t]\n\t\\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(Series M-8,5.53) \n\t\t};\n\t\\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(1m T-Bills,5.37) \n\t\t};\n\t\\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(Crane Govt,5.1) \n\t\t};\n\t\\end{axis}\n\t\t\\end{tikzpicture}}\n\t\n\t\t",
-                "fund_size": "\\$123.0 million",
-                "series_size": "\\$123.0 million",
-                "lucid_aum": "\\$4.65 billion",
-                "fund_inception": "June 29 1990",
-                "cusip": "90366JAG2",
-                "note_abbrev": "M-8",
-                "principal_outstanding": "\\$20.7 million",
-                "issue_date": "December 14, 1990",
-                "maturity_date": "December 14, 2023",
-                "pd_end_date_long": "December 31, 2099",
-                "next_notice_date": "June 10, 9999",
+                "zero_date": zero_date,
+                "max_return": 3,
+                "fund_size": get_fund_size(fund_name.upper(), report_date),
+                "series_size": get_series_size(reporting_series_id, report_date),
+                "lucid_aum": wordify_aum(lucid_aum),
+                "fund_inception": df_attributes["fund_inception"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),
+                "cusip": df_attributes["security_id"],
+                "note_abbrev": series_abbrev,
+                "principal_outstanding": "\\$20.7 million",  # TODO: update df_attributes
+                "issue_date": get_fund_inception_date(
+                    fund_name
+                ),  # TODO: update with inception for PRIME & USG
+                "maturity_date": df_attributes["final_maturity_date"],
+                "pd_end_date_long": pd.to_datetime(next_notice).strftime("%B %d, %Y"),
+                "next_notice_date": pd.to_datetime(next_notice).strftime("%B %d, %Y"),
                 "coupon_plot": "12/14/23 &\\textbf{{01/18/24}} &\\textbf{{5.53\\%}} &1m TB+20 &\\$20,700,000 &\\$109,766.71 &01/18/24 &\\$20,700,000 &108.2\\% \\\\01/18/24 &\\textbf{{02/15/24}} &\\textbf{{5.53\\%}} &1m TB+17 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &02/15/24 &\\hphantom{{\\$}}20,700,000 &105.8\\% \\\\02/15/24 &\\textbf{{03/14/24}} &\\textbf{{5.53\\%}} &1m TB+17 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &03/14/24 &\\hphantom{{\\$}}20,700,000 &107.0\\% \\\\03/14/24 &\\textbf{{04/18/24}} &\\textbf{{5.53\\%}} &1m TB+16 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}109,766.71 &04/18/24 &\\hphantom{{\\$}}20,700,000 &106.5\\% \\\\04/18/24 &\\textbf{{05/16/24}} &\\textbf{{5.53\\%}} &1m TB+16 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &05/16/24 &\\hphantom{{\\$}}20,700,000 &107.0\\% \\\\05/16/24 &\\textbf{{06/13/24}} &\\textbf{{5.52\\%{{\\tiny (Est'd)}}}} &1m TB+18 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}n/a &06/13/24 &\\hphantom{{\\$}}20,700,000 &n/a \\\\\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t\n\n\t\t",
                 "rets_disclaimer_if_m1": "",
             }

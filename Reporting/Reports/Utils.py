@@ -595,6 +595,12 @@ def colltable(
         )
 
 
+def plotify_new(x_col, y_col):
+    # output: (x, y) for (x in x_col, y in y_col)
+    # x_col:
+    return
+
+
 def plotify(ws, x_col, y_col, start, end):
     outp = ""
     for row in range(start, end + 1):
