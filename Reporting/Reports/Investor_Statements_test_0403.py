@@ -68,7 +68,6 @@ reporting_type_dict = {
     "USGFD-M00": "FUND",
 }
 
-
 report_names_dict = {
     "PRIME-C10": "PrimeFund C1",
     "PRIME-M00": "PrimeFund M",
@@ -142,6 +141,19 @@ benchmark_dictionary = {
 }
 temp_usg_ids = ["USGFD-M00", "90366JAG2", "90366JAH0"]
 temp_prime_ids = ["PRIME-C10", "PRIME-M00", "PRIME-MIG", "74166WAK0", "74166WAN4"]
+
+temp_usg_ids_dict = {
+    "USGFD-M00": "USGFD-M00",
+    "90366JAG2": "USGFD-M00",
+    "90366JAH0": "USGFD-M00",
+}
+temp_prime_ids_dict = {
+    "PRIME-C10": "PRIME-C10",
+    "PRIME-M00": "PRIME-M00",
+    "PRIME-MIG": "PRIME-MIG",
+    "74166WAK0": "PRIME-M00",
+    "74166WAN4": "PRIME-MIG",
+}
 
 ############## MANUAL INPUT##############
 tbill_data = [0.0534, 0.0538, 0.0545]
@@ -220,7 +232,22 @@ for reporting_series_id in reporting_series:
     # GENERAL VARIABLE
 
     # DATES
-    roll_schedule_condition = df_roll_schedule["series_id"] == reporting_series_id
+    if reporting_type_dict[reporting_series_id] == "NOTE":
+        if reporting_series_id in temp_prime_ids_dict.keys():
+            roll_schedule_condition = (
+                df_roll_schedule["series_id"]
+                == temp_prime_ids_dict[reporting_series_id]
+            )
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            roll_schedule_condition = (
+                df_roll_schedule["series_id"] == temp_usg_ids_dict[reporting_series_id]
+            )
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            break
+    else:
+        roll_schedule_condition = df_roll_schedule["series_id"] == reporting_series_id
+
     df_roll_schedule = df_roll_schedule[roll_schedule_condition]
 
     def get_current_reporting_dates(reporting_date):
@@ -280,9 +307,26 @@ for reporting_series_id in reporting_series:
     wal = (pd.to_datetime(curr_end) - pd.to_datetime(curr_start)).days
 
     ############################## TARGET RETURN #####################################
-    curr_target_return_condition = (
-        df_target_return["security_id"] == reporting_series_id
-    ) & (df_target_return["date"] == next_start)
+    # Current return
+    if reporting_type_dict[reporting_series_id] == "NOTE":
+        if reporting_series_id in temp_prime_ids_dict.keys():
+            curr_target_return_condition = (
+                df_target_return["security_id"]
+                == temp_prime_ids_dict[reporting_series_id]
+            ) & (df_target_return["date"] == next_start)
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            curr_target_return_condition = (
+                df_target_return["security_id"]
+                == temp_usg_ids_dict[reporting_series_id]
+            ) & (df_target_return["date"] == next_start)
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            break
+    else:
+        curr_target_return_condition = (
+            df_target_return["security_id"] == reporting_series_id
+        ) & (df_target_return["date"] == next_start)
+
     benchmark_name = df_target_return[curr_target_return_condition][
         "benchmark_name"
     ].iloc[0]
@@ -297,9 +341,26 @@ for reporting_series_id in reporting_series:
     target_return = df_target_return[curr_target_return_condition]["net_return"].iloc[0]
     current_target_return = form_as_percent(target_return, 2)
 
-    prev_target_return_condition = (
-        df_target_return["security_id"] == reporting_series_id
-    ) & (df_target_return["date"] == curr_start)
+    # Previous return
+    if reporting_type_dict[reporting_series_id] == "NOTE":
+        if reporting_series_id in temp_prime_ids_dict.keys():
+            prev_target_return_condition = (
+                df_target_return["security_id"]
+                == temp_prime_ids_dict[reporting_series_id]
+            ) & (df_target_return["date"] == curr_start)
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            prev_target_return_condition = (
+                df_target_return["security_id"]
+                == temp_usg_ids_dict[reporting_series_id]
+            ) & (df_target_return["date"] == curr_start)
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            break
+    else:
+        prev_target_return_condition = (
+            df_target_return["security_id"] == reporting_series_id
+        ) & (df_target_return["date"] == curr_start)
+
     prev_target_outperform = (
         str(df_target_return[prev_target_return_condition]["net_spread"].iloc[0])
         + " bps"
@@ -307,12 +368,17 @@ for reporting_series_id in reporting_series:
 
     ############################## HISTORICAL RETURN #####################################
     if reporting_type_dict[reporting_series_id] == "NOTE":
-        if reporting_series_id in temp_prime_ids:
-            pool_name_encoded = reverse_cusip_mapping["PRIME-M00"]
-        elif reporting_series_id in temp_usg_ids:
-            pool_name_encoded = reverse_cusip_mapping["USGFD-M00"]
+        if reporting_series_id in temp_prime_ids_dict.keys():
+            pool_name_encoded = reverse_cusip_mapping[
+                temp_prime_ids_dict[reporting_series_id]
+            ]
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            pool_name_encoded = reverse_cusip_mapping[
+                temp_usg_ids_dict[reporting_series_id]
+            ]
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
+            break
     else:
         pool_name_encoded = reverse_cusip_mapping[reporting_series_id]
 
@@ -339,21 +405,72 @@ for reporting_series_id in reporting_series:
     oc_date = (pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)).strftime(
         "%Y-%m-%d"
     )
-    oc_rate_condition = (
-        (df_oc_rates["fund"] == fund_name.upper())
-        & (df_oc_rates["series"] == series_name.upper().replace(" ", ""))
-        & (df_oc_rates["report_date"] == oc_date)
-    )
+
+    if reporting_type_dict[reporting_series_id] == "NOTE":
+        if reporting_series_id == "74166WAK0":
+            oc_rate_condition = (
+                (df_oc_rates["fund"] == "PRIME")
+                & (df_oc_rates["series"] == "MONTHLY")
+                & (df_oc_rates["report_date"] == oc_date)
+            )
+        elif reporting_series_id == "74166WAN4":
+            oc_rate_condition = (
+                (df_oc_rates["fund"] == "PRIME")
+                & (df_oc_rates["series"] == "MONTHLYIG")
+                & (df_oc_rates["report_date"] == oc_date)
+            )
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            oc_rate_condition = (
+                (df_oc_rates["fund"] == "USG")
+                & (df_oc_rates["series"] == "MONTHLY")
+                & (df_oc_rates["report_date"] == oc_date)
+            )
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            break
+    else:
+        oc_rate_condition = (
+            (df_oc_rates["fund"] == fund_name.upper())
+            & (df_oc_rates["series"] == series_name.upper().replace(" ", ""))
+            & (df_oc_rates["report_date"] == oc_date)
+        )
+
     df_oc_rates = df_oc_rates[oc_rate_condition]
 
     ############################## CASH BALANCE #####################################
-    # TODO: Change inputs for note here
-    cash_balance_condition = (
-        (df_cash_balance["Fund"] == fund_name.upper())
-        & (df_cash_balance["Series"] == series_name.upper().replace(" ", ""))
-        & (df_cash_balance["Balance_date"] == report_date)
-        & (df_cash_balance["Account"] == "MAIN")
-    )
+
+    if reporting_type_dict[reporting_series_id] == "NOTE":
+        if reporting_series_id == "74166WAK0":
+            cash_balance_condition = (
+                (df_cash_balance["Fund"] == "PRIME")
+                & (df_cash_balance["Series"] == "MONTHLY")
+                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Account"] == "MAIN")
+            )
+        elif reporting_series_id == "74166WAN4":
+            cash_balance_condition = (
+                (df_cash_balance["Fund"] == "PRIME")
+                & (df_cash_balance["Series"] == "MONTHLYIG")
+                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Account"] == "MAIN")
+            )
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            cash_balance_condition = (
+                (df_cash_balance["Fund"] == "USG")
+                & (df_cash_balance["Series"] == "MONTHLY")
+                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Account"] == "MAIN")
+            )
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            break
+    else:
+        cash_balance_condition = (
+            (df_cash_balance["Fund"] == fund_name.upper())
+            & (df_cash_balance["Series"] == series_name.upper().replace(" ", ""))
+            & (df_cash_balance["Balance_date"] == report_date)
+            & (df_cash_balance["Account"] == "MAIN")
+        )
 
     df_cash_balance = df_cash_balance[cash_balance_condition]
     cash_balance = df_cash_balance["Sweep_Balance"].iloc[0]
@@ -361,19 +478,19 @@ for reporting_series_id in reporting_series:
     ############################## RETURN COMPARISON #####################################
 
     # TODO: Need to replace this with benchmark table
-    benchmark_comparison_condition = (
-        df_benchmark_comparison["series_id"] == reporting_series_id
-    ) & (df_benchmark_comparison["start_date"] == curr_start)
-    df_benchmark_comparison_curr = df_benchmark_comparison[
-        benchmark_comparison_condition
-    ]
-
-    benchmark_comparison_condition_prev = (
-        df_benchmark_comparison["series_id"] == reporting_series_id
-    ) & (df_benchmark_comparison["start_date"] == prev_start)
-    df_benchmark_comparison_prev = df_benchmark_comparison[
-        benchmark_comparison_condition_prev
-    ]
+    # benchmark_comparison_condition = (
+    #     df_benchmark_comparison["series_id"] == reporting_series_id
+    # ) & (df_benchmark_comparison["start_date"] == curr_start)
+    # df_benchmark_comparison_curr = df_benchmark_comparison[
+    #     benchmark_comparison_condition
+    # ]
+    #
+    # benchmark_comparison_condition_prev = (
+    #     df_benchmark_comparison["series_id"] == reporting_series_id
+    # ) & (df_benchmark_comparison["start_date"] == prev_start)
+    # df_benchmark_comparison_prev = df_benchmark_comparison[
+    #     benchmark_comparison_condition_prev
+    # ]
 
     benchmark_to_use = benchmark_dictionary[reporting_series_id]
 
@@ -662,140 +779,146 @@ for reporting_series_id in reporting_series:
                 minreturn = 3
             else:
                 minreturn = 0
-        performance_graph_data = performance_graph(
-            True,
-            hspacemap(
-                fund_description + series_description,
-                nbars_val,
-            ),
-            "!",
-            str(heightmap(fund_description + series_description)) + "cm",
-            fund_name,
-            zero_date,
-            minreturn,
-            maxreturn,
-            (
-                xmap(
+            performance_graph_data = performance_graph(
+                True,
+                hspacemap(
                     fund_description + series_description,
                     nbars_val,
-                )
-                if reporting_type != "PRIME-Q10"
-                else 0.065
-            ),
-            barwidthmap(
-                fund_description + series_description,
-                nbars_val,
-            ),
-            returns_comparison_plot_data,
-            plot_data_index_1,
-            plot_data_index_2,
-            series_abbrev,
-            benchmark_shortern[benchmark_to_use[0]],  # index 1 abbrev
-            benchmark_shortern[benchmark_to_use[1]],  # index 2 abbrev
-        )
+                ),
+                "!",
+                str(heightmap(fund_description + series_description)) + "cm",
+                fund_name,
+                zero_date,
+                minreturn,
+                maxreturn,
+                (
+                    xmap(
+                        fund_description + series_description,
+                        nbars_val,
+                    )
+                    if reporting_type != "PRIME-Q10"
+                    else 0.065
+                ),
+                barwidthmap(
+                    fund_description + series_description,
+                    nbars_val,
+                ),
+                returns_comparison_plot_data,
+                plot_data_index_1,
+                plot_data_index_2,
+                series_abbrev,
+                benchmark_shortern[benchmark_to_use[0]],  # index 1 abbrev
+                benchmark_shortern[benchmark_to_use[1]],  # index 2 abbrev
+            )
 
-        report_data_fund = {
-            "report_date": report_date,  # done
-            "fundname": fund_name,  # done
-            "toptableextraspace": "5.5em",
-            "series_abbrev": series_abbrev,
-            "port_limit": ("Quarterly" if "Q" in series_abbrev else "Monthly"),
-            "seriesname": series_name,
-            "fund_description": fund_description,
-            "series_description": series_description,
-            "benchmark": benchmark_name,  # done
-            "tgt_outperform": target_outperform_range,  # done
-            "exp_rat_footnote": expense_ratio_footnote_text,
-            "prev_pd_start": pd.to_datetime(curr_start).strftime("%B %d, %Y"),  # done
-            "this_pd_start": pd.to_datetime(next_start).strftime("%B %d, %Y"),  # done
-            "prev_pd_return": prev_return,  # done
-            "prev_pd_benchmark": benchmark_short,  # done
-            "prev_pd_outperform": prev_target_outperform,  # done
-            "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),  # done
-            "this_pd_est_return": current_target_return,  # done
-            "this_pd_est_outperform": target_outperform_net,  # done
-            "benchmark_short": benchmark_short,  # done
-            "interval1": month_wordify(interval_tuple[0]),  # TODO: review this
-            "interval2": month_wordify(interval_tuple[1]),  # TODO: review this
-            "descstretch": stretches(
-                df_attributes["fund_description"].iloc[0]
-                + df_attributes["series_description"].iloc[0]
-            )[0],
-            "pcompstretch": stretches(
-                df_attributes["fund_description"].iloc[0]
-                + df_attributes["series_description"].iloc[0]
-            )[1],
-            "addl_coll_breakdown": addl_coll_breakdown(
-                form_as_percent(aloc_aa_a, 1) if fund_name != "USG" else "n/a",
-                form_as_percent(oc_aa_a, 1) if fund_name != "USG" else "n/a",
-                form_as_percent(aloc_bbb, 1) if fund_name != "USG" else "n/a",
-                form_as_percent(oc_bbb, 1) if fund_name != "USG" else "n/a",
-                form_as_percent(0, 1) if fund_name != "USG" else "n/a",
-                form_as_percent(0, 1),
-            ),
-            "oc_aaa": form_as_percent(oc_usg_aaa, 2),  # TODO: review
-            "oc_tbills": "-",
-            "oc_total": form_as_percent(oc_total, 2),  # TODO: review
-            "usg_aaa_cat": (
-                "US Govt Repo" if fund_name == "USG" else "US Govt/AAA Repo"
-            ),  # done
-            "alloc_aaa": form_as_percent(aloc_usg_aaa, 2),  # TODO: review
-            "alloc_tbills": form_as_percent(aloc_tbills, 2),  # TODO: review
-            "alloc_total": form_as_percent(1, 1),  # TODO: review
-            "tablevstretch": tablevstretch(fund_name),  # done
-            # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
-            "return_table_plot": return_table_plot(
-                fund_name=fund_name,  # done
-                prev_pd_return=prev_return,
-                series_abbrev=series_abbrev,
-                r_this_1=r_this_1,
-                r_this_2=r_this_2,
-                comp_a=benchmark_to_use[0],
-                comp_b=benchmark_to_use[1],
-                comp_c=benchmark_to_use[2],
-                r_a=r_a,
-                r_b=r_b,
-                r_c=r_c,
-                s_a_0=s_a_0,
-                s_a_1=s_a_1,
-                s_a_2=s_a_2,
-                s_b_0=s_b_0,
-                s_b_1=s_b_1,
-                s_b_2=s_b_2,
-                s_c_0=s_c_0,
-                s_c_1=s_c_1,
-                s_c_2=s_c_2,
-            ),
-            "fund_size": get_fund_size(
-                fund_name.upper(), report_date
-            ),  # TODO: update database
-            "series_size": get_series_size(
-                reporting_series_id, report_date
-            ),  # TODO: update database
-            "lucid_aum": wordify_aum(lucid_aum),  # TODO: update database
-            "rating": df_attributes["rating"].iloc[0],  # done
-            "rating_org": df_attributes["rating_org"].iloc[0],  # done
-            "calc_frequency": "Monthly at par",  # done
-            "next_withdrawal_date": pd.to_datetime(next_withdrawal).strftime(
-                "%B %d, %Y"
-            ),  # done
-            "next_notice_date": pd.to_datetime(next_notice).strftime(
-                "%B %d, %Y"
-            ),  # done
-            "min_invest": wordify(df_attributes["minimum_investment"].iloc[0]),  # done
-            "wal": wal,
-            "legal_fundname": df_attributes["legal_fund_name"].iloc[0],  # done
-            "fund_inception": df_attributes["fund_inception"]
-            .iloc[0]
-            .strftime("%B %d, %Y"),  # done
-            "series_inception": df_attributes["series_inception"]
-            .iloc[0]
-            .strftime("%B %d, %Y"),  # done
-            "performance_graph": performance_graph_data,
-        }
+            report_data_fund = {
+                "report_date": report_date,  # done
+                "fundname": fund_name,  # done
+                "toptableextraspace": "5.5em",
+                "series_abbrev": series_abbrev,
+                "port_limit": ("Quarterly" if "Q" in series_abbrev else "Monthly"),
+                "seriesname": series_name,
+                "fund_description": fund_description,
+                "series_description": series_description,
+                "benchmark": benchmark_name,  # done
+                "tgt_outperform": target_outperform_range,  # done
+                "exp_rat_footnote": expense_ratio_footnote_text,
+                "prev_pd_start": pd.to_datetime(curr_start).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "this_pd_start": pd.to_datetime(next_start).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "prev_pd_return": prev_return,  # done
+                "prev_pd_benchmark": benchmark_short,  # done
+                "prev_pd_outperform": prev_target_outperform,  # done
+                "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),  # done
+                "this_pd_est_return": current_target_return,  # done
+                "this_pd_est_outperform": target_outperform_net,  # done
+                "benchmark_short": benchmark_short,  # done
+                "interval1": month_wordify(interval_tuple[0]),  # TODO: review this
+                "interval2": month_wordify(interval_tuple[1]),  # TODO: review this
+                "descstretch": stretches(
+                    df_attributes["fund_description"].iloc[0]
+                    + df_attributes["series_description"].iloc[0]
+                )[0],
+                "pcompstretch": stretches(
+                    df_attributes["fund_description"].iloc[0]
+                    + df_attributes["series_description"].iloc[0]
+                )[1],
+                "addl_coll_breakdown": addl_coll_breakdown(
+                    form_as_percent(aloc_aa_a, 1) if fund_name != "USG" else "n/a",
+                    form_as_percent(oc_aa_a, 1) if fund_name != "USG" else "n/a",
+                    form_as_percent(aloc_bbb, 1) if fund_name != "USG" else "n/a",
+                    form_as_percent(oc_bbb, 1) if fund_name != "USG" else "n/a",
+                    form_as_percent(0, 1) if fund_name != "USG" else "n/a",
+                    form_as_percent(0, 1),
+                ),
+                "oc_aaa": form_as_percent(oc_usg_aaa, 2),  # TODO: review
+                "oc_tbills": "-",
+                "oc_total": form_as_percent(oc_total, 2),  # TODO: review
+                "usg_aaa_cat": (
+                    "US Govt Repo" if fund_name == "USG" else "US Govt/AAA Repo"
+                ),  # done
+                "alloc_aaa": form_as_percent(aloc_usg_aaa, 2),  # TODO: review
+                "alloc_tbills": form_as_percent(aloc_tbills, 2),  # TODO: review
+                "alloc_total": form_as_percent(1, 1),  # TODO: review
+                "tablevstretch": tablevstretch(fund_name),  # done
+                # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
+                "return_table_plot": return_table_plot(
+                    fund_name=fund_name,  # done
+                    prev_pd_return=prev_return,
+                    series_abbrev=series_abbrev,
+                    r_this_1=r_this_1,
+                    r_this_2=r_this_2,
+                    comp_a=benchmark_to_use[0],
+                    comp_b=benchmark_to_use[1],
+                    comp_c=benchmark_to_use[2],
+                    r_a=r_a,
+                    r_b=r_b,
+                    r_c=r_c,
+                    s_a_0=s_a_0,
+                    s_a_1=s_a_1,
+                    s_a_2=s_a_2,
+                    s_b_0=s_b_0,
+                    s_b_1=s_b_1,
+                    s_b_2=s_b_2,
+                    s_c_0=s_c_0,
+                    s_c_1=s_c_1,
+                    s_c_2=s_c_2,
+                ),
+                "fund_size": get_fund_size(
+                    fund_name.upper(), report_date
+                ),  # TODO: update database
+                "series_size": get_series_size(
+                    reporting_series_id, report_date
+                ),  # TODO: update database
+                "lucid_aum": wordify_aum(lucid_aum),  # TODO: update database
+                "rating": df_attributes["rating"].iloc[0],  # done
+                "rating_org": df_attributes["rating_org"].iloc[0],  # done
+                "calc_frequency": "Monthly at par",  # done
+                "next_withdrawal_date": pd.to_datetime(next_withdrawal).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "next_notice_date": pd.to_datetime(next_notice).strftime(
+                    "%B %d, %Y"
+                ),  # done
+                "min_invest": wordify(
+                    df_attributes["minimum_investment"].iloc[0]
+                ),  # done
+                "wal": wal,
+                "legal_fundname": df_attributes["legal_fund_name"].iloc[0],  # done
+                "fund_inception": df_attributes["fund_inception"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),  # done
+                "series_inception": df_attributes["series_inception"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),  # done
+                "performance_graph": performance_graph_data,
+            }
 
-        # TO BE DELETE
-        perf_graph_back_up = "\n\t\t\t  \\hspace*{-0.9cm}\\resizebox {!} {8cm} {\\begin{tikzpicture}\n\t\t\\begin{axis}[\n\t\t\ttitle style = {font = \\small},\n\t\t\taxis line style = {light_grey},\n\t\ttitle={{Performance vs Benchmark}},\n\t\t\tdate coordinates in=x, date ZERO=2023-02-09,\n\t\t\txticklabel=\\month/\\day/\\year,  \n\t\t\tymin=3, ymax=7, %MAXRETURN HERE\n\t\t\tlegend cell align = {left},\n\t\t\tlegend style={at={(0.3,1)},\n\t\t\t  anchor=north east, font=\\tiny, draw=none,fill=none},\n\t\t\t  x=0.15mm, %CHANGE THIS to tighten in graph, eg if quarterly\n\t\t\tbar width=2.5mm, ybar=2pt, %bar width is width, ybar is space between\n\t\t   % symbolic x coords={Firm 1, Firm 2, Firm 3, Firm 4, Firm 5},\n\t\t\txtick=data,\n\t\t\tx tick label style={rotate=90,anchor=east,font=\\tiny,/pgf/number format/assume math mode},\n\t\t\t\t yticklabel=\\pgfmathparse{\\tick}\\pgfmathprintnumber{\\pgfmathresult}\\,\\%,\n\t\t\ty tick label style = {/pgf/number format/.cd,\n\t\t\t\t\tfixed,\n\t\t\t\t\tfixed zerofill,\n\t\t\t\t\tprecision=2,\n\t\t\t\t\t/pgf/number format/assume math mode\n\t\t\t},\n\t\t\tnodes near coords align={vertical},\n\t\t\tytick distance=0.5,\n\t\t\txtick pos=bottom,ytick pos=left,\n\t\t\tevery node near coord/.append style={font=\\fontsize{6}{6}\\selectfont,/pgf/number format/.cd,\n\t\t\t\t\tfixed,\n\t\t\t\t\tfixed zerofill,\n\t\t\t\t\tprecision=2,/pgf/number format/assume math mode},\n\t\t\t]\n\t\t%\\addplot[ybar, nodes near coords, fill=blue] \n\t\t\\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.44) (2023-03-09,4.718) (2023-04-13,4.85) (2023-05-11,5.0) (2023-06-15,5.2) (2023-07-20,5.23) (2023-08-17,5.41) (2023-09-14,5.5) (2023-10-19,5.53) (2023-11-16,5.53) (2023-12-14,5.53) (2024-01-18,5.53) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) \n\t\t\t};\n\t\t\\addplot[draw=dark_red,ultra thick,smooth] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.22) (2023-03-09,4.53) (2023-04-13,4.63) (2023-05-11,3.96) (2023-06-15,5.17) (2023-07-20,5.04) (2023-08-17,5.25) (2023-09-14,5.35) (2023-10-19,5.37) (2023-11-16,5.38) (2023-12-14,5.36) (2024-01-18,5.33) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) \n\t\t\t};\n\t\t\\addplot[draw=dark_color,ultra thick,smooth] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.105) (2023-03-09,4.307) (2023-04-13,4.491) (2023-05-11,4.667) (2023-06-15,4.87) (2023-07-20,4.893) (2023-08-17,5.035) (2023-09-14,5.112) (2023-10-19,5.137) (2023-11-16,5.156) (2023-12-14,5.16) (2024-01-18,5.151) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) \n\t\t\t};\n\t\t\\legend{\\hphantom{A}USG Series M,\\hphantom{A}1m T-Bills,\\hphantom{A}Crane Govt MM Index}\n\t\t\\end{axis}\n\t\t\t\\end{tikzpicture}}\n\n\t\t\t"
+            # TO BE DELETE
+            perf_graph_back_up = "\n\t\t\t  \\hspace*{-0.9cm}\\resizebox {!} {8cm} {\\begin{tikzpicture}\n\t\t\\begin{axis}[\n\t\t\ttitle style = {font = \\small},\n\t\t\taxis line style = {light_grey},\n\t\ttitle={{Performance vs Benchmark}},\n\t\t\tdate coordinates in=x, date ZERO=2023-02-09,\n\t\t\txticklabel=\\month/\\day/\\year,  \n\t\t\tymin=3, ymax=7, %MAXRETURN HERE\n\t\t\tlegend cell align = {left},\n\t\t\tlegend style={at={(0.3,1)},\n\t\t\t  anchor=north east, font=\\tiny, draw=none,fill=none},\n\t\t\t  x=0.15mm, %CHANGE THIS to tighten in graph, eg if quarterly\n\t\t\tbar width=2.5mm, ybar=2pt, %bar width is width, ybar is space between\n\t\t   % symbolic x coords={Firm 1, Firm 2, Firm 3, Firm 4, Firm 5},\n\t\t\txtick=data,\n\t\t\tx tick label style={rotate=90,anchor=east,font=\\tiny,/pgf/number format/assume math mode},\n\t\t\t\t yticklabel=\\pgfmathparse{\\tick}\\pgfmathprintnumber{\\pgfmathresult}\\,\\%,\n\t\t\ty tick label style = {/pgf/number format/.cd,\n\t\t\t\t\tfixed,\n\t\t\t\t\tfixed zerofill,\n\t\t\t\t\tprecision=2,\n\t\t\t\t\t/pgf/number format/assume math mode\n\t\t\t},\n\t\t\tnodes near coords align={vertical},\n\t\t\tytick distance=0.5,\n\t\t\txtick pos=bottom,ytick pos=left,\n\t\t\tevery node near coord/.append style={font=\\fontsize{6}{6}\\selectfont,/pgf/number format/.cd,\n\t\t\t\t\tfixed,\n\t\t\t\t\tfixed zerofill,\n\t\t\t\t\tprecision=2,/pgf/number format/assume math mode},\n\t\t\t]\n\t\t%\\addplot[ybar, nodes near coords, fill=blue] \n\t\t\\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.44) (2023-03-09,4.718) (2023-04-13,4.85) (2023-05-11,5.0) (2023-06-15,5.2) (2023-07-20,5.23) (2023-08-17,5.41) (2023-09-14,5.5) (2023-10-19,5.53) (2023-11-16,5.53) (2023-12-14,5.53) (2024-01-18,5.53) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) \n\t\t\t};\n\t\t\\addplot[draw=dark_red,ultra thick,smooth] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.22) (2023-03-09,4.53) (2023-04-13,4.63) (2023-05-11,3.96) (2023-06-15,5.17) (2023-07-20,5.04) (2023-08-17,5.25) (2023-09-14,5.35) (2023-10-19,5.37) (2023-11-16,5.38) (2023-12-14,5.36) (2024-01-18,5.33) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) \n\t\t\t};\n\t\t\\addplot[draw=dark_color,ultra thick,smooth] \n\t\t\tcoordinates {\n\t\t\t\t(2023-02-09,4.105) (2023-03-09,4.307) (2023-04-13,4.491) (2023-05-11,4.667) (2023-06-15,4.87) (2023-07-20,4.893) (2023-08-17,5.035) (2023-09-14,5.112) (2023-10-19,5.137) (2023-11-16,5.156) (2023-12-14,5.16) (2024-01-18,5.151) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) \n\t\t\t};\n\t\t\\legend{\\hphantom{A}USG Series M,\\hphantom{A}1m T-Bills,\\hphantom{A}Crane Govt MM Index}\n\t\t\\end{axis}\n\t\t\t\\end{tikzpicture}}\n\n\t\t\t"
 
         script = ""
         if reporting_type == "FUND":  # fund (series) report template
