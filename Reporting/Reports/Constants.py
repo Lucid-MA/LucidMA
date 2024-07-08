@@ -355,7 +355,7 @@ note_report_template = r"""
 >{{\columncolor[HTML]{{EFEFEF}}}}p{{1.52cm}} 
 >{{\columncolor[HTML]{{EFEFEF}}\RaggedLeft\arraybackslash}}p{{1.64cm}} 
 >{{\columncolor[HTML]{{EFEFEF}}}}p{{1.40cm}} }}
-\textbf{{Interest Period Start}} & \textbf{{Interest Period End}} & \textbf{{Interest Rate}} & \textbf{{Spread\hphantom{{A}} to\hphantom{{A}}\hphantom{{A}} Benchmark}} & \RaggedRight\arraybackslash\textbf{{Note\hphantom{{A}} Series\hphantom{{A}}\hphantom{{A}} Principal}} & \RaggedRight\arraybackslash\textbf{{Interest Paid}} & \textbf{{Interest Payment Date}} & \RaggedRight\arraybackslash\textbf{{Related Fund Capital Account}} & \textbf{{Collateral O/C Rate}} \\ \arrayrulecolor{{light_grey}}\hline
+\textbf{{Interest Period Start}} & \textbf{{Interest Period End}} & \textbf{{Interest Rate}} & \textbf{{Benchmark Spread}} & \RaggedRight\arraybackslash\textbf{{Note Series Principal}} & \RaggedRight\arraybackslash\textbf{{Interest Paid}} & \textbf{{Interest Payment Date}} & \RaggedRight\arraybackslash\textbf{{Related Fund Cap. Account}} & \textbf{{Collateral O/C Rate}} \\ \arrayrulecolor{{light_grey}}\hline
 {coupon_plot}
 \end{{tabular}}
 }}\end{{center}}

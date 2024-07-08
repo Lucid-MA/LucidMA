@@ -355,28 +355,67 @@ temp_prime_ids_dict = {
 
 target_return_table_name = "target_returns"
 df_target_return = read_table_from_db(target_return_table_name, db_type)
+#
+#
+# def get_interest_rates_and_spreads(reporting_date, lookback_period):
+#     reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
+#     if reporting_series_id in temp_prime_ids_dict.keys():
+#         target_return_condition = (
+#             df_target_return["security_id"] == temp_prime_ids_dict[reporting_series_id]
+#         )
+#     elif reporting_series_id in temp_usg_ids_dict.keys():
+#         target_return_condition = (
+#             df_target_return["security_id"] == temp_usg_ids_dict[reporting_series_id]
+#         )
+#     else:
+#         print(f"Invalid reporting series id {reporting_series_id}")
+#         return
+#
+#     df = df_target_return[target_return_condition].sort_values(by="date").reset_index()
+#     index = df[df["date"] >= reporting_date].index[0]
+#     result_df = df.iloc[index - (lookback_period - 1) : index + 1].copy()
+#     net_returns = result_df["net_return"].tolist()
+#     net_spreads = result_df["net_spread"].tolist()
+#     return net_returns, net_spreads
+#
+#
+# print(get_interest_rates_and_spreads(report_date, 7))
 
 
-def get_interest_rates_and_spreads(reporting_date, lookback_period):
-    reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
-    if reporting_series_id in temp_prime_ids_dict.keys():
-        target_return_condition = (
-            df_target_return["security_id"] == temp_prime_ids_dict[reporting_series_id]
-        )
-    elif reporting_series_id in temp_usg_ids_dict.keys():
-        target_return_condition = (
-            df_target_return["security_id"] == temp_usg_ids_dict[reporting_series_id]
-        )
-    else:
-        print(f"Invalid reporting series id {reporting_series_id}")
-        return
+int_period_starts = ["09/14/23", "10/19/23", "11/16/23"]
+int_period_ends = ["10/19/23", "11/16/23", "12/14/23"]
+int_rates = ["5.93", "5.93", "5.93"]
+spread_to_benchmarks = ["1m SOFR+60", "1m SOFR+60", "1m SOFR+60"]
+note_principals = ["301,000,000", "302,750,000", "327,750,000"]
+interest_paid = ["1,745,437.85", "1,580,839.17", "1,511,655.83"]
+interest_payment_dates = ["10/19/23", "11/16/23", "12/14/23"]
+related_fund_cap_accounts = ["301,000,000", "302,750,000", "327,750,000"]
+oc_rates = ["126.4", "124.1", "126.7"]
 
-    df = df_target_return[target_return_condition].sort_values(by="date").reset_index()
-    index = df[df["date"] >= reporting_date].index[0]
-    result_df = df.iloc[index - (lookback_period - 1) : index + 1].copy()
-    net_returns = result_df["net_return"].tolist()
-    net_spreads = result_df["net_spread"].tolist()
-    return net_returns, net_spreads
+latex_text = ""
+
+for i in range(len(int_period_starts)):
+    int_rate = int_rates[i] + "\\%" if int_rates[i] != "n/a" else "n/a"
+    note_principal = (
+        "\\$" + note_principals[i] if note_principals[i] != "n/a" else "n/a"
+    )
+    interest_paid_val = "\\$" + interest_paid[i] if interest_paid[i] != "n/a" else "n/a"
+    related_fund_cap_account = (
+        "\\$" + related_fund_cap_accounts[i]
+        if related_fund_cap_accounts[i] != "n/a"
+        else "n/a"
+    )
+    oc_rate = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
+
+    if i == len(int_period_starts) - 1:
+        int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
+
+    latex_line = (
+        f"{int_period_starts[i]} &\\textbf{{{int_period_ends[i]}}} &\\textbf{{{int_rate}}} "
+        f"&{spread_to_benchmarks[i]} &{note_principal} &{interest_paid_val} "
+        f"&{interest_payment_dates[i]} &{related_fund_cap_account} &{oc_rate} \\\\"
+    )
+    latex_text += latex_line + "\n"
 
 
-print(get_interest_rates_and_spreads(report_date, 7))
+print(latex_text)

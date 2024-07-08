@@ -883,7 +883,7 @@ for reporting_series_id in reporting_series:
         return oc_rates
 
     def get_coupon_plot(reporting_series_id, reporting_date):
-
+        global note_principal
         int_period_starts, int_period_ends = get_reporting_dates_coupon_table(
             reporting_date, 7
         )
@@ -910,7 +910,7 @@ for reporting_series_id in reporting_series:
 
         # Reformatting
         benchmark_name = benchmark_shortern[benchmark_to_use[0]]
-        int_rates = [f"{rate:.2%}" for rate in int_rates]
+        int_rates = [f"{rate * 100:.2f}" for rate in int_rates]
         spread_to_benchmarks = [
             f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
         ]
@@ -927,24 +927,57 @@ for reporting_series_id in reporting_series:
             for date in int_period_ends
         ]
         oc_rates = [
-            f"{float(rate)*100:.2f}%" if not math.isnan(rate) else "n/a"
+            f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
             for rate in oc_rates
         ]
         interest_payment_dates = int_period_ends
         related_fund_cap_accounts = note_principals
-        return (
-            int_period_starts,
-            int_period_ends,
-            int_rates,
-            spread_to_benchmarks,
-            note_principals,
-            interest_paid,
-            interest_payment_dates,
-            related_fund_cap_accounts,
-            oc_rates,
-        )
 
-    print(get_coupon_plot(reporting_series_id, report_date))
+        latex_text = ""
+
+        for i in range(len(int_period_starts)):
+            int_rate = int_rates[i] + "\\%" if int_rates[i] != "n/a" else "n/a"
+            note_principal_val = (
+                "\\$" + note_principals[i] if note_principals[i] != "n/a" else "n/a"
+            )
+            interest_paid_val = (
+                "\\$" + interest_paid[i] if interest_paid[i] != "n/a" else "n/a"
+            )
+            related_fund_cap_account_val = (
+                "\\$" + related_fund_cap_accounts[i]
+                if related_fund_cap_accounts[i] != "n/a"
+                else "n/a"
+            )
+            oc_rate_val = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
+
+            # if i == len(int_period_starts) - 1:
+            #     int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
+            if i == len(int_period_starts) - 1:
+                int_rate = (
+                    int_rates[i] + "\\%{\\tiny (Est'd)}"
+                    if int_rates[i] != "n/a"
+                    else "n/a"
+                )
+
+            latex_line = (
+                f"{int_period_starts[i]} &\\textbf{{{int_period_ends[i]}}} &\\textbf{{{int_rate}}} "
+                f"&{spread_to_benchmarks[i]} &{note_principal_val} &{interest_paid_val} "
+                f"&{interest_payment_dates[i]} &{related_fund_cap_account_val} &{oc_rate_val} \\\\"
+            )
+            latex_text += latex_line + "\n"
+
+        return latex_text
+        # return (
+        #     int_period_starts,
+        #     int_period_ends,
+        #     int_rates,
+        #     spread_to_benchmarks,
+        #     note_principals,
+        #     interest_paid,
+        #     interest_payment_dates,
+        #     related_fund_cap_accounts,
+        #     oc_rates,
+        # )
 
     #####################################################################################
     ############################## REPORT GENERATION SCRIPT #############################
@@ -1296,9 +1329,7 @@ for reporting_series_id in reporting_series:
                 .strftime("%B %d, %Y"),
                 "pd_end_date_long": pd.to_datetime(next_end).strftime("%B %d, %Y"),
                 "next_notice_date": pd.to_datetime(next_notice).strftime("%B %d, %Y"),
-                "coupon_plot_temp": get_coupon_plot(
-                    reporting_series_id, next_start, next_end
-                ),
+                "coupon_plot_temp": get_coupon_plot(reporting_series_id, next_start),
                 "coupon_plot": "12/14/23 &\\textbf{{01/18/24}} &\\textbf{{5.53\\%}} &1m TB+20 &\\$20,700,000 &\\$109,766.71 &01/18/24 &\\$20,700,000 &108.2\\% \\\\01/18/24 &\\textbf{{02/15/24}} &\\textbf{{5.53\\%}} &1m TB+17 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &02/15/24 &\\hphantom{{\\$}}20,700,000 &105.8\\% \\\\02/15/24 &\\textbf{{03/14/24}} &\\textbf{{5.53\\%}} &1m TB+17 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &03/14/24 &\\hphantom{{\\$}}20,700,000 &107.0\\% \\\\03/14/24 &\\textbf{{04/18/24}} &\\textbf{{5.53\\%}} &1m TB+16 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}109,766.71 &04/18/24 &\\hphantom{{\\$}}20,700,000 &106.5\\% \\\\04/18/24 &\\textbf{{05/16/24}} &\\textbf{{5.53\\%}} &1m TB+16 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &05/16/24 &\\hphantom{{\\$}}20,700,000 &107.0\\% \\\\05/16/24 &\\textbf{{06/13/24}} &\\textbf{{5.52\\%{{\\tiny (Est'd)}}}} &1m TB+18 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}n/a &06/13/24 &\\hphantom{{\\$}}20,700,000 &n/a \\\\\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t\n\n\t\t",
                 "rets_disclaimer_if_m1": "",
             }
@@ -1343,7 +1374,7 @@ for reporting_series_id in reporting_series:
                 maturity_date=report_data_note["maturity_date"],
                 pd_end_date_long=report_data_note["pd_end_date_long"],
                 next_notice_date=report_data_note["next_notice_date"],
-                coupon_plot=report_data_note["coupon_plot"],
+                coupon_plot=report_data_note["coupon_plot_temp"],
                 rets_disclaimer_if_m1=report_data_note["rets_disclaimer_if_m1"],
             )
         # write script to file
