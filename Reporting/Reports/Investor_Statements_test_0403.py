@@ -1,3 +1,4 @@
+import math
 import subprocess
 from datetime import datetime
 
@@ -168,6 +169,23 @@ temp_prime_ids_dict = {
     "74166WAN4": "PRIME-MIG",
 }
 
+# TODO: Update fund attributes with this data
+daycount_dict = {
+    "PRIME-C10": 360,
+    "PRIME-M00": 360,
+    "PRIME-MIG": 360,
+    # "PRIME-Q10",
+    # "PRIME-Q36",
+    # "PRIME-QX0",
+    # "74166WAE4",
+    "74166WAK0": 360,
+    # "74166WAM6",
+    "74166WAN4": 360,
+    "90366JAG2": 365,
+    "90366JAH0": 365,
+    "USGFD-M00": 365,
+}
+
 ############## MANUAL INPUT##############
 tbill_data = [0.0534, 0.0538, 0.0545]
 tbill_data_prime = [0.0527, 0.0531, 0.0538]
@@ -179,7 +197,6 @@ cp_data = [0.0532, 0.0534, 0.0543]
 
 # TODO: replace this with data from data from helix
 lucid_aum = 4765143799.49
-daycount = 360
 interval_tuple = (3, 12)  # quarterly series: (6,12) but not important
 #########################################
 
@@ -245,6 +262,7 @@ for reporting_series_id in reporting_series:
     # GENERAL VARIABLE
 
     # DATES
+    daycount = daycount_dict[reporting_series_id]
     if reporting_type_dict[reporting_series_id] == "NOTE":
         if reporting_series_id in temp_prime_ids_dict.keys():
             roll_schedule_condition = (
@@ -784,7 +802,7 @@ for reporting_series_id in reporting_series:
             inception_date = pd.to_datetime("07-20-2018").strftime("%B %d, %Y")
         return inception_date
 
-    def get_reporting_dates(reporting_date, lookback_period):
+    def get_reporting_dates_coupon_table(reporting_date, lookback_period):
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
         roll_schedule = df_roll_schedule.sort_values(by="start_date")
         index = roll_schedule[roll_schedule["end_date"] > reporting_date].index[0]
@@ -797,7 +815,7 @@ for reporting_series_id in reporting_series:
         end_dates = result_df["end_date"].dt.strftime("%Y-%m-%d").tolist()
         return start_dates, end_dates
 
-    def get_interest_rates_and_spreads(reporting_date, lookback_period):
+    def get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period):
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
         if reporting_series_id in temp_prime_ids_dict.keys():
             target_return_condition = (
@@ -824,34 +842,11 @@ for reporting_series_id in reporting_series:
         net_spreads = result_df["net_spread"].tolist()
         return net_returns, net_spreads
 
-    def get_coupon_plot(reporting_series_id, reporting_date):
-
-        int_period_starts, int_period_ends = get_reporting_dates(reporting_date, 7)
-
-        int_rates, spread_to_benchmarks = get_interest_rates_and_spreads(
-            reporting_date, 7
-        )  # historical returns
-
-        note_principals = [note_principal[reporting_series_id]] * 7
-        interest_paid = [
-            ret
-            / 360
-            * (
-                datetime.strptime(end, "%Y-%m-%d")
-                - datetime.strptime(start, "%Y-%m-%d")
-            ).days
-            * principal
-            for ret, end, start, principal in zip(
-                int_rates, int_period_ends, int_period_starts, note_principals
-            )
-        ]
-        interest_payment_dates = int_period_ends
-        related_fund_cap_accounts = note_principals
-
+    def get_oc_rates_coupon_table(reporting_dates):
         oc_rates = []  # oc_rate of end date - 1 business days
         df_oc_rates_temp = read_table_from_db(oc_rate_table_name, db_type)
 
-        for end_dt in int_period_ends:
+        for end_dt in reporting_dates:
             oc_date_temp = (
                 pd.to_datetime(end_dt) - pd.offsets.BusinessDay(1)
             ).strftime("%Y-%m-%d")
@@ -878,11 +873,65 @@ for reporting_series_id in reporting_series:
                 print(f"Invalid reporting series id {reporting_series_id}")
                 break
 
-            oc_rate_temp = df_oc_rates_temp[oc_rate_condition][
-                "oc_rate_allocated"
-            ].iloc[0]
-            oc_rates.append(oc_rate_temp)
+            oc_rate_temp_df = df_oc_rates_temp[oc_rate_condition]
+            oc_total_temp = (
+                oc_rate_temp_df["collateral_mv_allocated"].sum()
+                / oc_rate_temp_df["investment_amount"].sum()
+            )
+            oc_rates.append(round(oc_total_temp, 4))
 
+        return oc_rates
+
+    def get_coupon_plot(reporting_series_id, reporting_date):
+
+        int_period_starts, int_period_ends = get_reporting_dates_coupon_table(
+            reporting_date, 7
+        )
+
+        int_rates, spread_to_benchmarks = get_interest_rates_and_spreads_coupon_table(
+            reporting_date, 7
+        )  # historical returns
+
+        note_principals = [note_principal[reporting_series_id]] * 7
+        interest_paid = [
+            ret
+            / daycount
+            * (
+                datetime.strptime(end, "%Y-%m-%d")
+                - datetime.strptime(start, "%Y-%m-%d")
+            ).days
+            * principal
+            for ret, end, start, principal in zip(
+                int_rates, int_period_ends, int_period_starts, note_principals
+            )
+        ]
+
+        oc_rates = get_oc_rates_coupon_table(int_period_ends)
+
+        # Reformatting
+        benchmark_name = benchmark_shortern[benchmark_to_use[0]]
+        int_rates = [f"{rate:.2%}" for rate in int_rates]
+        spread_to_benchmarks = [
+            f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
+        ]
+        note_principals = [f"{principal:,.0f}" for principal in note_principals]
+        interest_paid = [f"{interest:,.2f}" for interest in interest_paid[:-1]] + [
+            "n/a"
+        ]
+        int_period_starts = [
+            datetime.strptime(date, "%Y-%m-%d").strftime("%m/%d/%y")
+            for date in int_period_starts
+        ]
+        int_period_ends = [
+            datetime.strptime(date, "%Y-%m-%d").strftime("%m/%d/%y")
+            for date in int_period_ends
+        ]
+        oc_rates = [
+            f"{float(rate)*100:.2f}%" if not math.isnan(rate) else "n/a"
+            for rate in oc_rates
+        ]
+        interest_payment_dates = int_period_ends
+        related_fund_cap_accounts = note_principals
         return (
             int_period_starts,
             int_period_ends,
@@ -890,6 +939,8 @@ for reporting_series_id in reporting_series:
             spread_to_benchmarks,
             note_principals,
             interest_paid,
+            interest_payment_dates,
+            related_fund_cap_accounts,
             oc_rates,
         )
 
