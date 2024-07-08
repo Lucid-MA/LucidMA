@@ -168,7 +168,7 @@ def main():
     wb = None
     excel = None
     tree = ET.ElementTree(root)
-    ET.dump(root)
+    # ET.dump(root) # To write out the output
     print("Writing XML output to " + XML_OUTPUT_PATH)
     tree.write(
         XML_OUTPUT_PATH, encoding="iso-8859-1", xml_declaration=True
@@ -580,10 +580,11 @@ def section3_itemABC(wb):
         #     if sheet.Range("D21").Value != "" or sheet.Range("D21").Value is None
         #     else str(int(sheet.Range("D21").Value))
         # )
-        if sheet.Range("D21").Value != "" or sheet.Range("D21").Value is not None:
+        if sheet.Range("D21").Value != "" and sheet.Range("D21").Value is not None:
             ET.SubElement(operation, "PriceSaughtToMaintain").text = str(int(sheet.Range("D21").Value))
         else:
-            ET.SubElement(operation, "PriceSaughtToMaintain")
+            print(f'This is the price saught to maintain value in sheet {sheet_name}', sheet.Range("D21").Value)
+            ET.SubElement(operation, "PriceSaughtToMaintain").text = '0.00'
 
         # TODO: Remove question 53
         # ET.SubElement(operation, "ComplyRule2a7RiskCondition").text = (
@@ -818,10 +819,10 @@ def section3_itemD(wb):
                 # )
 
                 percentage_amount = sub_sheet.Range("C" + str(row_idx)).Value
-                if percentage_amount == NA:
+                if percentage_amount == NA or percentage_amount == '':
                     ET.SubElement(investor_percentage, "PercentageAmount").text = "NA"
                 else:
-                    rounded_amount = round(percentage_amount)
+                    rounded_amount = round(float(percentage_amount))
                     if rounded_amount > 100:
                         rounded_amount = 100
                     ET.SubElement(investor_percentage, "PercentageAmount").text = str(rounded_amount)
@@ -1325,21 +1326,21 @@ def section3_itemF(wb):
             ET.SubElement(info, "CertOfDepositMonth3Amount").text = str(int(sheet.Range("F124").Value))
 
         # 63f
-        ET.SubElement(info, "NonNegTimeDepositMonth1Amount").text = (
-            "0"
-            if sheet.Range("D125").Value == "NA"
-            else str(int(sheet.Range("D125").Value))
-        )
-        ET.SubElement(info, "NonNegTimeDepositMonth2Amount").text = (
-            "0"
-            if sheet.Range("E125").Value == "NA"
-            else str(int(sheet.Range("E125").Value))
-        )
-        ET.SubElement(info, "NonNegTimeDepositMonth3Amount").text = (
-            "0"
-            if sheet.Range("F125").Value == "NA"
-            else str(int(sheet.Range("F125").Value))
-        )
+        # ET.SubElement(info, "NonNegTimeDepositMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D125").Value == "NA"
+        #     else str(int(sheet.Range("D125").Value))
+        # )
+        # ET.SubElement(info, "NonNegTimeDepositMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E125").Value == "NA"
+        #     else str(int(sheet.Range("E125").Value))
+        # )
+        # ET.SubElement(info, "NonNegTimeDepositMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F125").Value == "NA"
+        #     else str(int(sheet.Range("F125").Value))
+        # )
         if sheet.Range("D125").Value != "NA" or sheet.Range("D125").Value != 0:
             ET.SubElement(info, "NonNegTimeDepositMonth1Amount").text = str(int(sheet.Range("D125").Value))
         if sheet.Range("E125").Value != "NA" or sheet.Range("E125").Value != 0:
