@@ -41,16 +41,16 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
-    # "PRIME-M00",
-    # "PRIME-MIG",
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
     # # "PRIME-Q10",
     # # "PRIME-Q36",
     # # "PRIME-QX0",
     # # "74166WAE4",  # Prime Note QX-1
     # "74166WAK0",  # Prime Note M-2
     # # "74166WAM6",  # Prime Note Q1
-    # "74166WAN4",  # Prime Note MIG
+    "74166WAN4",  # Prime Note MIG
     "90366JAG2",  # USG Note M-8
     "90366JAH0",  # USG Note M-9
     "USGFD-M00",
@@ -532,10 +532,10 @@ for reporting_series_id in reporting_series:
 
     # T-Bill (previous, 3 month, 1 year)
     # 1m SOFR
-    if reporting_series_id in temp_usg_ids:
-        r_a = tbill_data
+    if reporting_series_id in temp_usg_ids_dict.keys():
+        r_a = list(tbill_data)
     else:
-        r_a = sofr_data
+        r_a = list(sofr_data)
     #     r_a = []
     #     r_a.append(round(df_benchmark_comparison_curr[benchmark_to_use[0]].iloc[0], 4))
     #     r_a.append(
@@ -558,10 +558,10 @@ for reporting_series_id in reporting_series:
     r_a[2] = form_as_percent(r_a[2], 2)
     # Crane Govt MM Index
     # 1m A1/P1 CP
-    if reporting_series_id in temp_usg_ids:
-        r_b = crane_data
+    if reporting_series_id in temp_usg_ids_dict.keys():
+        r_b = list(crane_data)
     else:
-        r_b = cp_data
+        r_b = list(cp_data)
         # r_b = []
         # r_b.append(round(df_benchmark_comparison_curr[benchmark_to_use[1]].iloc[0], 4))
         # r_b.append(
@@ -584,10 +584,10 @@ for reporting_series_id in reporting_series:
     r_b[2] = form_as_percent(r_b[2], 2)
 
     # 1m T-Bill
-    if reporting_series_id in temp_usg_ids:
-        r_c = fhlb_data
+    if reporting_series_id in temp_usg_ids_dict.keys():
+        r_c = list(fhlb_data)
     else:
-        r_c = tbill_data_prime
+        r_c = list(tbill_data_prime)
     r_c[1] = form_as_percent(r_c[1], 2)
     r_c[2] = form_as_percent(r_c[2], 2)
 
@@ -1320,7 +1320,8 @@ for reporting_series_id in reporting_series:
                 "fund_inception": get_fund_inception_date(fund_name),
                 "cusip": df_attributes["security_id"].iloc[0],
                 "note_abbrev": series_abbrev,
-                "principal_outstanding": "\\$20.7 million",  # TODO: update df_attributes
+                # "principal_outstanding": "\\$20.7 million",  # TODO: update df_attributes
+                "principal_outstanding": wordify(note_principal[reporting_series_id]),
                 "issue_date": df_attributes["fund_inception"]
                 .iloc[0]
                 .strftime("%B %d, %Y"),  # TODO: update with inception for PRIME & USG
