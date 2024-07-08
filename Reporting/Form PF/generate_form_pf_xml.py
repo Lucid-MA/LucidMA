@@ -575,11 +575,15 @@ def section3_itemABC(wb):
         )
 
         # Q52b
-        ET.SubElement(operation, "PriceSaughtToMaintain").text = (
-            "0"
-            if sheet.Range("D21").Value == "" or sheet.Range("D21").Value is None
-            else str(int(sheet.Range("D21").Value))
-        )
+        # ET.SubElement(operation, "PriceSaughtToMaintain").text = (
+        #     "0"
+        #     if sheet.Range("D21").Value != "" or sheet.Range("D21").Value is None
+        #     else str(int(sheet.Range("D21").Value))
+        # )
+        if sheet.Range("D21").Value != "" or sheet.Range("D21").Value is not None:
+            ET.SubElement(operation, "PriceSaughtToMaintain").text = str(int(sheet.Range("D21").Value))
+        else:
+            ET.SubElement(operation, "PriceSaughtToMaintain")
 
         # TODO: Remove question 53
         # ET.SubElement(operation, "ComplyRule2a7RiskCondition").text = (
@@ -983,7 +987,7 @@ def section3_itemE():
 
                 # Q62g- ii,iii,iv
                 ET.SubElement(security, "CentrallyCleared").text = "false"
-                ET.SubElement(security, "CCP").text = "NA"
+                # ET.SubElement(security, "CCP").text = "NA"
                 ET.SubElement(security, "SettledOnTriPtyPl").text = "false"
 
                 # Q62g- v-xii
@@ -1203,90 +1207,122 @@ def section3_itemF(wb):
             infolist, "PFSection3ItemFDispositionOfPortfolioSecurities"
         )
         ET.SubElement(info, "FundID").text = sheet.Range("A1").Value
-        # 63a
-        ET.SubElement(info, "USTreasDebtMonth1Amount").text = (
-            "0"
-            if sheet.Range("D120").Value == "NA"
-            else str(int(sheet.Range("D120").Value))
-        )
-        ET.SubElement(info, "USTreasDebtMonth2Amount").text = (
-            "0"
-            if sheet.Range("E120").Value == "NA"
-            else str(int(sheet.Range("E120").Value))
-        )
-        ET.SubElement(info, "USTreasDebtMonth3Amount").text = (
-            "0"
-            if sheet.Range("F120").Value == "NA"
-            else str(int(sheet.Range("F120").Value))
-        )
+        # # 63a
+        # ET.SubElement(info, "USTreasDebtMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D120").Value == "NA"
+        #     else str(int(sheet.Range("D120").Value))
+        # )
+        # ET.SubElement(info, "USTreasDebtMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E120").Value == "NA"
+        #     else str(int(sheet.Range("E120").Value))
+        # )
+        # ET.SubElement(info, "USTreasDebtMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F120").Value == "NA"
+        #     else str(int(sheet.Range("F120").Value))
+        # )
+
+        if sheet.Range("D120").Value != "NA" or sheet.Range("D120").Value != 0:
+            ET.SubElement(info, "USTreasDebtMonth1Amount").text = str(int(sheet.Range("D120").Value))
+        if sheet.Range("E120").Value != "NA" or sheet.Range("E120").Value != 0:
+            ET.SubElement(info, "USTreasDebtMonth2Amount").text = str(int(sheet.Range("E120").Value))
+        if sheet.Range("F120").Value != "NA" or sheet.Range("F120").Value != 0:
+            ET.SubElement(info, "USTreasDebtMonth3Amount").text = str(int(sheet.Range("F120").Value))
 
         # 63b
-        ET.SubElement(info, "USGoveAgcyDebtMonth1Amount").text = (
-            "0"
-            if sheet.Range("D121").Value == "NA"
-            else str(int(sheet.Range("D121").Value))
-        )
-        ET.SubElement(info, "USGoveAgcyDebtMonth2Amount").text = (
-            "0"
-            if sheet.Range("E121").Value == "NA"
-            else str(int(sheet.Range("E121").Value))
-        )
-        ET.SubElement(info, "USGoveAgcyDebtMonth3Amount").text = (
-            "0"
-            if sheet.Range("F121").Value == "NA"
-            else str(int(sheet.Range("F121").Value))
-        )
+        # ET.SubElement(info, "USGoveAgcyDebtMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D121").Value == "NA"
+        #     else str(int(sheet.Range("D121").Value))
+        # )
+        # ET.SubElement(info, "USGoveAgcyDebtMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E121").Value == "NA"
+        #     else str(int(sheet.Range("E121").Value))
+        # )
+        # ET.SubElement(info, "USGoveAgcyDebtMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F121").Value == "NA"
+        #     else str(int(sheet.Range("F121").Value))
+        # )
+
+        if sheet.Range("D121").Value != "NA" or sheet.Range("D121").Value != 0:
+            ET.SubElement(info, "USGoveAgcyDebtMonth1Amount").text = str(int(sheet.Range("D121").Value))
+        if sheet.Range("E121").Value != "NA" or sheet.Range("E121").Value != 0:
+            ET.SubElement(info, "USGoveAgcyDebtMonth2Amount").text = str(int(sheet.Range("E121").Value))
+        if sheet.Range("F121").Value != "NA" or sheet.Range("F121").Value != 0:
+            ET.SubElement(info, "USGoveAgcyDebtMonth3Amount").text = str(int(sheet.Range("F121").Value))
 
         # 63c
-        ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth1Amount").text = (
-            "0"
-            if sheet.Range("D122").Value == "NA"
-            else str(int(sheet.Range("D122").Value))
-        )
-        ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth2Amount").text = (
-            "0"
-            if sheet.Range("E122").Value == "NA"
-            else str(int(sheet.Range("E122").Value))
-        )
-        ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth3Amount").text = (
-            "0"
-            if sheet.Range("F122").Value == "NA"
-            else str(int(sheet.Range("F122").Value))
-        )
+        # ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D122").Value == "NA"
+        #     else str(int(sheet.Range("D122").Value))
+        # )
+        # ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E122").Value == "NA"
+        #     else str(int(sheet.Range("E122").Value))
+        # )
+        # ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F122").Value == "NA"
+        #     else str(int(sheet.Range("F122").Value))
+        # )
+        if sheet.Range("D122").Value != "NA" or sheet.Range("D122").Value != 0:
+            ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth1Amount").text = str(int(sheet.Range("D122").Value))
+        if sheet.Range("E122").Value != "NA" or sheet.Range("E122").Value != 0:
+            ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth2Amount").text = str(int(sheet.Range("E122").Value))
+        if sheet.Range("F122").Value != "NA" or sheet.Range("F122").Value != 0:
+            ET.SubElement(info, "USGoveAgcyDebtNoCpnMonth3Amount").text = str(int(sheet.Range("F122").Value))
 
         # 63d
-        ET.SubElement(info, "NonUsDebtMonth1Amount").text = (
-            "0"
-            if sheet.Range("D123").Value == "NA"
-            else str(int(sheet.Range("D123").Value))
-        )
-        ET.SubElement(info, "NonUsDebtMonth2Amount").text = (
-            "0"
-            if sheet.Range("E123").Value == "NA"
-            else str(int(sheet.Range("E123").Value))
-        )
-        ET.SubElement(info, "NonUsDebtMonth3Amount").text = (
-            "0"
-            if sheet.Range("F123").Value == "NA"
-            else str(int(sheet.Range("F123").Value))
-        )
+        # ET.SubElement(info, "NonUsDebtMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D123").Value == "NA"
+        #     else str(int(sheet.Range("D123").Value))
+        # )
+        # ET.SubElement(info, "NonUsDebtMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E123").Value == "NA"
+        #     else str(int(sheet.Range("E123").Value))
+        # )
+        # ET.SubElement(info, "NonUsDebtMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F123").Value == "NA"
+        #     else str(int(sheet.Range("F123").Value))
+        # )
+        if sheet.Range("D123").Value != "NA" or sheet.Range("D123").Value != 0:
+            ET.SubElement(info, "NonUsDebtMonth1Amount").text = str(int(sheet.Range("D123").Value))
+        if sheet.Range("E123").Value != "NA" or sheet.Range("E123").Value != 0:
+            ET.SubElement(info, "NonUsDebtMonth2Amount").text = str(int(sheet.Range("E123").Value))
+        if sheet.Range("F123").Value != "NA" or sheet.Range("F123").Value != 0:
+            ET.SubElement(info, "NonUsDebtMonth3Amount").text = str(int(sheet.Range("F123").Value))
 
         # 63e
-        ET.SubElement(info, "CertOfDepositMonth1Amount").text = (
-            "0"
-            if sheet.Range("D124").Value == "NA"
-            else str(int(sheet.Range("D124").Value))
-        )
-        ET.SubElement(info, "CertOfDepositMonth2Amount").text = (
-            "0"
-            if sheet.Range("E124").Value == "NA"
-            else str(int(sheet.Range("E124").Value))
-        )
-        ET.SubElement(info, "CertOfDepositMonth3Amount").text = (
-            "0"
-            if sheet.Range("F124").Value == "NA"
-            else str(int(sheet.Range("F124").Value))
-        )
+        # ET.SubElement(info, "CertOfDepositMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D124").Value == "NA"
+        #     else str(int(sheet.Range("D124").Value))
+        # )
+        # ET.SubElement(info, "CertOfDepositMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E124").Value == "NA"
+        #     else str(int(sheet.Range("E124").Value))
+        # )
+        # ET.SubElement(info, "CertOfDepositMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F124").Value == "NA"
+        #     else str(int(sheet.Range("F124").Value))
+        # )
+        if sheet.Range("D124").Value != "NA" or sheet.Range("D124").Value != 0:
+            ET.SubElement(info, "CertOfDepositMonth1Amount").text = str(int(sheet.Range("D124").Value))
+        if sheet.Range("E124").Value != "NA" or sheet.Range("E124").Value != 0:
+            ET.SubElement(info, "CertOfDepositMonth2Amount").text = str(int(sheet.Range("E124").Value))
+        if sheet.Range("F124").Value != "NA" or sheet.Range("F124").Value != 0:
+            ET.SubElement(info, "CertOfDepositMonth3Amount").text = str(int(sheet.Range("F124").Value))
 
         # 63f
         ET.SubElement(info, "NonNegTimeDepositMonth1Amount").text = (
@@ -1304,227 +1340,337 @@ def section3_itemF(wb):
             if sheet.Range("F125").Value == "NA"
             else str(int(sheet.Range("F125").Value))
         )
+        if sheet.Range("D125").Value != "NA" or sheet.Range("D125").Value != 0:
+            ET.SubElement(info, "NonNegTimeDepositMonth1Amount").text = str(int(sheet.Range("D125").Value))
+        if sheet.Range("E125").Value != "NA" or sheet.Range("E125").Value != 0:
+            ET.SubElement(info, "NonNegTimeDepositMonth2Amount").text = str(int(sheet.Range("E125").Value))
+        if sheet.Range("F125").Value != "NA" or sheet.Range("F125").Value != 0:
+            ET.SubElement(info, "NonNegTimeDepositMonth3Amount").text = str(int(sheet.Range("F125").Value))
 
+        # # 63g
+        # ET.SubElement(info, "VarRateDemandNoteMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D126").Value == "NA"
+        #     else str(int(sheet.Range("D126").Value))
+        # )
+        # ET.SubElement(info, "VarRateDemandNoteMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E126").Value == "NA"
+        #     else str(int(sheet.Range("E126").Value))
+        # )
+        # ET.SubElement(info, "VarRateDemandNoteMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F126").Value == "NA"
+        #     else str(int(sheet.Range("F126").Value))
+        # )
+        #
+        # # 63h
+        # ET.SubElement(info, "OtherMncplSecurityMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D127").Value == "NA"
+        #     else str(int(sheet.Range("D127").Value))
+        # )
+        # ET.SubElement(info, "OtherMncplSecurityMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E127").Value == "NA"
+        #     else str(int(sheet.Range("E127").Value))
+        # )
+        # ET.SubElement(info, "OtherMncplSecurityMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F127").Value == "NA"
+        #     else str(int(sheet.Range("F127").Value))
+        # )
+        #
+        # # 63i
+        # ET.SubElement(info, "AssetBackedCommercialPaperMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D128").Value == "NA"
+        #     else str(int(sheet.Range("D128").Value))
+        # )
+        # ET.SubElement(info, "AssetBackedCommercialPaperMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E128").Value == "NA"
+        #     else str(int(sheet.Range("E128").Value))
+        # )
+        # ET.SubElement(info, "AssetBackedCommercialPaperMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F128").Value == "NA"
+        #     else str(int(sheet.Range("F128").Value))
+        # )
+        #
+        # # 63j
+        # ET.SubElement(info, "OtherAssetBackedSecuritiesMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D129").Value == "NA"
+        #     else str(int(sheet.Range("D129").Value))
+        # )
+        # ET.SubElement(info, "OtherAssetBackedSecuritiesMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E129").Value == "NA"
+        #     else str(int(sheet.Range("E129").Value))
+        # )
+        # ET.SubElement(info, "OtherAssetBackedSecuritiesMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F129").Value == "NA"
+        #     else str(int(sheet.Range("F129").Value))
+        # )
+        #
+        # # 63k
+        # ET.SubElement(info, "USTreasuryRepoMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D130").Value == "NA"
+        #     else str(int(sheet.Range("D130").Value))
+        # )
+        # ET.SubElement(info, "USTreasuryRepoMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E130").Value == "NA"
+        #     else str(int(sheet.Range("E130").Value))
+        # )
+        # ET.SubElement(info, "USTreasuryRepoMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F130").Value == "NA"
+        #     else str(int(sheet.Range("F130").Value))
+        # )
+        #
+        # # 63l
+        # ET.SubElement(info, "USGovAgencyRepoMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D131").Value == "NA"
+        #     else str(int(sheet.Range("D131").Value))
+        # )
+        # ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E131").Value == "NA"
+        #     else str(int(sheet.Range("E131").Value))
+        # )
+        # ET.SubElement(info, "USGovAgencyRepoMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F131").Value == "NA"
+        #     else str(int(sheet.Range("F131").Value))
+        # )
+        #
+        # # 63m
+        # ET.SubElement(info, "OtherRepoMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D132").Value == "NA"
+        #     else str(int(sheet.Range("D132").Value))
+        # )
+        # ET.SubElement(info, "OtherRepoMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E132").Value == "NA"
+        #     else str(int(sheet.Range("E132").Value))
+        # )
+        # ET.SubElement(info, "OtherRepoMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F132").Value == "NA"
+        #     else str(int(sheet.Range("F132").Value))
+        # )
+        #
+        # # 63n
+        # ET.SubElement(info, "InsuranceCoFundingAgrmntMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D133").Value == "NA"
+        #     else str(int(sheet.Range("D133").Value))
+        # )
+        # ET.SubElement(info, "InsuranceCoFundingAgrmntMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E133").Value == "NA"
+        #     else str(int(sheet.Range("E133").Value))
+        # )
+        # ET.SubElement(info, "InsuranceCoFundingAgrmntMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F133").Value == "NA"
+        #     else str(int(sheet.Range("F133").Value))
+        # )
+        #
+        # # 63o
+        # ET.SubElement(info, "InvestmentCompanyMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D134").Value == "NA"
+        #     else str(int(sheet.Range("D120").Value))
+        # )
+        # ET.SubElement(info, "InvestmentCompanyMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E134").Value == "NA"
+        #     else str(int(sheet.Range("E134").Value))
+        # )
+        # ET.SubElement(info, "InvestmentCompanyMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F134").Value == "NA"
+        #     else str(int(sheet.Range("F134").Value))
+        # )
+        #
+        # # 63p
+        # ET.SubElement(info, "FinancialCoCommercialPaperMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D135").Value == "NA"
+        #     else str(int(sheet.Range("D135").Value))
+        # )
+        # ET.SubElement(info, "FinancialCoCommercialPaperMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E135").Value == "NA"
+        #     else str(int(sheet.Range("E135").Value))
+        # )
+        # ET.SubElement(info, "FinancialCoCommercialPaperMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F135").Value == "NA"
+        #     else str(int(sheet.Range("F135").Value))
+        # )
+        #
+        # # 63q
+        # ET.SubElement(info, "NonFinancialCoCommercialPaperMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D136").Value == "NA"
+        #     else str(int(sheet.Range("D136").Value))
+        # )
+        # ET.SubElement(info, "NonFinancialCoCommercialPaperMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E136").Value == "NA"
+        #     else str(int(sheet.Range("E136").Value))
+        # )
+        # ET.SubElement(info, "NonFinancialCoCommercialPaperMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F136").Value == "NA"
+        #     else str(int(sheet.Range("F136").Value))
+        # )
+        #
+        # # 63r
+        # ET.SubElement(info, "TenderOptionBondMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D137").Value == "NA"
+        #     else str(int(sheet.Range("D137").Value))
+        # )
+        # ET.SubElement(info, "TenderOptionBondMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E137").Value == "NA"
+        #     else str(int(sheet.Range("E137").Value))
+        # )
+        # ET.SubElement(info, "TenderOptionBondMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F137").Value == "NA"
+        #     else str(int(sheet.Range("F137").Value))
+        # )
+        # # 63s
+        # ET.SubElement(info, "OtherInstrumentMonth1Amount").text = (
+        #     "0"
+        #     if sheet.Range("D138").Value == "NA"
+        #     else str(int(sheet.Range("D138").Value))
+        # )
+        # ET.SubElement(info, "OtherInstrumentMonth2Amount").text = (
+        #     "0"
+        #     if sheet.Range("E138").Value == "NA"
+        #     else str(int(sheet.Range("E138").Value))
+        # )
+        # ET.SubElement(info, "OtherInstrumentMonth3Amount").text = (
+        #     "0"
+        #     if sheet.Range("F138").Value == "NA"
+        #     else str(int(sheet.Range("F138").Value))
+        # )
+        #
+        #
         # 63g
-        ET.SubElement(info, "VarRateDemandNoteMonth1Amount").text = (
-            "0"
-            if sheet.Range("D126").Value == "NA"
-            else str(int(sheet.Range("D126").Value))
-        )
-        ET.SubElement(info, "VarRateDemandNoteMonth2Amount").text = (
-            "0"
-            if sheet.Range("E126").Value == "NA"
-            else str(int(sheet.Range("E126").Value))
-        )
-        ET.SubElement(info, "VarRateDemandNoteMonth3Amount").text = (
-            "0"
-            if sheet.Range("F126").Value == "NA"
-            else str(int(sheet.Range("F126").Value))
-        )
+        if sheet.Range("D126").Value != "NA" or sheet.Range("D126").Value != 0:
+            ET.SubElement(info, "VarRateDemandNoteMonth1Amount").text = str(int(sheet.Range("D126").Value))
+        if sheet.Range("E126").Value != "NA" or sheet.Range("E126").Value != 0:
+            ET.SubElement(info, "VarRateDemandNoteMonth2Amount").text = str(int(sheet.Range("E126").Value))
+        if sheet.Range("F126").Value != "NA" or sheet.Range("F126").Value != 0:
+            ET.SubElement(info, "VarRateDemandNoteMonth3Amount").text = str(int(sheet.Range("F126").Value))
 
         # 63h
-        ET.SubElement(info, "OtherMncplSecurityMonth1Amount").text = (
-            "0"
-            if sheet.Range("D127").Value == "NA"
-            else str(int(sheet.Range("D127").Value))
-        )
-        ET.SubElement(info, "OtherMncplSecurityMonth2Amount").text = (
-            "0"
-            if sheet.Range("E127").Value == "NA"
-            else str(int(sheet.Range("E127").Value))
-        )
-        ET.SubElement(info, "OtherMncplSecurityMonth3Amount").text = (
-            "0"
-            if sheet.Range("F127").Value == "NA"
-            else str(int(sheet.Range("F127").Value))
-        )
+        if sheet.Range("D127").Value != "NA" or sheet.Range("D127").Value != 0:
+            ET.SubElement(info, "OtherMncplSecurityMonth1Amount").text = str(int(sheet.Range("D127").Value))
+        if sheet.Range("E127").Value != "NA" or sheet.Range("E127").Value != 0:
+            ET.SubElement(info, "OtherMncplSecurityMonth2Amount").text = str(int(sheet.Range("E127").Value))
+        if sheet.Range("F127").Value != "NA" or sheet.Range("F127").Value != 0:
+            ET.SubElement(info, "OtherMncplSecurityMonth3Amount").text = str(int(sheet.Range("F127").Value))
 
         # 63i
-        ET.SubElement(info, "AssetBackedCommercialPaperMonth1Amount").text = (
-            "0"
-            if sheet.Range("D128").Value == "NA"
-            else str(int(sheet.Range("D128").Value))
-        )
-        ET.SubElement(info, "AssetBackedCommercialPaperMonth2Amount").text = (
-            "0"
-            if sheet.Range("E128").Value == "NA"
-            else str(int(sheet.Range("E128").Value))
-        )
-        ET.SubElement(info, "AssetBackedCommercialPaperMonth3Amount").text = (
-            "0"
-            if sheet.Range("F128").Value == "NA"
-            else str(int(sheet.Range("F128").Value))
-        )
+        if sheet.Range("D128").Value != "NA" or sheet.Range("D128").Value != 0:
+            ET.SubElement(info, "AssetBackedCommercialPaperMonth1Amount").text = str(int(sheet.Range("D128").Value))
+        if sheet.Range("E128").Value != "NA" or sheet.Range("E128").Value != 0:
+            ET.SubElement(info, "AssetBackedCommercialPaperMonth2Amount").text = str(int(sheet.Range("E128").Value))
+        if sheet.Range("F128").Value != "NA" or sheet.Range("F128").Value != 0:
+            ET.SubElement(info, "AssetBackedCommercialPaperMonth3Amount").text = str(int(sheet.Range("F128").Value))
 
         # 63j
-        ET.SubElement(info, "OtherAssetBackedSecuritiesMonth1Amount").text = (
-            "0"
-            if sheet.Range("D129").Value == "NA"
-            else str(int(sheet.Range("D129").Value))
-        )
-        ET.SubElement(info, "OtherAssetBackedSecuritiesMonth2Amount").text = (
-            "0"
-            if sheet.Range("E129").Value == "NA"
-            else str(int(sheet.Range("E129").Value))
-        )
-        ET.SubElement(info, "OtherAssetBackedSecuritiesMonth3Amount").text = (
-            "0"
-            if sheet.Range("F129").Value == "NA"
-            else str(int(sheet.Range("F129").Value))
-        )
+        if sheet.Range("D129").Value != "NA" or sheet.Range("D129").Value != 0:
+            ET.SubElement(info, "OtherAssetBackedSecuritiesMonth1Amount").text = str(int(sheet.Range("D129").Value))
+        if sheet.Range("E129").Value != "NA" or sheet.Range("E129").Value != 0:
+            ET.SubElement(info, "OtherAssetBackedSecuritiesMonth2Amount").text = str(int(sheet.Range("E129").Value))
+        if sheet.Range("F129").Value != "NA" or sheet.Range("F129").Value != 0:
+            ET.SubElement(info, "OtherAssetBackedSecuritiesMonth3Amount").text = str(int(sheet.Range("F129").Value))
 
         # 63k
-        ET.SubElement(info, "USTreasuryRepoMonth1Amount").text = (
-            "0"
-            if sheet.Range("D130").Value == "NA"
-            else str(int(sheet.Range("D130").Value))
-        )
-        ET.SubElement(info, "USTreasuryRepoMonth2Amount").text = (
-            "0"
-            if sheet.Range("E130").Value == "NA"
-            else str(int(sheet.Range("E130").Value))
-        )
-        ET.SubElement(info, "USTreasuryRepoMonth3Amount").text = (
-            "0"
-            if sheet.Range("F130").Value == "NA"
-            else str(int(sheet.Range("F130").Value))
-        )
+        if sheet.Range("D130").Value != "NA" or sheet.Range("D130").Value != 0:
+            ET.SubElement(info, "USTreasuryRepoMonth1Amount").text = str(int(sheet.Range("D130").Value))
+        if sheet.Range("E130").Value != "NA" or sheet.Range("E130").Value != 0:
+            ET.SubElement(info, "USTreasuryRepoMonth2Amount").text = str(int(sheet.Range("E130").Value))
+        if sheet.Range("F130").Value != "NA" or sheet.Range("F130").Value != 0:
+            ET.SubElement(info, "USTreasuryRepoMonth3Amount").text = str(int(sheet.Range("F130").Value))
 
         # 63l
-        ET.SubElement(info, "USGovAgencyRepoMonth1Amount").text = (
-            "0"
-            if sheet.Range("D131").Value == "NA"
-            else str(int(sheet.Range("D131").Value))
-        )
-        ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = (
-            "0"
-            if sheet.Range("E131").Value == "NA"
-            else str(int(sheet.Range("E131").Value))
-        )
-        ET.SubElement(info, "USGovAgencyRepoMonth3Amount").text = (
-            "0"
-            if sheet.Range("F131").Value == "NA"
-            else str(int(sheet.Range("F131").Value))
-        )
+        if sheet.Range("D131").Value != "NA" or sheet.Range("D131").Value != 0:
+            ET.SubElement(info, "USGovAgencyRepoMonth1Amount").text = str(int(sheet.Range("D131").Value))
+        if sheet.Range("E131").Value != "NA" or sheet.Range("E131").Value != 0:
+            ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = str(int(sheet.Range("E131").Value))
+        if sheet.Range("F131").Value != "NA" or sheet.Range("F131").Value != 0:
+            ET.SubElement(info, "USGovAgencyRepoMonth3Amount").text = str(int(sheet.Range("F131").Value))
 
         # 63m
-        ET.SubElement(info, "OtherRepoMonth1Amount").text = (
-            "0"
-            if sheet.Range("D132").Value == "NA"
-            else str(int(sheet.Range("D132").Value))
-        )
-        ET.SubElement(info, "OtherRepoMonth2Amount").text = (
-            "0"
-            if sheet.Range("E132").Value == "NA"
-            else str(int(sheet.Range("E132").Value))
-        )
-        ET.SubElement(info, "OtherRepoMonth3Amount").text = (
-            "0"
-            if sheet.Range("F132").Value == "NA"
-            else str(int(sheet.Range("F132").Value))
-        )
+        if sheet.Range("D132").Value != "NA" or sheet.Range("D132").Value != 0:
+            ET.SubElement(info, "OtherRepoMonth1Amount").text = str(int(sheet.Range("D132").Value))
+        if sheet.Range("E132").Value != "NA" or sheet.Range("E132").Value != 0:
+            ET.SubElement(info, "OtherRepoMonth2Amount").text = str(int(sheet.Range("E132").Value))
+        if sheet.Range("F132").Value != "NA" or sheet.Range("F132").Value != 0:
+            ET.SubElement(info, "OtherRepoMonth3Amount").text = str(int(sheet.Range("F132").Value))
 
         # 63n
-        ET.SubElement(info, "InsuranceCoFundingAgrmntMonth1Amount").text = (
-            "0"
-            if sheet.Range("D133").Value == "NA"
-            else str(int(sheet.Range("D133").Value))
-        )
-        ET.SubElement(info, "InsuranceCoFundingAgrmntMonth2Amount").text = (
-            "0"
-            if sheet.Range("E133").Value == "NA"
-            else str(int(sheet.Range("E133").Value))
-        )
-        ET.SubElement(info, "InsuranceCoFundingAgrmntMonth3Amount").text = (
-            "0"
-            if sheet.Range("F133").Value == "NA"
-            else str(int(sheet.Range("F133").Value))
-        )
+        if sheet.Range("D133").Value != "NA" or sheet.Range("D133").Value != 0:
+            ET.SubElement(info, "InsuranceCoFundingAgrmntMonth1Amount").text = str(int(sheet.Range("D133").Value))
+        if sheet.Range("E133").Value != "NA" or sheet.Range("E133").Value != 0:
+            ET.SubElement(info, "InsuranceCoFundingAgrmntMonth2Amount").text = str(int(sheet.Range("E133").Value))
+        if sheet.Range("F133").Value != "NA" or sheet.Range("F133").Value != 0:
+            ET.SubElement(info, "InsuranceCoFundingAgrmntMonth3Amount").text = str(int(sheet.Range("F133").Value))
 
         # 63o
-        ET.SubElement(info, "InvestmentCompanyMonth1Amount").text = (
-            "0"
-            if sheet.Range("D134").Value == "NA"
-            else str(int(sheet.Range("D120").Value))
-        )
-        ET.SubElement(info, "InvestmentCompanyMonth2Amount").text = (
-            "0"
-            if sheet.Range("E134").Value == "NA"
-            else str(int(sheet.Range("E134").Value))
-        )
-        ET.SubElement(info, "InvestmentCompanyMonth3Amount").text = (
-            "0"
-            if sheet.Range("F134").Value == "NA"
-            else str(int(sheet.Range("F134").Value))
-        )
+        if sheet.Range("D134").Value != "NA" or sheet.Range("D134").Value != 0:
+            ET.SubElement(info, "InvestmentCompanyMonth1Amount").text = str(int(sheet.Range("D120").Value))
+        if sheet.Range("E134").Value != "NA" or sheet.Range("E134").Value != 0:
+            ET.SubElement(info, "InvestmentCompanyMonth2Amount").text = str(int(sheet.Range("E134").Value))
+        if sheet.Range("F134").Value != "NA" or sheet.Range("F134").Value != 0:
+            ET.SubElement(info, "InvestmentCompanyMonth3Amount").text = str(int(sheet.Range("F134").Value))
 
         # 63p
-        ET.SubElement(info, "FinancialCoCommercialPaperMonth1Amount").text = (
-            "0"
-            if sheet.Range("D135").Value == "NA"
-            else str(int(sheet.Range("D135").Value))
-        )
-        ET.SubElement(info, "FinancialCoCommercialPaperMonth2Amount").text = (
-            "0"
-            if sheet.Range("E135").Value == "NA"
-            else str(int(sheet.Range("E135").Value))
-        )
-        ET.SubElement(info, "FinancialCoCommercialPaperMonth3Amount").text = (
-            "0"
-            if sheet.Range("F135").Value == "NA"
-            else str(int(sheet.Range("F135").Value))
-        )
+        if sheet.Range("D135").Value != "NA" or sheet.Range("D135").Value != 0:
+            ET.SubElement(info, "FinancialCoCommercialPaperMonth1Amount").text = str(int(sheet.Range("D135").Value))
+        if sheet.Range("E135").Value != "NA" or sheet.Range("E135").Value != 0:
+            ET.SubElement(info, "FinancialCoCommercialPaperMonth2Amount").text = str(int(sheet.Range("E135").Value))
+        if sheet.Range("F135").Value != "NA" or sheet.Range("F135").Value != 0:
+            ET.SubElement(info, "FinancialCoCommercialPaperMonth3Amount").text = str(int(sheet.Range("F135").Value))
 
         # 63q
-        ET.SubElement(info, "NonFinancialCoCommercialPaperMonth1Amount").text = (
-            "0"
-            if sheet.Range("D136").Value == "NA"
-            else str(int(sheet.Range("D136").Value))
-        )
-        ET.SubElement(info, "NonFinancialCoCommercialPaperMonth2Amount").text = (
-            "0"
-            if sheet.Range("E136").Value == "NA"
-            else str(int(sheet.Range("E136").Value))
-        )
-        ET.SubElement(info, "NonFinancialCoCommercialPaperMonth3Amount").text = (
-            "0"
-            if sheet.Range("F136").Value == "NA"
-            else str(int(sheet.Range("F136").Value))
-        )
+        if sheet.Range("D136").Value != "NA" or sheet.Range("D136").Value != 0:
+            ET.SubElement(info, "NonFinancialCoCommercialPaperMonth1Amount").text = str(int(sheet.Range("D136").Value))
+        if sheet.Range("E136").Value != "NA" or sheet.Range("E136").Value != 0:
+            ET.SubElement(info, "NonFinancialCoCommercialPaperMonth2Amount").text = str(int(sheet.Range("E136").Value))
+        if sheet.Range("F136").Value != "NA" or sheet.Range("F136").Value != 0:
+            ET.SubElement(info, "NonFinancialCoCommercialPaperMonth3Amount").text = str(int(sheet.Range("F136").Value))
 
         # 63r
-        ET.SubElement(info, "TenderOptionBondMonth1Amount").text = (
-            "0"
-            if sheet.Range("D137").Value == "NA"
-            else str(int(sheet.Range("D137").Value))
-        )
-        ET.SubElement(info, "TenderOptionBondMonth2Amount").text = (
-            "0"
-            if sheet.Range("E137").Value == "NA"
-            else str(int(sheet.Range("E137").Value))
-        )
-        ET.SubElement(info, "TenderOptionBondMonth3Amount").text = (
-            "0"
-            if sheet.Range("F137").Value == "NA"
-            else str(int(sheet.Range("F137").Value))
-        )
+        if sheet.Range("D137").Value != "NA" or sheet.Range("D137").Value != 0:
+            ET.SubElement(info, "TenderOptionBondMonth1Amount").text = str(int(sheet.Range("D137").Value))
+        if sheet.Range("E137").Value != "NA" or sheet.Range("E137").Value != 0:
+            ET.SubElement(info, "TenderOptionBondMonth2Amount").text = str(int(sheet.Range("E137").Value))
+        if sheet.Range("F137").Value != "NA" or sheet.Range("F137").Value != 0:
+            ET.SubElement(info, "TenderOptionBondMonth3Amount").text = str(int(sheet.Range("F137").Value))
 
-        # 63s
-        ET.SubElement(info, "OtherInstrumentMonth1Amount").text = (
-            "0"
-            if sheet.Range("D138").Value == "NA"
-            else str(int(sheet.Range("D138").Value))
-        )
-        ET.SubElement(info, "OtherInstrumentMonth2Amount").text = (
-            "0"
-            if sheet.Range("E138").Value == "NA"
-            else str(int(sheet.Range("E138").Value))
-        )
-        ET.SubElement(info, "OtherInstrumentMonth3Amount").text = (
-            "0"
-            if sheet.Range("F138").Value == "NA"
-            else str(int(sheet.Range("F138").Value))
-        )
+        # 63rs
+        if sheet.Range("D138").Value != "NA" or sheet.Range("D138").Value != 0:
+            ET.SubElement(info, "OtherInstrumentMonth1Amount").text = str(int(sheet.Range("D138").Value))
+        if sheet.Range("E138").Value != "NA" or sheet.Range("E138").Value != 0:
+            ET.SubElement(info, "OtherInstrumentMonth2Amount").text = str(int(sheet.Range("E138").Value))
+        if sheet.Range("F138").Value != "NA" or sheet.Range("F138").Value != 0:
+            ET.SubElement(info, "OtherInstrumentMonth3Amount").text = str(int(sheet.Range("F138").Value))
 
         # TODO: Question 63s: Instrument description, what does it look like?
 
