@@ -127,6 +127,16 @@ series_size_dict = {
     "USGFD-M00": 123255192.977195,
 }
 
+# TODO: Need to replace this with a proper table
+note_principal = {
+    # "74166WAE4",
+    "74166WAK0": 325250000,
+    # "74166WAM6",
+    "74166WAN4": 389750000,
+    "90366JAG2": 20700000,
+    "90366JAH0": 50000000,
+}
+
 benchmark_dictionary = {
     "PRIME-C10": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
     "PRIME-M00": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
@@ -369,6 +379,11 @@ for reporting_series_id in reporting_series:
         + " bps"
     )
 
+    prev_target_return = df_target_return[prev_target_return_condition][
+        "net_return"
+    ].iloc[0]
+    previous_target_return = form_as_percent(prev_target_return, 2)
+
     ############################## HISTORICAL RETURN #####################################
     if reporting_type_dict[reporting_series_id] == "NOTE":
         if reporting_series_id in temp_prime_ids_dict.keys():
@@ -559,21 +574,24 @@ for reporting_series_id in reporting_series:
     r_c[2] = form_as_percent(r_c[2], 2)
 
     # TODO: replace this with data from silver_returns_by_series_table
+    # TODO: also refractor logic for USG Note
+    # r_this_1: 3 month / 6 month return of series in Historical return table
+    # r_this_2: 1 year return of series in Historical return table
     r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
     r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
     # r_this_1 = form_as_percent(df_benchmark_comparison_prev["3m_return"].iloc[0], 2)
     # r_this_2 = form_as_percent(df_benchmark_comparison_prev["12m_return"].iloc[0], 2)
 
     ## CALCULATE SPREAD
-    s_a_0 = bps_spread(prev_return, form_as_percent(r_a[0], 2))
+    s_a_0 = bps_spread(previous_target_return, form_as_percent(r_a[0], 2))
     s_a_1 = bps_spread(r_this_1, r_a[1])
     s_a_2 = bps_spread(r_this_2, r_a[2])
 
-    s_b_0 = bps_spread(prev_return, form_as_percent(r_b[0], 2))
+    s_b_0 = bps_spread(previous_target_return, form_as_percent(r_b[0], 2))
     s_b_1 = bps_spread(r_this_1, r_b[1])
     s_b_2 = bps_spread(r_this_2, r_b[2])
 
-    s_c_0 = bps_spread(prev_return, form_as_percent(r_c[0], 2))
+    s_c_0 = bps_spread(previous_target_return, form_as_percent(r_c[0], 2))
     s_c_1 = bps_spread(r_this_1, r_c[1])
     s_c_2 = bps_spread(r_this_2, r_c[2])
 
@@ -766,6 +784,121 @@ for reporting_series_id in reporting_series:
             inception_date = pd.to_datetime("07-20-2018").strftime("%B %d, %Y")
         return inception_date
 
+    def get_reporting_dates(reporting_date, lookback_period):
+        reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
+        roll_schedule = df_roll_schedule.sort_values(by="start_date")
+        index = roll_schedule[roll_schedule["end_date"] > reporting_date].index[0]
+
+        # Slice the DataFrame to get the 7 consecutive rows
+        result_df = roll_schedule.iloc[index - (lookback_period - 1) : index + 1].copy()
+
+        # Return 'start_date' and 'end_date' as separate lists
+        start_dates = result_df["start_date"].dt.strftime("%Y-%m-%d").tolist()
+        end_dates = result_df["end_date"].dt.strftime("%Y-%m-%d").tolist()
+        return start_dates, end_dates
+
+    def get_interest_rates_and_spreads(reporting_date, lookback_period):
+        reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
+        if reporting_series_id in temp_prime_ids_dict.keys():
+            target_return_condition = (
+                df_target_return["security_id"]
+                == temp_prime_ids_dict[reporting_series_id]
+            )
+        elif reporting_series_id in temp_usg_ids_dict.keys():
+            target_return_condition = (
+                df_target_return["security_id"]
+                == temp_usg_ids_dict[reporting_series_id]
+            )
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            return
+
+        df = (
+            df_target_return[target_return_condition]
+            .sort_values(by="date")
+            .reset_index()
+        )
+        index = df[df["date"] >= reporting_date].index[0]
+        result_df = df.iloc[index - (lookback_period - 1) : index + 1].copy()
+        net_returns = result_df["net_return"].tolist()
+        net_spreads = result_df["net_spread"].tolist()
+        return net_returns, net_spreads
+
+    def get_coupon_plot(reporting_series_id, reporting_date):
+
+        int_period_starts, int_period_ends = get_reporting_dates(reporting_date, 7)
+
+        int_rates, spread_to_benchmarks = get_interest_rates_and_spreads(
+            reporting_date, 7
+        )  # historical returns
+
+        note_principals = [note_principal[reporting_series_id]] * 7
+        interest_paid = [
+            ret
+            / 360
+            * (
+                datetime.strptime(end, "%Y-%m-%d")
+                - datetime.strptime(start, "%Y-%m-%d")
+            ).days
+            * principal
+            for ret, end, start, principal in zip(
+                int_rates, int_period_ends, int_period_starts, note_principals
+            )
+        ]
+        interest_payment_dates = int_period_ends
+        related_fund_cap_accounts = note_principals
+
+        oc_rates = []  # oc_rate of end date - 1 business days
+        df_oc_rates_temp = read_table_from_db(oc_rate_table_name, db_type)
+
+        for end_dt in int_period_ends:
+            oc_date_temp = (
+                pd.to_datetime(end_dt) - pd.offsets.BusinessDay(1)
+            ).strftime("%Y-%m-%d")
+
+            if reporting_series_id == "74166WAK0":
+                oc_rate_condition = (
+                    (df_oc_rates_temp["fund"] == "PRIME")
+                    & (df_oc_rates_temp["series"] == "MONTHLY")
+                    & (df_oc_rates_temp["report_date"] == oc_date_temp)
+                )
+            elif reporting_series_id == "74166WAN4":
+                oc_rate_condition = (
+                    (df_oc_rates_temp["fund"] == "PRIME")
+                    & (df_oc_rates_temp["series"] == "MONTHLYIG")
+                    & (df_oc_rates_temp["report_date"] == oc_date_temp)
+                )
+            elif reporting_series_id in temp_usg_ids_dict.keys():
+                oc_rate_condition = (
+                    (df_oc_rates_temp["fund"] == "USG")
+                    & (df_oc_rates_temp["series"] == "MONTHLY")
+                    & (df_oc_rates_temp["report_date"] == oc_date_temp)
+                )
+            else:
+                print(f"Invalid reporting series id {reporting_series_id}")
+                break
+
+            oc_rate_temp = df_oc_rates_temp[oc_rate_condition][
+                "oc_rate_allocated"
+            ].iloc[0]
+            oc_rates.append(oc_rate_temp)
+
+        return (
+            int_period_starts,
+            int_period_ends,
+            int_rates,
+            spread_to_benchmarks,
+            note_principals,
+            interest_paid,
+            oc_rates,
+        )
+
+    print(get_coupon_plot(reporting_series_id, report_date))
+
+    #####################################################################################
+    ############################## REPORT GENERATION SCRIPT #############################
+    #####################################################################################
+
     reports_generated = []
     bad_reports = []
 
@@ -833,16 +966,12 @@ for reporting_series_id in reporting_series:
                 "benchmark": benchmark_name,  # done
                 "tgt_outperform": target_outperform_range,  # done
                 "exp_rat_footnote": expense_ratio_footnote_text,
-                "prev_pd_start": pd.to_datetime(curr_start).strftime(
-                    "%B %d, %Y"
-                ),  # done
-                "this_pd_start": pd.to_datetime(next_start).strftime(
-                    "%B %d, %Y"
-                ),  # done
-                "prev_pd_return": prev_return,  # done
+                "prev_pd_start": pd.to_datetime(curr_start).strftime("%B %d"),  # done
+                "this_pd_start": pd.to_datetime(next_start).strftime("%B %d"),  # done
+                "prev_pd_return": previous_target_return,  # done
                 "prev_pd_benchmark": benchmark_short,  # done
                 "prev_pd_outperform": prev_target_outperform,  # done
-                "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),  # done
+                "this_pd_end": pd.to_datetime(next_end).strftime("%B %d"),  # done
                 "this_pd_est_return": current_target_return,  # done
                 "this_pd_est_outperform": target_outperform_net,  # done
                 "benchmark_short": benchmark_short,  # done
@@ -877,7 +1006,7 @@ for reporting_series_id in reporting_series:
                 # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
                 "return_table_plot": return_table_plot(
                     fund_name=fund_name,  # done
-                    prev_pd_return=prev_return,
+                    prev_pd_return=previous_target_return,
                     series_abbrev=series_abbrev,
                     r_this_1=r_this_1,
                     r_this_2=r_this_2,
@@ -1002,15 +1131,15 @@ for reporting_series_id in reporting_series:
                 "benchmark": benchmark_name,  # done
                 "tgt_outperform": target_outperform_range,  # done
                 "prev_pd_start": pd.to_datetime(curr_start).strftime(
-                    "%B %d, %Y"
-                ),  # done
+                    "%B %d"
+                ),  # Previous coupon period
                 "this_pd_start": pd.to_datetime(next_start).strftime(
-                    "%B %d, %Y"
-                ),  # done
-                "prev_pd_return": prev_return,
+                    "%B %d"
+                ),  # Previous coupon period
+                "prev_pd_return": previous_target_return,
                 "prev_pd_benchmark": benchmark_short,
                 "prev_pd_outperform": prev_target_outperform,
-                "this_pd_end": pd.to_datetime(next_end).strftime("%B %d, %Y"),
+                "this_pd_end": pd.to_datetime(next_end).strftime("%B %d"),
                 "this_pd_est_return": current_target_return,
                 "this_pd_est_outperform": target_outperform_net,
                 "benchmark_short": benchmark_short,
@@ -1019,7 +1148,7 @@ for reporting_series_id in reporting_series:
                 # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.53\\%}                              & \\textbf{-}                                  & \\textbf{5.56\\%}                               & \\textbf{-}                           & \\textbf{5.60\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.37\\%                                       & \\textbf{+16 bps}                            & 5.39\\%                               & \\textbf{+17 bps}                     & 5.44\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.10\\%                                       & \\textbf{+43 bps}                           & 5.13\\%                               & \\textbf{+43 bps}                     & 5.20\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
                 "return_table_plot": return_table_plot(
                     fund_name=fund_name,  # done
-                    prev_pd_return=prev_return,
+                    prev_pd_return=previous_target_return,
                     series_abbrev=series_abbrev,
                     r_this_1=r_this_1,
                     r_this_2=r_this_2,
@@ -1080,7 +1209,7 @@ for reporting_series_id in reporting_series:
                     benchmark_to_use[1],
                     benchmark_to_use[2] if fund_name != "USG" else None,
                     round(
-                        0.06,  # TODO: Max return rate here - verify
+                        target_return * 100,  # current target return
                         2,
                     ),
                     round(r_a[0] * 100, 2) if r_a[0] is not None else 0,
@@ -1104,18 +1233,21 @@ for reporting_series_id in reporting_series:
                 "fund_size": get_fund_size(fund_name.upper(), report_date),
                 "series_size": get_series_size(reporting_series_id, report_date),
                 "lucid_aum": wordify_aum(lucid_aum),
-                "fund_inception": df_attributes["fund_inception"]
-                .iloc[0]
-                .strftime("%B %d, %Y"),
-                "cusip": df_attributes["security_id"],
+                "fund_inception": get_fund_inception_date(fund_name),
+                "cusip": df_attributes["security_id"].iloc[0],
                 "note_abbrev": series_abbrev,
                 "principal_outstanding": "\\$20.7 million",  # TODO: update df_attributes
-                "issue_date": get_fund_inception_date(
-                    fund_name
-                ),  # TODO: update with inception for PRIME & USG
-                "maturity_date": df_attributes["final_maturity_date"],
-                "pd_end_date_long": pd.to_datetime(next_notice).strftime("%B %d, %Y"),
+                "issue_date": df_attributes["fund_inception"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),  # TODO: update with inception for PRIME & USG
+                "maturity_date": df_attributes["final_maturity_date"]
+                .iloc[0]
+                .strftime("%B %d, %Y"),
+                "pd_end_date_long": pd.to_datetime(next_end).strftime("%B %d, %Y"),
                 "next_notice_date": pd.to_datetime(next_notice).strftime("%B %d, %Y"),
+                "coupon_plot_temp": get_coupon_plot(
+                    reporting_series_id, next_start, next_end
+                ),
                 "coupon_plot": "12/14/23 &\\textbf{{01/18/24}} &\\textbf{{5.53\\%}} &1m TB+20 &\\$20,700,000 &\\$109,766.71 &01/18/24 &\\$20,700,000 &108.2\\% \\\\01/18/24 &\\textbf{{02/15/24}} &\\textbf{{5.53\\%}} &1m TB+17 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &02/15/24 &\\hphantom{{\\$}}20,700,000 &105.8\\% \\\\02/15/24 &\\textbf{{03/14/24}} &\\textbf{{5.53\\%}} &1m TB+17 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &03/14/24 &\\hphantom{{\\$}}20,700,000 &107.0\\% \\\\03/14/24 &\\textbf{{04/18/24}} &\\textbf{{5.53\\%}} &1m TB+16 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}109,766.71 &04/18/24 &\\hphantom{{\\$}}20,700,000 &106.5\\% \\\\04/18/24 &\\textbf{{05/16/24}} &\\textbf{{5.53\\%}} &1m TB+16 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}87,813.37 &05/16/24 &\\hphantom{{\\$}}20,700,000 &107.0\\% \\\\05/16/24 &\\textbf{{06/13/24}} &\\textbf{{5.52\\%{{\\tiny (Est'd)}}}} &1m TB+18 &\\hphantom{{\\$}}20,700,000 &\\hphantom{{\\$}}n/a &06/13/24 &\\hphantom{{\\$}}20,700,000 &n/a \\\\\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t& & & & & & & &      \\\\ \n\n\t\t\n\t\t\n\n\t\t",
                 "rets_disclaimer_if_m1": "",
             }
