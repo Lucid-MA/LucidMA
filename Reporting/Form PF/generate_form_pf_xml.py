@@ -1679,13 +1679,13 @@ def section3_itemF(wb):
 # TODO: verify with Heather on this new section
 def section3_itemG(wb):
     infolist = ET.SubElement(
-        root, "PFSection3ItemFLiquidityParallelMoneyMarketInfoList"
+        root, "PFSection3ItemGLiquidityParallelMoneyMarketInfoList"
     )
 
     for sheet_name in SECTION_3_SHEETS2:
         sheet = wb.Worksheets(sheet_name)
         info = ET.SubElement(
-            infolist, "PFSection3ItemFLiquiditySecurityParallelMoneyMarketInfo"
+            infolist, "PFSection3ItemGLiquidityParallelMoneyMarketInfo"
         )
         ET.SubElement(info, "FundID").text = sheet.Range("A1").Value
         ET.SubElement(info, "MMFSeriesNumber").text = sheet.Range("D141").Value
