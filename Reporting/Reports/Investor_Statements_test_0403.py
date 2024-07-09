@@ -89,22 +89,22 @@ report_names_dict = {
 }
 
 ############## MANUAL INPUT##############
-# TODO: replace this with data from silver_returns_by_series
-historical_returns_temp = {
-    "PRIME-C10": [0.0585, 0.0597],
-    "PRIME-M00": [0.0585, 0.0597],
-    "PRIME-MIG": [0.0595, 0.0608],
-    # "PRIME-Q10",
-    # "PRIME-Q36",
-    # "PRIME-QX0",
-    "74166WAE4": [0.0585, 0.0597],
-    "74166WAK0": [0.0585, 0.0597],
-    "74166WAM6": [0.0585, 0.0597],
-    "74166WAN4": [0.0585, 0.0597],
-    "90366JAG2": [0.0555, 0.0563],
-    "90366JAH0": [0.0555, 0.0563],
-    "USGFD-M00": [0.0555, 0.0563],
-}
+# TODO: delete this
+# historical_returns_temp = {
+#     "PRIME-C10": [0.0585, 0.0597],
+#     "PRIME-M00": [0.0585, 0.0597],
+#     "PRIME-MIG": [0.0595, 0.0608],
+#     # "PRIME-Q10",
+#     # "PRIME-Q36",
+#     # "PRIME-QX0",
+#     "74166WAE4": [0.0585, 0.0597],
+#     "74166WAK0": [0.0585, 0.0597],
+#     "74166WAM6": [0.0585, 0.0597],
+#     "74166WAN4": [0.0585, 0.0597],
+#     "90366JAG2": [0.0555, 0.0563],
+#     "90366JAH0": [0.0555, 0.0563],
+#     "USGFD-M00": [0.0555, 0.0563],
+# }
 
 # TODO: replace this with data from data from helix
 fund_size_dict = {
@@ -641,10 +641,12 @@ for reporting_series_id in reporting_series:
     # TODO: also refractor logic for USG Note
     # r_this_1: 3 month / 6 month return of series in Historical return table
     # r_this_2: 1 year return of series in Historical return table
-    # r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
-    # r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
     r_this_1 = form_as_percent(historical_return_1 / 100, 2)
     r_this_2 = form_as_percent(historical_return_2 / 100, 2)
+
+    # TODO: delete this
+    # r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
+    # r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
 
     ## CALCULATE SPREAD
     s_a_0 = bps_spread(previous_target_return, form_as_percent(r_a[0], 2))
