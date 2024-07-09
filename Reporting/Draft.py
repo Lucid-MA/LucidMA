@@ -161,6 +161,8 @@
 #     print(f"aloc_tbills = {form_as_percent(aloc_tbills,2)}")
 from datetime import datetime
 
+import pandas as pd
+
 from Utils.database_utils import read_table_from_db
 
 #
@@ -337,8 +339,6 @@ def get_reporting_dates(df_roll_schedule, reporting_date, lookback_period):
     return start_dates, end_dates
 
 
-print(get_reporting_dates(df_roll_schedule, report_date, 7))
-
 reporting_series_id = "90366JAG2"
 temp_usg_ids_dict = {
     "USGFD-M00": "USGFD-M00",
@@ -353,8 +353,6 @@ temp_prime_ids_dict = {
     "74166WAN4": "PRIME-MIG",
 }
 
-target_return_table_name = "target_returns"
-df_target_return = read_table_from_db(target_return_table_name, db_type)
 #
 #
 # def get_interest_rates_and_spreads(reporting_date, lookback_period):
@@ -392,30 +390,87 @@ interest_payment_dates = ["10/19/23", "11/16/23", "12/14/23"]
 related_fund_cap_accounts = ["301,000,000", "302,750,000", "327,750,000"]
 oc_rates = ["126.4", "124.1", "126.7"]
 
-latex_text = ""
+# latex_text = ""
+#
+# for i in range(len(int_period_starts)):
+#     int_rate = int_rates[i] + "\\%" if int_rates[i] != "n/a" else "n/a"
+#     note_principal = (
+#         "\\$" + note_principals[i] if note_principals[i] != "n/a" else "n/a"
+#     )
+#     interest_paid_val = "\\$" + interest_paid[i] if interest_paid[i] != "n/a" else "n/a"
+#     related_fund_cap_account = (
+#         "\\$" + related_fund_cap_accounts[i]
+#         if related_fund_cap_accounts[i] != "n/a"
+#         else "n/a"
+#     )
+#     oc_rate = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
+#
+#     if i == len(int_period_starts) - 1:
+#         int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
+#
+#     latex_line = (
+#         f"{int_period_starts[i]} &\\textbf{{{int_period_ends[i]}}} &\\textbf{{{int_rate}}} "
+#         f"&{spread_to_benchmarks[i]} &{note_principal} &{interest_paid_val} "
+#         f"&{interest_payment_dates[i]} &{related_fund_cap_account} &{oc_rate} \\\\"
+#     )
+#     latex_text += latex_line + "\n"
+#
+#
+# print(latex_text)
 
-for i in range(len(int_period_starts)):
-    int_rate = int_rates[i] + "\\%" if int_rates[i] != "n/a" else "n/a"
-    note_principal = (
-        "\\$" + note_principals[i] if note_principals[i] != "n/a" else "n/a"
+historical_returns_table_name = "historical_returns"
+target_return_table_name = "target_returns"
+df_historical_returns = read_table_from_db(historical_returns_table_name, db_type)
+df_target_return = read_table_from_db(target_return_table_name, db_type)
+
+next_start, next_end = "2024-06-13", "2024-07-18"
+target_return = 0.0582
+daycount = 360
+
+
+def calculate_historical_return_rate(series_id, report_date, lag_period, return_data):
+
+    global target_return, next_start, next_end, daycount
+    """
+    Calculate the lagged rate of return for a specific series ID based on historical return data and a target return.
+
+    Parameters:
+    - series_id: The ID of the series for which the lagged rate is being calculated.
+    - report_date: The date up to which historical return data should be considered.
+    - lag_period: The number of lagged periods to consider.
+    - return_data: The historical return data containing series IDs and their corresponding returns.
+    - target_return: The target return for the series.
+        - next_start: The start date of the next period.
+    - next_end: The end date of the next period.
+    - daycount: The number of days in a year.
+
+    Return the lagged rate of return as a percentage rounded to 2 decimal places.
+    """
+    df_returns = return_data[return_data["series_id"] == series_id].copy()
+
+    df_returns["start_date"] = pd.to_datetime(df_returns["start_date"])
+    df_returns["end_date"] = pd.to_datetime(df_returns["end_date"])
+    report_date = datetime.strptime(report_date, "%Y-%m-%d")
+
+    filtered_df = df_returns[df_returns["end_date"] <= report_date]
+    sorted_df = filtered_df.sort_values("start_date", ascending=False)
+
+    n_start = datetime.strptime(next_start, "%Y-%m-%d")
+    n_end = datetime.strptime(next_end, "%Y-%m-%d")
+    total_day = (n_end - n_start).days
+
+    cum_return = 1 + target_return * total_day / daycount
+    for _, row in sorted_df.head(lag_period - 1).iterrows():
+        cum_return = cum_return * (1 + float(row["period_return"]))
+        total_day += int(row["day_count"])
+
+    result = (cum_return - 1) / total_day * daycount
+
+    return round(result * 100, 2)
+
+
+print(
+    calculate_historical_return_rate(
+        "PRIME-M00", "2024-06-16", 12, df_historical_returns
     )
-    interest_paid_val = "\\$" + interest_paid[i] if interest_paid[i] != "n/a" else "n/a"
-    related_fund_cap_account = (
-        "\\$" + related_fund_cap_accounts[i]
-        if related_fund_cap_accounts[i] != "n/a"
-        else "n/a"
-    )
-    oc_rate = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
-
-    if i == len(int_period_starts) - 1:
-        int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
-
-    latex_line = (
-        f"{int_period_starts[i]} &\\textbf{{{int_period_ends[i]}}} &\\textbf{{{int_rate}}} "
-        f"&{spread_to_benchmarks[i]} &{note_principal} &{interest_paid_val} "
-        f"&{interest_payment_dates[i]} &{related_fund_cap_account} &{oc_rate} \\\\"
-    )
-    latex_text += latex_line + "\n"
-
-
-print(latex_text)
+)

@@ -418,12 +418,58 @@ for reporting_series_id in reporting_series:
     else:
         pool_name_encoded = reverse_cusip_mapping[reporting_series_id]
 
-    historical_return_condition = (df_historical_returns["end_date"] == prev_end) & (
+    historical_return_condition = (
         df_historical_returns["pool_name"] == pool_name_encoded
     )
     df_historical_returns = df_historical_returns[historical_return_condition]
-    prev_return = form_as_percent(
-        df_historical_returns["annualized_returns_360"].iloc[0], 2
+
+    def calculate_historical_return_rate(
+        series_id, report_date, lag_period, return_data
+    ):
+
+        global target_return, next_start, next_end, daycount
+        """
+        Calculate the lagged rate of return for a specific series ID based on historical return data and a target return.
+
+        Parameters:
+        - series_id: The ID of the series for which the lagged rate is being calculated.
+        - report_date: The date up to which historical return data should be considered.
+        - lag_period: The number of lagged periods to consider.
+        - return_data: The historical return data containing series IDs and their corresponding returns.
+        - target_return: The target return for the series.
+            - next_start: The start date of the next period.
+        - next_end: The end date of the next period.
+        - daycount: The number of days in a year.
+
+        Return the lagged rate of return as a percentage rounded to 2 decimal places.
+        """
+        df_returns = return_data.copy()
+
+        df_returns["start_date"] = pd.to_datetime(df_returns["start_date"])
+        df_returns["end_date"] = pd.to_datetime(df_returns["end_date"])
+        report_date = datetime.strptime(report_date, "%Y-%m-%d")
+
+        filtered_df = df_returns[df_returns["end_date"] <= report_date]
+        sorted_df = filtered_df.sort_values("start_date", ascending=False)
+
+        n_start = datetime.strptime(next_start, "%Y-%m-%d")
+        n_end = datetime.strptime(next_end, "%Y-%m-%d")
+        total_day = (n_end - n_start).days
+
+        cum_return = 1 + target_return * total_day / daycount
+        for _, row in sorted_df.head(lag_period - 1).iterrows():
+            cum_return = cum_return * (1 + float(row["period_return"]))
+            total_day += int(row["day_count"])
+
+        result = (cum_return - 1) / total_day * daycount
+
+        return round(result * 100, 2)
+
+    historical_return_1 = calculate_historical_return_rate(
+        reporting_series_id, report_date, interval_tuple[0], df_historical_returns
+    )
+    historical_return_2 = calculate_historical_return_rate(
+        reporting_series_id, report_date, interval_tuple[1], df_historical_returns
     )
 
     ############################## FUND ATTRIBUTES #####################################
@@ -595,10 +641,10 @@ for reporting_series_id in reporting_series:
     # TODO: also refractor logic for USG Note
     # r_this_1: 3 month / 6 month return of series in Historical return table
     # r_this_2: 1 year return of series in Historical return table
-    r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
-    r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
-    # r_this_1 = form_as_percent(df_benchmark_comparison_prev["3m_return"].iloc[0], 2)
-    # r_this_2 = form_as_percent(df_benchmark_comparison_prev["12m_return"].iloc[0], 2)
+    # r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
+    # r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
+    r_this_1 = form_as_percent(historical_return_1 / 100, 2)
+    r_this_2 = form_as_percent(historical_return_2 / 100, 2)
 
     ## CALCULATE SPREAD
     s_a_0 = bps_spread(previous_target_return, form_as_percent(r_a[0], 2))
