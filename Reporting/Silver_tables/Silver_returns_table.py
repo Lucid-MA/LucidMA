@@ -53,7 +53,6 @@ df_result = pd.DataFrame(
         "start_date",
         "end_date",
         "day_count",
-        "pool_name",
         "investor_name",
         "relevant_returns",
         "calculated_returns",
@@ -210,6 +209,10 @@ df_grouped = (
 df_grouped["start_date"] = df_grouped["start_date"].dt.strftime("%Y-%m-%d")
 df_grouped["end_date"] = df_grouped["end_date"].dt.strftime("%Y-%m-%d")
 
+df_grouped["period_return"] = (
+    df_grouped["calculated_ending_balance"] - df_grouped["calculated_starting_balance"]
+) / df_grouped["calculated_starting_balance"]
+
 df_grouped["annualized_returns_360"] = (
     (
         df_grouped["calculated_ending_balance"]
@@ -241,6 +244,10 @@ df_grouped["return_id"] = (
     + df_grouped["end_date"].astype(str)
 ).apply(hash_string)
 
+df_grouped["series_id"] = df_grouped["pool_name"].map(
+    lambda x: cusip_mapping.get(x, "")
+)
+
 ## TABLE UPLOAD ##
 begin_time = time.time()
 
@@ -271,12 +278,14 @@ column_types = {
 
 column_order = [
     "return_id",
+    "series_id",
     "pool_name",
     "start_date",
     "end_date",
     "calculated_starting_balance",
     "calculated_ending_balance",
     "day_count",
+    "period_return",
     "annualized_returns_360",
     "annualized_returns_365",
 ]

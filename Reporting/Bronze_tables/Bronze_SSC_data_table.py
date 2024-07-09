@@ -29,20 +29,20 @@ The specific steps are:
     "S:/Users/THoang/Data/SSC/USG"
 5. For each Excel file:
    a. Extract the date from the filename.
-   b. Check if the file has already been processed with `Bronze Table Processed Files`
+   b. Check if the file has already been processed with `Bronze Table Processed SSC Files`
    c. Validate the schema of the Excel file against the required columns.
    d. Read the data from the Excel file.
    e. Add additional columns (FileName, FileDate) to the data.
    f. Generate a unique TransactionID for each row.
    g. Upsert the data into the database table.
-   h. Mark the file as processed in `Bronze Table Processed Files`.
+   h. Mark the file as processed in `Bronze Table Processed SSC Files`.
 6. Log the processing time for each file.
 """
 
 # Connect to the PostgreSQL database
 engine = get_database_engine("postgres")
 # File to track processed files
-bronze_table_tracker = "Bronze Table Processed Files"
+bronze_table_tracker = "Bronze Table Processed SSC Files"
 
 
 # Function to extract date from filename using regex
