@@ -27,7 +27,7 @@ from Utils.Common import get_file_path
 prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working files/")
 
 # PARAMETERS TO INITIALIZE
-FILING_DATE = "2024-03-31"  # quarter-end here as YYYY-MM-DD string
+FILING_DATE = "2024-06-30"  # quarter-end here as YYYY-MM-DD string
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
 XML_OUTPUT_PATH = (
@@ -260,7 +260,7 @@ def section1a_itemC(wb):
             ET.SubElement(new_misc_item, "QuestionNumber").text = "55a,b,f; 58"
             warn = False
         else:
-            ET.SubElement(new_misc_item, "QuestionNumber").text = q_n
+            ET.SubElement(new_misc_item, "QuestionNumber").text = "53a,b,f;56;63"
         if warn and len(q_n) > 15:
             print(
                 "WARNING: Question number response too long. Max length is 15. Value is: "
@@ -582,9 +582,9 @@ def section3_itemABC(wb):
         # )
         if sheet.Range("D21").Value != "" and sheet.Range("D21").Value is not None:
             ET.SubElement(operation, "PriceSaughtToMaintain").text = str(int(sheet.Range("D21").Value))
-        else:
-            print(f'This is the price saught to maintain value in sheet {sheet_name}', sheet.Range("D21").Value)
-            ET.SubElement(operation, "PriceSaughtToMaintain").text = '0.00'
+        # else:
+        #     print(f'This is the price saught to maintain value in sheet {sheet_name}', sheet.Range("D21").Value)
+        #     ET.SubElement(operation, "PriceSaughtToMaintain").text = '0.00'
 
         # TODO: Remove question 53
         # ET.SubElement(operation, "ComplyRule2a7RiskCondition").text = (
@@ -1612,6 +1612,8 @@ def section3_itemF(wb):
         # 63l
         if sheet.Range("D131").Value != "NA" and sheet.Range("D131").Value != 0:
             ET.SubElement(info, "USGovAgencyRepoMonth1Amount").text = str(int(sheet.Range("D131").Value))
+            ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = str(int(sheet.Range("E131").Value))
+            ET.SubElement(info, "USGovAgencyRepoMonth3Amount").text = str(int(sheet.Range("F131").Value))
         if sheet.Range("E131").Value != "NA" and sheet.Range("E131").Value != 0:
             ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = str(int(sheet.Range("E131").Value))
         if sheet.Range("F131").Value != "NA" and sheet.Range("F131").Value != 0:
