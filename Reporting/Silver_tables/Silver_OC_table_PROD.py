@@ -16,7 +16,8 @@ TABLE_NAME = "oc_rates"
 
 # Database engines
 engine = get_database_engine("postgres")
-engine_oc_rate = get_database_engine("sql_server_2")
+engine_oc_rate = get_database_engine("sql_server_1")
+engine_oc_rate_prod = get_database_engine("sql_server_2")
 
 # Dependent files
 cash_balance_python_file_path = get_file_path(
@@ -189,9 +190,9 @@ def fetch_and_prepare_data(report_date):
 
 
 def main():
-    create_table_with_schema(TABLE_NAME, engine_oc_rate)
-    start_date = "2020-01-01"
-    end_date = "2020-02-31"
+    create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
+    start_date = "2023-02-22"
+    end_date = "2023-02-24"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         df_bronze_oc, df_price, df_factor, df_cash_balance = fetch_and_prepare_data(
@@ -204,7 +205,7 @@ def main():
         if df is None or df.empty:
             print(f"No data to upsert for date {REPORT_DATE}")
         else:
-            upsert_data(TABLE_NAME, df, engine_oc_rate)
+            upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
 
     print("Process completed.")
 
