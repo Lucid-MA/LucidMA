@@ -77,7 +77,7 @@ def upsert_data(tb_name, df, engine):
                 value_placeholders = ", ".join([f":{col}" for col in df.columns])
                 update_clause = ", ".join(
                     [
-                        f'"{col}"=EXCLUDED."{col}"'
+                        f'target."{col}"=source."{col}"'
                         for col in df.columns
                         if col != "oc_rates_id"
                     ]
@@ -85,10 +85,14 @@ def upsert_data(tb_name, df, engine):
 
                 upsert_sql = text(
                     f"""
-                    INSERT INTO {tb_name} ({column_names})
-                    VALUES ({value_placeholders})
-                    ON CONFLICT ("oc_rates_id")
-                    DO UPDATE SET {update_clause};
+                    MERGE INTO {tb_name} AS target
+                    USING (VALUES ({value_placeholders})) AS source ({column_names})
+                    ON target."oc_rates_id" = source."oc_rates_id"
+                    WHEN MATCHED THEN
+                        UPDATE SET {update_clause}
+                    WHEN NOT MATCHED THEN
+                        INSERT ({column_names})
+                        VALUES ({value_placeholders});
                     """
                 )
 
