@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
-from Silver_OC_processing import generate_silver_oc_rates
+from Silver_OC_processing import generate_silver_oc_rates, generate_silver_oc_rates_prod
 from Utils.Common import get_file_path, get_trading_days
 from Utils.SQL_queries import OC_query_historical
 from Utils.database_utils import get_database_engine, read_table_from_db
@@ -185,13 +185,11 @@ def fetch_and_prepare_data(report_date):
     df_price_and_factor = df_price_and_factor[
         df_price_and_factor["data_date"] == report_date
     ]
-    df_price = df_price_and_factor[["data_date", "bond_id", "price"]]
-    df_factor = df_price_and_factor[["data_date", "bond_id", "factor"]]
 
     df_cash_balance = read_table_from_db("bronze_cash_balance", "postgres")
     df_cash_balance = df_cash_balance[df_cash_balance["Balance_date"] == report_date]
 
-    return df_bronze_oc, df_price, df_factor, df_cash_balance
+    return df_bronze_oc, df_price_and_factor, df_cash_balance
 
 
 def main():
@@ -200,11 +198,11 @@ def main():
     end_date = "2023-02-24"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
-        df_bronze_oc, df_price, df_factor, df_cash_balance = fetch_and_prepare_data(
+        df_bronze_oc, df_price_and_factor, df_cash_balance = fetch_and_prepare_data(
             REPORT_DATE
         )
-        df = generate_silver_oc_rates(
-            df_bronze_oc, df_price, df_factor, df_cash_balance, REPORT_DATE
+        df = generate_silver_oc_rates_prod(
+            df_bronze_oc, df_price_and_factor, df_cash_balance, REPORT_DATE
         )
 
         if df is None or df.empty:
