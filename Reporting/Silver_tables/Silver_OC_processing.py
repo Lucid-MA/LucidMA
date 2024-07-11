@@ -6,8 +6,12 @@ import pandas as pd
 from Utils.Common import format_decimal
 from Utils.Hash import hash_string
 
+IS_PROD = True
 # Constants
-OC_RATES_TRACKER = "Silver OC Rates Tracker"
+if IS_PROD:
+    OC_RATES_TRACKER = "Silver OC Rates Tracker PROD"
+else:
+    OC_RATES_TRACKER = "Silver OC Rates Tracker"
 
 
 def calculate_collateral_mv(row):

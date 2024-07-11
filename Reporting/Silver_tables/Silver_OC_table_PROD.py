@@ -16,7 +16,7 @@ TABLE_NAME = "oc_rates"
 
 # Database engines
 engine = get_database_engine("postgres")
-engine_oc_rate = get_database_engine("sql_server_1")
+engine_oc_rate = get_database_engine("sql_server_2")
 
 # Dependent files
 cash_balance_python_file_path = get_file_path(
@@ -26,19 +26,14 @@ cash_balance_status_file_path = get_file_path(
     r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Cash Balance"
 )
 
-factor_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_bond_data_bloomberg_table.py"
+price_and_factor_python_file_path = get_file_path(
+    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_Helix_uploads_price_factor_table.py"
 )
-factor_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Daily Bond Data"
+price_and_factor_status_file_path = get_file_path(
+    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed HELIX Price and Factor"
 )
 
-price_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_daily_prices_table.py"
-)
-price_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Daily Prices"
-)
+update_sub_table = False
 
 
 def create_table_with_schema(tb_name, engine):
@@ -113,6 +108,7 @@ def check_file_exists(file_path, report_date):
 
 
 def fetch_and_prepare_data(report_date):
+    global update_sub_table
     params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
     df_bronze_oc = pd.read_sql(
         text(OC_query_historical), con=engine_oc_rate, params=params
@@ -148,53 +144,44 @@ def fetch_and_prepare_data(report_date):
     }
     df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
-    # Check for df_price
-    if not check_file_exists(price_status_file_path, report_date):
-        result = subprocess.run(
+    # Check for df_price_and_factor
+    if (
+        not check_file_exists(price_and_factor_status_file_path, report_date)
+        and not update_sub_table
+    ):
+        result_price = subprocess.run(
             [
                 "python",
-                price_python_file_path,
+                price_and_factor_python_file_path,
             ]
         )
-        if result.returncode != 0:
-            print(f"Error obtaining corresponding price data for {report_date}")
+        if result_price.returncode != 0:
+            print(
+                f"Error obtaining corresponding price and factor data for {report_date}"
+            )
             return None, None, None, None
 
-    df_price = read_table_from_db("bronze_daily_price", "postgres")
-    df_price = df_price[df_price["Price_date"] == report_date]
-
-    # Check for df_factor
-    report_date_factor = datetime.strptime(report_date, "%Y-%m-%d").strftime("%m_%d_%Y")
-    if not check_file_exists(factor_status_file_path, report_date_factor):
-        result = subprocess.run(
-            [
-                "python",
-                factor_python_file_path,
-            ]
-        )
-        if result.returncode != 0:
-            print(f"Error obtaining corresponding price factor data for {report_date}")
-            return None, None, None, None
-    df_factor = read_table_from_db("bronze_bond_data_bloomberg", "postgres")
-    df_factor = df_factor[df_factor["is_am"] == 0][
-        ["bond_id", "factor", "bond_data_date"]
-    ]
-    df_factor = df_factor[df_factor["bond_data_date"] == report_date]
-
-    # Check for df_cash_balance
-    report_date_cash_balance = datetime.strptime(report_date, "%Y-%m-%d").strftime(
-        "%Y%m%d"
-    )
-    if not check_file_exists(cash_balance_status_file_path, report_date_cash_balance):
-        result = subprocess.run(
+        result_cash_bal = subprocess.run(
             [
                 "python",
                 cash_balance_python_file_path,
             ]
         )
-        if result.returncode != 0:
+        if result_cash_bal.returncode != 0:
             print(f"Error obtaining corresponding cash balance data for {report_date}")
             return None, None, None, None
+        # All the table only need to be update once
+        update_sub_table = True
+
+    df_price_and_factor = read_table_from_db(
+        "bronze_helix_price_and_factor", "sql_server_2"
+    )
+    df_price_and_factor = df_price_and_factor[
+        df_price_and_factor["data_date"] == report_date
+    ]
+    df_price = df_price_and_factor[["data_date", "bond_id", "price"]]
+    df_factor = df_price_and_factor[["data_date", "bond_id", "factor"]]
+
     df_cash_balance = read_table_from_db("bronze_cash_balance", "postgres")
     df_cash_balance = df_cash_balance[df_cash_balance["Balance_date"] == report_date]
 
@@ -202,9 +189,9 @@ def fetch_and_prepare_data(report_date):
 
 
 def main():
-    create_table_with_schema(TABLE_NAME, engine)
-    start_date = "2022-01-01"
-    end_date = "2024-06-20"
+    create_table_with_schema(TABLE_NAME, engine_oc_rate)
+    start_date = "2020-01-01"
+    end_date = "2020-02-31"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         df_bronze_oc, df_price, df_factor, df_cash_balance = fetch_and_prepare_data(
@@ -217,7 +204,7 @@ def main():
         if df is None or df.empty:
             print(f"No data to upsert for date {REPORT_DATE}")
         else:
-            upsert_data(TABLE_NAME, df, engine)
+            upsert_data(TABLE_NAME, df, engine_oc_rate)
 
     print("Process completed.")
 
