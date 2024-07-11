@@ -385,12 +385,16 @@ def generate_silver_oc_rates_prod(
         )
         df_bronze = df_bronze[mask]
 
+        df_price_and_factor = price_and_factor_table[
+            ["bond_id", "price", "factor"]
+        ].rename(columns={"price": "Price", "factor": "Factor"})
+
         df_bronze = df_bronze.merge(
-            price_and_factor_table, left_on="BondID", right_on="bond_id", how="left"
+            df_price_and_factor, left_on="BondID", right_on="bond_id", how="left"
         ).drop(columns="bond_id")
-        df_bronze = df_bronze.rename(columns={"price": "Price"})
         df_bronze["Price"] = df_bronze["Price"].fillna(100)
         df_bronze["Price"] = df_bronze["Price"].astype(float)
+        df_bronze["Price"] = df_bronze["Factor"].astype(float)
 
         df_bronze["Collateral_MV"] = df_bronze.apply(calculate_collateral_mv, axis=1)
         df_bronze["WAR"] = df_bronze["Orig. Rate"] * df_bronze["Money"] / 100
