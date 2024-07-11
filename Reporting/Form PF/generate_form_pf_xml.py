@@ -28,6 +28,7 @@ prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working fi
 
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2024-06-30"  # quarter-end here as YYYY-MM-DD string
+is_quarterly = False
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
 XML_OUTPUT_PATH = (
@@ -338,30 +339,34 @@ def section1b_itemB(wb):
         ET.SubElement(assets, "HasDerivativesPositions").text = (
             "false" if sheet.Range("C50").Value == "No" else "true"
         )
-        ET.SubElement(assets, "FairValueLevel1AssetsAmount").text = str(
-            int(sheet.Range("C60").Value)
-        )
-        ET.SubElement(assets, "FairValueLevel2AssetsAmount").text = str(
-            int(sheet.Range("E60").Value)
-        )
-        ET.SubElement(assets, "FairValueLevel3AssetsAmount").text = str(
-            int(sheet.Range("F60").Value)
-        )
-        ET.SubElement(assets, "CostBasedAssetsAmount").text = str(
-            int(sheet.Range("G60").Value)
-        )
-        ET.SubElement(assets, "FairValueLevel1LiabilitiesAmount").text = str(
-            int(sheet.Range("C61").Value)
-        )
-        ET.SubElement(assets, "FairValueLevel2LiabilitiesAmount").text = str(
-            int(sheet.Range("E61").Value)
-        )
-        ET.SubElement(assets, "FairValueLevel3LiabilitiesAmount").text = str(
-            int(sheet.Range("F61").Value)
-        )
-        ET.SubElement(assets, "CostBasedLiabilitiesAmount").text = str(
-            int(sheet.Range("G61").Value)
-        )
+        if is_quarterly:
+            # DO not need this in quarterly filings
+            # Q14 Item B section 1B
+            ET.SubElement(assets, "FairValueLevel1AssetsAmount").text = str(
+                int(sheet.Range("C60").Value)
+            )
+            ET.SubElement(assets, "FairValueLevel2AssetsAmount").text = str(
+                int(sheet.Range("E60").Value)
+            )
+            ET.SubElement(assets, "FairValueLevel3AssetsAmount").text = str(
+                int(sheet.Range("F60").Value)
+            )
+            ET.SubElement(assets, "CostBasedAssetsAmount").text = str(
+                int(sheet.Range("G60").Value)
+            )
+            ET.SubElement(assets, "FairValueLevel1LiabilitiesAmount").text = str(
+                int(sheet.Range("C61").Value)
+            )
+            ET.SubElement(assets, "FairValueLevel2LiabilitiesAmount").text = str(
+                int(sheet.Range("E61").Value)
+            )
+            ET.SubElement(assets, "FairValueLevel3LiabilitiesAmount").text = str(
+                int(sheet.Range("F61").Value)
+            )
+            ET.SubElement(assets, "CostBasedLiabilitiesAmount").text = str(
+                int(sheet.Range("G61").Value)
+            )
+
         ET.SubElement(assets, "BeneficiallyOwnedByTop5Percent").text = str(
             int(sheet.Range("C65").Value)
         )
@@ -1610,13 +1615,9 @@ def section3_itemF(wb):
             ET.SubElement(info, "USTreasuryRepoMonth3Amount").text = str(int(sheet.Range("F130").Value))
 
         # 63l
-        if sheet.Range("D131").Value != "NA" and sheet.Range("D131").Value != 0:
+        if sheet.Range("D131").Value != "NA" and sheet.Range("D131").Value != 0 or (sheet.Range("E131").Value != "NA" and sheet.Range("E131").Value != 0) or (sheet.Range("F131").Value != "NA" and sheet.Range("F131").Value != 0):
             ET.SubElement(info, "USGovAgencyRepoMonth1Amount").text = str(int(sheet.Range("D131").Value))
             ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = str(int(sheet.Range("E131").Value))
-            ET.SubElement(info, "USGovAgencyRepoMonth3Amount").text = str(int(sheet.Range("F131").Value))
-        if sheet.Range("E131").Value != "NA" and sheet.Range("E131").Value != 0:
-            ET.SubElement(info, "USGovAgencyRepoMonth2Amount").text = str(int(sheet.Range("E131").Value))
-        if sheet.Range("F131").Value != "NA" and sheet.Range("F131").Value != 0:
             ET.SubElement(info, "USGovAgencyRepoMonth3Amount").text = str(int(sheet.Range("F131").Value))
 
         # 63m
