@@ -28,8 +28,9 @@ cash_balance_status_file_path = get_file_path(
 )
 
 price_and_factor_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_Helix_uploads_price_factor_table.py"
+    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_HELIX_price_factor_table.py"
 )
+
 price_and_factor_status_file_path = get_file_path(
     r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed HELIX Price and Factor"
 )
@@ -146,8 +147,12 @@ def fetch_and_prepare_data(report_date):
     df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
     # Check for df_price_and_factor
+    price_and_factor_date = datetime.strptime(report_date, "%Y-%m-%d").strftime(
+        "%m_%d_%Y"
+    )
+
     if (
-        not check_file_exists(price_and_factor_status_file_path, report_date)
+        not check_file_exists(price_and_factor_status_file_path, price_and_factor_date)
         and not update_sub_table
     ):
         result_price = subprocess.run(
