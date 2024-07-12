@@ -29,7 +29,10 @@ prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working fi
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2024-06-30"  # quarter-end here as YYYY-MM-DD string
 IS_QUARTERLY_FILING = False
+
+# Turn this flag on to get data for quarterly only
 ONLY_QUARTERLY_DATA = False
+
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
 XML_OUTPUT_PATH = (
@@ -39,7 +42,11 @@ XML_OUTPUT_PATH = (
     + ".xml"
 )
 XSD_PATH = "PFFormFiling_v2.xsd"  # one of the JJV additions - used to validate the xml against the xsd schema
-FILING_TYPE = "PF-UPDATING"  # one of PF-AMEND, PF-UPDATING, PF-INIT. PF-UPDATING if first one this quarter, else AMEND (INIT only used if first for this firm.)
+if not ONLY_QUARTERLY_DATA:
+    FILING_TYPE = "PF-UPDATING"
+else:
+    FILING_TYPE = "PF-AMEND"  # one of PF-AMEND, PF-UPDATING, PF-INIT. PF-UPDATING if first one this quarter, else AMEND (INIT only used if first for this firm.)
+
 FILING_FREQUENCY = "Q"
 
 # TODO: ENABLE THIS SECTION ONLY WHEN FINRA REMOVE THE LIMIT OF 16MB PER FILE AND WE CAN FILE BOTH MONTHLY AND QUARTERLY TOGETHER
@@ -102,7 +109,7 @@ FILING_FREQUENCY = "Q"
 #     # ["Lucid Prime Fund LLC [Series QX]", "805-3603861400", "LIQUIDITY"],
 # ]
 
-if ONLY_QUARTERLY_DATA:
+if not ONLY_QUARTERLY_DATA:
     SECTION_1B_SHEETS = [
         "Section 1b - Priv Fnd USG M",
         "Section 1b - Prv Fnd Prime M",
