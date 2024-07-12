@@ -48,7 +48,7 @@ reporting_series = [
     # # "PRIME-Q36",
     # # "PRIME-QX0",
     # # "74166WAE4",  # Prime Note QX-1
-    # "74166WAK0",  # Prime Note M-2
+    "74166WAK0",  # Prime Note M-2
     # # "74166WAM6",  # Prime Note Q1
     "74166WAN4",  # Prime Note MIG
     "90366JAG2",  # USG Note M-8
@@ -60,12 +60,12 @@ reporting_type_dict = {
     "PRIME-C10": "FUND",
     "PRIME-M00": "FUND",
     "PRIME-MIG": "FUND",
-    # "PRIME-Q10",
-    # "PRIME-Q36",
-    # "PRIME-QX0",
-    # "74166WAE4": "NOTE",  # Prime Note QX-1
+    "PRIME-Q10": "FUND",
+    "PRIME-Q36": "FUND",
+    "PRIME-QX0": "FUND",
+    "74166WAE4": "NOTE",  # Prime Note QX-1
     "74166WAK0": "NOTE",  # Prime Note M-2
-    # "74166WAM6": "NOTE",  # Prime Note Q1
+    "74166WAM6": "NOTE",  # Prime Note Q1
     "74166WAN4": "NOTE",  # Prime Note MIG
     "90366JAG2": "NOTE",  # USG Note M-8
     "90366JAH0": "NOTE",  # USG Note M-9
@@ -76,12 +76,12 @@ report_names_dict = {
     "PRIME-C10": "PrimeFund C1",
     "PRIME-M00": "PrimeFund M",
     "PRIME-MIG": "PrimeFund MIG",
-    # "PRIME-Q10",
-    # "PRIME-Q36",
-    # "PRIME-QX0",
-    # "74166WAE4": "PrimeNote QX",  # Prime Note QX-1
+    "PRIME-Q10": "PrimeFund Q1",
+    "PRIME-Q36": "PrimeFund Q364",
+    "PRIME-QX0": "PrimeFund QX",
+    "74166WAE4": "PrimeNote QX",  # Prime Note QX-1
     "74166WAK0": "PrimeNote M2",  # Prime Note M-2
-    # "74166WAM6": "PrimeNote Q1",  # Prime Note Q1
+    "74166WAM6": "PrimeNote Q1",  # Prime Note Q1
     "74166WAN4": "PrimeNote MIG",  # Prime Note MIG
     "90366JAG2": "USGNote M8",  # USG Note M-8
     "90366JAH0": "USGNote M9",  # USG Note M-9
@@ -167,6 +167,8 @@ temp_prime_ids_dict = {
     "PRIME-MIG": "PRIME-MIG",
     "74166WAK0": "PRIME-M00",
     "74166WAN4": "PRIME-MIG",
+    "74166WAM6": "PRIME-Q10",
+    "74166WAE4": "PRIME-QX",
 }
 
 # TODO: Update fund attributes with this data
@@ -205,7 +207,7 @@ interval_tuple = (3, 12)  # quarterly series: (6,12) but not important
 ##############################################################################
 
 # current_date = datetime.now()
-current_date = datetime.strptime("2024-06-13", "%Y-%m-%d")
+current_date = datetime.strptime("2024-07-11", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:
