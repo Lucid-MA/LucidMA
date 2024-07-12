@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import msal
 import pandas as pd
@@ -16,21 +16,21 @@ from Utils.database_utils import execute_sql_query
 # valdate = "2024-06-10"
 
 # # Get the current date and format it
-current_date = datetime.now().strftime("%Y-%m-%d")
+current_date = (datetime.now() - timedelta(1)).strftime("%Y-%m-%d")
 valdate = current_date
 
 recipients = [
     "tony.hoang@lucidma.com",
-    "Heather.Campbell@lucidma.com",
-    "operations@lucidma.com",
+    # "Heather.Campbell@lucidma.com",
+    # "operations@lucidma.com",
 ]
 
 recipients_mmt = [
     "tony.hoang@lucidma.com",
-    "Heather.Campbell@lucidma.com",
-    "martin.stpierre@lucidma.com",
-    "mattias.almers@lucidma.com",
-    "david.carlson@lucidma.com",
+    # "Heather.Campbell@lucidma.com",
+    # "martin.stpierre@lucidma.com",
+    # "mattias.almers@lucidma.com",
+    # "david.carlson@lucidma.com",
 ]
 
 
@@ -167,6 +167,8 @@ def send_daily_trade_report(
         failed_trades_message = (
             "<b style='color: red;'>There are some failed to transmitted trades.</b>"
         )
+    df_helix_trade["Trade ID"] = df_helix_trade["Trade ID"].astype(int)
+    df_helix_as_of_trade["Trade ID"] = df_helix_as_of_trade["Trade ID"].astype(int)
 
     if type == "Prime/USG":
         df_helix_trade = df_helix_trade[~df_helix_trade["Fund"].isin(["LMCP", "MMT"])]
@@ -199,30 +201,64 @@ def send_daily_trade_report(
         ).apply(lambda x: f"{x:,.2f}")
 
     if type == "Prime/USG":
-        # Custom sorting key function
-        def sort_key(series):
-            return (series == "Master").astype(int)
-
         # Split out into Prime and USG:
-        df_helix_trade_prime = df_helix_trade[df_helix_trade["Fund"] == "Prime"]
+        df_helix_trade_prime = df_helix_trade[df_helix_trade["Fund"] == "Prime"].copy()
+        df_helix_trade_prime.loc[:, "Series"] = df_helix_trade_prime[
+            "Series"
+        ].str.strip()
         df_helix_trade_prime = df_helix_trade_prime.sort_values(
-            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+            by="Series", key=lambda x: x != "Master"
         )
-        df_helix_trade_usg = df_helix_trade[df_helix_trade["Fund"] == "USG"]
+        # Convert 'Money' column to float
+        df_helix_trade_prime["Money"] = (
+            df_helix_trade_prime["Money"].str.replace(",", "").astype(float)
+        )
+
+        # Calculate the sum of "Money" for each series in df_helix_trade_prime
+        # Calculate the sum of "Money" for each series in df_helix_trade_prime
+        series_totals = df_helix_trade_prime.groupby("Series")["Money"].sum()
+
+        # Sort series_totals to display "Master" on top
+        total_prime_trades = df_helix_trade_prime["Money"].sum()
+
+        series_totals = series_totals.sort_values(ascending=False)
+        series_totals = series_totals.sort_index(key=lambda x: x != "Master")
+        series_totals_html = "<br>".join(
+            [
+                f"<b>{series}</b>: {total:,.2f}"
+                for series, total in series_totals.items()
+            ]
+        )
+        # Add "Total Prime trades" to the series_totals_html
+        series_totals_html = (
+            f"<b>Total Prime trades</b>: {total_prime_trades:,.2f}<br>"
+            + series_totals_html
+        )
+
+        df_helix_trade_usg = df_helix_trade[df_helix_trade["Fund"] == "USG"].copy()
+        df_helix_trade_usg.loc[:, "Series"] = df_helix_trade_usg["Series"].str.strip()
         df_helix_trade_usg = df_helix_trade_usg.sort_values(
-            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+            by="Series", key=lambda x: x != "Master"
         )
+
         df_helix_as_of_trade_prime = df_helix_as_of_trade[
             df_helix_as_of_trade["Fund"] == "Prime"
-        ]
+        ].copy()
+        df_helix_as_of_trade_prime.loc[:, "Series"] = df_helix_as_of_trade_prime[
+            "Series"
+        ].str.strip()
         df_helix_as_of_trade_prime = df_helix_as_of_trade_prime.sort_values(
-            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+            by="Series", key=lambda x: x != "Master"
         )
+
         df_helix_as_of_trade_usg = df_helix_as_of_trade[
             df_helix_as_of_trade["Fund"] == "USG"
-        ]
+        ].copy()
+        df_helix_as_of_trade_usg.loc[:, "Series"] = df_helix_as_of_trade_usg[
+            "Series"
+        ].str.strip()
         df_helix_as_of_trade_usg = df_helix_as_of_trade_usg.sort_values(
-            by="Series", key=lambda x: x.map(lambda y: "0" if y == "Master" else y)
+            by="Series", key=lambda x: x != "Master"
         )
 
         body = f"""
@@ -254,6 +290,7 @@ def send_daily_trade_report(
             <h3>Helix trades</h3>
             <h4>All current trades in Helix for {type} that were entered as of {report_date}:</h4>
             <h4 class="prime-trades">Prime trades:</h4>
+            <p>{series_totals_html}</p>
             {format_dataframe_as_html(df_helix_trade_prime)}
             <h4 class="usg-trades">USG trades:</h4>
             {format_dataframe_as_html(df_helix_trade_usg)}

@@ -2,14 +2,20 @@ import time
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import Table, Column, String, Date, MetaData, text, DateTime
+from sqlalchemy import Table, Column, String, Date, MetaData, DateTime, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Constants import notice_date_rule
 from Utils.database_utils import get_database_engine
 from Utils.database_utils import read_table_from_db
 
-engine = get_database_engine("postgres")
+PUBLISH_TO_PROD = True
+
+if PUBLISH_TO_PROD:
+    engine = get_database_engine("sql_server_2")
+else:
+    engine = get_database_engine("postgres")
+
 db_type = "postgres"
 bronze_roll_table_name = "bronze_roll_schedule"
 calendar_table_name = "holiday_calendar"
@@ -28,7 +34,7 @@ def create_table_with_schema(tb_name):
     table = Table(
         tb_name,
         metadata,
-        Column("series_id", String, primary_key=True),
+        Column("series_id", String(255), primary_key=True),
         Column("series_name", String),
         Column("start_date", Date, primary_key=True),
         Column("end_date", Date),
@@ -42,6 +48,7 @@ def create_table_with_schema(tb_name):
 
 
 def upsert_data(tb_name, df):
+    global PUBLISH_TO_PROD
     with engine.connect() as conn:
         try:
             with conn.begin():  # Start a transaction
@@ -51,19 +58,39 @@ def upsert_data(tb_name, df):
                     for key, value in row_dict.items():
                         if pd.isna(value):
                             row_dict[key] = None
-                    upsert_sql = text(
-                        f"""
-                          INSERT INTO {tb_name} ("series_id", "series_name", "start_date", "end_date", "withdrawal_date", "notice_date", "timestamp")
-                          VALUES (:series_id, :series_name, :start_date, :end_date, :withdrawal_date, :notice_date, :timestamp)
-                          ON CONFLICT ("series_id", "start_date")
-                          DO UPDATE SET 
-                              "series_name" = EXCLUDED."series_name",
-                              "end_date" = EXCLUDED."end_date", 
-                              "withdrawal_date" = EXCLUDED."withdrawal_date",
-                              "notice_date" = EXCLUDED."notice_date",
-                              "timestamp" = EXCLUDED."timestamp";
-                        """
-                    )
+                    if PUBLISH_TO_PROD:
+                        upsert_sql = text(
+                            f"""
+                                                                    MERGE INTO {tb_name} AS target
+                                                                    USING (SELECT :series_id AS series_id, :start_date AS start_date) AS source
+                                                                    ON (target.series_id = source.series_id AND target.start_date = source.start_date)
+                                                                    WHEN MATCHED THEN
+                                                                        UPDATE SET
+                                                                            target.series_name = :series_name,
+                                                                            target.end_date = :end_date,
+                                                                            target.withdrawal_date = :withdrawal_date,
+                                                                            target.notice_date = :notice_date,
+                                                                            target.timestamp = :timestamp
+                                                                    WHEN NOT MATCHED THEN
+                                                                        INSERT (series_id, series_name, start_date, end_date, withdrawal_date, notice_date, timestamp)
+                                                                        VALUES (:series_id, :series_name, :start_date, :end_date, :withdrawal_date, :notice_date, :timestamp);
+                                                                    """
+                        )
+                    else:
+                        upsert_sql = text(
+                            f"""
+                              INSERT INTO {tb_name} ("series_id", "series_name", "start_date", "end_date", "withdrawal_date", "notice_date", "timestamp")
+                              VALUES (:series_id, :series_name, :start_date, :end_date, :withdrawal_date, :notice_date, :timestamp)
+                              ON CONFLICT ("series_id", "start_date")
+                              DO UPDATE SET
+                                  "series_name" = EXCLUDED."series_name",
+                                  "end_date" = EXCLUDED."end_date",
+                                  "withdrawal_date" = EXCLUDED."withdrawal_date",
+                                  "notice_date" = EXCLUDED."notice_date",
+                                  "timestamp" = EXCLUDED."timestamp";
+                            """
+                        )
+
                     conn.execute(upsert_sql, row_dict)  # Pass the dictionary directly
             print(f"Data upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
