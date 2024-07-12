@@ -392,7 +392,6 @@ def generate_silver_oc_rates_prod(
         df_bronze = df_bronze.merge(
             df_price_and_factor, left_on="BondID", right_on="bond_id", how="left"
         ).drop(columns="bond_id")
-        df_bronze["Price"] = df_bronze["Price"].fillna(100)
         df_bronze["Price"] = df_bronze["Price"].astype(float)
         df_bronze["Price"] = df_bronze["Factor"].astype(float)
 

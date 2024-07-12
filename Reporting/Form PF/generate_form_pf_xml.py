@@ -31,7 +31,7 @@ FILING_DATE = "2024-06-30"  # quarter-end here as YYYY-MM-DD string
 IS_QUARTERLY_FILING = False
 
 # Turn this flag on to get data for quarterly only
-ONLY_QUARTERLY_DATA = False
+ONLY_QUARTERLY_DATA = True
 
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
