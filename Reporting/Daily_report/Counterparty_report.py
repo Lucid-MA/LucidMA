@@ -208,6 +208,7 @@ def refresh_data_and_send_email():
                     .subheader {{
                         background-color: #dff0d8;
                     }}
+                    {' '.join([f'.dataframe td:nth-child({filtered_data.columns.get_loc(col) + 1}) {{ font-weight: bold; }}' for col in bold_columns])}
                 </style>
             </head>
             <body>
