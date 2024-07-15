@@ -173,6 +173,7 @@ def refresh_data_and_send_email():
             {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
         )
         .applymap(style_percentage, subset=percent_columns)
+        .set_table_attributes('class="dataframe"')
         .hide(axis="index")
         .to_html()
     )
