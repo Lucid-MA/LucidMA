@@ -88,7 +88,7 @@ def refresh_data_and_send_email():
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="A,B,I:T",
+        usecols="A,B,I:K,M:P,R:T",
         skiprows=11,
     )
 
@@ -98,6 +98,22 @@ def refresh_data_and_send_email():
     # Replace NaN with empty strings
     filtered_data = filtered_data.fillna("")
 
+    columns_list = [
+        "Counterparty Group",
+        "Counterparty Entity",
+        "Total Cash Out",
+        "Tenor",
+        "Prime Repo Loan Limit ($mm)",
+        "Prime Current Usage",
+        "Prime Credit Remaining",
+        "Prime % of Usage",
+        "USG Repo Loan Limit ($mm)",
+        "USG Current Usage",
+        "USG Credit Remaining",
+        "USG % of Usage",
+    ]
+
+    filtered_data.columns = columns_list
     # Define the columns to be bolded
     bold_columns = [
         "Counterparty Entity",
@@ -109,15 +125,54 @@ def refresh_data_and_send_email():
 
     # Define the columns with light green background
     green_columns = ["Total Cash Out", "Prime Current Usage", "USG Current Usage"]
+    # Round specified columns to the nearest whole number
+    round_columns = [
+        "Total Cash Out",
+        "Prime Repo Loan Limit ($mm)",
+        "Prime Current Usage",
+        "Prime Credit Remaining",
+        "USG Repo Loan Limit ($mm)",
+        "USG Current Usage",
+        "USG Credit Remaining",
+    ]
+    # Round specified columns to the nearest whole number, handling empty strings
+    for col in round_columns:
+        if col in filtered_data.columns:
+            filtered_data[col] = (
+                pd.to_numeric(filtered_data[col], errors="coerce")
+                .round(0)
+                .fillna("")
+                .apply(lambda x: f"{x:,.0f}" if x != "" else "")
+            )
+
+    # Convert percentage columns to whole percentages, handling empty strings
+    percent_columns = ["Prime % of Usage", "USG % of Usage"]
+    for col in percent_columns:
+        if col in filtered_data.columns:
+            filtered_data[col] = (
+                pd.to_numeric(filtered_data[col], errors="coerce")
+                .multiply(100)
+                .round(0)
+                .fillna("")
+            )
+
+    # Define styling functions
+    def style_percentage(val):
+        if pd.isna(val) or val == "":
+            return ""
+        val = float(val)
+        if val >= 90 and val <= 100:
+            return "background-color: #FFD700"  # Dark yellow
+        elif val > 100:
+            return "background-color: #FF0000"  # Red
+        return ""
 
     # Create a styled HTML table
     styled_html_table = (
-        filtered_data.style.map(
-            lambda x: "font-weight: bold", subset=pd.IndexSlice[:, bold_columns]
+        filtered_data.style.format(
+            {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
         )
-        .set_properties(
-            **{"background-color": "#d4efdf"}, subset=pd.IndexSlice[:, green_columns]
-        )
+        .applymap(style_percentage, subset=percent_columns)
         .hide(axis="index")
         .to_html()
     )
