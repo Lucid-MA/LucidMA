@@ -98,59 +98,75 @@ def refresh_data_and_send_email():
     # Replace NaN with empty strings
     filtered_data = filtered_data.fillna("")
 
-    styled_html_table = filtered_data.to_html(
-        index=False,
-        header=True,
-        border=0,
-        classes="table table-bordered",
-        justify="center",
+    # Define the columns to be bolded
+    bold_columns = [
+        "Counterparty Entity",
+        "Total Cash Out",
+        "Tenor",
+        "Prime % of Usage",
+        "USG % of Usage",
+    ]
+
+    # Define the columns with light green background
+    green_columns = ["Total Cash Out", "Prime Current Usage", "USG Current Usage"]
+
+    # Create a styled HTML table
+    styled_html_table = (
+        filtered_data.style.map(
+            lambda x: "font-weight: bold", subset=pd.IndexSlice[:, bold_columns]
+        )
+        .set_properties(
+            **{"background-color": "#d4efdf"}, subset=pd.IndexSlice[:, green_columns]
+        )
+        .hide(axis="index")
+        .to_html()
     )
 
     # Construct the HTML content
     html_content = f"""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                }}
-                th, td {{
-                    border: 1px solid black;
-                    padding: 8px;
-                    text-align: center;
-                }}
-                th {{
-                    background-color: #f2f2f2;
-                }}
-                .header {{
-                    background-color: #d9edf7;
-                }}
-                .header span {{
-                    font-size: 24px;
-                    font-weight: bold;
-                }}
-                .subheader {{
-                    background-color: #dff0d8;
-                }}
-            </style>
-        </head>
-        <body>
-            <table>
-                <tr class="header">
-                    <td colspan="20"><span>Lucid Management and Capital Partners LP</span></td>
-                </tr>
-                <tr class="subheader">
-                    <td colspan="20">Counterparty Usage</td>
-                </tr>
-                {styled_html_table}
-            </table>
-        </body>
-        </html>
-        """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    table {{
+                        width: 100%;
+                        border-collapse: collapse;
+                    }}
+                    th, td {{
+                        border: 1px solid black;
+                        padding: 8px;
+                        text-align: center;
+                    }}
+                    th {{
+                        background-color: #f2f2f2;
+                    }}
+                    .header {{
+                        background-color: #d9edf7;
+                    }}
+                    .header span {{
+                        font-size: 24px;
+                        font-weight: bold;
+                    }}
+                    .subheader {{
+                        background-color: #dff0d8;
+                    }}
+                </style>
+            </head>
+            <body>
+                <table>
+                    <tr class="header">
+                        <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
+                    </tr>
+                    <tr class="subheader">
+                        <td colspan="{len(filtered_data.columns)}">Counterparty Usage</td>
+                    </tr>
+                    {styled_html_table}
+                </table>
+            </body>
+            </html>
+            """
 
     subject = "Ctpy Usage Report"
     recipients = ["tony.hoang@lucidma.com"]
