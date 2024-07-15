@@ -41,19 +41,19 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
-    "PRIME-M00",
-    "PRIME-MIG",
-    # # "PRIME-Q10",
-    # # "PRIME-Q36",
+    # "PRIME-C10",
+    # "PRIME-M00",
+    # "PRIME-MIG",
+    "PRIME-Q10",
+    "PRIME-Q36",
     # # "PRIME-QX0",
     # # "74166WAE4",  # Prime Note QX-1
-    "74166WAK0",  # Prime Note M-2
+    # "74166WAK0",  # Prime Note M-2
     # # "74166WAM6",  # Prime Note Q1
-    "74166WAN4",  # Prime Note MIG
-    "90366JAG2",  # USG Note M-8
-    "90366JAH0",  # USG Note M-9
-    "USGFD-M00",
+    # "74166WAN4",  # Prime Note MIG
+    # "90366JAG2",  # USG Note M-8
+    # "90366JAH0",  # USG Note M-9
+    # "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -130,9 +130,9 @@ series_size_dict = {
 
 # TODO: Need to replace this with a proper table
 note_principal = {
-    # "74166WAE4",
+    "74166WAE4": 38500000,
     "74166WAK0": 325250000,
-    # "74166WAM6",
+    "74166WAM6": 451750000,
     "74166WAN4": 389750000,
     "90366JAG2": 20700000,
     "90366JAH0": 50000000,
@@ -142,19 +142,38 @@ benchmark_dictionary = {
     "PRIME-C10": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
     "PRIME-M00": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
     "PRIME-MIG": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-    # "PRIME-Q10":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
-    # "PRIME-Q36":[],
-    # "PRIME-QX0":["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
-    # "74166WAE4": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-    "74166WAK0": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-    # "74166WAM6": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-    "74166WAN4": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
-    "90366JAG2": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
-    "90366JAH0": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
+    "PRIME-Q10": ["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
+    "PRIME-QX0": ["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],
+    "74166WAE4": ["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],  # Prime Note QX
+    "74166WAK0": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],  # Prime Note M-2
+    "74166WAM6": ["3m SOFR", "3m A1/P1 CP", "3m T-Bill"],  # Prime Note Q1
+    "74166WAN4": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],  # Prime Note MIG
+    "90366JAG2": [
+        "1m T-Bill",
+        "Crane Govt MM Index",
+        "FHLB 1m Discount Notes",
+    ],  # USG Note M8
+    "90366JAH0": [
+        "1m T-Bill",
+        "Crane Govt MM Index",
+        "FHLB 1m Discount Notes",
+    ],  # USG Note M9
     "USGFD-M00": ["1m T-Bill", "Crane Govt MM Index", "FHLB 1m Discount Notes"],
+    # "PRIME-Q36":[],
 }
+
 temp_usg_ids = ["USGFD-M00", "90366JAG2", "90366JAH0"]
-temp_prime_ids = ["PRIME-C10", "PRIME-M00", "PRIME-MIG", "74166WAK0", "74166WAN4"]
+temp_prime_ids = [
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    "PRIME-QX0",
+    "PRIME-Q10",
+    "74166WAK0",
+    "74166WAN4",
+    "74166WAM6",
+    "74166WAE4",
+]
 
 temp_usg_ids_dict = {
     "USGFD-M00": "USGFD-M00",
@@ -176,17 +195,19 @@ daycount_dict = {
     "PRIME-C10": 360,
     "PRIME-M00": 360,
     "PRIME-MIG": 360,
-    # "PRIME-Q10",
-    # "PRIME-Q36",
-    # "PRIME-QX0",
-    # "74166WAE4",
+    "PRIME-Q10": 360,
+    "PRIME-Q36": 360,
+    "PRIME-QX0": 360,
+    "74166WAE4": 360,
     "74166WAK0": 360,
-    # "74166WAM6",
+    "74166WAM6": 360,
     "74166WAN4": 360,
     "90366JAG2": 365,
     "90366JAH0": 365,
     "USGFD-M00": 365,
 }
+
+quarterly_reporting_ids = ["74166WAE4", "74166WAM6", "PRIME-QX", "PRIME-Q1"]
 
 ############## MANUAL INPUT##############
 tbill_data = [0.0534, 0.0538, 0.0545]
@@ -199,7 +220,7 @@ cp_data = [0.0532, 0.0534, 0.0543]
 
 # TODO: replace this with data from data from helix
 lucid_aum = 4765143799.49
-interval_tuple = (3, 12)  # quarterly series: (6,12) but not important
+# quarterly series: (6,12) but not important
 #########################################
 
 ##############################################################################
@@ -211,6 +232,10 @@ current_date = datetime.strptime("2024-07-11", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:
+    if reporting_series_id in quarterly_reporting_ids:
+        interval_tuple = (6, 12)
+    else:
+        interval_tuple = (3, 12)
     reporting_type = reporting_type_dict[reporting_series_id]
     reporting_series_name = lucid_series[reporting_series_id]
     report_name = report_names_dict[reporting_series_id]
@@ -307,9 +332,12 @@ for reporting_series_id in reporting_series:
         if not previous.empty:
             previous = previous.sort_values(by="end_date", ascending=False)
             previous_row = previous.iloc[0]
+            previous_row_lag_1 = previous.iloc[1]
             return (
                 previous_row["start_date"].strftime("%Y-%m-%d"),
                 previous_row["end_date"].strftime("%Y-%m-%d"),
+                previous_row_lag_1["start_date"].strftime("%Y-%m-%d"),
+                previous_row_lag_1["end_date"].strftime("%Y-%m-%d"),
             )
         return (None, None)
 
@@ -332,12 +360,14 @@ for reporting_series_id in reporting_series:
     curr_start, curr_end, curr_withdrawal, curr_notice = get_current_reporting_dates(
         report_date
     )
-    prev_start, prev_end = get_previous_reporting_dates(report_date)
+    prev_start, prev_end, prev_start_lag_1, prev_end_lag_1 = (
+        get_previous_reporting_dates(report_date)
+    )
     next_start, next_end, next_withdrawal, next_notice = get_next_reporting_dates(
         report_date
     )
 
-    wal = (pd.to_datetime(curr_end) - pd.to_datetime(curr_start)).days
+    wal = (pd.to_datetime(next_end) - pd.to_datetime(next_start)).days
 
     ############################## TARGET RETURN #####################################
     # Current return
@@ -380,19 +410,19 @@ for reporting_series_id in reporting_series:
             prev_target_return_condition = (
                 df_target_return["security_id"]
                 == temp_prime_ids_dict[reporting_series_id]
-            ) & (df_target_return["date"] == curr_start)
+            ) & (df_target_return["date"] == prev_start)
         elif reporting_series_id in temp_usg_ids_dict.keys():
             prev_target_return_condition = (
                 df_target_return["security_id"]
                 == temp_usg_ids_dict[reporting_series_id]
-            ) & (df_target_return["date"] == curr_start)
+            ) & (df_target_return["date"] == prev_start)
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
             break
     else:
         prev_target_return_condition = (
             df_target_return["security_id"] == reporting_series_id
-        ) & (df_target_return["date"] == curr_start)
+        ) & (df_target_return["date"] == prev_start)
 
     prev_target_outperform = (
         str(df_target_return[prev_target_return_condition]["net_spread"].iloc[0])
@@ -429,7 +459,7 @@ for reporting_series_id in reporting_series:
         series_id, report_date, lag_period, return_data
     ):
 
-        global target_return, next_start, next_end, daycount
+        global target_return, next_start, next_end, daycount, prev_end_lag_1
         """
         Calculate the lagged rate of return for a specific series ID based on historical return data and a target return.
 
@@ -451,7 +481,7 @@ for reporting_series_id in reporting_series:
         df_returns["end_date"] = pd.to_datetime(df_returns["end_date"])
         report_date = datetime.strptime(report_date, "%Y-%m-%d")
 
-        filtered_df = df_returns[df_returns["end_date"] <= report_date]
+        filtered_df = df_returns[df_returns["end_date"] <= prev_end_lag_1]
         sorted_df = filtered_df.sort_values("start_date", ascending=False)
 
         n_start = datetime.strptime(next_start, "%Y-%m-%d")
@@ -708,9 +738,14 @@ for reporting_series_id in reporting_series:
         df_returns_comparison_plot["pool_name"] == pool_name_encoded
     ]
 
-    df_returns_comparison_plot.loc[
-        df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_360"
-    ] = target_return
+    if fund_name == "USG":
+        df_returns_comparison_plot.loc[
+            df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_365"
+        ] = target_return
+    else:
+        df_returns_comparison_plot.loc[
+            df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_360"
+        ] = target_return
 
     def get_returns_comparison_plot_data(
         df, end_date_col, end_date_val, return_col, offset
@@ -737,33 +772,42 @@ for reporting_series_id in reporting_series:
 
         return result_str
 
-    returns_comparison_plot_data = get_returns_comparison_plot_data(
-        df_returns_comparison_plot,
-        "end_date",
-        curr_end,
-        "annualized_returns_360",
-        offset_val,
-    )
+    if fund_name == "USG":
+        returns_comparison_plot_data = get_returns_comparison_plot_data(
+            df_returns_comparison_plot,
+            "end_date",
+            prev_end,
+            "annualized_returns_365",
+            offset_val,
+        )
+    else:
+        returns_comparison_plot_data = get_returns_comparison_plot_data(
+            df_returns_comparison_plot,
+            "end_date",
+            prev_end,
+            "annualized_returns_360",
+            offset_val,
+        )
 
     if fund_name == "USG":
         plot_data_index_1 = get_returns_comparison_plot_data(
-            df_benchmark_usg, "end_date", curr_end, "1m T-Bills", offset_val
+            df_benchmark_usg, "end_date", prev_end, "1m T-Bills", offset_val
         )
         plot_data_index_2 = get_returns_comparison_plot_data(
-            df_benchmark_usg, "end_date", curr_end, CRANE_IDX, offset_val
+            df_benchmark_usg, "end_date", prev_end, CRANE_IDX, offset_val
         )
         plot_data_index_3 = get_returns_comparison_plot_data(
-            df_benchmark_usg, "end_date", curr_end, FHLB_NOTES, offset_val
+            df_benchmark_usg, "end_date", prev_end, FHLB_NOTES, offset_val
         )
     else:
         plot_data_index_1 = get_returns_comparison_plot_data(
-            df_benchmark_prime, "end_date", curr_end, SOFR_1M, offset_val
+            df_benchmark_prime, "end_date", prev_end, SOFR_1M, offset_val
         )
         plot_data_index_2 = get_returns_comparison_plot_data(
-            df_benchmark_prime, "end_date", curr_end, CP_1M, offset_val
+            df_benchmark_prime, "end_date", prev_end, CP_1M, offset_val
         )
         plot_data_index_3 = get_returns_comparison_plot_data(
-            df_benchmark_prime, "end_date", curr_end, "1m T-Bills", offset_val
+            df_benchmark_prime, "end_date", prev_end, "1m T-Bills", offset_val
         )
 
     #####################################################################################
@@ -854,7 +898,7 @@ for reporting_series_id in reporting_series:
 
     def get_reporting_dates_coupon_table(reporting_date, lookback_period):
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
-        roll_schedule = df_roll_schedule.sort_values(by="start_date")
+        roll_schedule = df_roll_schedule.sort_values(by="start_date").reset_index()
         index = roll_schedule[roll_schedule["end_date"] > reporting_date].index[0]
 
         # Slice the DataFrame to get the 7 consecutive rows
@@ -1100,7 +1144,7 @@ for reporting_series_id in reporting_series:
                 "benchmark": benchmark_name,  # done
                 "tgt_outperform": target_outperform_range,  # done
                 "exp_rat_footnote": expense_ratio_footnote_text,
-                "prev_pd_start": pd.to_datetime(curr_start).strftime("%B %d"),  # done
+                "prev_pd_start": pd.to_datetime(prev_start).strftime("%B %d"),  # done
                 "this_pd_start": pd.to_datetime(next_start).strftime("%B %d"),  # done
                 "prev_pd_return": previous_target_return,  # done
                 "prev_pd_benchmark": benchmark_short,  # done
@@ -1264,7 +1308,7 @@ for reporting_series_id in reporting_series:
                 "rating_org": df_attributes["rating_org"].iloc[0],  # done
                 "benchmark": benchmark_name,  # done
                 "tgt_outperform": target_outperform_range,  # done
-                "prev_pd_start": pd.to_datetime(curr_start).strftime(
+                "prev_pd_start": pd.to_datetime(prev_start).strftime(
                     "%B %d"
                 ),  # Previous coupon period
                 "this_pd_start": pd.to_datetime(next_start).strftime(
@@ -1359,9 +1403,9 @@ for reporting_series_id in reporting_series:
                 #     ts_row_start,
                 #     ts_row_end,
                 # ),
-                "return_plot": "(2024-01-18,5.53) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) ",
-                "comp_a_plot": "(2024-01-18,5.33) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) ",
-                "comp_b_plot": "(2024-01-18,5.151) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) ",
+                "return_plot": "(2024-01-18,999) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) ",
+                "comp_a_plot": "(2024-01-18,999) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) ",
+                "comp_b_plot": "(2024-01-18,999) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) ",
                 "zero_date": zero_date,
                 "max_return": 3,
                 "fund_size": get_fund_size(fund_name.upper(), report_date),
