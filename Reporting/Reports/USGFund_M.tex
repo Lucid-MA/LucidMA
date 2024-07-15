@@ -37,7 +37,7 @@
 					tick label style={font=\tiny}  
 					}}
 \lhead{\includegraphics[width=9cm]{lucid_logo.png}}
-\rhead{Report Date: 2024-06-13}
+\rhead{Report Date: 2024-07-11}
 \setlength{\columnsep}{3em}
 \begin{document}
 \twocolumn[{
@@ -93,7 +93,7 @@ Series Withdrawal & Monthly at par\\
 Next Withdrawal & July 18, 2024\\
 Next Notice Date & July 15, 2024\\
 Min Investment & \$500,000\\
-Current WAL & 28 days\\
+Current WAL & 35 days\\
 \noindent\parbox[b]{\hsize}{\vspace{1mm}Current Max Limit on all Series Assets} & July 18, 2024\\[-1mm]
 Fund Entity & Lucid Cash Fund USG LLC\\
 Fund Inception & June 29, 2017\\
@@ -113,10 +113,10 @@ Series Inception & June 29, 2017\\ \arrayrulecolor{light_grey}\hline
 \arrayrulecolor{light_grey}\hline
 \multicolumn{3}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\rowcolor{lucid_blue}{ \color[HTML]{FFFFFF}\textbf{Portfolio Composition\textsuperscript{5}}}} \\
 \textbf{Series Assets} & \textbf{\% Portfolio} & \textbf{O/C Rate}\\
-US Govt Repo & 95.48\% & 106.09\% \\
+US Govt Repo & 92.94\% & 106.62\% \\
 
-T-Bills; Gov't MMF & 4.52\% & - \\ \cline{2-2} \cline{3-3} 
-\textbf{Total} & 100.0\% & \textbf{106.09\%} \\\arrayrulecolor{light_grey}\hline
+T-Bills; Gov't MMF & 7.06\% & - \\ \cline{2-2} \cline{3-3} 
+\textbf{Total} & 100.0\% & \textbf{106.62\%} \\\arrayrulecolor{light_grey}\hline
 \end{tabular}
 
 % \tikzfading[name=fade down,
@@ -129,7 +129,7 @@ T-Bills; Gov't MMF & 4.52\% & - \\ \cline{2-2} \cline{3-3}
 			title style = {font = \small},
 			axis line style = {light_grey},
 		title={{Performance vs Benchmark}},
-			date coordinates in=x, date ZERO=2023-02-09,
+			date coordinates in=x, date ZERO=2023-03-09,
 			xticklabel=\month/\day/\year,  
 			ymin=3, ymax=7, %MAXRETURN HERE
 			legend cell align = {left},
@@ -158,7 +158,7 @@ T-Bills; Gov't MMF & 4.52\% & - \\ \cline{2-2} \cline{3-3}
 		%\addplot[ybar, nodes near coords, fill=blue] 
 		\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 			coordinates {
-				(2023-03-09, 4.65) (2023-04-13, 4.78) (2023-05-11, 4.93) (2023-06-15, 5.13) (2023-07-20, 5.16) (2023-08-17, 5.34) (2023-09-14, 5.42) (2023-10-19, 5.45) (2023-11-16, 5.45) (2023-12-14, 5.45) (2024-01-18, 5.45) (2024-02-15, 5.45) (2024-03-14, 5.45) (2024-04-18, 5.45) (2024-05-16, 5.45) (2024-06-13, 5.52)
+				(2023-03-09, 4.72) (2023-04-13, 4.85) (2023-05-11, 5.00) (2023-06-15, 5.20) (2023-07-20, 5.23) (2023-08-17, 5.41) (2023-09-14, 5.50) (2023-10-19, 5.53) (2023-11-16, 5.53) (2023-12-14, 5.53) (2024-01-18, 5.53) (2024-02-15, 5.53) (2024-03-14, 5.53) (2024-04-18, 5.53) (2024-05-16, 5.53) (2024-06-13, 5.52)
 			};
 		\addplot[draw=dark_red,ultra thick,smooth] 
 			coordinates {

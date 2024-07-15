@@ -554,10 +554,12 @@ FHLB_NOTES = "FHLB 1m Discount Notes"
 
 benchmark_shortern = {
     SOFR_1M: SOFR_1M,
+    SOFR_3M: SOFR_3M,
     TBILL_1M: "1m TB",
     TBILL_3M: "3m TB",
     CRANE_IDX: "Crane MM",
     CP_1M: CP_1M,
+    CP_3M: CP_3M,
 }
 """
 # Series Attributes
