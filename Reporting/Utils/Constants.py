@@ -559,6 +559,7 @@ benchmark_shortern = {
     TBILL_3M: "3m TB",
     CRANE_IDX: "Crane MM",
     CP_1M: CP_1M,
+    CP_3M: CP_3M,
 }
 """
 # Series Attributes

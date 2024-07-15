@@ -12,6 +12,8 @@ from Reporting.Utils.Constants import (
     FHLB_NOTES,
     SOFR_1M,
     CP_1M,
+    SOFR_3M,
+    CP_3M,
 )
 from Reporting.Utils.database_utils import get_database_engine, read_table_from_db
 from Reports.Constants import fund_report_template, note_report_template
@@ -45,8 +47,7 @@ reporting_series = [
     # "PRIME-M00",
     # "PRIME-MIG",
     "PRIME-Q10",
-    "PRIME-Q36",
-    # # "PRIME-QX0",
+    "PRIME-QX0",
     # # "74166WAE4",  # Prime Note QX-1
     # "74166WAK0",  # Prime Note M-2
     # # "74166WAM6",  # Prime Note Q1
@@ -54,6 +55,7 @@ reporting_series = [
     # "90366JAG2",  # USG Note M-8
     # "90366JAH0",  # USG Note M-9
     # "USGFD-M00",
+    # "PRIME-Q36",
 ]
 
 reporting_type_dict = {
@@ -113,29 +115,29 @@ fund_size_dict = {
 }
 # TODO: replace this with data from data from helix
 series_size_dict = {
-    "PRIME-C10": 116397204.440234,
-    "PRIME-M00": 771769755.296813,
-    "PRIME-MIG": 685176169.9099,
-    # "PRIME-Q10",
+    "PRIME-C10": 117000000,
+    "PRIME-M00": 756000000,
+    "PRIME-MIG": 744000000,
+    "PRIME-Q10": 714000000,
     # "PRIME-Q36",
-    # "PRIME-QX0",
-    # "74166WAE4",
-    "74166WAK0": 768291953.78,
-    # "74166WAM6",
-    "74166WAN4": 602070267.782659,
-    "90366JAG2": 123033585.309436,
-    "90366JAH0": 123033585.309436,
-    "USGFD-M00": 123255192.977195,
+    "PRIME-QX0": 255000000,
+    "74166WAE4": 714000000,  # Prime Note QX
+    "74166WAK0": 756000000,  # Prime Note M-2
+    "74166WAM6": 714000000,  # Prime Note Q1
+    "74166WAN4": 744000000,  # Prime Note MIG
+    "90366JAG2": 123850000,  # USG Note M-8
+    "90366JAH0": 123850000,  # USG Note M-9
+    "USGFD-M00": 123850000,  # USG Fund
 }
 
 # TODO: Need to replace this with a proper table
 note_principal = {
-    "74166WAE4": 38500000,
-    "74166WAK0": 325250000,
-    "74166WAM6": 451750000,
-    "74166WAN4": 389750000,
-    "90366JAG2": 20700000,
-    "90366JAH0": 50000000,
+    "74166WAE4": 38500000,  # Prime Note QX
+    "74166WAK0": 325250000,  # Prime Note M-2
+    "74166WAM6": 451750000,  # Prime Note Q1
+    "74166WAN4": 389750000,  # Prime Note MIG
+    "90366JAG2": 20700000,  # USG Note M-8
+    "90366JAH0": 50000000,  # USG Note M-9
 }
 
 benchmark_dictionary = {
@@ -207,15 +209,18 @@ daycount_dict = {
     "USGFD-M00": 365,
 }
 
-quarterly_reporting_ids = ["74166WAE4", "74166WAM6", "PRIME-QX", "PRIME-Q1"]
+quarterly_reporting_ids = ["74166WAE4", "74166WAM6", "PRIME-QX0", "PRIME-Q10"]
 
 ############## MANUAL INPUT##############
 tbill_data = [0.0534, 0.0538, 0.0545]
 tbill_data_prime = [0.0527, 0.0531, 0.0538]
+tbill_data_quarterly = [0.0525, 0.0536, 0.0531]
 crane_data = [0.0511, 0.0513, 0.0522]
 fhlb_data = [0, 0, 0]
 sofr_data = [0.0532, 0.0535, 0.0544]
 cp_data = [0.0532, 0.0534, 0.0543]
+cp_3m_data = [0.0533, 0.0545, 0.0536]
+sofr_3m_data = [0.0530, 0.0539, 0.0535]
 #########################################
 
 # TODO: replace this with data from data from helix
@@ -255,6 +260,7 @@ for reporting_series_id in reporting_series:
     benchmark_comparison_table_name = "silver_return_by_series"
     benchmark_usg_table_name = "bronze_benchmark_usg"
     benchmark_prime_table_name = "bronze_benchmark_prime"
+    benchmark_prime_quarterly_table_name = "bronze_benchmark_prime_quarterly"
 
     # Connect to the PostgreSQL database
     engine = get_database_engine("postgres")
@@ -283,6 +289,10 @@ for reporting_series_id in reporting_series:
     df_benchmark_usg = read_table_from_db(benchmark_usg_table_name, db_type)
 
     df_benchmark_prime = read_table_from_db(benchmark_prime_table_name, db_type)
+
+    df_benchmark_prime_quarterly = read_table_from_db(
+        benchmark_prime_quarterly_table_name, db_type
+    )
 
     ## REPORTING VARIABLE ##
 
@@ -497,12 +507,20 @@ for reporting_series_id in reporting_series:
 
         return round(result * 100, 2)
 
-    historical_return_1 = calculate_historical_return_rate(
-        reporting_series_id, report_date, interval_tuple[0], df_historical_returns
-    )
-    historical_return_2 = calculate_historical_return_rate(
-        reporting_series_id, report_date, interval_tuple[1], df_historical_returns
-    )
+    if reporting_series_id in quarterly_reporting_ids:
+        historical_return_1 = calculate_historical_return_rate(
+            reporting_series_id, report_date, 2, df_historical_returns
+        )
+        historical_return_2 = calculate_historical_return_rate(
+            reporting_series_id, report_date, 4, df_historical_returns
+        )
+    else:
+        historical_return_1 = calculate_historical_return_rate(
+            reporting_series_id, report_date, interval_tuple[0], df_historical_returns
+        )
+        historical_return_2 = calculate_historical_return_rate(
+            reporting_series_id, report_date, interval_tuple[1], df_historical_returns
+        )
 
     ############################## FUND ATTRIBUTES #####################################
     fund_attribute_condition = df_attributes["security_id"] == reporting_series_id
@@ -613,7 +631,10 @@ for reporting_series_id in reporting_series:
     if reporting_series_id in temp_usg_ids_dict.keys():
         r_a = list(tbill_data)
     else:
-        r_a = list(sofr_data)
+        if reporting_series_id in quarterly_reporting_ids:
+            r_a = list(sofr_3m_data)
+        else:
+            r_a = list(sofr_data)
     #     r_a = []
     #     r_a.append(round(df_benchmark_comparison_curr[benchmark_to_use[0]].iloc[0], 4))
     #     r_a.append(
@@ -639,7 +660,10 @@ for reporting_series_id in reporting_series:
     if reporting_series_id in temp_usg_ids_dict.keys():
         r_b = list(crane_data)
     else:
-        r_b = list(cp_data)
+        if reporting_series_id in quarterly_reporting_ids:
+            r_b = list(cp_3m_data)
+        else:
+            r_b = list(cp_data)
         # r_b = []
         # r_b.append(round(df_benchmark_comparison_curr[benchmark_to_use[1]].iloc[0], 4))
         # r_b.append(
@@ -665,7 +689,10 @@ for reporting_series_id in reporting_series:
     if reporting_series_id in temp_usg_ids_dict.keys():
         r_c = list(fhlb_data)
     else:
-        r_c = list(tbill_data_prime)
+        if reporting_series_id in quarterly_reporting_ids:
+            r_c = list(tbill_data_quarterly)
+        else:
+            r_c = list(tbill_data_prime)
     r_c[1] = form_as_percent(r_c[1], 2)
     r_c[2] = form_as_percent(r_c[2], 2)
 
@@ -750,6 +777,7 @@ for reporting_series_id in reporting_series:
     def get_returns_comparison_plot_data(
         df, end_date_col, end_date_val, return_col, offset
     ):
+        global reporting_series_id
         # Convert 'end_date_val' to datetime
         end_date_val = pd.to_datetime(end_date_val)
 
@@ -760,7 +788,11 @@ for reporting_series_id in reporting_series:
         sorted_df = filtered_df.sort_values(end_date_col, ascending=True)
 
         # Take the last 'offset' number of rows
-        result_df = sorted_df.tail(offset)
+        # TODO: This is special handling - remove later on. This is due to historical returns not avail before 2021 in the DB
+        if reporting_series_id in ["PRIME-Q10", "PRIME-QX0"]:
+            result_df = sorted_df.tail(13)
+        else:
+            result_df = sorted_df.tail(offset)
 
         # Format the result as a string
         result_str = " ".join(
@@ -800,15 +832,31 @@ for reporting_series_id in reporting_series:
             df_benchmark_usg, "end_date", prev_end, FHLB_NOTES, offset_val
         )
     else:
-        plot_data_index_1 = get_returns_comparison_plot_data(
-            df_benchmark_prime, "end_date", prev_end, SOFR_1M, offset_val
-        )
-        plot_data_index_2 = get_returns_comparison_plot_data(
-            df_benchmark_prime, "end_date", prev_end, CP_1M, offset_val
-        )
-        plot_data_index_3 = get_returns_comparison_plot_data(
-            df_benchmark_prime, "end_date", prev_end, "1m T-Bills", offset_val
-        )
+        if reporting_series_id in quarterly_reporting_ids:
+            plot_data_index_1 = get_returns_comparison_plot_data(
+                df_benchmark_prime_quarterly, "end_date", prev_end, SOFR_3M, offset_val
+            )
+            plot_data_index_2 = get_returns_comparison_plot_data(
+                df_benchmark_prime_quarterly, "end_date", prev_end, CP_3M, offset_val
+            )
+            plot_data_index_3 = get_returns_comparison_plot_data(
+                df_benchmark_prime_quarterly,
+                "end_date",
+                prev_end,
+                "3m T-Bills",
+                offset_val,
+            )
+
+        else:
+            plot_data_index_1 = get_returns_comparison_plot_data(
+                df_benchmark_prime, "end_date", prev_end, SOFR_1M, offset_val
+            )
+            plot_data_index_2 = get_returns_comparison_plot_data(
+                df_benchmark_prime, "end_date", prev_end, CP_1M, offset_val
+            )
+            plot_data_index_3 = get_returns_comparison_plot_data(
+                df_benchmark_prime, "end_date", prev_end, "1m T-Bills", offset_val
+            )
 
     #####################################################################################
     ############################## CUSTOM FUNCTIONS #####################################
@@ -1117,8 +1165,8 @@ for reporting_series_id in reporting_series:
                         fund_description + series_description,
                         nbars_val,
                     )
-                    if reporting_type != "PRIME-Q10"
-                    else 0.065
+                    if reporting_series_id not in ["PRIME-Q10", "PRIME-QX0"]
+                    else 0.075
                 ),
                 barwidthmap(
                     fund_description + series_description,
