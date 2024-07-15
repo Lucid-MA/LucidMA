@@ -1,0 +1,162 @@
+import os
+
+import msal
+import pandas as pd
+import requests
+import win32com.client as win32
+
+
+def authenticate_and_get_token():
+    client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
+    tenant_id = "86cd4a88-29b5-4f22-ab55-8d9b2c81f747"
+    config = {
+        "client_id": client_id,
+        "authority": f"https://login.microsoftonline.com/{tenant_id}",
+        "scope": ["https://graph.microsoft.com/Mail.Send"],
+        "redirect_uri": "http://localhost:8080",
+    }
+
+    cache_file = "token_cache.bin"
+    token_cache = msal.SerializableTokenCache()
+
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            token_cache.deserialize(f.read())
+
+    client = msal.PublicClientApplication(
+        config["client_id"], authority=config["authority"], token_cache=token_cache
+    )
+
+    accounts = client.get_accounts()
+    if accounts:
+        result = client.acquire_token_silent(config["scope"], account=accounts[0])
+        if not result:
+            print("No cached token found. Authenticating interactively...")
+            result = client.acquire_token_interactive(scopes=config["scope"])
+    else:
+        print("No cached accounts found. Authenticating interactively...")
+        result = client.acquire_token_interactive(scopes=config["scope"])
+
+    if "error" in result:
+        raise Exception(f"Error acquiring token: {result['error_description']}")
+
+    with open(cache_file, "w") as f:
+        f.write(token_cache.serialize())
+
+    return result["access_token"]
+
+
+def send_email(subject, body, recipients):
+    token = authenticate_and_get_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    email_data = {
+        "message": {
+            "subject": subject,
+            "body": {"contentType": "HTML", "content": body},
+            "from": {"emailAddress": {"address": "operations@lucidma.com"}},
+            "toRecipients": [
+                {"emailAddress": {"address": recipient}} for recipient in recipients
+            ],
+        }
+    }
+    response = requests.post(
+        "https://graph.microsoft.com/v1.0/me/sendMail", headers=headers, json=email_data
+    )
+    if response.status_code != 202:
+        raise Exception(f"Error sending email: {response.text}")
+    else:
+        if response.status_code == 202:
+            print(f"Email {subject} sent successfully")
+
+
+def refresh_data_and_send_email():
+    file_path = r"S:\Users\THoang\Data\Ctpy Risk Monitor Active_test.xlsm"
+    screenshot_save_path = r"S:\Users\THoang\Data\Ctpy_Usage_Screenshot.png"
+    sheet_name = "Ctpy Usage"
+    header_row = 12
+    data_start_row = 13
+
+    # Open the Excel file and refresh the data connection
+    excel = win32.gencache.EnsureDispatch("Excel.Application")
+    workbook = excel.Workbooks.Open(file_path)
+    workbook.RefreshAll()
+    excel.CalculateUntilAsyncQueriesDone()
+    workbook.Save()
+    workbook.Close(SaveChanges=True)
+
+    # Read the data from the specified sheet, starting from row 13
+    data = pd.read_excel(
+        file_path,
+        sheet_name=sheet_name,
+        usecols="A,B,I:T",
+        skiprows=11,
+    )
+
+    # Filter the data based on the criteria
+    filtered_data = data[data["Counterparty Group"].notna()]
+
+    # Replace NaN with empty strings
+    filtered_data = filtered_data.fillna("")
+
+    styled_html_table = filtered_data.to_html(
+        index=False,
+        header=True,
+        border=0,
+        classes="table table-bordered",
+        justify="center",
+    )
+
+    # Construct the HTML content
+    html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                th, td {{
+                    border: 1px solid black;
+                    padding: 8px;
+                    text-align: center;
+                }}
+                th {{
+                    background-color: #f2f2f2;
+                }}
+                .header {{
+                    background-color: #d9edf7;
+                }}
+                .header span {{
+                    font-size: 24px;
+                    font-weight: bold;
+                }}
+                .subheader {{
+                    background-color: #dff0d8;
+                }}
+            </style>
+        </head>
+        <body>
+            <table>
+                <tr class="header">
+                    <td colspan="20"><span>Lucid Management and Capital Partners LP</span></td>
+                </tr>
+                <tr class="subheader">
+                    <td colspan="20">Counterparty Usage</td>
+                </tr>
+                {styled_html_table}
+            </table>
+        </body>
+        </html>
+        """
+
+    subject = "Ctpy Usage Report"
+    recipients = ["tony.hoang@lucidma.com"]
+
+    send_email(subject, html_content, recipients)
+
+
+# Run the script
+refresh_data_and_send_email()
