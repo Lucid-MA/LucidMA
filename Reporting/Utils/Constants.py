@@ -395,6 +395,36 @@ series_return_intervals = {
     "USGFD-M00": (3, 12),
 }
 
+
+notes_series_name_mapping = {
+    "USG Assets LLC": {
+        "M-1": "903340AA5",
+        "M-2": "90366JAA5",
+        "M-3": "90366JAB3",
+        "M-4": "90366JAC1",
+        "M-5": "90366JAD9",
+        "M-6": "90366JAE7",
+        "M-7": "90366JAF4",
+        "M-8": "90366JAG2",
+        "M-9": "90366JAH0",
+    },
+    "Prime Notes LLC": {
+        "M-1": "74166WAA2",
+        "M-2": "74166WAK0",
+        "M-3": "74166WAL8",
+        "Q1-1": "74166WAB0",
+        "Q1-2": "74166WAM6",
+        "MIG-1": "74166WAD6",
+        "MIG-2": "74166WAH7",
+        "MIG-3": "74166WAN4",
+        "M1-1": "74166WAC8",
+        "QX-1": "74166WAE4",
+        "Q364-1": "74166WAF1",
+        "A1-1": "74166WAG9",
+        "A1-2": "74166WAP9",
+        "2YIG-1": "74166WAJ3",
+    },
+}
 NAV_name_mapping = {
     "USG_Monthly": "USGFD-M00",
     "Prime_Master": "PRIME-M00",

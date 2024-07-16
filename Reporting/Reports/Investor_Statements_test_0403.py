@@ -238,8 +238,10 @@ report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:
     if reporting_series_id in quarterly_reporting_ids:
         interval_tuple = (6, 12)
+        frequency = "Quarterly"
     else:
         interval_tuple = (3, 12)
+        frequency = "Monthly"
     reporting_type = reporting_type_dict[reporting_series_id]
     reporting_series_name = lucid_series[reporting_series_id]
     report_name = report_names_dict[reporting_series_id]
@@ -550,6 +552,18 @@ for reporting_series_id in reporting_series:
                 & (df_oc_rates["series"] == "MONTHLYIG")
                 & (df_oc_rates["report_date"] == oc_date)
             )
+        elif reporting_series_id == "74166WAM6":
+            oc_rate_condition = (
+                (df_oc_rates["fund"] == "PRIME")
+                & (df_oc_rates["series"] == "QUARTERLY1")
+                & (df_oc_rates["report_date"] == oc_date)
+            )
+        elif reporting_series_id == "74166WAE4":
+            oc_rate_condition = (
+                (df_oc_rates["fund"] == "PRIME")
+                & (df_oc_rates["series"] == "QUARTERLYX")
+                & (df_oc_rates["report_date"] == oc_date)
+            )
         elif reporting_series_id in temp_usg_ids_dict.keys():
             oc_rate_condition = (
                 (df_oc_rates["fund"] == "USG")
@@ -582,6 +596,20 @@ for reporting_series_id in reporting_series:
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "PRIME")
                 & (df_cash_balance["Series"] == "MONTHLYIG")
+                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Account"] == "MAIN")
+            )
+        elif reporting_series_id == "74166WAM6":
+            cash_balance_condition = (
+                (df_cash_balance["Fund"] == "PRIME")
+                & (df_cash_balance["Series"] == "QUARTERLY1")
+                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Account"] == "MAIN")
+            )
+        elif reporting_series_id == "74166WAE4":
+            cash_balance_condition = (
+                (df_cash_balance["Fund"] == "PRIME")
+                & (df_cash_balance["Series"] == "QUARTERLYX")
                 & (df_cash_balance["Balance_date"] == report_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
@@ -788,7 +816,7 @@ for reporting_series_id in reporting_series:
 
         # Take the last 'offset' number of rows
         # TODO: This is special handling - remove later on. This is due to historical returns not avail before 2021 in the DB
-        if reporting_series_id in ["PRIME-Q10", "PRIME-QX0"]:
+        if reporting_series_id in ["PRIME-Q10", "PRIME-QX0", "74166WAM6", "74166WAE4"]:
             result_df = sorted_df.tail(13)
         else:
             result_df = sorted_df.tail(offset)
@@ -1004,6 +1032,18 @@ for reporting_series_id in reporting_series:
                     & (df_oc_rates_temp["series"] == "MONTHLYIG")
                     & (df_oc_rates_temp["report_date"] == oc_date_temp)
                 )
+            elif reporting_series_id == "74166WAM6":
+                oc_rate_condition = (
+                    (df_oc_rates_temp["fund"] == "PRIME")
+                    & (df_oc_rates_temp["series"] == "QUARTERLY1")
+                    & (df_oc_rates_temp["report_date"] == oc_date_temp)
+                )
+            elif reporting_series_id == "74166WAE4":
+                oc_rate_condition = (
+                    (df_oc_rates_temp["fund"] == "PRIME")
+                    & (df_oc_rates_temp["series"] == "QUARTERLYX")
+                    & (df_oc_rates_temp["report_date"] == oc_date_temp)
+                )
             elif reporting_series_id in temp_usg_ids_dict.keys():
                 oc_rate_condition = (
                     (df_oc_rates_temp["fund"] == "USG")
@@ -1033,7 +1073,11 @@ for reporting_series_id in reporting_series:
             reporting_date, 7
         )  # historical returns
 
-        note_principals = [note_principal[reporting_series_id]] * 7
+        min_length = len(int_rates)
+        int_period_starts = int_period_starts[-min_length:]
+        int_period_ends = int_period_ends[-min_length:]
+        note_principals = [note_principal[reporting_series_id]] * min_length
+
         interest_paid = [
             ret
             / daycount
@@ -1108,17 +1152,6 @@ for reporting_series_id in reporting_series:
             latex_text += latex_line + "\n"
 
         return latex_text
-        # return (
-        #     int_period_starts,
-        #     int_period_ends,
-        #     int_rates,
-        #     spread_to_benchmarks,
-        #     note_principals,
-        #     interest_paid,
-        #     interest_payment_dates,
-        #     related_fund_cap_accounts,
-        #     oc_rates,
-        # )
 
     #####################################################################################
     ############################## REPORT GENERATION SCRIPT #############################
@@ -1350,7 +1383,7 @@ for reporting_series_id in reporting_series:
                 "fundname": fund_name,  # done
                 "series_abbrev": series_abbrev,  # done
                 "issuer_name": issuer_from_fundname(fund_name),  # done
-                "frequency": "Monthly",  # TODO: Review for quarterly
+                "frequency": frequency,  # TODO: Review for quarterly
                 "rating": df_attributes["rating"].iloc[0],  # done
                 "rating_org": df_attributes["rating_org"].iloc[0],  # done
                 "benchmark": benchmark_name,  # done
@@ -1450,9 +1483,9 @@ for reporting_series_id in reporting_series:
                 #     ts_row_start,
                 #     ts_row_end,
                 # ),
-                "return_plot": "(2024-01-18,999) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) ",
-                "comp_a_plot": "(2024-01-18,999) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) ",
-                "comp_b_plot": "(2024-01-18,999) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) ",
+                # "return_plot": "(2024-01-18,999) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) ",
+                # "comp_a_plot": "(2024-01-18,999) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) ",
+                # "comp_b_plot": "(2024-01-18,999) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) ",
                 "zero_date": zero_date,
                 "max_return": 3,
                 "fund_size": get_fund_size(fund_name.upper(), report_date),
@@ -1461,7 +1494,6 @@ for reporting_series_id in reporting_series:
                 "fund_inception": get_fund_inception_date(fund_name),
                 "cusip": df_attributes["security_id"].iloc[0],
                 "note_abbrev": series_abbrev,
-                # "principal_outstanding": "\\$20.7 million",  # TODO: update df_attributes
                 "principal_outstanding": wordify(note_principal[reporting_series_id]),
                 "issue_date": df_attributes["fund_inception"]
                 .iloc[0]
@@ -1501,9 +1533,9 @@ for reporting_series_id in reporting_series:
                 colltable=report_data_note["colltable"],
                 zero_date=report_data_note["zero_date"],
                 max_return=report_data_note["max_return"],
-                return_plot=report_data_note["return_plot"],
-                comp_a_plot=report_data_note["comp_a_plot"],
-                comp_b_plot=report_data_note["comp_b_plot"],
+                # return_plot=report_data_note["return_plot"],
+                # comp_a_plot=report_data_note["comp_a_plot"],
+                # comp_b_plot=report_data_note["comp_b_plot"],
                 performance_graph=report_data_note["performance_graph"],
                 fund_size=report_data_note["fund_size"],
                 series_size=report_data_note["series_size"],
