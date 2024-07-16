@@ -226,7 +226,11 @@ def refresh_data_and_send_email():
             """
 
     subject = "Ctpy Usage Report"
-    recipients = ["tony.hoang@lucidma.com"]
+    recipients = [
+        "tony.hoang@lucidma.com",
+        "mattias.almers@lucidma.com",
+        "thomas.durante@lucidma.com",
+    ]
 
     send_email(subject, html_content, recipients)
 

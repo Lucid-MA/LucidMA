@@ -34,8 +34,6 @@ from Reports.Utils import (
     performance_graph,
     snapshot_graph,
     colltable,
-    plotify,
-    coupon_plotify,
     issuer_from_fundname,
     secured_by_from,
     series_from_note,
@@ -43,18 +41,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
-    # "PRIME-M00",
-    # "PRIME-MIG",
-    # "PRIME-Q10",
-    # "PRIME-QX0",
-    # "74166WAE4",  # Prime Note QX-1
-    # "74166WAM6",  # Prime Note Q1
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    "PRIME-Q10",
+    "PRIME-QX0",
+    "74166WAE4",  # Prime Note QX-1
+    "74166WAM6",  # Prime Note Q1
     "74166WAK0",  # Prime Note M-2
     "74166WAN4",  # Prime Note MIG
-    # "90366JAG2",  # USG Note M-8
-    # "90366JAH0",  # USG Note M-9
-    # "USGFD-M00",
+    "90366JAG2",  # USG Note M-8
+    "90366JAH0",  # USG Note M-9
+    "USGFD-M00",
 ]
 
 reporting_type_dict = {
