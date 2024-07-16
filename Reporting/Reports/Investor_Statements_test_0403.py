@@ -48,10 +48,10 @@ reporting_series = [
     # "PRIME-MIG",
     # "PRIME-Q10",
     # "PRIME-QX0",
-    "74166WAE4",  # Prime Note QX-1
-    "74166WAM6",  # Prime Note Q1
-    # "74166WAK0",  # Prime Note M-2
-    # "74166WAN4",  # Prime Note MIG
+    # "74166WAE4",  # Prime Note QX-1
+    # "74166WAM6",  # Prime Note Q1
+    "74166WAK0",  # Prime Note M-2
+    "74166WAN4",  # Prime Note MIG
     # "90366JAG2",  # USG Note M-8
     # "90366JAH0",  # USG Note M-9
     # "USGFD-M00",
@@ -262,6 +262,7 @@ for reporting_series_id in reporting_series:
     benchmark_usg_table_name = "bronze_benchmark_usg"
     benchmark_prime_table_name = "bronze_benchmark_prime"
     benchmark_prime_quarterly_table_name = "bronze_benchmark_prime_quarterly"
+    note_principal_table_name = "bronze_notes_principal"
 
     # Connect to the PostgreSQL database
     engine = get_database_engine("postgres")
@@ -295,6 +296,7 @@ for reporting_series_id in reporting_series:
         benchmark_prime_quarterly_table_name, db_type
     )
 
+    df_notes_principal = read_table_from_db(note_principal_table_name, db_type)
     ## REPORTING VARIABLE ##
 
     # GENERAL VARIABLE
@@ -985,6 +987,7 @@ for reporting_series_id in reporting_series:
         return start_dates, end_dates
 
     def get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period):
+        global reporting_series_id
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
         if reporting_series_id in temp_prime_ids_dict.keys():
             target_return_condition = (
@@ -1064,72 +1067,121 @@ for reporting_series_id in reporting_series:
         return oc_rates
 
     def get_coupon_plot(reporting_series_id, reporting_date):
-        global note_principal
-        int_period_starts, int_period_ends = get_reporting_dates_coupon_table(
-            reporting_date, 7
+        global next_start, next_end
+
+        # note_principals = [note_principal[reporting_series_id]] * min_length
+        #
+        # interest_paid = [
+        #     ret
+        #     / daycount
+        #     * (
+        #         datetime.strptime(end, "%Y-%m-%d")
+        #         - datetime.strptime(start, "%Y-%m-%d")
+        #     ).days
+        #     * principal
+        #     for ret, end, start, principal in zip(
+        #         int_rates, int_period_ends, int_period_starts, note_principals
+        #     )
+        # ]
+
+        ### GET NOTES DATA
+        note_data_df = (
+            df_notes_principal[df_notes_principal["series_id"] == reporting_series_id]
+            .sort_values(by="interest_period_end")
+            .reset_index()
         )
 
-        int_rates, spread_to_benchmarks = get_interest_rates_and_spreads_coupon_table(
-            reporting_date, 7
-        )  # historical returns
+        lookback_period = 5
 
-        min_length = len(int_rates)
-        int_period_starts = int_period_starts[-min_length:]
-        int_period_ends = int_period_ends[-min_length:]
-        note_principals = [note_principal[reporting_series_id]] * min_length
+        # Find the index where interest_period_end is first greater than or equal to reporting_date
+        index = note_data_df[
+            note_data_df["interest_period_end"] >= reporting_date
+        ].index[0]
 
-        interest_paid = [
-            ret
-            / daycount
-            * (
-                datetime.strptime(end, "%Y-%m-%d")
-                - datetime.strptime(start, "%Y-%m-%d")
-            ).days
-            * principal
-            for ret, end, start, principal in zip(
-                int_rates, int_period_ends, int_period_starts, note_principals
-            )
+        # Calculate the number of rows that satisfy the condition
+        rows_before = len(note_data_df[:index])
+
+        # Use the minimum of lookback_period and rows_before
+        lookback = min(lookback_period, rows_before)
+
+        # Get the result DataFrame
+        result_df = note_data_df.iloc[index - lookback : index + 1].copy()
+
+        int_period_starts = result_df["interest_period_start"].tolist()[-lookback:] + [
+            pd.Timestamp(next_start)
         ]
+        int_period_ends = result_df["interest_period_end"].tolist()[-lookback:] + [
+            pd.Timestamp(next_end)
+        ]
+        int_rates = result_df["interest_rate"].tolist()[-lookback:]
+        note_principals = result_df["principal_outstanding"].tolist()[-lookback:]
+        interest_paid = result_df["interest_paid"].tolist()[-lookback:]
+        interest_payment_dates = result_df["interest_payment_date"].tolist()[
+            -lookback:
+        ] + [pd.Timestamp(next_end)]
+        related_fund_cap_accounts = note_principals
 
+        # Other variables
+        target_int_rates, spread_to_benchmarks = (
+            get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period)
+        )  # historical returns
+        # spread_to_benchmarks =  spread_to_benchmarks[-lookback:]
         oc_rates = get_oc_rates_coupon_table(int_period_ends)
+        """
+        int_period_starts
+        int_period_ends
+        int_rate
+        spread_to_benchmarks
+        note_principal_val
+        interest_paid_val
+        interest_payment_rates
+        related_fund_cap_account_val
+        oc_rate_val
+        """
 
         # Reformatting
         benchmark_name = benchmark_shortern[benchmark_to_use[0]]
-        int_rates = [f"{rate * 100:.2f}" for rate in int_rates]
+        int_rates = [
+            f"{rate * 100:.2f}" for rate in int_rates[1:] + [target_int_rates[-1]]
+        ]
         spread_to_benchmarks = [
             f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
         ]
-        note_principals = [f"{principal:,.0f}" for principal in note_principals]
-        interest_paid = [f"{interest:,.2f}" for interest in interest_paid[:-1]] + [
-            "n/a"
+        # This is special because we're assuming the note principal as of the report date is the same as of the previous period. This is due to a delay in updating the principal
+        # TODO: account for case when the note principal is actually updated in the database
+        note_principals = [
+            f"{principal:,.0f}"
+            for principal in note_principals[1:] + [note_principals[-1]]
         ]
+        interest_paid = [f"{interest:,.2f}" for interest in interest_paid[1:]] + ["n/a"]
         int_period_starts = [
-            datetime.strptime(date, "%Y-%m-%d").strftime("%m/%d/%y")
-            for date in int_period_starts
+            date.strftime("%m/%d/%y") for date in int_period_starts[1:]
         ]
-        int_period_ends = [
-            datetime.strptime(date, "%Y-%m-%d").strftime("%m/%d/%y")
-            for date in int_period_ends
+        int_period_ends = [date.strftime("%m/%d/%y") for date in int_period_ends[1:]]
+        interest_payment_dates = [
+            date.strftime("%m/%d/%y") for date in interest_payment_dates[1:]
         ]
         oc_rates = [
             f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
-            for rate in oc_rates
+            for rate in oc_rates[1:]
         ]
-        interest_payment_dates = int_period_ends
-        related_fund_cap_accounts = note_principals
+        # interest_payment_dates = int_period_ends
+        # related_fund_cap_accounts = note_principals
 
         latex_text = ""
 
         for i in range(len(int_period_starts)):
-            int_rate = int_rates[i] + "\\%" if int_rates[i] != "n/a" else "n/a"
+            int_rate = str(int_rates[i]) + "\\%" if int_rates[i] != "n/a" else "n/a"
             note_principal_val = (
-                "\\$" + note_principals[i] if note_principals[i] != "n/a" else "n/a"
+                "\\$" + str(note_principals[i])
+                if note_principals[i] != "n/a"
+                else "n/a"
             )
             interest_paid_val = (
-                "\\$" + interest_paid[i] if interest_paid[i] != "n/a" else "n/a"
+                "\\$" + str(interest_paid[i]) if interest_paid[i] != "n/a" else "n/a"
             )
             related_fund_cap_account_val = (
-                "\\$" + related_fund_cap_accounts[i]
+                "\\$" + str(related_fund_cap_accounts[i])
                 if related_fund_cap_accounts[i] != "n/a"
                 else "n/a"
             )
