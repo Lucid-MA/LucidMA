@@ -41,17 +41,17 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
-    "PRIME-M00",
-    "PRIME-MIG",
-    "PRIME-Q10",
-    "PRIME-QX0",
+    # "PRIME-C10",
+    # "PRIME-M00",
+    # "PRIME-MIG",
+    # "PRIME-Q10",
+    # "PRIME-QX0",
     "74166WAE4",  # Prime Note QX-1
     "74166WAM6",  # Prime Note Q1
-    "74166WAK0",  # Prime Note M-2
-    "74166WAN4",  # Prime Note MIG
-    "90366JAG2",  # USG Note M-8
-    "90366JAH0",  # USG Note M-9
+    # "74166WAK0",  # Prime Note M-2
+    # "74166WAN4",  # Prime Note MIG
+    # "90366JAG2",  # USG Note M-8
+    # "90366JAH0",  # USG Note M-9
     "USGFD-M00",
 ]
 
@@ -1125,17 +1125,6 @@ for reporting_series_id in reporting_series:
         )  # historical returns
         # spread_to_benchmarks =  spread_to_benchmarks[-lookback:]
         oc_rates = get_oc_rates_coupon_table(int_period_ends)
-        """
-        int_period_starts
-        int_period_ends
-        int_rate
-        spread_to_benchmarks
-        note_principal_val
-        interest_paid_val
-        interest_payment_rates
-        related_fund_cap_account_val
-        oc_rate_val
-        """
 
         # Reformatting
         benchmark_name = benchmark_shortern[benchmark_to_use[0]]
@@ -1163,12 +1152,34 @@ for reporting_series_id in reporting_series:
             f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
             for rate in oc_rates[1:]
         ]
-        # interest_payment_dates = int_period_ends
-        # related_fund_cap_accounts = note_principals
 
+        # TODO: REFRACTOR THIS. THIS IS SO BAD BECAUSE THE LENGTH OF THE LIST ARE NOT EQUAL AND WE ONLY WANT TO GET THE LAST ELEMENTS OF EACH LIST
         latex_text = ""
+        max_length = min(
+            len(int_period_starts),
+            len(note_principals),
+            len(int_rates),
+            len(interest_payment_dates),
+            len(spread_to_benchmarks),
+            len(note_principals),
+            len(interest_paid),
+        )
 
-        for i in range(len(int_period_starts)):
+        # Get the indices for the last coupon_table_nrow items
+        int_period_starts = int_period_starts[-max_length:]
+        int_period_ends = int_period_ends[-max_length:]
+        note_principals = note_principals[-max_length:]
+        int_rates = int_rates[-max_length:]
+        interest_payment_dates = interest_payment_dates[-max_length:]
+        spread_to_benchmarks = spread_to_benchmarks[-max_length:]
+        note_principals = note_principals[-max_length:]
+        interest_paid = interest_paid[-max_length:]
+        oc_rates = oc_rates[-max_length:]
+        related_fund_cap_accounts = related_fund_cap_accounts[-max_length:]
+
+        indices = range(0, len(int_period_starts))
+
+        for i in indices:
             int_rate = str(int_rates[i]) + "\\%" if int_rates[i] != "n/a" else "n/a"
             note_principal_val = (
                 "\\$" + str(note_principals[i])
