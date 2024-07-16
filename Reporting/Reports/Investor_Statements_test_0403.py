@@ -41,17 +41,17 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
-    # "PRIME-M00",
-    # "PRIME-MIG",
-    # "PRIME-Q10",
-    # "PRIME-QX0",
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    "PRIME-Q10",
+    "PRIME-QX0",
     "74166WAE4",  # Prime Note QX-1
     "74166WAM6",  # Prime Note Q1
-    # "74166WAK0",  # Prime Note M-2
-    # "74166WAN4",  # Prime Note MIG
-    # "90366JAG2",  # USG Note M-8
-    # "90366JAH0",  # USG Note M-9
+    "74166WAK0",  # Prime Note M-2
+    "74166WAN4",  # Prime Note MIG
+    "90366JAG2",  # USG Note M-8
+    "90366JAH0",  # USG Note M-9
     "USGFD-M00",
 ]
 
@@ -1067,21 +1067,6 @@ for reporting_series_id in reporting_series:
     def get_coupon_plot(reporting_series_id, reporting_date):
         global next_start, next_end
 
-        # note_principals = [note_principal[reporting_series_id]] * min_length
-        #
-        # interest_paid = [
-        #     ret
-        #     / daycount
-        #     * (
-        #         datetime.strptime(end, "%Y-%m-%d")
-        #         - datetime.strptime(start, "%Y-%m-%d")
-        #     ).days
-        #     * principal
-        #     for ret, end, start, principal in zip(
-        #         int_rates, int_period_ends, int_period_starts, note_principals
-        #     )
-        # ]
-
         ### GET NOTES DATA
         note_data_df = (
             df_notes_principal[df_notes_principal["series_id"] == reporting_series_id]
@@ -1100,6 +1085,7 @@ for reporting_series_id in reporting_series:
         rows_before = len(note_data_df[:index])
 
         # Use the minimum of lookback_period and rows_before
+        # TODO: Refractor this lookback period logic to combine with the max_length below
         lookback = min(lookback_period, rows_before)
 
         # Get the result DataFrame
@@ -1117,7 +1103,6 @@ for reporting_series_id in reporting_series:
         interest_payment_dates = result_df["interest_payment_date"].tolist()[
             -lookback:
         ] + [pd.Timestamp(next_end)]
-        related_fund_cap_accounts = note_principals
 
         # Other variables
         target_int_rates, spread_to_benchmarks = (
@@ -1128,30 +1113,26 @@ for reporting_series_id in reporting_series:
 
         # Reformatting
         benchmark_name = benchmark_shortern[benchmark_to_use[0]]
-        int_rates = [
-            f"{rate * 100:.2f}" for rate in int_rates[1:] + [target_int_rates[-1]]
-        ]
+        int_rates = [f"{rate * 100:.2f}" for rate in int_rates + [target_int_rates[-1]]]
         spread_to_benchmarks = [
             f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
         ]
         # This is special because we're assuming the note principal as of the report date is the same as of the previous period. This is due to a delay in updating the principal
         # TODO: account for case when the note principal is actually updated in the database
         note_principals = [
-            f"{principal:,.0f}"
-            for principal in note_principals[1:] + [note_principals[-1]]
+            f"{principal:,.0f}" for principal in note_principals + [note_principals[-1]]
         ]
-        interest_paid = [f"{interest:,.2f}" for interest in interest_paid[1:]] + ["n/a"]
-        int_period_starts = [
-            date.strftime("%m/%d/%y") for date in int_period_starts[1:]
-        ]
-        int_period_ends = [date.strftime("%m/%d/%y") for date in int_period_ends[1:]]
+        interest_paid = [f"{interest:,.2f}" for interest in interest_paid] + ["n/a"]
+        int_period_starts = [date.strftime("%m/%d/%y") for date in int_period_starts]
+        int_period_ends = [date.strftime("%m/%d/%y") for date in int_period_ends]
         interest_payment_dates = [
-            date.strftime("%m/%d/%y") for date in interest_payment_dates[1:]
+            date.strftime("%m/%d/%y") for date in interest_payment_dates
         ]
         oc_rates = [
             f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
-            for rate in oc_rates[1:]
+            for rate in oc_rates
         ]
+        related_fund_cap_accounts = note_principals
 
         # TODO: REFRACTOR THIS. THIS IS SO BAD BECAUSE THE LENGTH OF THE LIST ARE NOT EQUAL AND WE ONLY WANT TO GET THE LAST ELEMENTS OF EACH LIST
         latex_text = ""
@@ -1163,6 +1144,7 @@ for reporting_series_id in reporting_series:
             len(spread_to_benchmarks),
             len(note_principals),
             len(interest_paid),
+            len(related_fund_cap_accounts),
         )
 
         # Get the indices for the last coupon_table_nrow items
