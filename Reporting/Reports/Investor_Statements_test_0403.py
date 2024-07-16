@@ -46,16 +46,15 @@ reporting_series = [
     # "PRIME-C10",
     # "PRIME-M00",
     # "PRIME-MIG",
-    "PRIME-Q10",
-    "PRIME-QX0",
-    # # "74166WAE4",  # Prime Note QX-1
+    # "PRIME-Q10",
+    # "PRIME-QX0",
+    "74166WAE4",  # Prime Note QX-1
+    "74166WAM6",  # Prime Note Q1
     # "74166WAK0",  # Prime Note M-2
-    # # "74166WAM6",  # Prime Note Q1
     # "74166WAN4",  # Prime Note MIG
     # "90366JAG2",  # USG Note M-8
     # "90366JAH0",  # USG Note M-9
     # "USGFD-M00",
-    # "PRIME-Q36",
 ]
 
 reporting_type_dict = {
@@ -189,7 +188,7 @@ temp_prime_ids_dict = {
     "74166WAK0": "PRIME-M00",
     "74166WAN4": "PRIME-MIG",
     "74166WAM6": "PRIME-Q10",
-    "74166WAE4": "PRIME-QX",
+    "74166WAE4": "PRIME-QX0",
 }
 
 # TODO: Update fund attributes with this data
