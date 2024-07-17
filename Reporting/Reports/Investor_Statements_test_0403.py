@@ -41,18 +41,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
-    "PRIME-M00",
-    "PRIME-MIG",
+    # "PRIME-C10",
+    # "PRIME-M00",
+    # "PRIME-MIG",
     "PRIME-Q10",
     "PRIME-QX0",
     "74166WAE4",  # Prime Note QX-1
     "74166WAM6",  # Prime Note Q1
-    "74166WAK0",  # Prime Note M-2
-    "74166WAN4",  # Prime Note MIG
-    "90366JAG2",  # USG Note M-8
-    "90366JAH0",  # USG Note M-9
-    "USGFD-M00",
+    # "74166WAK0",  # Prime Note M-2
+    # "74166WAN4",  # Prime Note MIG
+    # "90366JAG2",  # USG Note M-8
+    # "90366JAH0",  # USG Note M-9
+    # "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -107,7 +107,7 @@ report_names_dict = {
 
 # TODO: replace this with data from data from helix
 fund_size_dict = {
-    "PRIME": 3149816720.51731,
+    "PRIME": 3179816720.51731,
     "USG": 123255192.977195,
 }
 # TODO: replace this with data from data from helix
@@ -115,12 +115,11 @@ series_size_dict = {
     "PRIME-C10": 117000000,
     "PRIME-M00": 756000000,
     "PRIME-MIG": 744000000,
-    "PRIME-Q10": 714000000,
-    # "PRIME-Q36",
-    "PRIME-QX0": 255000000,
-    "74166WAE4": 714000000,  # Prime Note QX
+    "PRIME-Q10": 646900000,
+    "PRIME-QX0": 211300000,
+    "74166WAE4": 211300000,  # Prime Note QX
     "74166WAK0": 756000000,  # Prime Note M-2
-    "74166WAM6": 714000000,  # Prime Note Q1
+    "74166WAM6": 646900000,  # Prime Note Q1
     "74166WAN4": 744000000,  # Prime Note MIG
     "90366JAG2": 123850000,  # USG Note M-8
     "90366JAH0": 123850000,  # USG Note M-9
@@ -131,7 +130,7 @@ series_size_dict = {
 note_principal = {
     "74166WAE4": 38500000,  # Prime Note QX
     "74166WAK0": 325250000,  # Prime Note M-2
-    "74166WAM6": 451750000,  # Prime Note Q1
+    "74166WAM6": 391800000,  # Prime Note Q1
     "74166WAN4": 389750000,  # Prime Note MIG
     "90366JAG2": 20700000,  # USG Note M-8
     "90366JAH0": 50000000,  # USG Note M-9
@@ -221,7 +220,7 @@ sofr_3m_data = [0.0530, 0.0539, 0.0535]
 #########################################
 
 # TODO: replace this with data from data from helix
-lucid_aum = 4765143799.49
+lucid_aum = 4785143799.49
 # quarterly series: (6,12) but not important
 #########################################
 
@@ -230,7 +229,7 @@ lucid_aum = 4765143799.49
 ##############################################################################
 
 # current_date = datetime.now()
-current_date = datetime.strptime("2024-07-11", "%Y-%m-%d")
+current_date = datetime.strptime("2024-04-19", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:

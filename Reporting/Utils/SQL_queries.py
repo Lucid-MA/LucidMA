@@ -639,3 +639,265 @@ WHERE CAST(tradepieces.ENTERDATETIMEID AS DATE) = @valdate
 AND CAST(tradepieces.STARTDATE AS DATE) < @valdate
 ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC, [Start Date]
 """
+
+
+AUM_query = """
+DECLARE @CustomDate DATE = '2024-07-15';
+DECLARE @EurFxRate FLOAT = 1.0894; -- Replace 1.0894 with the actual EUR FX rate on the CustomDate
+DECLARE @SumNAVLastRoll_USD FLOAT;
+
+WITH TradeData AS (
+    SELECT
+        Tradepieces.TRADEPIECE AS "Trade ID",
+        Tradepieces.LEDGERNAME AS "Ledger",
+        TRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
+        Tradepieces.TRADEDATE AS "Trade Date",
+        Tradepieces.STARTDATE AS "Start Date",
+        CASE
+            WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+            ELSE Tradepieces.CLOSEDATE
+        END AS "End Date",
+        - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION AS "Money",
+        CURRENCYS.CURRENCYCODE AS "Currency",
+        TRIM(Tradepieces.CONTRANAME) AS "Counterparty",
+        Tradepieces.REPORATE AS "Orig. Rate",
+        TRADEPIECECALCDATAS.todayrate AS "Today Rate",
+        TRADEPIECECALCDATAS.REPOINTEREST_ONEDAY AS "Daily Int.",
+        TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Accrued Int.",
+        TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED AS "Unrealized Int.",
+        TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Total Interest Due",
+        (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "Crnt Money Due",
+        (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED) + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "End Money",
+        TRIM(Tradepieces.ISIN) AS "BondID",
+        - Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Par/Quantity",
+        Tradepiececalcdatas.CURRENTMBSFACTOR AS "Issue Factor",
+        - Tradepiececalcdatas.CURRENTMBSFACTOR * Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Current Face",
+        TRADEPIECECALCDATAS.CURRENTPRICE AS "Current Price",
+        - TRADEPIECECALCDATAS.CURRENTMARKETVALUE * TRADETYPES.PAR_DIRECTION AS "Mkt Value",
+        Tradepieces.PRICE AS "Repo Price",
+        Tradepieces.PRICEFULL AS "Trade Price",
+        Tradepieces.HAIRCUT AS "HairCut",
+        CASE
+            WHEN Tradepieces.HAIRCUTMETHOD = 0 THEN 'No Haircut'
+            WHEN Tradepieces.HAIRCUTMETHOD = 1 THEN '% Proceeds'
+            WHEN Tradepieces.HAIRCUTMETHOD = 2 THEN 'Adj By %'
+            WHEN Tradepieces.HAIRCUTMETHOD = 3 THEN 'Adj By Points'
+            ELSE Tradepieces.X_SPECIALCODE1
+        END AS "Haircut Method",
+        RTRIM(CASE
+            WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+            ELSE ISSUESUBTYPES2.DESCRIPTION
+        END) AS "Product Type",
+        RTRIM(CASE
+            WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD'
+            ELSE ISSUESUBTYPES1.DESCRIPTION
+        END) AS "Product",
+        Tradepieces.USERNAME AS "User",
+        RTRIM(ISNULL(Tradepieces.DEPOSITORY, '')) AS "Depository",
+        RTRIM(STATUSDETAILS.DESCRIPTION) AS "Status Detail",
+        TRIM(Tradepieces.ACCT_NUMBER) AS "CP Short Name",
+        RTRIM(STATUSMAINS.DESCRIPTION) AS "Status Main",
+        RTRIM(CASE
+            WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'Cash'
+            WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'Cash'
+            ELSE ISSUESUBTYPES3.DESCRIPTION
+        END) AS "Product Sub",
+        RTRIM(CASE
+            WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+            WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'EUR Cash'
+            ELSE ISNULL(ISSUES.DESCRIPTION_1, '')
+        END) AS "Description",
+        TRADEPIECEXREFS.FRONTOFFICEID AS "Facility",
+        Tradepieces.COMMENTS AS "Comments",
+        Tradecommissionpieceinfo.commissionvalue AS "Commission",
+        ISNULL(Tradepieces.STRATEGY, '') AS "Fund Entity",
+        CASE
+            WHEN Tradepieces.STARTDATE > @CustomDate OR Tradepieces.ENDDATE <= @CustomDate THEN 0
+            ELSE 1
+        END AS "IsVisible",
+        CASE
+            WHEN TRIM(TRADETYPES.DESCRIPTION) = 'Reverse' THEN - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION *
+                CASE
+                    WHEN Tradepieces.STARTDATE > @CustomDate OR Tradepieces.ENDDATE <= @CustomDate THEN 0
+                    ELSE 1
+                END
+            ELSE 0
+        END AS "NAVLastRoll_LC",
+        CASE
+            WHEN TRIM(TRADETYPES.DESCRIPTION) = 'Reverse' THEN - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION *
+                CASE
+                    WHEN Tradepieces.STARTDATE > @CustomDate OR Tradepieces.ENDDATE <= @CustomDate THEN 0
+                    ELSE 1
+                END *
+                CASE
+                    WHEN CURRENCYS.CURRENCYCODE = 'EUR' THEN @EurFxRate
+                    ELSE 1
+                END
+            ELSE 0
+        END AS "NAVLastRoll_USD"
+    FROM
+        tradepieces
+        INNER JOIN TRADEPIECEXREFS ON TRADEPIECEXREFS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+        INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+        INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
+        INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE = TRADEPIECES.SHELLTRADETYPE
+        INNER JOIN ISSUES ON ISSUES.CUSIP = TRADEPIECES.CUSIP
+        INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY = TRADEPIECES.CURRENCY_PAR
+        INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL = TRADEPIECES.STATUSDETAIL
+        INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN = TRADEPIECES.STATUSMAIN
+        INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY = TRADEPIECES.ISSUECATEGORY
+        INNER JOIN ISSUESUBTYPES1 ON ISSUESUBTYPES1.ISSUESUBTYPE1 = ISSUECATEGORIES.ISSUESUBTYPE1
+        INNER JOIN ISSUESUBTYPES2 ON ISSUESUBTYPES2.ISSUESUBTYPE2 = ISSUECATEGORIES.ISSUESUBTYPE2
+        INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3 = ISSUECATEGORIES.ISSUESUBTYPE3
+    WHERE
+        tradepieces.company = 46
+        AND tradepieces.statusmain <> 6
+        AND tradepieces.STARTDATE > DATEADD(DAY, -180, @CustomDate)
+        AND (TRIM(Tradepieces.CONTRANAME) = 'NATWEST MARKETS FACILITIES USD' OR TRIM(Tradepieces.CONTRANAME) = 'NATWEST MARKETS FACILITIES EUR')
+        AND TRIM(TRADETYPES.DESCRIPTION) = 'Reverse'
+),
+CTE AS (
+    SELECT
+        Tradepieces.TRADEPIECE AS "Trade ID",
+        Tradepieces.LEDGERNAME AS "Ledger",
+        TRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
+        Tradepieces.TRADEDATE AS "Trade Date",
+        Tradepieces.STARTDATE AS "Start Date",
+        CASE
+            WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+            ELSE Tradepieces.CLOSEDATE
+        END AS "End Date",
+        - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION AS "Money",
+        CURRENCYS.CURRENCYCODE AS "Currency",
+        TRIM(Tradepieces.CONTRANAME) AS "Counterparty",
+        Tradepieces.REPORATE AS "Orig. Rate",
+        TRADEPIECECALCDATAS.todayrate AS "Today Rate",
+        TRADEPIECECALCDATAS.REPOINTEREST_ONEDAY AS "Daily Int.",
+        TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Accrued Int.",
+        TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED AS "Unrealized Int.",
+        TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Total Interest Due",
+        (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "Crnt Money Due",
+        (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED) + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "End Money",
+        TRIM(Tradepieces.ISIN) AS "BondID",
+        - Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Par/Quantity",
+        Tradepiececalcdatas.CURRENTMBSFACTOR AS "Issue Factor",
+        - Tradepiececalcdatas.CURRENTMBSFACTOR * Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Current Face",
+        TRADEPIECECALCDATAS.CURRENTPRICE AS "Current Price",
+        - TRADEPIECECALCDATAS.CURRENTMARKETVALUE * TRADETYPES.PAR_DIRECTION AS "Mkt Value",
+        Tradepieces.PRICE AS "Repo Price",
+        Tradepieces.PRICEFULL AS "Trade Price",
+        Tradepieces.HAIRCUT AS "HairCut",
+        CASE
+            WHEN Tradepieces.HAIRCUTMETHOD = 0 THEN 'No Haircut'
+            WHEN Tradepieces.HAIRCUTMETHOD = 1 THEN '% Proceeds'
+            WHEN Tradepieces.HAIRCUTMETHOD = 2 THEN 'Adj By %'
+            WHEN Tradepieces.HAIRCUTMETHOD = 3 THEN 'Adj By Points'
+            ELSE Tradepieces.X_SPECIALCODE1
+        END AS "Haircut Method",
+        RTRIM(CASE
+            WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+            WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'EUR Cash'
+            ELSE ISNULL(ISSUES.DESCRIPTION_1, '')
+        END) AS "Description",
+        TRADEPIECEXREFS.FRONTOFFICEID AS "Facility",
+        Tradepieces.COMMENTS AS "Comments",
+        Tradecommissionpieceinfo.commissionvalue AS "Commission",
+        ISNULL(Tradepieces.STRATEGY, '') AS "Fund Entity",
+        CASE
+            WHEN Tradepieces.STARTDATE > @CustomDate OR (CASE
+                WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+                ELSE Tradepieces.CLOSEDATE
+            END) <= @CustomDate THEN 0
+            ELSE 1
+        END AS "IsVisibleAsOf",
+        CASE
+            WHEN Tradepieces.STARTDATE > @CustomDate OR (CASE
+                WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+                ELSE Tradepieces.CLOSEDATE
+            END) <= @CustomDate THEN 0
+            ELSE - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION
+        END AS "NAVLastRoll",
+        CASE
+            WHEN Tradepieces.STARTDATE > @CustomDate OR (CASE
+                WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+                ELSE Tradepieces.CLOSEDATE
+            END) <= @CustomDate THEN 0
+            ELSE (DATEDIFF(DAY, Tradepieces.STARTDATE, @CustomDate) * 1.0 /
+            CASE
+                WHEN LEFT(Tradepieces.LEDGERNAME, 3) = 'USG' THEN 365
+                ELSE 360
+            END) * Tradepieces.REPORATE / 100 * (- Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION)
+        END AS "AccruedAsOf",
+        CASE
+            WHEN Tradepieces.STARTDATE > @CustomDate OR (CASE
+                WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+                ELSE Tradepieces.CLOSEDATE
+            END) <= @CustomDate THEN 0
+            ELSE (DATEDIFF(DAY, Tradepieces.STARTDATE, @CustomDate) * 1.0 /
+            CASE
+                WHEN LEFT(Tradepieces.LEDGERNAME, 3) = 'USG' THEN 365
+                ELSE 360
+            END) * Tradepieces.REPORATE / 100 * (- Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION) +
+            (- Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION)
+        END AS "NAVAsOf"
+    FROM
+        tradepieces
+        INNER JOIN TRADEPIECEXREFS ON TRADEPIECEXREFS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+        INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+        INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
+        INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE = TRADEPIECES.SHELLTRADETYPE
+        INNER JOIN ISSUES ON ISSUES.CUSIP = TRADEPIECES.CUSIP
+        INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY = TRADEPIECES.CURRENCY_PAR
+        INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL = TRADEPIECES.STATUSDETAIL
+        INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN = TRADEPIECES.STATUSMAIN
+        INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY = TRADEPIECES.ISSUECATEGORY
+        INNER JOIN ISSUESUBTYPES1 ON ISSUESUBTYPES1.ISSUESUBTYPE1 = ISSUECATEGORIES.ISSUESUBTYPE1
+        INNER JOIN ISSUESUBTYPES2 ON ISSUESUBTYPES2.ISSUESUBTYPE2 = ISSUECATEGORIES.ISSUESUBTYPE2
+        INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3 = ISSUECATEGORIES.ISSUESUBTYPE3
+    WHERE
+        tradepieces.company = 49
+        AND tradepieces.statusmain <> 6
+        AND tradepieces.STARTDATE > DATEADD(DAY, -180, @CustomDate)
+),
+SummaryData AS (
+    SELECT
+        TRIM(CTE."BondID") AS "BondID",
+        CASE
+            WHEN TRIM(CTE."BondID") = 'PRIME-M000' THEN 'Series M'
+            WHEN TRIM(CTE."BondID") = 'PRIME-MIG0' THEN 'Series MIG'
+            WHEN TRIM(CTE."BondID") = 'PRIME-Q100' THEN 'Series Q1'
+            WHEN TRIM(CTE."BondID") = 'PRIME-QX00' THEN 'Series QX'
+            WHEN TRIM(CTE."BondID") = 'PRIME-Q364' THEN 'Series Q364'
+            WHEN TRIM(CTE."BondID") = 'PRIME-2YIG' THEN 'Series 2YIG'
+            WHEN TRIM(CTE."BondID") IN ('PRIME-A100', 'PRIME-C100', 'USGFD-M000') THEN 'Series C1'
+        END AS "Series",
+        LEFT(TRIM(CTE."BondID"), 9) AS "Series ID",
+        ABS(SUM(CTE."NAVAsOf")) AS "Outstanding"
+    FROM
+        CTE
+    WHERE
+        TRIM(CTE."BondID") IN ('PRIME-M000', 'PRIME-MIG0', 'PRIME-Q100', 'PRIME-QX00', 'PRIME-Q364', 'PRIME-2YIG', 'PRIME-A100', 'PRIME-C100', 'USGFD-M000')
+    GROUP BY
+        TRIM(CTE."BondID")
+),
+OtherMandatesData AS (
+SELECT SUM(NAVLastRoll_USD) AS SumNAVLastRoll_USD
+FROM TradeData
+)
+SELECT
+"BondID",
+"Series",
+"Series ID",
+"Outstanding"
+FROM
+SummaryData
+UNION ALL
+SELECT
+'MMT-000000' AS "BondID",
+'Other Mandates' AS "Series",
+LEFT('MMT-000000', 9) AS "Series ID",
+COALESCE(OtherMandatesData.SumNAVLastRoll_USD, 0) AS "Outstanding"
+FROM
+OtherMandatesData;
+
+"""
