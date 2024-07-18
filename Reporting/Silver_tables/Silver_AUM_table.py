@@ -12,5 +12,7 @@ engine = get_database_engine("sql_server_1")
 
 CustomDate = datetime.strptime(report_date, "%Y-%m-%d")
 
+# df_test = execute_sql_query(AUM_query, "sql_server_1", params=(CustomDate,))
 df_test = execute_sql_query(AUM_query, "sql_server_1", params=(CustomDate,))
+
 print(df_test.head(10))

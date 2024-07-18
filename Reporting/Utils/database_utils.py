@@ -3,9 +3,7 @@ import platform
 from contextlib import contextmanager
 
 import pandas as pd
-import pyodbc
 from sqlalchemy import create_engine
-import pymssql
 
 # Configuration
 DB_CONFIG = {
@@ -24,7 +22,7 @@ DB_CONFIG = {
         "trusted_connection": "yes",
         "user_mac": "Lucid\\tony.hoang",
         "user_windows": "tony.hoang",
-        "password": os.getenv("MY_PASSWORD")
+        "password": os.getenv("MY_PASSWORD"),
     },
     "sql_server_2": {
         "driver": "ODBC+Driver+17+for+SQL+Server",
@@ -34,8 +32,8 @@ DB_CONFIG = {
         "trusted_connection": "yes",
         "user_mac": "Lucid\\tony.hoang",
         "user_windows": "tony.hoang",
-        "password": os.getenv("MY_PASSWORD")
-    }
+        "password": os.getenv("MY_PASSWORD"),
+    },
 }
 
 
@@ -45,11 +43,11 @@ def get_database_engine(db_type):
         return create_engine(database_url)
 
     elif db_type.startswith("sql_server"):
-        if platform.system() == 'Darwin':  # macOS
+        if platform.system() == "Darwin":  # macOS
             conn_str = f"mssql+pymssql://{DB_CONFIG[db_type]['user_mac']}:{DB_CONFIG[db_type]['password']}@{DB_CONFIG[db_type]['server_mac']}/{DB_CONFIG[db_type]['database']}"
             return create_engine(conn_str)
 
-        elif platform.system() == 'Windows':
+        elif platform.system() == "Windows":
             conn_str = (
                 f"mssql+pyodbc://{DB_CONFIG[db_type]['user_windows']}:{DB_CONFIG[db_type]['password']}@"
                 f"{DB_CONFIG[db_type]['server_windows']}/{DB_CONFIG[db_type]['database']}?"
@@ -58,8 +56,7 @@ def get_database_engine(db_type):
             return create_engine(conn_str)
 
         else:
-            raise Exception('Unsupported platform')
-
+            raise Exception("Unsupported platform")
 
 
 def read_table_from_db(table_name, db_type):
@@ -71,12 +68,28 @@ def read_table_from_db(table_name, db_type):
         return pd.read_sql_table(table_name, con=engine)
 
 
+# def execute_sql_query(sql_query, db_type, params=None):
+#     engine = get_database_engine(db_type)
+#     if db_type.startswith("sql_server"):
+#         return pd.read_sql(sql_query, con=engine, params=params)
+#     elif db_type == "postgres":
+#         return pd.read_sql(sql_query, con=engine, params=params)
+
+
 def execute_sql_query(sql_query, db_type, params=None):
     engine = get_database_engine(db_type)
+
+    if platform.system() == "Windows":
+        date_placeholder = "?"
+    else:  # Assuming Mac or other Unix-based systems
+        date_placeholder = "%s"
+
+    sql_query = sql_query.format(date_placeholder=date_placeholder)
+
     if db_type.startswith("sql_server"):
-        return pd.read_sql(sql_query, con=engine, params=params)
+        return pd.read_sql_query(sql_query, con=engine, params=params)
     elif db_type == "postgres":
-        return pd.read_sql(sql_query, con=engine, params=params)
+        return pd.read_sql_query(sql_query, con=engine, params=params)
 
 
 @contextmanager
