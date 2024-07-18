@@ -642,10 +642,10 @@ ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contra
 
 
 AUM_query = """
-DECLARE @CustomDate DATE 
-SET @CustomDate = ?
-DECLARE @EurFxRate FLOAT = 1.0894
-DECLARE @SumNAVLastRoll_USD FLOAT
+DECLARE @CustomDate DATE;
+SET @CustomDate = ?;
+DECLARE @EurFxRate FLOAT = 1.0894;
+DECLARE @SumNAVLastRoll_USD FLOAT;
 
 WITH TradeData AS (
     SELECT
@@ -900,5 +900,4 @@ LEFT('MMT-000000', 9) AS "Series ID",
 COALESCE(OtherMandatesData.SumNAVLastRoll_USD, 0) AS "Outstanding"
 FROM
 OtherMandatesData;
-
 """
