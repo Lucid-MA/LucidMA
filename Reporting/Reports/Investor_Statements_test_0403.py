@@ -219,8 +219,7 @@ cp_3m_data = [0.0533, 0.0545, 0.0536]
 sofr_3m_data = [0.0530, 0.0539, 0.0535]
 #########################################
 
-# TODO: replace this with data from data from helix
-lucid_aum = 4785143799.49
+# lucid_aum = 4785143799.49
 # quarterly series: (6,12) but not important
 #########################################
 
@@ -229,7 +228,7 @@ lucid_aum = 4785143799.49
 ##############################################################################
 
 # current_date = datetime.now()
-current_date = datetime.strptime("2024-04-19", "%Y-%m-%d")
+current_date = datetime.strptime("2024-06-14", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:
@@ -260,6 +259,7 @@ for reporting_series_id in reporting_series:
     benchmark_prime_table_name = "bronze_benchmark_prime"
     benchmark_prime_quarterly_table_name = "bronze_benchmark_prime_quarterly"
     note_principal_table_name = "bronze_notes_principal"
+    aum_table_name = "bronze_lucid_aum"
 
     # Connect to the PostgreSQL database
     engine = get_database_engine("postgres")
@@ -294,7 +294,9 @@ for reporting_series_id in reporting_series:
     )
 
     df_notes_principal = read_table_from_db(note_principal_table_name, db_type)
-    ## REPORTING VARIABLE ##
+
+    df_aum = read_table_from_db(aum_table_name, db_type)
+    ############################################## REPORTING VARIABLE ##################################################
 
     # GENERAL VARIABLE
 
@@ -952,6 +954,8 @@ for reporting_series_id in reporting_series:
         aloc_tbills,
     ) = calculate_oc_metrics(df_oc_rates)
 
+    ############################## AUM, PRINCIPAL  #####################################
+
     def get_fund_size(fund_name, report_date):
         # use df_daily_nav
         return wordify(fund_size_dict[fund_name])
@@ -961,6 +965,31 @@ for reporting_series_id in reporting_series:
         return wordify(series_size_dict[reporting_series_id])
 
     def get_aum(report_date):
+        try:
+            # AUM date should be 2 business days before the reporting date, or as of the date before the last date of current reporting period
+            aum_date = (
+                pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)
+            ).strftime("%Y-%m-%d")
+            lucid_aum = df_aum[
+                (df_aum["series_id"] == "LUCID") & (df_aum["report_date"] == aum_date)
+            ]["outstanding"].iloc[0]
+        except Exception as e:
+            print("EXCEPTION: Problem getting lucid AUM, temporary set to 0")
+            lucid_aum = 0
+        return wordify_aum(lucid_aum)
+
+    def get_notes_principal(reporting_series_id, report_date):
+        try:
+            # AUM date should be 2 business days before the reporting date, or as of the date before the last date of current reporting period
+            aum_date = (
+                pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)
+            ).strftime("%Y-%m-%d")
+            lucid_aum = df_aum[
+                (df_aum["series_id"] == "LUCID") & (df_aum["report_date"] == aum_date)
+            ]["outstanding"].iloc[0]
+        except Exception as e:
+            print("EXCEPTION: Problem getting lucid AUM, temporary set to 0")
+            lucid_aum = 0
         return wordify_aum(lucid_aum)
 
     def get_fund_inception_date(fund_name):
@@ -970,6 +999,7 @@ for reporting_series_id in reporting_series:
             inception_date = pd.to_datetime("07-20-2018").strftime("%B %d, %Y")
         return inception_date
 
+    ############################## COUPON PLOT #####################################
     def get_reporting_dates_coupon_table(reporting_date, lookback_period):
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
         roll_schedule = df_roll_schedule.sort_values(by="start_date").reset_index()
@@ -1153,7 +1183,6 @@ for reporting_series_id in reporting_series:
         int_rates = int_rates[-max_length:]
         interest_payment_dates = interest_payment_dates[-max_length:]
         spread_to_benchmarks = spread_to_benchmarks[-max_length:]
-        note_principals = note_principals[-max_length:]
         interest_paid = interest_paid[-max_length:]
         oc_rates = oc_rates[-max_length:]
         related_fund_cap_accounts = related_fund_cap_accounts[-max_length:]
@@ -1332,7 +1361,7 @@ for reporting_series_id in reporting_series:
                 "series_size": get_series_size(
                     reporting_series_id, report_date
                 ),  # TODO: update database
-                "lucid_aum": wordify_aum(lucid_aum),  # TODO: update database
+                "lucid_aum": wordify_aum(get_aum(report_date)),  # TODO: update database
                 "rating": df_attributes["rating"].iloc[0],  # done
                 "rating_org": df_attributes["rating_org"].iloc[0],  # done
                 "calc_frequency": "Monthly at par",  # done
@@ -1532,7 +1561,7 @@ for reporting_series_id in reporting_series:
                 "max_return": 3,
                 "fund_size": get_fund_size(fund_name.upper(), report_date),
                 "series_size": get_series_size(reporting_series_id, report_date),
-                "lucid_aum": wordify_aum(lucid_aum),
+                "lucid_aum": wordify_aum(get_aum(report_date)),
                 "fund_inception": get_fund_inception_date(fund_name),
                 "cusip": df_attributes["security_id"].iloc[0],
                 "note_abbrev": series_abbrev,
