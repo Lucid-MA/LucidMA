@@ -642,7 +642,8 @@ ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contra
 
 
 AUM_query = """
-DECLARE @CustomDate DATE = '2024-07-15';
+DECLARE @CustomDate DATE 
+SET @CustomDate = ?
 DECLARE @EurFxRate FLOAT = 1.0894; -- Replace 1.0894 with the actual EUR FX rate on the CustomDate
 DECLARE @SumNAVLastRoll_USD FLOAT;
 
