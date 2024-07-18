@@ -68,15 +68,16 @@ def read_table_from_db(table_name, db_type):
         return pd.read_sql_table(table_name, con=engine)
 
 
-# def execute_sql_query(sql_query, db_type, params=None):
-#     engine = get_database_engine(db_type)
-#     if db_type.startswith("sql_server"):
-#         return pd.read_sql(sql_query, con=engine, params=params)
-#     elif db_type == "postgres":
-#         return pd.read_sql(sql_query, con=engine, params=params)
-
-
+# TODO: deprecate this - use v2 instead
 def execute_sql_query(sql_query, db_type, params=None):
+    engine = get_database_engine(db_type)
+    if db_type.startswith("sql_server"):
+        return pd.read_sql(sql_query, con=engine, params=params)
+    elif db_type == "postgres":
+        return pd.read_sql(sql_query, con=engine, params=params)
+
+
+def execute_sql_query_v2(sql_query, db_type, params=None):
     engine = get_database_engine(db_type)
 
     if platform.system() == "Windows":

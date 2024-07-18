@@ -870,7 +870,9 @@ SummaryData AS (
             WHEN TRIM(CTE."BondID") = 'PRIME-QX00' THEN 'Series QX'
             WHEN TRIM(CTE."BondID") = 'PRIME-Q364' THEN 'Series Q364'
             WHEN TRIM(CTE."BondID") = 'PRIME-2YIG' THEN 'Series 2YIG'
-            WHEN TRIM(CTE."BondID") IN ('PRIME-A100', 'PRIME-C100', 'USGFD-M000') THEN 'Series C1'
+            WHEN TRIM(CTE."BondID") = 'PRIME-A100' THEN 'Series A1'
+            WHEN TRIM(CTE."BondID") = 'PRIME-C100' THEN 'Series C1'
+            WHEN TRIM(CTE."BondID") = 'USGFD-M000' THEN 'USG M'
         END AS "Series",
         LEFT(TRIM(CTE."BondID"), 9) AS "Series ID",
         ABS(SUM(CTE."NAVAsOf")) AS "Outstanding"
