@@ -216,15 +216,15 @@ daycount_dict = {
 quarterly_reporting_ids = ["74166WAE4", "74166WAM6", "PRIME-QX0", "PRIME-Q10"]
 
 ############## MANUAL INPUT##############
-tbill_data = [0.0534, 0.0538, 0.0545]
-tbill_data_prime = [0.0527, 0.0531, 0.0538]
-tbill_data_quarterly = [0.0525, 0.0536, 0.0531]
-crane_data = [0.0511, 0.0513, 0.0522]
+tbill_data = [0.0533, 0.0537, 0.0548]
+tbill_data_prime = [0.0526, 0.0530, 0.0541]
+tbill_data_quarterly = [0.0520, 0.0526, 0.0540]
+crane_data = [0.0511, 0.0513, 0.0524]
 fhlb_data = [0, 0, 0]
-sofr_data = [0.0532, 0.0535, 0.0544]
-cp_data = [0.0532, 0.0534, 0.0543]
-cp_3m_data = [0.0533, 0.0545, 0.0536]
-sofr_3m_data = [0.0530, 0.0539, 0.0535]
+sofr_data = [0.0533, 0.0535, 0.0546]
+cp_data = [0.0531, 0.0534, 0.0544]
+cp_3m_data = [0.0538, 0.0539, 0.0550]
+sofr_3m_data = [0.0533, 0.0535, 0.0545]
 #########################################
 
 # lucid_aum = 4785143799.49
@@ -236,7 +236,7 @@ sofr_3m_data = [0.0530, 0.0539, 0.0535]
 ##############################################################################
 
 # current_date = datetime.now()
-current_date = datetime.strptime("2024-06-14", "%Y-%m-%d")
+current_date = datetime.strptime("2024-07-19", "%Y-%m-%d")
 report_date_formal = current_date.strftime("%B %d, %Y")
 report_date = current_date.strftime("%Y-%m-%d")
 for reporting_series_id in reporting_series:
