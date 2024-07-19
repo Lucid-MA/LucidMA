@@ -78,7 +78,7 @@ def upsert_data(tb_name, df):
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
             print(
-                f"Data for {df['start_date'][:-1]} upserted successfully into {tb_name}."
+                f"Data for {df['start_date'][-1]} upserted successfully into {tb_name}."
             )
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")

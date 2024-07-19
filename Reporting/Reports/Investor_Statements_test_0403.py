@@ -480,7 +480,7 @@ for reporting_series_id in reporting_series:
         series_id, report_date, lag_period, return_data
     ):
 
-        global target_return, next_start, next_end, daycount, prev_end_lag_1
+        global prev_target_return, prev_start, prev_end, daycount, prev_end_lag_1
         """
         Calculate the lagged rate of return for a specific series ID based on historical return data and a target return.
 
@@ -505,11 +505,11 @@ for reporting_series_id in reporting_series:
         filtered_df = df_returns[df_returns["end_date"] <= prev_end_lag_1]
         sorted_df = filtered_df.sort_values("start_date", ascending=False)
 
-        n_start = datetime.strptime(next_start, "%Y-%m-%d")
-        n_end = datetime.strptime(next_end, "%Y-%m-%d")
+        n_start = datetime.strptime(prev_start, "%Y-%m-%d")
+        n_end = datetime.strptime(prev_end, "%Y-%m-%d")
         total_day = (n_end - n_start).days
 
-        cum_return = 1 + target_return * total_day / daycount
+        cum_return = 1 + prev_target_return * total_day / daycount
         for _, row in sorted_df.head(lag_period - 1).iterrows():
             cum_return = cum_return * (1 + float(row["period_return"]))
             total_day += int(row["day_count"])
@@ -804,14 +804,17 @@ for reporting_series_id in reporting_series:
         df_returns_comparison_plot["pool_name"] == pool_name_encoded
     ]
 
+    # # Use target return for latest period number
+    # df_returns_comparison_plot.loc[df_returns_comparison_plot["end_date"] == end_date_val, return_col] = target_return
+
     if fund_name == "USG":
         df_returns_comparison_plot.loc[
-            df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_365"
-        ] = target_return
+            df_returns_comparison_plot["end_date"] == prev_end, "annualized_returns_365"
+        ] = prev_target_return
     else:
         df_returns_comparison_plot.loc[
             df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_360"
-        ] = target_return
+        ] = prev_target_return
 
     def get_returns_comparison_plot_data(
         df, end_date_col, end_date_val, return_col, offset
@@ -1782,7 +1785,7 @@ for reporting_series_id in reporting_series:
                     benchmark_to_use[1],
                     benchmark_to_use[2] if fund_name != "USG" else None,
                     round(
-                        target_return * 100,  # current target return
+                        prev_target_return * 100,  # previous target return
                         2,
                     ),
                     round(r_a[0] * 100, 2) if r_a[0] is not None else 0,
