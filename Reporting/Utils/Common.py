@@ -1,3 +1,4 @@
+import math
 import platform
 import sys
 from datetime import datetime
@@ -70,3 +71,31 @@ def get_trading_days(start_date, end_date):
 
 def current_timestamp():
     return datetime.now().strftime("%B-%d-%y %H:%M:%S")
+
+
+def format_date_mm_dd_yyyy(date: datetime) -> str:
+    return date.strftime("%m/%d/%y")
+
+
+def format_date_YYYY_MM_DD(date: datetime) -> str:
+    return date.strftime("%Y-%m-%d")
+
+
+def to_YYYY_MM_DD(date_str: str) -> datetime:
+    return datetime.strptime(date_str, "%Y-%m-%d")
+
+
+def format_interest_rate(rate: float) -> str:
+    return f"{rate * 100:.2f}" if not math.isnan(rate) else "n/a"
+
+
+def format_interest_rate_one_decimal(rate: float) -> str:
+    return f"{rate * 100:.1f}" if not math.isnan(rate) else "n/a"
+
+
+def format_to_0_decimals(number: float) -> str:
+    return f"{number:,.0f}"
+
+
+def format_to_2_decimals(number: float) -> str:
+    return f"{number:,.2f}"

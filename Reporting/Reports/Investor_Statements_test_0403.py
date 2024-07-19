@@ -1,4 +1,3 @@
-import math
 import subprocess
 from datetime import datetime
 
@@ -38,21 +37,29 @@ from Reports.Utils import (
     secured_by_from,
     series_from_note,
 )
+from Reporting.Utils.Common import (
+    format_date_mm_dd_yyyy,
+    format_interest_rate,
+    format_to_0_decimals,
+    format_to_2_decimals,
+    to_YYYY_MM_DD,
+    format_interest_rate_one_decimal,
+)
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
-    # "PRIME-M00",
-    # "PRIME-MIG",
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
     "PRIME-Q10",
     "PRIME-QX0",
     "74166WAE4",  # Prime Note QX-1
     "74166WAM6",  # Prime Note Q1
-    # "74166WAK0",  # Prime Note M-2
-    # "74166WAN4",  # Prime Note MIG
-    # "90366JAG2",  # USG Note M-8
-    # "90366JAH0",  # USG Note M-9
-    # "USGFD-M00",
+    "74166WAK0",  # Prime Note M-2
+    "74166WAN4",  # Prime Note MIG
+    "90366JAG2",  # USG Note M-8
+    "90366JAH0",  # USG Note M-9
+    "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -105,11 +112,12 @@ report_names_dict = {
 #     "USGFD-M00": [0.0555, 0.0563],
 # }
 
-# TODO: replace this with data from data from helix
-fund_size_dict = {
-    "PRIME": 3179816720.51731,
-    "USG": 123255192.977195,
-}
+
+# fund_size_dict = {
+#     "PRIME": 3179816720.51731,
+#     "USG": 123255192.977195,
+# }
+
 # TODO: replace this with data from data from helix
 series_size_dict = {
     "PRIME-C10": 117000000,
@@ -173,12 +181,12 @@ temp_prime_ids = [
     "74166WAE4",
 ]
 
-temp_usg_ids_dict = {
+usg_note_to_fund_ids_dict = {
     "USGFD-M00": "USGFD-M00",
     "90366JAG2": "USGFD-M00",
     "90366JAH0": "USGFD-M00",
 }
-temp_prime_ids_dict = {
+prime_note_to_fund_ids_dict = {
     "PRIME-C10": "PRIME-C10",
     "PRIME-M00": "PRIME-M00",
     "PRIME-MIG": "PRIME-MIG",
@@ -303,14 +311,15 @@ for reporting_series_id in reporting_series:
     # DATES
     daycount = daycount_dict[reporting_series_id]
     if reporting_type_dict[reporting_series_id] == "NOTE":
-        if reporting_series_id in temp_prime_ids_dict.keys():
+        if reporting_series_id in prime_note_to_fund_ids_dict.keys():
             roll_schedule_condition = (
                 df_roll_schedule["series_id"]
-                == temp_prime_ids_dict[reporting_series_id]
+                == prime_note_to_fund_ids_dict[reporting_series_id]
             )
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             roll_schedule_condition = (
-                df_roll_schedule["series_id"] == temp_usg_ids_dict[reporting_series_id]
+                df_roll_schedule["series_id"]
+                == usg_note_to_fund_ids_dict[reporting_series_id]
             )
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
@@ -384,15 +393,15 @@ for reporting_series_id in reporting_series:
     ############################## TARGET RETURN #####################################
     # Current return
     if reporting_type_dict[reporting_series_id] == "NOTE":
-        if reporting_series_id in temp_prime_ids_dict.keys():
+        if reporting_series_id in prime_note_to_fund_ids_dict.keys():
             curr_target_return_condition = (
                 df_target_return["security_id"]
-                == temp_prime_ids_dict[reporting_series_id]
+                == prime_note_to_fund_ids_dict[reporting_series_id]
             ) & (df_target_return["date"] == next_start)
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             curr_target_return_condition = (
                 df_target_return["security_id"]
-                == temp_usg_ids_dict[reporting_series_id]
+                == usg_note_to_fund_ids_dict[reporting_series_id]
             ) & (df_target_return["date"] == next_start)
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
@@ -418,15 +427,15 @@ for reporting_series_id in reporting_series:
 
     # Previous return
     if reporting_type_dict[reporting_series_id] == "NOTE":
-        if reporting_series_id in temp_prime_ids_dict.keys():
+        if reporting_series_id in prime_note_to_fund_ids_dict.keys():
             prev_target_return_condition = (
                 df_target_return["security_id"]
-                == temp_prime_ids_dict[reporting_series_id]
+                == prime_note_to_fund_ids_dict[reporting_series_id]
             ) & (df_target_return["date"] == prev_start)
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             prev_target_return_condition = (
                 df_target_return["security_id"]
-                == temp_usg_ids_dict[reporting_series_id]
+                == usg_note_to_fund_ids_dict[reporting_series_id]
             ) & (df_target_return["date"] == prev_start)
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
@@ -448,13 +457,13 @@ for reporting_series_id in reporting_series:
 
     ############################## HISTORICAL RETURN #####################################
     if reporting_type_dict[reporting_series_id] == "NOTE":
-        if reporting_series_id in temp_prime_ids_dict.keys():
+        if reporting_series_id in prime_note_to_fund_ids_dict.keys():
             pool_name_encoded = reverse_cusip_mapping[
-                temp_prime_ids_dict[reporting_series_id]
+                prime_note_to_fund_ids_dict[reporting_series_id]
             ]
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             pool_name_encoded = reverse_cusip_mapping[
-                temp_usg_ids_dict[reporting_series_id]
+                usg_note_to_fund_ids_dict[reporting_series_id]
             ]
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
@@ -565,7 +574,7 @@ for reporting_series_id in reporting_series:
                 & (df_oc_rates["series"] == "QUARTERLYX")
                 & (df_oc_rates["report_date"] == oc_date)
             )
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             oc_rate_condition = (
                 (df_oc_rates["fund"] == "USG")
                 & (df_oc_rates["series"] == "MONTHLY")
@@ -614,7 +623,7 @@ for reporting_series_id in reporting_series:
                 & (df_cash_balance["Balance_date"] == report_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "USG")
                 & (df_cash_balance["Series"] == "MONTHLY")
@@ -656,7 +665,7 @@ for reporting_series_id in reporting_series:
 
     # T-Bill (previous, 3 month, 1 year)
     # 1m SOFR
-    if reporting_series_id in temp_usg_ids_dict.keys():
+    if reporting_series_id in usg_note_to_fund_ids_dict.keys():
         r_a = list(tbill_data)
     else:
         if reporting_series_id in quarterly_reporting_ids:
@@ -685,7 +694,7 @@ for reporting_series_id in reporting_series:
     r_a[2] = form_as_percent(r_a[2], 2)
     # Crane Govt MM Index
     # 1m A1/P1 CP
-    if reporting_series_id in temp_usg_ids_dict.keys():
+    if reporting_series_id in usg_note_to_fund_ids_dict.keys():
         r_b = list(crane_data)
     else:
         if reporting_series_id in quarterly_reporting_ids:
@@ -714,7 +723,7 @@ for reporting_series_id in reporting_series:
     r_b[2] = form_as_percent(r_b[2], 2)
 
     # 1m T-Bill
-    if reporting_series_id in temp_usg_ids_dict.keys():
+    if reporting_series_id in usg_note_to_fund_ids_dict.keys():
         r_c = list(fhlb_data)
     else:
         if reporting_series_id in quarterly_reporting_ids:
@@ -889,6 +898,7 @@ for reporting_series_id in reporting_series:
     #####################################################################################
     ############################## CUSTOM FUNCTIONS #####################################
     #####################################################################################
+    # TODO: Replace OC Rate allocated if needed
     def calculate_oc_metrics(data):
         global cash_balance
 
@@ -897,7 +907,8 @@ for reporting_series_id in reporting_series:
         def get_values(rating):
             if rating in data["rating_buckets"].values:
                 row = data[data["rating_buckets"] == rating].iloc[0]
-                return row["collateral_mv_allocated"], row["investment_amount"]
+                return row["collateral_mv"], row["investment_amount"]
+                # return row["collateral_mv_allocated"], row["investment_amount"]
             return 0, 0
 
         col_mv_allocated_aaa, inv_aaa = get_values("AAA")
@@ -907,9 +918,10 @@ for reporting_series_id in reporting_series:
         col_mv_allocated_usg, inv_usg = get_values("USG")
         col_mv_allocated_usgcmo, inv_usgcmo = get_values("USGCMO")
 
-        oc_total = (
-            data["collateral_mv_allocated"].sum() / data["investment_amount"].sum()
-        )
+        oc_total = data["collateral_mv"].sum() / data["investment_amount"].sum()
+        # oc_total = (
+        #     data["collateral_mv_allocated"].sum() / data["investment_amount"].sum()
+        # )
 
         oc_usg_aaa = (
             (col_mv_allocated_aaa + col_mv_allocated_usg + col_mv_allocated_usgcmo)
@@ -957,18 +969,58 @@ for reporting_series_id in reporting_series:
     ############################## AUM, PRINCIPAL  #####################################
 
     def get_fund_size(fund_name, report_date):
-        # use df_daily_nav
-        return wordify(fund_size_dict[fund_name])
+        # Fund size date should be 1 business days before the reporting date, or as of the date before the last date of current reporting period
+        fund_size_date = (
+            pd.to_datetime(report_date) - pd.offsets.BusinessDay(1)
+        ).strftime("%Y-%m-%d")
+        filtered_df = df_aum[
+            (df_aum["series_id"].str.contains(fund_name))
+            & (df_aum["report_date"] == fund_size_date)
+        ]
+        # Sum the "outstanding" column
+        total_outstanding = filtered_df["outstanding"].astype(float).sum()
 
-    def get_series_size(fund_name, report_date):
-        # use df_daily_nav
-        return wordify(series_size_dict[reporting_series_id])
+        return wordify(total_outstanding)
+        # return wordify(fund_size_dict[fund_name])
+
+    def get_series_size(reporting_series_id, report_date):
+        # Series size date should be 1 business days before the reporting date, or as of the date before the last date of current reporting period
+        series_size_date = (
+            pd.to_datetime(report_date) - pd.offsets.BusinessDay(1)
+        ).strftime("%Y-%m-%d")
+        temp_id = None
+        if reporting_series_id in prime_note_to_fund_ids_dict.keys():
+            temp_id = prime_note_to_fund_ids_dict[reporting_series_id]
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
+            temp_id = usg_note_to_fund_ids_dict[reporting_series_id]
+        else:
+            print(f"Invalid reporting series id {reporting_series_id}")
+            return
+
+        if temp_id is not None:
+            matching_rows = df_aum[
+                (df_aum["series_id"] == temp_id)
+                & (df_aum["report_date"] == series_size_date)
+            ]
+            if not matching_rows.empty:
+                series_size = matching_rows["outstanding"].iloc[0]
+                return wordify(series_size)
+            else:
+                print(
+                    f"No matching rows found in df_aum for series_id {temp_id} and report_date {report_date}"
+                )
+                return None
+        else:
+            print(
+                f"No valid temp_id found for reporting series id {reporting_series_id}"
+            )
+            return None
 
     def get_aum(report_date):
         try:
             # AUM date should be 2 business days before the reporting date, or as of the date before the last date of current reporting period
             aum_date = (
-                pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)
+                pd.to_datetime(report_date) - pd.offsets.BusinessDay(1)
             ).strftime("%Y-%m-%d")
             lucid_aum = df_aum[
                 (df_aum["series_id"] == "LUCID") & (df_aum["report_date"] == aum_date)
@@ -978,19 +1030,23 @@ for reporting_series_id in reporting_series:
             lucid_aum = 0
         return wordify_aum(lucid_aum)
 
-    def get_notes_principal(reporting_series_id, report_date):
+    def get_notes_principal(reporting_series_id):
         try:
-            # AUM date should be 2 business days before the reporting date, or as of the date before the last date of current reporting period
-            aum_date = (
-                pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)
-            ).strftime("%Y-%m-%d")
-            lucid_aum = df_aum[
-                (df_aum["series_id"] == "LUCID") & (df_aum["report_date"] == aum_date)
-            ]["outstanding"].iloc[0]
+            ### GET NOTES DATA
+            note_data_df = (
+                df_notes_principal[
+                    df_notes_principal["series_id"] == reporting_series_id
+                ]
+                .sort_values(by="interest_period_end")
+                .reset_index()
+            )
+            principal_amount = note_data_df.tail(1)["principal_outstanding"].iloc[0]
         except Exception as e:
-            print("EXCEPTION: Problem getting lucid AUM, temporary set to 0")
-            lucid_aum = 0
-        return wordify_aum(lucid_aum)
+            print(
+                f"EXCEPTION: Problem getting principal for {reporting_series_id}, temporary set to 0"
+            )
+            principal_amount = 0
+        return wordify_aum(principal_amount)
 
     def get_fund_inception_date(fund_name):
         if fund_name == "USG":
@@ -1016,15 +1072,15 @@ for reporting_series_id in reporting_series:
     def get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period):
         global reporting_series_id
         reporting_date = datetime.strptime(reporting_date, "%Y-%m-%d")
-        if reporting_series_id in temp_prime_ids_dict.keys():
+        if reporting_series_id in prime_note_to_fund_ids_dict.keys():
             target_return_condition = (
                 df_target_return["security_id"]
-                == temp_prime_ids_dict[reporting_series_id]
+                == prime_note_to_fund_ids_dict[reporting_series_id]
             )
-        elif reporting_series_id in temp_usg_ids_dict.keys():
+        elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             target_return_condition = (
                 df_target_return["security_id"]
-                == temp_usg_ids_dict[reporting_series_id]
+                == usg_note_to_fund_ids_dict[reporting_series_id]
             )
         else:
             print(f"Invalid reporting series id {reporting_series_id}")
@@ -1074,7 +1130,7 @@ for reporting_series_id in reporting_series:
                     & (df_oc_rates_temp["series"] == "QUARTERLYX")
                     & (df_oc_rates_temp["report_date"] == oc_date_temp)
                 )
-            elif reporting_series_id in temp_usg_ids_dict.keys():
+            elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
                 oc_rate_condition = (
                     (df_oc_rates_temp["fund"] == "USG")
                     & (df_oc_rates_temp["series"] == "MONTHLY")
@@ -1085,15 +1141,151 @@ for reporting_series_id in reporting_series:
                 break
 
             oc_rate_temp_df = df_oc_rates_temp[oc_rate_condition]
+            # TODO: See if we want to use allocated OC Rate instead of actual OC Rate
             oc_total_temp = (
-                oc_rate_temp_df["collateral_mv_allocated"].sum()
+                oc_rate_temp_df["collateral_mv"].sum()
                 / oc_rate_temp_df["investment_amount"].sum()
             )
+            # oc_total_temp = (
+            #     oc_rate_temp_df["collateral_mv_allocated"].sum()
+            #     / oc_rate_temp_df["investment_amount"].sum()
+            # )
             oc_rates.append(round(oc_total_temp, 4))
 
         return oc_rates
 
-    def get_coupon_plot(reporting_series_id, reporting_date):
+    # def get_coupon_plot(reporting_series_id, reporting_date):
+    #     global next_start, next_end
+    #
+    #     ### GET NOTES DATA
+    #     note_data_df = (
+    #         df_notes_principal[df_notes_principal["series_id"] == reporting_series_id]
+    #         .sort_values(by="interest_period_end")
+    #         .reset_index()
+    #     )
+    #
+    #     lookback_period = 5
+    #
+    #     # Find the index where interest_period_end is first greater than or equal to reporting_date
+    #     index = note_data_df[
+    #         note_data_df["interest_period_end"] >= reporting_date
+    #     ].index[0]
+    #
+    #     # Calculate the number of rows that satisfy the condition
+    #     rows_before = len(note_data_df[:index])
+    #
+    #     # Use the minimum of lookback_period and rows_before
+    #     # TODO: Refractor this lookback period logic to combine with the max_length below
+    #     lookback = min(lookback_period, rows_before)
+    #
+    #     # Get the result DataFrame
+    #     result_df = note_data_df.iloc[index - lookback : index + 1].copy()
+    #
+    #     int_period_starts = result_df["interest_period_start"].tolist()[-lookback:] + [
+    #         pd.Timestamp(next_start)
+    #     ]
+    #     int_period_ends = result_df["interest_period_end"].tolist()[-lookback:] + [
+    #         pd.Timestamp(next_end)
+    #     ]
+    #     int_rates = result_df["interest_rate"].tolist()[-lookback:]
+    #     note_principals = result_df["principal_outstanding"].tolist()[-lookback:]
+    #     interest_paid = result_df["interest_paid"].tolist()[-lookback:]
+    #     interest_payment_dates = result_df["interest_payment_date"].tolist()[
+    #         -lookback:
+    #     ] + [pd.Timestamp(next_end)]
+    #
+    #     # Other variables
+    #     target_int_rates, spread_to_benchmarks = (
+    #         get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period)
+    #     )  # historical returns
+    #     # spread_to_benchmarks =  spread_to_benchmarks[-lookback:]
+    #     oc_rates = get_oc_rates_coupon_table(int_period_ends)
+    #
+    #     # Reformatting
+    #     benchmark_name = benchmark_shortern[benchmark_to_use[0]]
+    #     int_rates = [f"{rate * 100:.2f}" for rate in int_rates + [target_int_rates[-1]]]
+    #     spread_to_benchmarks = [
+    #         f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
+    #     ]
+    #     # This is special because we're assuming the note principal as of the report date is the same as of the previous period. This is due to a delay in updating the principal
+    #     # TODO: account for case when the note principal is actually updated in the database
+    #     note_principals = [
+    #         f"{principal:,.0f}" for principal in note_principals + [note_principals[-1]]
+    #     ]
+    #     interest_paid = [f"{interest:,.2f}" for interest in interest_paid] + ["n/a"]
+    #     int_period_starts = [date.strftime("%m/%d/%y") for date in int_period_starts]
+    #     int_period_ends = [date.strftime("%m/%d/%y") for date in int_period_ends]
+    #     interest_payment_dates = [
+    #         date.strftime("%m/%d/%y") for date in interest_payment_dates
+    #     ]
+    #     oc_rates = [
+    #         f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
+    #         for rate in oc_rates
+    #     ]
+    #     related_fund_cap_accounts = note_principals
+    #
+    #     # TODO: REFRACTOR THIS. THIS IS SO BAD BECAUSE THE LENGTH OF THE LIST ARE NOT EQUAL AND WE ONLY WANT TO GET THE LAST ELEMENTS OF EACH LIST
+    #     latex_text = ""
+    #     max_length = min(
+    #         len(int_period_starts),
+    #         len(note_principals),
+    #         len(int_rates),
+    #         len(interest_payment_dates),
+    #         len(spread_to_benchmarks),
+    #         len(note_principals),
+    #         len(interest_paid),
+    #         len(related_fund_cap_accounts),
+    #     )
+    #
+    #     # Get the indices for the last coupon_table_nrow items
+    #     int_period_starts = int_period_starts[-max_length:]
+    #     int_period_ends = int_period_ends[-max_length:]
+    #     note_principals = note_principals[-max_length:]
+    #     int_rates = int_rates[-max_length:]
+    #     interest_payment_dates = interest_payment_dates[-max_length:]
+    #     spread_to_benchmarks = spread_to_benchmarks[-max_length:]
+    #     interest_paid = interest_paid[-max_length:]
+    #     oc_rates = oc_rates[-max_length:]
+    #     related_fund_cap_accounts = related_fund_cap_accounts[-max_length:]
+    #
+    #     indices = range(0, len(int_period_starts))
+    #
+    #     for i in indices:
+    #         int_rate = str(int_rates[i]) + "\\%" if int_rates[i] != "n/a" else "n/a"
+    #         note_principal_val = (
+    #             "\\$" + str(note_principals[i])
+    #             if note_principals[i] != "n/a"
+    #             else "n/a"
+    #         )
+    #         interest_paid_val = (
+    #             "\\$" + str(interest_paid[i]) if interest_paid[i] != "n/a" else "n/a"
+    #         )
+    #         related_fund_cap_account_val = (
+    #             "\\$" + str(related_fund_cap_accounts[i])
+    #             if related_fund_cap_accounts[i] != "n/a"
+    #             else "n/a"
+    #         )
+    #         oc_rate_val = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
+    #
+    #         # if i == len(int_period_starts) - 1:
+    #         #     int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
+    #         if i == len(int_period_starts) - 1:
+    #             int_rate = (
+    #                 int_rates[i] + "\\%{\\tiny (Est'd)}"
+    #                 if int_rates[i] != "n/a"
+    #                 else "n/a"
+    #             )
+    #
+    #         latex_line = (
+    #             f"{int_period_starts[i]} &\\textbf{{{int_period_ends[i]}}} &\\textbf{{{int_rate}}} "
+    #             f"&{spread_to_benchmarks[i]} &{note_principal_val} &{interest_paid_val} "
+    #             f"&{interest_payment_dates[i]} &{related_fund_cap_account_val} &{oc_rate_val} \\\\"
+    #         )
+    #         latex_text += latex_line + "\n"
+    #
+    #     return latex_text
+
+    def prepare_coupon_data(reporting_series_id, reporting_date, lookback_period):
         global next_start, next_end
 
         ### GET NOTES DATA
@@ -1103,15 +1295,15 @@ for reporting_series_id in reporting_series:
             .reset_index()
         )
 
-        lookback_period = 5
-
-        # Find the index where interest_period_end is first greater than or equal to reporting_date
-        index = note_data_df[
-            note_data_df["interest_period_end"] >= reporting_date
-        ].index[0]
-
-        # Calculate the number of rows that satisfy the condition
-        rows_before = len(note_data_df[:index])
+        mask = note_data_df["interest_period_end"] >= reporting_date
+        if mask.any():
+            index = note_data_df[mask].index[0]
+            # Calculate the number of rows that satisfy the condition
+            rows_before = len(note_data_df[:index])
+        else:
+            # Handle the case when no row satisfies the condition
+            index = len(note_data_df)
+            rows_before = index
 
         # Use the minimum of lookback_period and rows_before
         # TODO: Refractor this lookback period logic to combine with the max_length below
@@ -1137,34 +1329,32 @@ for reporting_series_id in reporting_series:
         target_int_rates, spread_to_benchmarks = (
             get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period)
         )  # historical returns
-        # spread_to_benchmarks =  spread_to_benchmarks[-lookback:]
         oc_rates = get_oc_rates_coupon_table(int_period_ends)
 
         # Reformatting
         benchmark_name = benchmark_shortern[benchmark_to_use[0]]
-        int_rates = [f"{rate * 100:.2f}" for rate in int_rates + [target_int_rates[-1]]]
+        int_rates = [
+            format_interest_rate(rate) for rate in int_rates + [target_int_rates[-1]]
+        ]
         spread_to_benchmarks = [
             f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
         ]
-        # This is special because we're assuming the note principal as of the report date is the same as of the previous period. This is due to a delay in updating the principal
-        # TODO: account for case when the note principal is actually updated in the database
         note_principals = [
-            f"{principal:,.0f}" for principal in note_principals + [note_principals[-1]]
+            format_to_0_decimals(principal)
+            for principal in note_principals + [note_principals[-1]]
         ]
-        interest_paid = [f"{interest:,.2f}" for interest in interest_paid] + ["n/a"]
-        int_period_starts = [date.strftime("%m/%d/%y") for date in int_period_starts]
-        int_period_ends = [date.strftime("%m/%d/%y") for date in int_period_ends]
+        interest_paid = [
+            format_to_2_decimals(interest) for interest in interest_paid
+        ] + ["n/a"]
+        int_period_starts = [format_date_mm_dd_yyyy(date) for date in int_period_starts]
+        int_period_ends = [format_date_mm_dd_yyyy(date) for date in int_period_ends]
         interest_payment_dates = [
-            date.strftime("%m/%d/%y") for date in interest_payment_dates
+            format_date_mm_dd_yyyy(date) for date in interest_payment_dates
         ]
-        oc_rates = [
-            f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
-            for rate in oc_rates
-        ]
+        oc_rates = [format_interest_rate_one_decimal(rate) for rate in oc_rates]
         related_fund_cap_accounts = note_principals
 
         # TODO: REFRACTOR THIS. THIS IS SO BAD BECAUSE THE LENGTH OF THE LIST ARE NOT EQUAL AND WE ONLY WANT TO GET THE LAST ELEMENTS OF EACH LIST
-        latex_text = ""
         max_length = min(
             len(int_period_starts),
             len(note_principals),
@@ -1183,10 +1373,64 @@ for reporting_series_id in reporting_series:
         int_rates = int_rates[-max_length:]
         interest_payment_dates = interest_payment_dates[-max_length:]
         spread_to_benchmarks = spread_to_benchmarks[-max_length:]
+        note_principals = note_principals[-max_length:]
         interest_paid = interest_paid[-max_length:]
         oc_rates = oc_rates[-max_length:]
         related_fund_cap_accounts = related_fund_cap_accounts[-max_length:]
 
+        return (
+            int_period_starts,
+            int_period_ends,
+            int_rates,
+            note_principals,
+            interest_payment_dates,
+            spread_to_benchmarks,
+            interest_paid,
+            related_fund_cap_accounts,
+            oc_rates,
+        )
+
+    def get_coupon_plot(reporting_series_id, reporting_date):
+        # This is the maximum of lines that we want to show on coupon tables
+        lookback_period = 5
+        (
+            int_period_starts,
+            int_period_ends,
+            int_rates,
+            note_principals,
+            interest_payment_dates,
+            spread_to_benchmarks,
+            interest_paid,
+            related_fund_cap_accounts,
+            oc_rates,
+        ) = prepare_coupon_data(reporting_series_id, reporting_date, lookback_period)
+
+        latex_text = generate_latex_table(
+            int_period_starts,
+            int_period_ends,
+            int_rates,
+            spread_to_benchmarks,
+            note_principals,
+            interest_paid,
+            interest_payment_dates,
+            related_fund_cap_accounts,
+            oc_rates,
+        )
+
+        return latex_text
+
+    def generate_latex_table(
+        int_period_starts,
+        int_period_ends,
+        int_rates,
+        spread_to_benchmarks,
+        note_principals,
+        interest_paid,
+        interest_payment_dates,
+        related_fund_cap_accounts,
+        oc_rates,
+    ):
+        latex_text = ""
         indices = range(0, len(int_period_starts))
 
         for i in indices:
@@ -1206,8 +1450,6 @@ for reporting_series_id in reporting_series:
             )
             oc_rate_val = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
 
-            # if i == len(int_period_starts) - 1:
-            #     int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
             if i == len(int_period_starts) - 1:
                 int_rate = (
                     int_rates[i] + "\\%{\\tiny (Est'd)}"
@@ -1284,7 +1526,7 @@ for reporting_series_id in reporting_series:
             )
 
             report_data_fund = {
-                "report_date": report_date,  # done
+                "report_date": report_date_formal,  # done
                 "fundname": fund_name,  # done
                 "toptableextraspace": "5.5em",
                 "series_abbrev": series_abbrev,
@@ -1322,14 +1564,14 @@ for reporting_series_id in reporting_series:
                     form_as_percent(0, 1) if fund_name != "USG" else "n/a",
                     form_as_percent(0, 1),
                 ),
-                "oc_aaa": form_as_percent(oc_usg_aaa, 2),  # TODO: review
+                "oc_aaa": form_as_percent(oc_usg_aaa, 1),  # TODO: review
                 "oc_tbills": "-",
-                "oc_total": form_as_percent(oc_total, 2),  # TODO: review
+                "oc_total": form_as_percent(oc_total, 1),  # TODO: review
                 "usg_aaa_cat": (
                     "US Govt Repo" if fund_name == "USG" else "US Govt/AAA Repo"
                 ),  # done
-                "alloc_aaa": form_as_percent(aloc_usg_aaa, 2),  # TODO: review
-                "alloc_tbills": form_as_percent(aloc_tbills, 2),  # TODO: review
+                "alloc_aaa": form_as_percent(aloc_usg_aaa, 1),  # TODO: review
+                "alloc_tbills": form_as_percent(aloc_tbills, 1),  # TODO: review
                 "alloc_total": form_as_percent(1, 1),  # TODO: review
                 "tablevstretch": tablevstretch(fund_name),  # done
                 # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
@@ -1361,7 +1603,7 @@ for reporting_series_id in reporting_series:
                 "series_size": get_series_size(
                     reporting_series_id, report_date
                 ),  # TODO: update database
-                "lucid_aum": wordify_aum(get_aum(report_date)),  # TODO: update database
+                "lucid_aum": get_aum(report_date),
                 "rating": df_attributes["rating"].iloc[0],  # done
                 "rating_org": df_attributes["rating_org"].iloc[0],  # done
                 "calc_frequency": "Monthly at par",  # done
@@ -1546,26 +1788,15 @@ for reporting_series_id in reporting_series:
                     round(r_c[0] * 100, 2) if r_c[0] is not None else 0,
                 ),
                 # "performance_graph": "\n\t\t  \\hspace*{-0.86cm}\\resizebox {!} {6.676cm} {\\begin{tikzpicture}\n\t\\begin{axis}[\n\t\ttitle style = {font = \\small},\n\t\taxis line style = {light_grey},\n\t\t\ttitle={{Performance vs Benchmarks}},\n\t\tymin=2, ymax=6.53, %MAXRETURN HERE\n\t   symbolic x coords={Series M-8,1m T-Bills,Crane Govt},\n\t\txtick={Series M-8,1m T-Bills,Crane Govt},\n\t\tx tick label style={anchor=north,font=\\scriptsize,/pgf/number format/assume math mode},\n\t\tyticklabel=\\pgfmathparse{\\tick}\\pgfmathprintnumber{\\pgfmathresult}\\,\\%,\n\t\ty tick label style = {/pgf/number format/.cd,\n\t\t\t\tfixed,\n\t\t\t\tfixed zerofill,\n\t\t\t\tprecision=2,\n\t\t\t\t/pgf/number format/assume math mode\n\t\t},\n\t\tytick distance=0.5,\n\t\tbar width = 10mm, x = 3.7cm,\n\t\txtick pos=bottom,ytick pos=left,\n\t\tevery node near coord/.append style={font=\\fontsize{8}{8}\\selectfont,/pgf/number format/.cd,\n\t\t\t\tfixed,\n\t\t\t\tfixed zerofill,\n\t\t\t\tprecision=2,/pgf/number format/assume math mode},\n\t\t]\n\t\\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(Series M-8,5.53) \n\t\t};\n\t\\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(1m T-Bills,5.37) \n\t\t};\n\t\\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] \n\t\tcoordinates {\n\t\t\t(Crane Govt,5.1) \n\t\t};\n\t\\end{axis}\n\t\t\\end{tikzpicture}}\n\t\n\t\t",
-                # TODO: Plot return like below
-                # "return_plot_temp": plotify(
-                #     ws,
-                #     "F",
-                #     "N" if daycount == 360 else "O",
-                #     ts_row_start,
-                #     ts_row_end,
-                # ),
-                # "return_plot": "(2024-01-18,999) (2024-02-15,5.53) (2024-03-14,5.53) (2024-04-18,5.53) (2024-05-16,5.53) ",
-                # "comp_a_plot": "(2024-01-18,999) (2024-02-15,5.36) (2024-03-14,5.36) (2024-04-18,5.37) (2024-05-16,5.37) ",
-                # "comp_b_plot": "(2024-01-18,999) (2024-02-15,5.131) (2024-03-14,5.117) (2024-04-18,5.107) (2024-05-16,5.105) ",
                 "zero_date": zero_date,
                 "max_return": 3,
                 "fund_size": get_fund_size(fund_name.upper(), report_date),
                 "series_size": get_series_size(reporting_series_id, report_date),
-                "lucid_aum": wordify_aum(get_aum(report_date)),
+                "lucid_aum": get_aum(report_date),
                 "fund_inception": get_fund_inception_date(fund_name),
                 "cusip": df_attributes["security_id"].iloc[0],
                 "note_abbrev": series_abbrev,
-                "principal_outstanding": wordify(note_principal[reporting_series_id]),
+                "principal_outstanding": get_notes_principal(reporting_series_id),
                 "issue_date": df_attributes["fund_inception"]
                 .iloc[0]
                 .strftime("%B %d, %Y"),  # TODO: update with inception for PRIME & USG
