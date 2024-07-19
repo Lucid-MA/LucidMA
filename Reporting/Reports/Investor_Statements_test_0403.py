@@ -3,6 +3,13 @@ from datetime import datetime
 
 import pandas as pd
 
+from Reporting.Utils.Common import (
+    format_date_mm_dd_yyyy,
+    format_interest_rate,
+    format_to_0_decimals,
+    format_to_2_decimals,
+    format_interest_rate_one_decimal,
+)
 from Reporting.Utils.Constants import (
     lucid_series,
     benchmark_shortern,
@@ -36,14 +43,6 @@ from Reports.Utils import (
     issuer_from_fundname,
     secured_by_from,
     series_from_note,
-)
-from Reporting.Utils.Common import (
-    format_date_mm_dd_yyyy,
-    format_interest_rate,
-    format_to_0_decimals,
-    format_to_2_decimals,
-    to_YYYY_MM_DD,
-    format_interest_rate_one_decimal,
 )
 
 # CONSTANT
@@ -813,7 +812,7 @@ for reporting_series_id in reporting_series:
         ] = prev_target_return
     else:
         df_returns_comparison_plot.loc[
-            df_returns_comparison_plot["end_date"] == curr_end, "annualized_returns_360"
+            df_returns_comparison_plot["end_date"] == prev_end, "annualized_returns_360"
         ] = prev_target_return
 
     def get_returns_comparison_plot_data(
