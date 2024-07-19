@@ -40,7 +40,7 @@
 					tick label style={font=\tiny}  
 					}}
 \lhead{\includegraphics[width=9cm]{lucid_logo.png}}
-\rhead{Report Date: June 14, 2024}
+\rhead{Report Date: July 19, 2024}
 \setlength{\columnsep}{3em}
 \begin{document}
 \
@@ -69,9 +69,9 @@ Prime Notes LLC
 } \\
 {\color[HTML]{FFFFFF} \textbf{Redemption \& Coupon Frequency}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{Quarterly}} \\
 {\color[HTML]{FFFFFF} \textbf{Rating}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{AA+} by Egan-Jones} \\
-{\color[HTML]{FFFFFF} \textbf{Current Target Return of Notes}\textsuperscript{1}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{3m SOFR + 70-72 bps}}\\
-{\color[HTML]{FFFFFF} \textbf{Previous Coupon Period}} & January 18 - April 18 & \textbf{6.00\%} (3m SOFR + 70 bps) \\
-{\color[HTML]{FFFFFF} \textbf{Current Period Est'd Coupon}\textsuperscript{2}} & April 18 - July 18 & \textbf{6.03\%}  (3m SOFR + 70 bps) \\ \arrayrulecolor{light_grey}\hline
+{\color[HTML]{FFFFFF} \textbf{Current Target Return of Notes}\textsuperscript{1}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{3m SOFR + 66-68 bps}}\\
+{\color[HTML]{FFFFFF} \textbf{Previous Coupon Period}} & April 18 - July 18 & \textbf{6.03\%} (3m SOFR + 70 bps) \\
+{\color[HTML]{FFFFFF} \textbf{Current Period Est'd Coupon}\textsuperscript{2}} & July 18 - October 17 & \textbf{5.95\%}  (3m SOFR + 67 bps) \\ \arrayrulecolor{light_grey}\hline
 \end{tabular}
 \end{center}
 
@@ -84,10 +84,10 @@ Prime Notes LLC
 \rowcolor{lucid_blue}  
 {\color[HTML]{FFFFFF}} & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}                & {\color[HTML]{FFFFFF} Spread}               & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}        & {\color[HTML]{FFFFFF} Spread}        & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}       & {\color[HTML]{FFFFFF} Spread}       \\ \arrayrulecolor{light_grey}\hline
 
-	\textbf{Lucid Prime - Series Q1-2}                    & \textbf{6.00\%}                              & \textbf{-}                                  & \textbf{6.11\%}                               & \textbf{-}                           & \textbf{6.11\%}                             & \textbf{-}                          \\
-3m SOFR                       & 5.30\%                                       & \textbf{+70 bps}                            & 5.39\%                               & \textbf{+72 bps}                     & 5.35\%                              & \textbf{+76 bps}                    \\
-3m A1/P1 CP                       & 5.33\%                                       & \textbf{+67 bps}                           & 5.45\%                               & \textbf{+66 bps}                     & 5.36\%                              & \textbf{+75 bps}                    \\
-3m T-Bill                       & 5.25\%                                       & \textbf{+75 bps}                            & 5.36\%                               & \textbf{+75 bps}                     & 5.31\%                              & \textbf{+80 bps}                    \\ \arrayrulecolor{light_grey}\hline
+	\textbf{Lucid Prime - Series Q1-2}                    & \textbf{6.03\%}                              & \textbf{-}                                  & \textbf{6.02\%}                               & \textbf{-}                           & \textbf{6.16\%}                             & \textbf{-}                          \\
+3m SOFR                       & 5.33\%                                       & \textbf{+70 bps}                            & 5.35\%                               & \textbf{+67 bps}                     & 5.45\%                              & \textbf{+71 bps}                    \\
+3m A1/P1 CP                       & 5.38\%                                       & \textbf{+65 bps}                           & 5.39\%                               & \textbf{+63 bps}                     & 5.50\%                              & \textbf{+66 bps}                    \\
+3m T-Bill                       & 5.20\%                                       & \textbf{+83 bps}                            & 5.26\%                               & \textbf{+76 bps}                     & 5.40\%                              & \textbf{+76 bps}                    \\ \arrayrulecolor{light_grey}\hline
 	
 \end{tabular}
 
@@ -104,7 +104,7 @@ Prime Notes LLC
 		title style = {font = \small},
 		axis line style = {light_grey},
 		title={{Performance vs Benchmarks}},
-		ymin=3, ymax=7.03, %MAXRETURN HERE
+		ymin=3, ymax=6.95, %MAXRETURN HERE
 	   symbolic x coords={Series Q1-2,3m SOFR,3m A1/P1 CP,3m T-Bill},
 		xtick={Series Q1-2,3m SOFR,3m A1/P1 CP,3m T-Bill},
 		x tick label style={anchor=north,font=\scriptsize,/pgf/number format/assume math mode},
@@ -125,19 +125,19 @@ Prime Notes LLC
 		]
 	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 		coordinates {
-			(Series Q1-2,6.03) 
+			(Series Q1-2,5.95) 
 		};
 	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 		coordinates {
-			(3m SOFR,5.3) 
+			(3m SOFR,5.33) 
 		};
 	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 		coordinates {
-			(3m A1/P1 CP,5.33) 
+			(3m A1/P1 CP,5.38) 
 		};
 	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 		coordinates {
-			(3m T-Bill,5.25) 
+			(3m T-Bill,5.2) 
 		};
 	\end{axis}
 		\end{tikzpicture}}
@@ -156,12 +156,12 @@ Prime Notes LLC
 		\multicolumn{3}{!{\color{light_grey}\vrule}p{8.2cm}!{\color{light_grey}\vrule}}{\rowcolor[HTML]{EFEFEF}{\textbf{Series Q1}: Secured by \textbf{Investment Grade Collateral securities only}, with daily valuations \& margining.}} \\
 		& & \\
 		 & \textbf{\% Portfolio} & \textbf{O/C Rate}\\
-		US Govt/AAA Repo & 29.0\% & 119.4\% \\
-		IG Repo: AA to A & 28.6\% & 122.2\% \\
-		IG Repo: BBB & 34.5\% & 133.0\% \\
+		US Govt/AAA Repo & 26.9\% & 118.5\% \\
+		IG Repo: AA to A & 27.5\% & 120.2\% \\
+		IG Repo: BBB & 34.0\% & 131.5\% \\
 		Repo: BB & - & - \\
-		T-Bills; Gov't MMF & 7.9\% & - \\ \cline{2-2} \cline{3-3} 
-		\textbf{Total} & 100.0\% & \textbf{125.4\%} \\\arrayrulecolor{light_grey}\hline
+		T-Bills; Gov't MMF & 11.6\% & - \\ \cline{2-2} \cline{3-3} 
+		\textbf{Total} & 100.0\% & \textbf{124.0\%} \\\arrayrulecolor{light_grey}\hline
 		\end{tabular}
 		
 \end{minipage}}
@@ -174,8 +174,8 @@ Prime Notes LLC
 >{\columncolor[HTML]{EFEFEF}}p{4.35cm} !{\color{light_grey}\vrule}}
 \arrayrulecolor{light_grey}\hline
 \multicolumn{4}{!{\color{light_grey}\vrule}l!{\color{light_grey}\vrule}}{\cellcolor{lucid_blue}{\color[HTML]{FFFFFF}\textbf{Program Overview\textsuperscript{5}}}} \\ \arrayrulecolor{light_grey}\hline
-\textbf{Related Fund Series Size} & \textbf{\$710.4 million} & Issuing \& Paying Agent & Bank of NY Mellon \\ 
-\textbf{Lucid Prime Program Size} & \textbf{\$3.15 billion} & Collateral Agent & Bank of NY Mellon \\ 
+\textbf{Related Fund Series Size} & \textbf{\$497.7 million} & Issuing \& Paying Agent & Bank of NY Mellon \\ 
+\textbf{Lucid Prime Program Size} & \textbf{\$3.2 billion} & Collateral Agent & Bank of NY Mellon \\ 
 \textbf{Lucid Platform AUM} & \textbf{\$4.8 billion} & Auditor & KPMG \\ 
 Prime Program Inception & July 20, 2018 & & \\ \arrayrulecolor{light_grey}\hline
 \end{tabular}
@@ -210,9 +210,9 @@ Prime Program Inception & July 20, 2018 & & \\ \arrayrulecolor{light_grey}\hline
 {\color[HTML]{FFFFFF} \textbf{Current Principal}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{\$251.8 million}} \\
 {\color[HTML]{FFFFFF} \textbf{Original Issue Date}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}April 04, 2023} \\
 {\color[HTML]{FFFFFF} \textbf{Final Maturity Date}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}April 27, 2026} \\
-{\color[HTML]{FFFFFF} \textbf{Next Coupon Payment Date}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}July 18, 2024} \\
-{\color[HTML]{FFFFFF} \textbf{Next Redemption Date (Put Date)}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{July 18, 2024}} \\
-{\color[HTML]{FFFFFF} \textbf{Next Notice Date for Redemption}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}July 03, 2024} \\ \arrayrulecolor{light_grey}\hline
+{\color[HTML]{FFFFFF} \textbf{Next Coupon Payment Date}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}October 17, 2024} \\
+{\color[HTML]{FFFFFF} \textbf{Next Redemption Date (Put Date)}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}\textbf{October 17, 2024}} \\
+{\color[HTML]{FFFFFF} \textbf{Next Notice Date for Redemption}} & \multicolumn{2}{l!{\color{light_grey}\vrule}}{\cellcolor[HTML]{EFEFEF}October 02, 2024} \\ \arrayrulecolor{light_grey}\hline
 \end{tabular}
 \end{center}
 
@@ -228,7 +228,7 @@ Prime Program Inception & July 20, 2018 & & \\ \arrayrulecolor{light_grey}\hline
 >{\columncolor[HTML]{EFEFEF}\RaggedLeft\arraybackslash}p{1.64cm} 
 >{\columncolor[HTML]{EFEFEF}}p{1.40cm} }
 \textbf{Interest Period Start} & \textbf{Interest Period End} & \textbf{Interest Rate} & \textbf{Benchmark Spread} & \RaggedRight\arraybackslash\textbf{Note Series Principal} & \RaggedRight\arraybackslash\textbf{Interest Paid} & \textbf{Interest Payment Date} & \RaggedRight\arraybackslash\textbf{Related Fund Cap. Account} & \textbf{Collateral O/C Rate} \\ \arrayrulecolor{light_grey}\hline
-04/18/24 &\textbf{07/18/24} &\textbf{6.03\%{\tiny (Est'd)}} &3m SOFR+70 &\$391,750,000 &n/a &07/18/24 &\$391,750,000 &n/a \\
+07/18/24 &\textbf{10/17/24} &\textbf{5.95\%{\tiny (Est'd)}} &3m SOFR+67 &\$251,750,000 &n/a &10/17/24 &\$251,750,000 &n/a \\
 
 \end{tabular}
 }\end{center}
