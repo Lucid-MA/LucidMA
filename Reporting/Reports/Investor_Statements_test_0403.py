@@ -593,41 +593,43 @@ for reporting_series_id in reporting_series:
     df_oc_rates = df_oc_rates[oc_rate_condition]
 
     ############################## CASH BALANCE #####################################
-
+    balance_date = (pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)).strftime(
+        "%Y-%m-%d"
+    )
     if reporting_type_dict[reporting_series_id] == "NOTE":
         if reporting_series_id == "74166WAK0":
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "PRIME")
                 & (df_cash_balance["Series"] == "MONTHLY")
-                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Balance_date"] == balance_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
         elif reporting_series_id == "74166WAN4":
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "PRIME")
                 & (df_cash_balance["Series"] == "MONTHLYIG")
-                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Balance_date"] == balance_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
         elif reporting_series_id == "74166WAM6":
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "PRIME")
                 & (df_cash_balance["Series"] == "QUARTERLY1")
-                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Balance_date"] == balance_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
         elif reporting_series_id == "74166WAE4":
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "PRIME")
                 & (df_cash_balance["Series"] == "QUARTERLYX")
-                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Balance_date"] == balance_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
         elif reporting_series_id in usg_note_to_fund_ids_dict.keys():
             cash_balance_condition = (
                 (df_cash_balance["Fund"] == "USG")
                 & (df_cash_balance["Series"] == "MONTHLY")
-                & (df_cash_balance["Balance_date"] == report_date)
+                & (df_cash_balance["Balance_date"] == balance_date)
                 & (df_cash_balance["Account"] == "MAIN")
             )
         else:
@@ -637,7 +639,7 @@ for reporting_series_id in reporting_series:
         cash_balance_condition = (
             (df_cash_balance["Fund"] == fund_name.upper())
             & (df_cash_balance["Series"] == series_name.upper().replace(" ", ""))
-            & (df_cash_balance["Balance_date"] == report_date)
+            & (df_cash_balance["Balance_date"] == balance_date)
             & (df_cash_balance["Account"] == "MAIN")
         )
 
