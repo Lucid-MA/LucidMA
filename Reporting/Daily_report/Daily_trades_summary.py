@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import msal
 import pandas as pd
@@ -13,24 +13,24 @@ from Utils.SQL_queries import (
 from Utils.database_utils import execute_sql_query
 
 # Custom run date
-# valdate = "2024-06-10"
+# valdate = "2024-07-18"
 
 # # Get the current date and format it
-current_date = (datetime.now() - timedelta(1)).strftime("%Y-%m-%d")
+current_date = datetime.now().strftime("%Y-%m-%d")
 valdate = current_date
 
 recipients = [
     "tony.hoang@lucidma.com",
-    # "Heather.Campbell@lucidma.com",
-    # "operations@lucidma.com",
+    "Heather.Campbell@lucidma.com",
+    "operations@lucidma.com",
 ]
 
 recipients_mmt = [
     "tony.hoang@lucidma.com",
-    # "Heather.Campbell@lucidma.com",
-    # "martin.stpierre@lucidma.com",
-    # "mattias.almers@lucidma.com",
-    # "david.carlson@lucidma.com",
+    "Heather.Campbell@lucidma.com",
+    "martin.stpierre@lucidma.com",
+    "mattias.almers@lucidma.com",
+    "david.carlson@lucidma.com",
 ]
 
 
@@ -167,8 +167,8 @@ def send_daily_trade_report(
         failed_trades_message = (
             "<b style='color: red;'>There are some failed to transmitted trades.</b>"
         )
-    df_helix_trade["Trade ID"] = df_helix_trade["Trade ID"].astype(int)
-    df_helix_as_of_trade["Trade ID"] = df_helix_as_of_trade["Trade ID"].astype(int)
+    df_helix_trade['Trade ID'] = df_helix_trade['Trade ID'].astype(int)
+    df_helix_as_of_trade['Trade ID'] = df_helix_as_of_trade['Trade ID'].astype(int)
 
     if type == "Prime/USG":
         df_helix_trade = df_helix_trade[~df_helix_trade["Fund"].isin(["LMCP", "MMT"])]
@@ -210,9 +210,7 @@ def send_daily_trade_report(
             by="Series", key=lambda x: x != "Master"
         )
         # Convert 'Money' column to float
-        df_helix_trade_prime["Money"] = (
-            df_helix_trade_prime["Money"].str.replace(",", "").astype(float)
-        )
+        df_helix_trade_prime['Money'] = df_helix_trade_prime['Money'].str.replace(',', '').astype(float)
 
         # Calculate the sum of "Money" for each series in df_helix_trade_prime
         # Calculate the sum of "Money" for each series in df_helix_trade_prime
@@ -222,18 +220,12 @@ def send_daily_trade_report(
         total_prime_trades = df_helix_trade_prime["Money"].sum()
 
         series_totals = series_totals.sort_values(ascending=False)
-        series_totals = series_totals.sort_index(key=lambda x: x != "Master")
+        series_totals = series_totals.sort_index(key=lambda x: x != 'Master')
         series_totals_html = "<br>".join(
-            [
-                f"<b>{series}</b>: {total:,.2f}"
-                for series, total in series_totals.items()
-            ]
+            [f"<b>{series}</b>: {total:,.2f}" for series, total in series_totals.items()]
         )
         # Add "Total Prime trades" to the series_totals_html
-        series_totals_html = (
-            f"<b>Total Prime trades</b>: {total_prime_trades:,.2f}<br>"
-            + series_totals_html
-        )
+        series_totals_html = f"<b>Total Prime trades</b>: {total_prime_trades:,.2f}<br>" + series_totals_html
 
         df_helix_trade_usg = df_helix_trade[df_helix_trade["Fund"] == "USG"].copy()
         df_helix_trade_usg.loc[:, "Series"] = df_helix_trade_usg["Series"].str.strip()
@@ -355,6 +347,7 @@ def send_fail_to_transmitted_email(valdate, df_helix_failed_to_transmitted_trade
 df_helix_current_trade = get_helix_trades(
     current_trade_daily_report_helix_trade_query, (valdate,)
 )
+
 df_helix_as_of_trade = get_helix_trades(
     as_of_trade_daily_report_helix_trade_query, (valdate,)
 )

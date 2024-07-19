@@ -8,7 +8,7 @@ import requests
 from Utils.Common import get_file_path
 
 # Custom run date
-# process_date = '2024-05-17'
+# process_date = '2024-07-17'
 
 # Get the current date and format it
 day_to_offset = 0
