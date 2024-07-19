@@ -13,6 +13,7 @@ from sqlalchemy import (
     DateTime,
 )
 from sqlalchemy.exc import SQLAlchemyError
+
 from Utils.Hash import hash_string
 from Utils.SQL_queries import (
     AUM_query,
@@ -221,7 +222,7 @@ def get_trading_days(start_date, end_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine)
     start_date = "2024-04-15"
-    end_date = "2024-07-17"
+    end_date = "2024-07-18"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():
