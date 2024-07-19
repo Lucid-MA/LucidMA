@@ -84,10 +84,10 @@ Prime Notes LLC
 \rowcolor{lucid_blue}  
 {\color[HTML]{FFFFFF}} & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}                & {\color[HTML]{FFFFFF} Spread}               & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}        & {\color[HTML]{FFFFFF} Spread}        & {\color[HTML]{FFFFFF} Return\textsuperscript{1}}       & {\color[HTML]{FFFFFF} Spread}       \\ \arrayrulecolor{light_grey}\hline
 
-	\textbf{Lucid Prime - Series QX-1}                    & \textbf{6.27\%}                              & \textbf{-}                                  & \textbf{6.26\%}                               & \textbf{-}                           & \textbf{6.42\%}                             & \textbf{-}                          \\
-3m SOFR                       & 5.33\%                                       & \textbf{+94 bps}                            & 5.35\%                               & \textbf{+91 bps}                     & 5.45\%                              & \textbf{+97 bps}                    \\
-3m A1/P1 CP                       & 5.38\%                                       & \textbf{+89 bps}                           & 5.39\%                               & \textbf{+87 bps}                     & 5.50\%                              & \textbf{+92 bps}                    \\
-3m T-Bill                       & 5.20\%                                       & \textbf{+107 bps}                            & 5.26\%                               & \textbf{+100 bps}                     & 5.40\%                              & \textbf{+102 bps}                    \\ \arrayrulecolor{light_grey}\hline
+	\textbf{Lucid Prime - Series QX-1}                    & \textbf{6.27\%}                              & \textbf{-}                                  & \textbf{6.31\%}                               & \textbf{-}                           & \textbf{6.44\%}                             & \textbf{-}                          \\
+3m SOFR                       & 5.33\%                                       & \textbf{+94 bps}                            & 5.35\%                               & \textbf{+96 bps}                     & 5.45\%                              & \textbf{+99 bps}                    \\
+3m A1/P1 CP                       & 5.38\%                                       & \textbf{+89 bps}                           & 5.39\%                               & \textbf{+92 bps}                     & 5.50\%                              & \textbf{+94 bps}                    \\
+3m T-Bill                       & 5.20\%                                       & \textbf{+107 bps}                            & 5.26\%                               & \textbf{+105 bps}                     & 5.40\%                              & \textbf{+104 bps}                    \\ \arrayrulecolor{light_grey}\hline
 	
 \end{tabular}
 
@@ -104,7 +104,7 @@ Prime Notes LLC
 		title style = {font = \small},
 		axis line style = {light_grey},
 		title={{Performance vs Benchmarks}},
-		ymin=3, ymax=7.17, %MAXRETURN HERE
+		ymin=3, ymax=7.27, %MAXRETURN HERE
 	   symbolic x coords={Series QX-1,3m SOFR,3m A1/P1 CP,3m T-Bill},
 		xtick={Series QX-1,3m SOFR,3m A1/P1 CP,3m T-Bill},
 		x tick label style={anchor=north,font=\scriptsize,/pgf/number format/assume math mode},
@@ -125,7 +125,7 @@ Prime Notes LLC
 		]
 	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 		coordinates {
-			(Series QX-1,6.17) 
+			(Series QX-1,6.27) 
 		};
 	\addplot[ybar, nodes near coords, fill=dark_grey, rounded corners=1pt,blur shadow={shadow yshift=-1pt, shadow xshift=1pt}] 
 		coordinates {
