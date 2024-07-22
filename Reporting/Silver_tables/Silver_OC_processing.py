@@ -393,7 +393,8 @@ def generate_silver_oc_rates_prod(
             df_price_and_factor, left_on="BondID", right_on="bond_id", how="left"
         ).drop(columns="bond_id")
         df_bronze["Price"] = df_bronze["Price"].astype(float)
-        df_bronze["Price"] = df_bronze["Factor"].astype(float)
+        df_bronze["Factor"] = df_bronze["Factor"].astype(float)
+        df_bronze["Par/Quantity"] = df_bronze["Par/Quantity"].astype(float)
 
         df_bronze["Collateral_MV"] = df_bronze.apply(calculate_collateral_mv, axis=1)
         df_bronze["WAR"] = df_bronze["Orig. Rate"] * df_bronze["Money"] / 100
@@ -582,7 +583,7 @@ def generate_silver_oc_rates_prod(
                 f"{fund_name}{series_name}{row['comments']}{report_date}"
             ),
             axis=1,
-        )
+        ).astype(str)
         df_result["fund"] = fund_name
         df_result["series"] = series_name
         df_result["report_date"] = report_date

@@ -44,7 +44,7 @@ def create_table_with_schema(tb_name, engine):
     table = Table(
         tb_name,
         metadata,
-        Column("oc_rates_id", String, primary_key=True),
+        Column("oc_rates_id", String(255), primary_key=True),
         Column("fund", String),
         Column("series", String),
         Column("report_date", Date),
@@ -187,7 +187,7 @@ def fetch_and_prepare_data(report_date):
         "bronze_helix_price_and_factor", "sql_server_2"
     )
     df_price_and_factor = df_price_and_factor[
-        df_price_and_factor["data_date"] == report_date
+        df_price_and_factor["data_date"] == pd.to_datetime(report_date).date()
     ]
 
     df_cash_balance = read_table_from_db("bronze_cash_balance", "postgres")
@@ -198,8 +198,8 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2023-02-22"
-    end_date = "2023-02-24"
+    start_date = "2023-02-28"
+    end_date = "2023-02-28"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         df_bronze_oc, df_price_and_factor, df_cash_balance = fetch_and_prepare_data(
