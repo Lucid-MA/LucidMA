@@ -17,25 +17,34 @@ engine = get_database_engine("sql_server_2")
 # File to track processed files
 processed_files_tracker = "Bronze Table Processed HELIX Price and Factor"
 
-# Directory and file pattern
-pattern = "MSTR_"
+# # Directory and file pattern
+# pattern = "MSTR_"
+#
+# base_directories = [
+#     r"S:/Mandates/Operations/Helix Trade Files/Prime Archive",
+#     r"S:/Mandates/Operations/Helix Trade Files/USG Archive",
+# ]
 
-base_directories = [
-    r"S:/Mandates/Operations/Helix Trade Files/Prime Archive",
-    r"S:/Mandates/Operations/Helix Trade Files/USG Archive",
-]
+
+base_directories = {
+    # r"S:/Mandates/Operations/Helix Trade Files/Prime Archive": "MSTR_",
+    r"S:/Mandates/Operations/Helix Trade Files/USG Archive": "",
+}
 
 
-def extract_date_and_indicator(filename):
+def extract_date_and_indicator(filename, pattern):
     """
     This function extracts the date from a filename.
     Args:
         filename (str): The filename to extract the date from.
+        pattern (str): The file name pattern for the specific base directory.
     Returns:
         str: The extracted date.
     """
-    # Use regex to match the date
-    match = re.search(r"MSTR_(\d{2})_(\d{2})_(\d{4})_\d{2}_\d{2}_[AP]M\.txt$", filename)
+    # Use regex to match the date based on the provided pattern
+    match = re.search(
+        rf"{pattern}(\d{{2}})_(\d{{2}})_(\d{{4}})_\d{{2}}_\d{{2}}_[AP]M\.txt$", filename
+    )
 
     if match:
         # Rearrange the captured groups to "YYYY-MM-DD" format for the date
@@ -155,7 +164,7 @@ def convert_numeric_to_string(df, numeric_columns):
 
 
 # Iterate over files in the specified directory
-for directory in base_directories:
+for directory, pattern in base_directories.items():
     directory = get_file_path(directory)
     for filename in os.listdir(directory):
         if (
@@ -165,7 +174,7 @@ for directory in base_directories:
         ):
             filepath = os.path.join(directory, filename)
 
-            date = extract_date_and_indicator(filename)
+            date = extract_date_and_indicator(filename, pattern)
             if not date:
                 print(
                     f"Skipping {filename} as it does not contain a correct date format in file name."
@@ -178,11 +187,14 @@ for directory in base_directories:
             # Read the CSV file
             df = pd.read_csv(filepath, sep="\t")
 
+            # Check if the DataFrame has the "BondID" column, otherwise use "Cusip"
+            bond_id_column = "BondID" if "BondID" in df.columns else "Cusip"
+
             # Filter out rows where BondID is '------' or TradeID is not a valid integer
-            df = df[(df["BondID"] != "------") & (df["Trade ID"].str.isdigit())]
+            df = df[(df[bond_id_column] != "------") & (df["Trade ID"].str.isdigit())]
 
             # Select distinct BondID values
-            distinct_bond_ids = df["BondID"].unique()
+            distinct_bond_ids = df[bond_id_column].unique()
 
             # Create a new DataFrame to store the extracted data
             extracted_data = []
@@ -190,7 +202,7 @@ for directory in base_directories:
             # Iterate over distinct BondID values
             for bond_id in distinct_bond_ids:
                 # Filter rows with the current BondID
-                bond_data = df[df["BondID"] == bond_id]
+                bond_data = df[df[bond_id_column] == bond_id]
 
                 # Extract Issue Factor and Current Price for the current BondID
                 issue_factor = bond_data["Issue Factor"].iloc[0]
