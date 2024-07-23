@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
-from Silver_OC_processing import generate_silver_oc_rates, generate_silver_oc_rates_prod
+from Silver_OC_processing import generate_silver_oc_rates_prod
 from Utils.Common import get_file_path, get_trading_days
 from Utils.SQL_queries import OC_query_historical
 from Utils.database_utils import get_database_engine, read_table_from_db
@@ -198,8 +198,8 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2023-02-28"
-    end_date = "2023-02-28"
+    start_date = "2023-03-30"
+    end_date = "2023-03-31"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         df_bronze_oc, df_price_and_factor, df_cash_balance = fetch_and_prepare_data(

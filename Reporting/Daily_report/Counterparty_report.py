@@ -4,7 +4,10 @@ import msal
 import pandas as pd
 import requests
 import win32com.client as win32
+from datetime import datetime
 
+current_date = datetime.now().strftime("%Y-%m-%d")
+valdate = current_date
 
 def authenticate_and_get_token():
     client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
@@ -70,8 +73,7 @@ def send_email(subject, body, recipients):
 
 
 def refresh_data_and_send_email():
-    file_path = r"S:\Users\THoang\Data\Ctpy Risk Monitor Active_test.xlsm"
-    screenshot_save_path = r"S:\Users\THoang\Data\Ctpy_Usage_Screenshot.png"
+    file_path = r"S:\Lucid\Investment Committee & Risk\Approved Counterparties\Ctpy Risk Monitor Active.xlsm"
     sheet_name = "Ctpy Usage"
     header_row = 12
     data_start_row = 13
@@ -225,11 +227,13 @@ def refresh_data_and_send_email():
             </html>
             """
 
-    subject = "Ctpy Usage Report"
+    subject = f"Counterparty Usage Report - {valdate}"
     recipients = [
         "tony.hoang@lucidma.com",
-        "mattias.almers@lucidma.com",
-        "thomas.durante@lucidma.com",
+        # "thomas.durante@lucidma.com",
+        # "operations@lucidma.com",
+        # "simmy.richton@lucidma.com",
+        # "Aly.Izquierdo@lucidma.com"
     ]
 
     send_email(subject, html_content, recipients)
