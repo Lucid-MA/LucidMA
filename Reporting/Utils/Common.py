@@ -99,3 +99,11 @@ def format_to_0_decimals(number: float) -> str:
 
 def format_to_2_decimals(number: float) -> str:
     return f"{number:,.2f}"
+
+
+def get_datetime_string():
+    return datetime.now().strftime("%B-%d-%y %H:%M:%S")
+
+
+def get_datetime_object():
+    return pd.to_datetime(datetime.now())

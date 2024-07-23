@@ -5,6 +5,11 @@ from contextlib import contextmanager
 import pandas as pd
 from sqlalchemy import create_engine
 
+###### CONSTANTS ######
+staging_db_type = "postgres"
+prod_db_type = "sql_server_2"
+helix_db_type = "sql_server_1"
+
 # Configuration
 DB_CONFIG = {
     "postgres": {
@@ -101,3 +106,8 @@ def DatabaseConnection(db_type):
         yield conn
     finally:
         conn.close()
+
+
+# Database engines
+engine_staging = get_database_engine(staging_db_type)
+engine_prod = get_database_engine(prod_db_type)

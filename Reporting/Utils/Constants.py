@@ -1,3 +1,34 @@
+#### CONSTANTS #####
+SOFR_1M = "1m SOFR"
+SOFR_3M = "3m SOFR"
+SOFR_6M = "6m SOFR"
+SOFR_1Y = "1y SOFR"
+TBILL_1M = "1m T-Bill"
+TBILL_3M = "3m T-Bill"
+CP_1M = "1m A1/P1 CP"
+CP_3M = "3m A1/P1 CP"
+CP_6M = "6m A1/P1 CP"
+CP_9M = "9m A1/P1 CP"
+LIBOR_1M = "1m LIBOR"
+LIBOR_3M = "3m LIBOR"
+CRANE_IDX = "Crane Govt MM Index"
+CRANE_100_IDX = "Crane 100 Index"
+CRANE_GOVT_IDX = "Crane Govt Inst Index"
+CRANE_PRIME_IDX = "Crane Prime Inst Index"
+EGAN_JONES = "Egan-Jones"
+FHLB_NOTES = "FHLB 1m Discount Notes"
+
+benchmark_shortern = {
+    SOFR_1M: SOFR_1M,
+    SOFR_3M: SOFR_3M,
+    TBILL_1M: "1m TB",
+    TBILL_3M: "3m TB",
+    CRANE_IDX: "Crane MM",
+    CP_1M: CP_1M,
+    CP_3M: CP_3M,
+}
+
+
 ### TRANSACTION MAP ###
 transaction_map = {
     "ASSIGN (BEG)": "Beginning Cap Acct Bal",
@@ -569,34 +600,3 @@ holiday_data = {
     "2028-11-23": "Thanksgiving Day",
     "2028-12-25": "Christmas Day",
 }
-
-# CONSTANT
-
-SOFR_1M = "1m SOFR"
-SOFR_3M = "3m SOFR"
-TBILL_1M = "1m T-Bill"
-TBILL_3M = "3m T-Bill"
-CP_1M = "1m A1/P1 CP"
-CP_3M = "3m A1/P1 CP"
-CRANE_IDX = "Crane Govt MM Index"
-EGAN_JONES = "Egan-Jones"
-FHLB_NOTES = "FHLB 1m Discount Notes"
-
-benchmark_shortern = {
-    SOFR_1M: SOFR_1M,
-    SOFR_3M: SOFR_3M,
-    TBILL_1M: "1m TB",
-    TBILL_3M: "3m TB",
-    CRANE_IDX: "Crane MM",
-    CP_1M: CP_1M,
-    CP_3M: CP_3M,
-}
-"""
-# Series Attributes
-cusip -> fund_name -> series_name ->  fund_description -> series_description -> benchmark_id -> benchmark -> benchmark_short -> interval_tuple -> rating -> rating_org -> calc_frequency -> min_invest -> legal_fundname -> fund_inception -> series_inception 
-
-Constants:
-- exp_rat_footnote
-- 
-
-"""
