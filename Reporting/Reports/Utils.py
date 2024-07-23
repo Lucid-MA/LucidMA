@@ -1,3 +1,9 @@
+from Reports.Constants import (
+    performance_graph_template_usg,
+    performance_graph_template_other,
+)
+
+
 def secured_by_from(f, s):
     if f == "USG":
         return "US Government backed (USG) securities only"
@@ -344,16 +350,32 @@ def benchmark_shorten(s):
     return s
 
 
+# TODO: Consider delete this if the below works
+# def bps_spread(t, b):
+#     try:
+#         val = round(float(t[0 : t.index("\\")]) - float(b[0 : b.index("\\")]), 2)
+#         return (
+#             "-"
+#             if int(abs(val) * 100) == 0
+#             else (
+#                 ("+" if int(val * 100) > 0 else "-") + str(int(abs(val) * 100)) + " bps"
+#             )
+#         )
+#     except:
+#         return "n/a"
+
+
 def bps_spread(t, b):
     try:
-        val = round(float(t[0 : t.index("\\")]) - float(b[0 : b.index("\\")]), 2)
-        return (
-            "-"
-            if int(abs(val) * 100) == 0
-            else (
-                ("+" if int(val * 100) > 0 else "-") + str(int(abs(val) * 100)) + " bps"
-            )
-        )
+        # Extract numeric parts from input strings
+        t_value = float(t.split("\\")[0])
+        b_value = float(b.split("\\")[0])
+
+        # Calculate absolute difference
+        diff = abs(t_value - b_value)
+
+        # Format output string
+        return f"+{int(diff * 100)} bps"
     except:
         return "n/a"
 
@@ -767,105 +789,9 @@ def performance_graph(
     comp_b,
 ):
     if fund_name.upper() == "USG":
-        out = r"""
-			  \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
-		\begin{{axis}}[
-			title style = {{font = \small}},
-			axis line style = {{light_grey}},{title}
-			date coordinates in=x, date ZERO={zero_date},
-			xticklabel=\month/\day/\year,  
-			ymin={min_return}, ymax={max_return}, %MAXRETURN HERE
-			legend cell align = {{left}},
-			legend style={{at={{(0.3,1)}},
-			  anchor=north east, font=\tiny, draw=none,fill=none}},
-			  x={graphx}mm, %CHANGE THIS to tighten in graph, eg if quarterly
-			bar width={graphbarwidth}mm, ybar=2pt, %bar width is width, ybar is space between
-		   % symbolic x coords={{Firm 1, Firm 2, Firm 3, Firm 4, Firm 5}},
-			xtick=data,
-			x tick label style={{rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode}},
-				 yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
-			y tick label style = {{/pgf/number format/.cd,
-					fixed,
-					fixed zerofill,
-					precision=2,
-					/pgf/number format/assume math mode
-			}},
-			nodes near coords align={{vertical}},
-			ytick distance=0.5,
-			xtick pos=bottom,ytick pos=left,
-			every node near coord/.append style={{font=\fontsize{{6}}{{6}}\selectfont,/pgf/number format/.cd,
-					fixed,
-					fixed zerofill,
-					precision=2,/pgf/number format/assume math mode}},
-			]
-		%\addplot[ybar, nodes near coords, fill=blue] 
-		\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
-			coordinates {{
-				{return_plot}
-			}};
-		\addplot[draw=dark_red,ultra thick,smooth] 
-			coordinates {{
-				{comp_a_plot}
-			}};
-		\addplot[draw=dark_color,ultra thick,smooth] 
-			coordinates {{
-				{comp_b_plot}
-			}};
-		\legend{{\hphantom{{A}}{fund_name} Series {series_abbrev},\hphantom{{A}}{comp_a},\hphantom{{A}}{comp_b}}}
-		\end{{axis}}
-			\end{{tikzpicture}}}}
-
-			"""
+        out = performance_graph_template_usg
     else:
-        out = r"""
-		  \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
-	\begin{{axis}}[
-		title style = {{font = \small}},
-		axis line style = {{light_grey}},{title}
-		date coordinates in=x, date ZERO={zero_date},
-		xticklabel=\month/\day/\year,  
-		ymin={min_return}, ymax={max_return}, %MAXRETURN HERE
-		legend cell align = {{left}},
-		legend style={{at={{(0.2,1)}},
-		  anchor=north east, font=\tiny, draw=none,fill=none}},
-		  x={graphx}mm, %CHANGE THIS to tighten in graph, eg if quarterly
-		bar width={graphbarwidth}mm, ybar=2pt, %bar width is width, ybar is space between
-	   % symbolic x coords={{Firm 1, Firm 2, Firm 3, Firm 4, Firm 5}},
-		xtick=data,
-		x tick label style={{rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode}},
-			 yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
-		y tick label style = {{/pgf/number format/.cd,
-				fixed,
-				fixed zerofill,
-				precision=2,
-				/pgf/number format/assume math mode
-		}},
-		nodes near coords align={{vertical}},
-		ytick distance=0.5,
-		xtick pos=bottom,ytick pos=left,
-		every node near coord/.append style={{font=\fontsize{{6}}{{6}}\selectfont,/pgf/number format/.cd,
-				fixed,
-				fixed zerofill,
-				precision=2,/pgf/number format/assume math mode}},
-		]
-	%\addplot[ybar, nodes near coords, fill=blue] 
-	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
-		coordinates {{
-			{return_plot}
-		}};
-	\addplot[draw=dark_red,ultra thick,smooth] 
-		coordinates {{
-			{comp_a_plot}
-		}};
-	\addplot[draw=dark_color,ultra thick,smooth] 
-		coordinates {{
-			{comp_b_plot}
-		}};
-	\legend{{\hphantom{{A}}{fund_name} Series {series_abbrev},\hphantom{{A}}{comp_a},\hphantom{{A}}{comp_b}}}
-	\end{{axis}}
-		\end{{tikzpicture}}}}
-	
-		"""
+        out = performance_graph_template_other
     # Terri graph
     return out.format(
         graphhspace=graphhspace,

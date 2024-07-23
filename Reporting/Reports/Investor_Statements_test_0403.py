@@ -47,18 +47,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
-    "PRIME-M00",
+    # "PRIME-C10",
+    # "PRIME-M00",
     "PRIME-MIG",
-    "PRIME-Q10",
-    "PRIME-QX0",
-    "74166WAE4",  # Prime Note QX-1
-    "74166WAM6",  # Prime Note Q1
-    "74166WAK0",  # Prime Note M-2
-    "74166WAN4",  # Prime Note MIG
-    "90366JAG2",  # USG Note M-8
-    "90366JAH0",  # USG Note M-9
-    "USGFD-M00",
+    # "PRIME-Q10",
+    # "PRIME-QX0",
+    # "74166WAE4",  # Prime Note QX-1
+    # "74166WAM6",  # Prime Note Q1
+    # "74166WAK0",  # Prime Note M-2
+    # "74166WAN4",  # Prime Note MIG
+    # "90366JAG2",  # USG Note M-8
+    # "90366JAH0",  # USG Note M-9
+    # "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -741,10 +741,6 @@ for reporting_series_id in reporting_series:
     r_this_1 = form_as_percent(historical_return_1 / 100, 2)
     r_this_2 = form_as_percent(historical_return_2 / 100, 2)
 
-    # TODO: delete this
-    # r_this_1 = form_as_percent(historical_returns_temp[reporting_series_id][0], 2)
-    # r_this_2 = form_as_percent(historical_returns_temp[reporting_series_id][1], 2)
-
     ## CALCULATE SPREAD
     s_a_0 = bps_spread(previous_target_return, form_as_percent(r_a[0], 2))
     s_a_1 = bps_spread(r_this_1, r_a[1])
@@ -760,7 +756,7 @@ for reporting_series_id in reporting_series:
 
     ############################## GRAPHIC #####################################
     nbars_val = 16
-    offset_val = 16
+    offset_val = 16  # This is how many returns data point will show up on the graph
 
     def get_new_end_date(df, current_end_date, offset):
         """
@@ -818,7 +814,7 @@ for reporting_series_id in reporting_series:
     def get_returns_comparison_plot_data(
         df, end_date_col, end_date_val, return_col, offset
     ):
-        global reporting_series_id
+        global reporting_series_id, offset_val
         # Convert 'end_date_val' to datetime
         end_date_val = pd.to_datetime(end_date_val)
 
@@ -831,10 +827,12 @@ for reporting_series_id in reporting_series:
         # Take the last 'offset' number of rows
         # TODO: This is special handling - remove later on. This is due to historical returns not avail before 2021 in the DB
         if reporting_series_id in ["PRIME-Q10", "PRIME-QX0", "74166WAM6", "74166WAE4"]:
-            result_df = sorted_df.tail(13)
-        else:
-            result_df = sorted_df.tail(offset)
 
+            offset_val = min(offset, 13, len(df))
+        else:
+            offset_val = min(offset, len(df))
+
+        result_df = sorted_df.tail(offset_val)
         # Format the result as a string
         result_str = " ".join(
             [

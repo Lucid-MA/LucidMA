@@ -464,3 +464,103 @@ note_report_template = r"""
 \end{{document}}
 
 """
+
+performance_graph_template_usg = r"""
+			  \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
+		\begin{{axis}}[
+			title style = {{font = \small}},
+			axis line style = {{light_grey}},{title}
+			date coordinates in=x, date ZERO={zero_date},
+			xticklabel=\month/\day/\year,  
+			ymin={min_return}, ymax={max_return}, %MAXRETURN HERE
+			legend cell align = {{left}},
+			legend style={{at={{(0.3,1)}},
+			  anchor=north east, font=\tiny, draw=none,fill=none}},
+			  x={graphx}mm, %CHANGE THIS to tighten in graph, eg if quarterly
+			bar width={graphbarwidth}mm, ybar=2pt, %bar width is width, ybar is space between
+		   % symbolic x coords={{Firm 1, Firm 2, Firm 3, Firm 4, Firm 5}},
+			xtick=data,
+			x tick label style={{rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode}},
+				 yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
+			y tick label style = {{/pgf/number format/.cd,
+					fixed,
+					fixed zerofill,
+					precision=2,
+					/pgf/number format/assume math mode
+			}},
+			nodes near coords align={{vertical}},
+			ytick distance=0.5,
+			xtick pos=bottom,ytick pos=left,
+			every node near coord/.append style={{font=\fontsize{{6}}{{6}}\selectfont,/pgf/number format/.cd,
+					fixed,
+					fixed zerofill,
+					precision=2,/pgf/number format/assume math mode}},
+			]
+		%\addplot[ybar, nodes near coords, fill=blue] 
+		\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+			coordinates {{
+				{return_plot}
+			}};
+		\addplot[draw=dark_red,ultra thick,smooth] 
+			coordinates {{
+				{comp_a_plot}
+			}};
+		\addplot[draw=dark_color,ultra thick,smooth] 
+			coordinates {{
+				{comp_b_plot}
+			}};
+		\legend{{\hphantom{{A}}{fund_name} Series {series_abbrev},\hphantom{{A}}{comp_a},\hphantom{{A}}{comp_b}}}
+		\end{{axis}}
+			\end{{tikzpicture}}}}
+
+			"""
+
+performance_graph_template_other = r"""
+		  \hspace*{{{graphhspace}cm}}\resizebox {{{graphwidth}}} {{{graphheight}}} {{\begin{{tikzpicture}}
+	\begin{{axis}}[
+		title style = {{font = \small}},
+		axis line style = {{light_grey}},{title}
+		date coordinates in=x, date ZERO={zero_date},
+		xticklabel=\month/\day/\year,  
+		ymin={min_return}, ymax={max_return}, %MAXRETURN HERE
+		legend cell align = {{left}},
+		legend style={{at={{(0.25,1)}},
+		  anchor=north east, font=\tiny, draw=none,fill=none}},
+		  x={graphx}mm, %CHANGE THIS to tighten in graph, eg if quarterly
+		bar width={graphbarwidth}mm, ybar=2pt, %bar width is width, ybar is space between
+	   % symbolic x coords={{Firm 1, Firm 2, Firm 3, Firm 4, Firm 5}},
+		xtick=data,
+		x tick label style={{rotate=90,anchor=east,font=\tiny,/pgf/number format/assume math mode}},
+			 yticklabel=\pgfmathparse{{\tick}}\pgfmathprintnumber{{\pgfmathresult}}\,\%,
+		y tick label style = {{/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,
+				/pgf/number format/assume math mode
+		}},
+		nodes near coords align={{vertical}},
+		ytick distance=0.5,
+		xtick pos=bottom,ytick pos=left,
+		every node near coord/.append style={{font=\fontsize{{6}}{{6}}\selectfont,/pgf/number format/.cd,
+				fixed,
+				fixed zerofill,
+				precision=2,/pgf/number format/assume math mode}},
+		]
+	%\addplot[ybar, nodes near coords, fill=blue] 
+	\addplot[ybar, nodes near coords, fill=lucid_blue, rounded corners=1pt,blur shadow={{shadow yshift=-1pt, shadow xshift=1pt}}] 
+		coordinates {{
+			{return_plot}
+		}};
+	\addplot[draw=dark_red,ultra thick,smooth] 
+		coordinates {{
+			{comp_a_plot}
+		}};
+	\addplot[draw=dark_color,ultra thick,smooth] 
+		coordinates {{
+			{comp_b_plot}
+		}};
+	\legend{{\hphantom{{A}}{fund_name} Series {series_abbrev},\hphantom{{A}}{comp_a},\hphantom{{A}}{comp_b}}}
+	\end{{axis}}
+		\end{{tikzpicture}}}}
+	
+		"""
