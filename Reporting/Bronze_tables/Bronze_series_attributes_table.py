@@ -14,12 +14,23 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path
-from Utils.database_utils import get_database_engine
+from Utils.Common import get_file_path, get_datetime_object
+from Utils.database_utils import (
+    get_database_engine,
+    staging_db_type,
+    engine_prod,
+    engine_staging,
+)
+
+PUBLISH_TO_PROD = False
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine("postgres")
-tb_name = "bronze_series_attributes"
+if PUBLISH_TO_PROD:
+    engine = engine_prod
+else:
+    engine = engine_staging
+
+tb_name = "series_attributes"
 # Path to the "Series attributes.xlsx" file
 file_path = get_file_path(r"S:/Users/THoang/Data/Series attributes.xlsx")
 
@@ -30,9 +41,10 @@ def create_table_with_schema(tb_name):
     table = Table(
         tb_name,
         metadata,
-        Column("security_id", String, primary_key=True),
+        Column("security_id", String(255), primary_key=True),
         Column("fund_name", String),
         Column("fund_description", String),
+        Column("type", String),
         Column("legal_fund_name", String),
         Column("fund_inception", Date),
         Column("series_name", String),
@@ -48,6 +60,7 @@ def create_table_with_schema(tb_name):
         Column("minimum_investment", Integer),
         Column("series_withdrawal", String),
         Column("expense_ratio_cap", Numeric(precision=5, scale=2)),
+        Column("day_count", Integer),
         Column("interval", String),
         Column("timestamp", DateTime),
         extend_existing=True,
@@ -61,25 +74,51 @@ def upsert_data(tb_name, df):
         try:
             with conn.begin():  # Start a transaction
                 # Constructing the UPSERT SQL dynamically based on DataFrame columns
+                # Replace NaN values with None
+                df = df.astype(object).where(pd.notnull(df), None)
+
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join([f":{col}" for col in df.columns])
-                update_clause = ", ".join(
-                    [
-                        f'"{col}"=EXCLUDED."{col}"'
-                        for col in df.columns
-                        if col
-                        != "security_id"  # Assuming "security_id" is unique and used for conflict resolution
-                    ]
-                )
 
-                upsert_sql = text(
-                    f"""
-                    INSERT INTO {tb_name} ({column_names})
-                    VALUES ({value_placeholders})
-                    ON CONFLICT ("security_id")
-                    DO UPDATE SET {update_clause};
-                    """
-                )
+                if PUBLISH_TO_PROD:
+                    update_clause = ", ".join(
+                        [
+                            f"[{col}]=source.[{col}]"
+                            for col in df.columns
+                            if col != "security_id"
+                        ]
+                    )
+
+                    upsert_sql = text(
+                        f"""
+                                        MERGE INTO {tb_name} AS target
+                                        USING (VALUES ({value_placeholders})) AS source ({column_names})
+                                        ON target.security_id = source.security_id
+                                        WHEN MATCHED THEN
+                                            UPDATE SET {update_clause}
+                                        WHEN NOT MATCHED THEN
+                                            INSERT ({column_names})
+                                            VALUES ({value_placeholders});
+                                        """
+                    )
+                else:
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}"=EXCLUDED."{col}"'
+                            for col in df.columns
+                            if col
+                            != "security_id"  # Assuming "security_id" is unique and used for conflict resolution
+                        ]
+                    )
+
+                    upsert_sql = text(
+                        f"""
+                        INSERT INTO {tb_name} ({column_names})
+                        VALUES ({value_placeholders})
+                        ON CONFLICT ("security_id")
+                        DO UPDATE SET {update_clause};
+                        """
+                    )
 
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
@@ -100,6 +139,7 @@ try:
         "security_id",
         "fund_name",
         "fund_description",
+        "type",
         "legal_fund_name",
         "fund_inception",
         "series_name",
@@ -115,6 +155,7 @@ try:
         "minimum_investment",
         "series_withdrawal",
         "expense_ratio_cap",
+        "day_count",
         "interval",
     ]
 
@@ -148,7 +189,7 @@ try:
     )
 
     # Add the timestamp column
-    series_attributes_df["timestamp"] = datetime.now().strftime("%B-%d-%y %H:%M:%S")
+    series_attributes_df["timestamp"] = get_datetime_object()
 
     print("Series attributes data loaded successfully.")
 except Exception as e:
