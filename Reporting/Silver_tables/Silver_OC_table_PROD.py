@@ -198,8 +198,8 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2023-03-30"
-    end_date = "2023-03-31"
+    start_date = "2021-01-01"
+    end_date = "2023-12-31"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         df_bronze_oc, df_price_and_factor, df_cash_balance = fetch_and_prepare_data(
