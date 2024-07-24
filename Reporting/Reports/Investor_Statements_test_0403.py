@@ -94,55 +94,6 @@ report_names_dict = {
 }
 
 ############## MANUAL INPUT##############
-# TODO: delete this
-# historical_returns_temp = {
-#     "PRIME-C10": [0.0585, 0.0597],
-#     "PRIME-M00": [0.0585, 0.0597],
-#     "PRIME-MIG": [0.0595, 0.0608],
-#     # "PRIME-Q10",
-#     # "PRIME-Q36",
-#     # "PRIME-QX0",
-#     "74166WAE4": [0.0585, 0.0597],
-#     "74166WAK0": [0.0585, 0.0597],
-#     "74166WAM6": [0.0585, 0.0597],
-#     "74166WAN4": [0.0585, 0.0597],
-#     "90366JAG2": [0.0555, 0.0563],
-#     "90366JAH0": [0.0555, 0.0563],
-#     "USGFD-M00": [0.0555, 0.0563],
-# }
-
-
-# fund_size_dict = {
-#     "PRIME": 3179816720.51731,
-#     "USG": 123255192.977195,
-# }
-
-# TODO: replace this with data from data from helix
-series_size_dict = {
-    "PRIME-C10": 117000000,
-    "PRIME-M00": 756000000,
-    "PRIME-MIG": 744000000,
-    "PRIME-Q10": 646900000,
-    "PRIME-QX0": 211300000,
-    "74166WAE4": 211300000,  # Prime Note QX
-    "74166WAK0": 756000000,  # Prime Note M-2
-    "74166WAM6": 646900000,  # Prime Note Q1
-    "74166WAN4": 744000000,  # Prime Note MIG
-    "90366JAG2": 123850000,  # USG Note M-8
-    "90366JAH0": 123850000,  # USG Note M-9
-    "USGFD-M00": 123850000,  # USG Fund
-}
-
-# TODO: Need to replace this with a proper table
-note_principal = {
-    "74166WAE4": 38500000,  # Prime Note QX
-    "74166WAK0": 325250000,  # Prime Note M-2
-    "74166WAM6": 391800000,  # Prime Note Q1
-    "74166WAN4": 389750000,  # Prime Note MIG
-    "90366JAG2": 20700000,  # USG Note M-8
-    "90366JAH0": 50000000,  # USG Note M-9
-}
-
 benchmark_dictionary = {
     "PRIME-C10": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
     "PRIME-M00": ["1m SOFR", "1m A1/P1 CP", "1m T-Bill"],
@@ -673,24 +624,6 @@ for reporting_series_id in reporting_series:
             r_a = list(sofr_3m_data)
         else:
             r_a = list(sofr_data)
-    #     r_a = []
-    #     r_a.append(round(df_benchmark_comparison_curr[benchmark_to_use[0]].iloc[0], 4))
-    #     r_a.append(
-    #         round(
-    #             df_benchmark_comparison_prev[benchmark_to_use[0] + "_3m_return"].iloc[
-    #                 0
-    #             ],
-    #             4,
-    #         )
-    #     )
-    #     r_a.append(
-    #         round(
-    #             df_benchmark_comparison_prev[benchmark_to_use[0] + "_12m_return"].iloc[
-    #                 0
-    #             ],
-    #             4,
-    #         )
-    #     )
     r_a[1] = form_as_percent(r_a[1], 2)
     r_a[2] = form_as_percent(r_a[2], 2)
     # Crane Govt MM Index
@@ -702,24 +635,6 @@ for reporting_series_id in reporting_series:
             r_b = list(cp_3m_data)
         else:
             r_b = list(cp_data)
-        # r_b = []
-        # r_b.append(round(df_benchmark_comparison_curr[benchmark_to_use[1]].iloc[0], 4))
-        # r_b.append(
-        #     round(
-        #         df_benchmark_comparison_prev[benchmark_to_use[1] + "_3m_return"].iloc[
-        #             0
-        #         ],
-        #         4,
-        #     )
-        # )
-        # r_b.append(
-        #     round(
-        #         df_benchmark_comparison_prev[benchmark_to_use[1] + "_12m_return"].iloc[
-        #             0
-        #         ],
-        #         4,
-        #     )
-        # )
     r_b[1] = form_as_percent(r_b[1], 2)
     r_b[2] = form_as_percent(r_b[2], 2)
 
@@ -1155,137 +1070,6 @@ for reporting_series_id in reporting_series:
             oc_rates.append(round(oc_total_temp, 4))
 
         return oc_rates
-
-    # def get_coupon_plot(reporting_series_id, reporting_date):
-    #     global next_start, next_end
-    #
-    #     ### GET NOTES DATA
-    #     note_data_df = (
-    #         df_notes_principal[df_notes_principal["series_id"] == reporting_series_id]
-    #         .sort_values(by="interest_period_end")
-    #         .reset_index()
-    #     )
-    #
-    #     lookback_period = 5
-    #
-    #     # Find the index where interest_period_end is first greater than or equal to reporting_date
-    #     index = note_data_df[
-    #         note_data_df["interest_period_end"] >= reporting_date
-    #     ].index[0]
-    #
-    #     # Calculate the number of rows that satisfy the condition
-    #     rows_before = len(note_data_df[:index])
-    #
-    #     # Use the minimum of lookback_period and rows_before
-    #     # TODO: Refractor this lookback period logic to combine with the max_length below
-    #     lookback = min(lookback_period, rows_before)
-    #
-    #     # Get the result DataFrame
-    #     result_df = note_data_df.iloc[index - lookback : index + 1].copy()
-    #
-    #     int_period_starts = result_df["interest_period_start"].tolist()[-lookback:] + [
-    #         pd.Timestamp(next_start)
-    #     ]
-    #     int_period_ends = result_df["interest_period_end"].tolist()[-lookback:] + [
-    #         pd.Timestamp(next_end)
-    #     ]
-    #     int_rates = result_df["interest_rate"].tolist()[-lookback:]
-    #     note_principals = result_df["principal_outstanding"].tolist()[-lookback:]
-    #     interest_paid = result_df["interest_paid"].tolist()[-lookback:]
-    #     interest_payment_dates = result_df["interest_payment_date"].tolist()[
-    #         -lookback:
-    #     ] + [pd.Timestamp(next_end)]
-    #
-    #     # Other variables
-    #     target_int_rates, spread_to_benchmarks = (
-    #         get_interest_rates_and_spreads_coupon_table(reporting_date, lookback_period)
-    #     )  # historical returns
-    #     # spread_to_benchmarks =  spread_to_benchmarks[-lookback:]
-    #     oc_rates = get_oc_rates_coupon_table(int_period_ends)
-    #
-    #     # Reformatting
-    #     benchmark_name = benchmark_shortern[benchmark_to_use[0]]
-    #     int_rates = [f"{rate * 100:.2f}" for rate in int_rates + [target_int_rates[-1]]]
-    #     spread_to_benchmarks = [
-    #         f"{benchmark_name}+{spread}" for spread in spread_to_benchmarks
-    #     ]
-    #     # This is special because we're assuming the note principal as of the report date is the same as of the previous period. This is due to a delay in updating the principal
-    #     # TODO: account for case when the note principal is actually updated in the database
-    #     note_principals = [
-    #         f"{principal:,.0f}" for principal in note_principals + [note_principals[-1]]
-    #     ]
-    #     interest_paid = [f"{interest:,.2f}" for interest in interest_paid] + ["n/a"]
-    #     int_period_starts = [date.strftime("%m/%d/%y") for date in int_period_starts]
-    #     int_period_ends = [date.strftime("%m/%d/%y") for date in int_period_ends]
-    #     interest_payment_dates = [
-    #         date.strftime("%m/%d/%y") for date in interest_payment_dates
-    #     ]
-    #     oc_rates = [
-    #         f"{float(rate)*100:.2f}" if not math.isnan(rate) else "n/a"
-    #         for rate in oc_rates
-    #     ]
-    #     related_fund_cap_accounts = note_principals
-    #
-    #     # TODO: REFRACTOR THIS. THIS IS SO BAD BECAUSE THE LENGTH OF THE LIST ARE NOT EQUAL AND WE ONLY WANT TO GET THE LAST ELEMENTS OF EACH LIST
-    #     latex_text = ""
-    #     max_length = min(
-    #         len(int_period_starts),
-    #         len(note_principals),
-    #         len(int_rates),
-    #         len(interest_payment_dates),
-    #         len(spread_to_benchmarks),
-    #         len(note_principals),
-    #         len(interest_paid),
-    #         len(related_fund_cap_accounts),
-    #     )
-    #
-    #     # Get the indices for the last coupon_table_nrow items
-    #     int_period_starts = int_period_starts[-max_length:]
-    #     int_period_ends = int_period_ends[-max_length:]
-    #     note_principals = note_principals[-max_length:]
-    #     int_rates = int_rates[-max_length:]
-    #     interest_payment_dates = interest_payment_dates[-max_length:]
-    #     spread_to_benchmarks = spread_to_benchmarks[-max_length:]
-    #     interest_paid = interest_paid[-max_length:]
-    #     oc_rates = oc_rates[-max_length:]
-    #     related_fund_cap_accounts = related_fund_cap_accounts[-max_length:]
-    #
-    #     indices = range(0, len(int_period_starts))
-    #
-    #     for i in indices:
-    #         int_rate = str(int_rates[i]) + "\\%" if int_rates[i] != "n/a" else "n/a"
-    #         note_principal_val = (
-    #             "\\$" + str(note_principals[i])
-    #             if note_principals[i] != "n/a"
-    #             else "n/a"
-    #         )
-    #         interest_paid_val = (
-    #             "\\$" + str(interest_paid[i]) if interest_paid[i] != "n/a" else "n/a"
-    #         )
-    #         related_fund_cap_account_val = (
-    #             "\\$" + str(related_fund_cap_accounts[i])
-    #             if related_fund_cap_accounts[i] != "n/a"
-    #             else "n/a"
-    #         )
-    #         oc_rate_val = oc_rates[i] + "\\%" if oc_rates[i] != "n/a" else "n/a"
-    #
-    #         # if i == len(int_period_starts) - 1:
-    #         #     int_rate = int_rate[:-2] + "{\\tiny (Est'd)}" + int_rate[-2:]
-    #         if i == len(int_period_starts) - 1:
-    #             int_rate = (
-    #                 int_rates[i] + "\\%{\\tiny (Est'd)}"
-    #                 if int_rates[i] != "n/a"
-    #                 else "n/a"
-    #             )
-    #
-    #         latex_line = (
-    #             f"{int_period_starts[i]} &\\textbf{{{int_period_ends[i]}}} &\\textbf{{{int_rate}}} "
-    #             f"&{spread_to_benchmarks[i]} &{note_principal_val} &{interest_paid_val} "
-    #             f"&{interest_payment_dates[i]} &{related_fund_cap_account_val} &{oc_rate_val} \\\\"
-    #         )
-    #         latex_text += latex_line + "\n"
-    #
-    #     return latex_text
 
     def prepare_coupon_data(reporting_series_id, reporting_date, lookback_period):
         global next_start, next_end
