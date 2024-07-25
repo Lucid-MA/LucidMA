@@ -73,7 +73,7 @@ def send_email(subject, body, recipients):
 
 
 def refresh_data_and_send_email():
-    file_path = r"S:\Lucid\Investment Committee & Risk\Approved Counterparties\Ctpy Risk Monitor Active.xlsm"
+    file_path = r"S:\Lucid\Investment Committee & Risk\Approved Counterparties\CPRiskMonitor\Ctpy Risk Monitor Active.xlsm"
     sheet_name = "Ctpy Usage"
     header_row = 12
     data_start_row = 13
@@ -230,11 +230,17 @@ def refresh_data_and_send_email():
     subject = f"Counterparty Usage Report - {valdate}"
     recipients = [
         "tony.hoang@lucidma.com",
-        # "thomas.durante@lucidma.com",
-        # "operations@lucidma.com",
-        # "simmy.richton@lucidma.com",
-        # "Aly.Izquierdo@lucidma.com"
+         "thomas.durante@lucidma.com",
+         "operations@lucidma.com",
+         "simmy.richton@lucidma.com",
+         "Aly.Izquierdo@lucidma.com"
     ]
+
+    # Save the filtered_data dataframe as an Excel file
+    output_folder = r"S:\Lucid\Investment Committee & Risk\Approved Counterparties\CPRiskMonitor\Archive"
+    output_file = f"CPExposures_{valdate}.xlsx"
+    output_path = os.path.join(output_folder, output_file)
+    filtered_data.to_excel(output_path, index=False)
 
     send_email(subject, html_content, recipients)
 
