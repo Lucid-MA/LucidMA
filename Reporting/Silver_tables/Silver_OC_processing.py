@@ -9,7 +9,7 @@ from Utils.Hash import hash_string
 IS_PROD = True
 # Constants
 if IS_PROD:
-    OC_RATES_TRACKER = "Silver OC Rates Tracker PROD"
+    OC_RATES_TRACKER = "Silver OC Rates Tracker PROD v2"
 else:
     OC_RATES_TRACKER = "Silver OC Rates Tracker"
 

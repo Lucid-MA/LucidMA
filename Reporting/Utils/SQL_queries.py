@@ -113,6 +113,70 @@ AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
 ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
 """
 
+OC_query_historical_v2 = f"""
+WITH active_trades AS (
+    SELECT tradepiece
+    FROM tradepieces
+    WHERE startdate <= :valdate
+    AND (closedate IS NULL OR closedate >= :valdate OR enddate >= :valdate)
+),
+latest_ratings AS (
+    SELECT ht.tradepiece, ht.comments AS rating
+    FROM history_tradepieces ht
+    JOIN (
+        SELECT tradepiece, MAX(datetimeid) AS max_datetimeid
+        FROM history_tradepieces
+        WHERE EXISTS (
+            SELECT 1
+            FROM active_trades at
+            WHERE at.tradepiece = history_tradepieces.tradepiece
+        )
+        GROUP BY tradepiece
+    ) latest
+    ON ht.tradepiece = latest.tradepiece AND ht.datetimeid = latest.max_datetimeid
+    WHERE CAST(ht.datetimeid AS DATE) = CAST(ht.bookdate AS DATE)
+)
+SELECT
+    CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END AS fund,
+    RTRIM(tp.ledgername) AS Series,
+    tp.tradepiece AS "Trade ID",
+    RTRIM(tt.description) AS TradeType,
+    tp.startdate AS "Start Date",
+    CASE WHEN tp.closedate IS NULL THEN tp.enddate ELSE tp.closedate END AS "End Date",
+    tp.fx_money AS Money,
+    LTRIM(RTRIM(tp.contraname)) AS Counterparty,
+    COALESCE(tc.lastrate, tp.reporate) AS "Orig. Rate",
+    tp.price AS "Orig. Price",
+    LTRIM(RTRIM(tp.isin)) AS BondID,
+    tp.par * CASE WHEN tp.tradetype IN (0, 22) THEN -1 ELSE 1 END AS "Par/Quantity",
+    CASE WHEN RTRIM(tt.description) IN ('ReverseFree', 'RepoFree') THEN 0 ELSE tp.haircut END AS HairCut,
+    tci.commissionvalue * 100 AS Spread,
+    LTRIM(RTRIM(tp.acct_number)) AS "cp short",
+    CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USG' WHEN tp.tradepiece IN (60320, 60321, 60258) THEN 'BBB' WHEN tp.comments = '' THEN rt.rating ELSE tp.comments END AS Comments,
+    tp.fx_money + tc.repointerest_unrealized + tc.repointerest_nbd AS "End Money",
+    CASE WHEN RTRIM(is3.description) = 'CLO CRE' THEN 'CMBS' ELSE RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USD Cash' ELSE is2.description END) END AS "Product Type",
+    RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'Cash' ELSE is3.description END) AS "Collateral Type"
+FROM tradepieces tp
+INNER JOIN tradepiececalcdatas tc ON tc.tradepiece = tp.tradepiece
+INNER JOIN tradecommissionpieceinfo tci ON tci.tradepiece = tp.tradepiece
+INNER JOIN tradetypes tt ON tt.tradetype = tp.shelltradetype
+INNER JOIN issues i ON i.cusip = tp.cusip
+INNER JOIN currencys c ON c.currency = tp.currency_money
+INNER JOIN statusdetails sd ON sd.statusdetail = tp.statusdetail
+INNER JOIN statusmains sm ON sm.statusmain = tp.statusmain
+INNER JOIN issuecategories ic ON ic.issuecategory = tp.issuecategory
+INNER JOIN issuesubtypes1 is1 ON is1.issuesubtype1 = ic.issuesubtype1
+INNER JOIN issuesubtypes2 is2 ON is2.issuesubtype2 = ic.issuesubtype2
+INNER JOIN issuesubtypes3 is3 ON is3.issuesubtype3 = ic.issuesubtype3
+INNER JOIN depositorys d ON tp.depositoryid = d.depositoryid
+LEFT JOIN latest_ratings rt ON rt.tradepiece = tp.tradepiece
+WHERE tp.statusmain <> 6
+AND tp.company IN (44, 45)
+AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
+AND (tp.STARTDATE <= :valdate) AND (tp.enddate > :valdate OR tp.enddate IS NULL) AND (tp.CLOSEDATE > :valdate OR tp.CLOSEDATE IS NULL)
+ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
+"""
+
 
 all_securities_query = """
         SELECT DISTINCT CUSIP
@@ -461,6 +525,7 @@ ORDER BY [Start Date]
 """
 
 # Use for reporting
+# Return a list of tradepieces that were entered on @valdate and started on or after @valdate
 current_trade_daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
 SET @valdate = ?
@@ -551,6 +616,7 @@ ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contra
 """
 
 # Use for reporting
+# This is a list of tradepieces that were entered on @valdate but started before @valdate
 as_of_trade_daily_report_helix_trade_query = """
 DECLARE @valdate AS DATE
 SET @valdate = ?
@@ -902,4 +968,125 @@ LEFT('MMT-000000', 9) AS "Series ID",
 COALESCE(OtherMandatesData.SumNAVLastRoll_USD, 0) AS "Outstanding"
 FROM
 OtherMandatesData;
+"""
+
+
+counterparty_count_summary = """
+DECLARE @valdate DATE = '2024-07-05';
+
+WITH active_trades AS (
+    SELECT tradepiece
+    FROM tradepieces
+    WHERE startdate <= @valdate
+    AND (closedate IS NULL OR closedate >= @valdate OR enddate >= @valdate)
+),
+latest_ratings AS (
+    SELECT ht.tradepiece, ht.comments AS rating
+    FROM history_tradepieces ht
+    JOIN (
+        SELECT tradepiece, MAX(datetimeid) AS max_datetimeid
+        FROM history_tradepieces
+        WHERE EXISTS (
+            SELECT 1
+            FROM active_trades at
+            WHERE at.tradepiece = history_tradepieces.tradepiece
+        )
+        GROUP BY tradepiece
+    ) latest
+    ON ht.tradepiece = latest.tradepiece AND ht.datetimeid = latest.max_datetimeid
+    WHERE CAST(ht.datetimeid AS DATE) = CAST(ht.bookdate AS DATE)
+)
+SELECT
+    CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END AS fund,
+    RTRIM(tp.ledgername) AS Series,
+    COUNT(DISTINCT LTRIM(RTRIM(tp.contraname))) AS UniqueCounterparties,
+    SUM(tp.fx_money) AS TotalMoney
+FROM tradepieces tp
+INNER JOIN tradepiececalcdatas tc ON tc.tradepiece = tp.tradepiece
+INNER JOIN tradecommissionpieceinfo tci ON tci.tradepiece = tp.tradepiece
+INNER JOIN tradetypes tt ON tt.tradetype = tp.shelltradetype
+INNER JOIN issues i ON i.cusip = tp.cusip
+INNER JOIN currencys c ON c.currency = tp.currency_money
+INNER JOIN statusdetails sd ON sd.statusdetail = tp.statusdetail
+INNER JOIN statusmains sm ON sm.statusmain = tp.statusmain
+INNER JOIN issuecategories ic ON ic.issuecategory = tp.issuecategory
+INNER JOIN issuesubtypes1 is1 ON is1.issuesubtype1 = ic.issuesubtype1
+INNER JOIN issuesubtypes2 is2 ON is2.issuesubtype2 = ic.issuesubtype2
+INNER JOIN issuesubtypes3 is3 ON is3.issuesubtype3 = ic.issuesubtype3
+INNER JOIN depositorys d ON tp.depositoryid = d.depositoryid
+LEFT JOIN latest_ratings rt ON rt.tradepiece = tp.tradepiece
+WHERE tp.statusmain <> 6
+AND tp.company IN (44, 45)
+AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
+AND (tp.STARTDATE <= @valdate) AND (tp.enddate > @valdate OR tp.enddate IS NULL) AND (tp.CLOSEDATE > @valdate OR tp.CLOSEDATE IS NULL)
+GROUP BY
+    CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END,
+    RTRIM(tp.ledgername)
+ORDER BY fund ASC, Series ASC;
+"""
+
+active_trade_as_of_custom_date = """
+DECLARE @valdate DATE = '2024-07-24';
+
+WITH active_trades AS (
+    SELECT tradepiece
+    FROM tradepieces
+    WHERE startdate <= @valdate
+    AND (closedate IS NULL OR closedate >= @valdate OR enddate >= @valdate)
+),
+latest_ratings AS (
+    SELECT ht.tradepiece, ht.comments AS rating
+    FROM history_tradepieces ht
+    JOIN (
+        SELECT tradepiece, MAX(datetimeid) AS max_datetimeid
+        FROM history_tradepieces
+        WHERE EXISTS (
+            SELECT 1
+            FROM active_trades at
+            WHERE at.tradepiece = history_tradepieces.tradepiece
+        )
+        GROUP BY tradepiece
+    ) latest
+    ON ht.tradepiece = latest.tradepiece AND ht.datetimeid = latest.max_datetimeid
+    WHERE CAST(ht.datetimeid AS DATE) = CAST(ht.bookdate AS DATE)
+)
+SELECT TOP 100
+    CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END AS fund,
+    RTRIM(tp.ledgername) AS Series,
+    tp.tradepiece AS "Trade ID",
+    RTRIM(tt.description) AS TradeType,
+    tp.startdate AS "Start Date",
+    CASE WHEN tp.closedate IS NULL THEN tp.enddate ELSE tp.closedate END AS "End Date",
+    tp.fx_money AS Money,
+    LTRIM(RTRIM(tp.contraname)) AS Counterparty,
+    COALESCE(tc.lastrate, tp.reporate) AS "Orig. Rate",
+    tp.price AS "Orig. Price",
+    LTRIM(RTRIM(tp.isin)) AS BondID,
+    tp.par * CASE WHEN tp.tradetype IN (0, 22) THEN -1 ELSE 1 END AS "Par/Quantity",
+    CASE WHEN RTRIM(tt.description) IN ('ReverseFree', 'RepoFree') THEN 0 ELSE tp.haircut END AS HairCut,
+    tci.commissionvalue * 100 AS Spread,
+    LTRIM(RTRIM(tp.acct_number)) AS "cp short",
+    CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USG' WHEN tp.tradepiece IN (60320, 60321, 60258) THEN 'BBB' WHEN tp.comments = '' THEN rt.rating ELSE tp.comments END AS Comments,
+    tp.fx_money + tc.repointerest_unrealized + tc.repointerest_nbd AS "End Money",
+    CASE WHEN RTRIM(is3.description) = 'CLO CRE' THEN 'CMBS' ELSE RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USD Cash' ELSE is2.description END) END AS "Product Type",
+    RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'Cash' ELSE is3.description END) AS "Collateral Type"
+FROM tradepieces tp
+INNER JOIN tradepiececalcdatas tc ON tc.tradepiece = tp.tradepiece
+INNER JOIN tradecommissionpieceinfo tci ON tci.tradepiece = tp.tradepiece
+INNER JOIN tradetypes tt ON tt.tradetype = tp.shelltradetype
+INNER JOIN issues i ON i.cusip = tp.cusip
+INNER JOIN currencys c ON c.currency = tp.currency_money
+INNER JOIN statusdetails sd ON sd.statusdetail = tp.statusdetail
+INNER JOIN statusmains sm ON sm.statusmain = tp.statusmain
+INNER JOIN issuecategories ic ON ic.issuecategory = tp.issuecategory
+INNER JOIN issuesubtypes1 is1 ON is1.issuesubtype1 = ic.issuesubtype1
+INNER JOIN issuesubtypes2 is2 ON is2.issuesubtype2 = ic.issuesubtype2
+INNER JOIN issuesubtypes3 is3 ON is3.issuesubtype3 = ic.issuesubtype3
+INNER JOIN depositorys d ON tp.depositoryid = d.depositoryid
+LEFT JOIN latest_ratings rt ON rt.tradepiece = tp.tradepiece
+WHERE tp.statusmain <> 6
+AND tp.company IN (44, 45)
+AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
+AND (tp.STARTDATE <= @valdate) AND (tp.enddate > @valdate OR tp.enddate IS NULL) AND (tp.CLOSEDATE > @valdate OR tp.CLOSEDATE IS NULL)
+ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
 """
