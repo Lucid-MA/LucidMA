@@ -111,3 +111,4 @@ def DatabaseConnection(db_type):
 # Database engines
 engine_staging = get_database_engine(staging_db_type)
 engine_prod = get_database_engine(prod_db_type)
+engine_helix = get_database_engine(helix_db_type)

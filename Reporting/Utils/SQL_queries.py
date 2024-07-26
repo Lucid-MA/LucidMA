@@ -972,13 +972,11 @@ OtherMandatesData;
 
 
 counterparty_count_summary = """
-DECLARE @valdate DATE = '2024-07-05';
-
 WITH active_trades AS (
     SELECT tradepiece
     FROM tradepieces
-    WHERE startdate <= @valdate
-    AND (closedate IS NULL OR closedate >= @valdate OR enddate >= @valdate)
+    WHERE startdate <= :valdate
+    AND (closedate IS NULL OR closedate >= :valdate OR enddate >= :valdate)
 ),
 latest_ratings AS (
     SELECT ht.tradepiece, ht.comments AS rating
@@ -999,8 +997,8 @@ latest_ratings AS (
 SELECT
     CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END AS fund,
     RTRIM(tp.ledgername) AS Series,
-    COUNT(DISTINCT LTRIM(RTRIM(tp.contraname))) AS UniqueCounterparties,
-    SUM(tp.fx_money) AS TotalMoney
+    COUNT(DISTINCT LTRIM(RTRIM(tp.contraname))) AS "Unique Counterparties",
+    SUM(tp.fx_money) AS "Total Money"
 FROM tradepieces tp
 INNER JOIN tradepiececalcdatas tc ON tc.tradepiece = tp.tradepiece
 INNER JOIN tradecommissionpieceinfo tci ON tci.tradepiece = tp.tradepiece
@@ -1018,13 +1016,15 @@ LEFT JOIN latest_ratings rt ON rt.tradepiece = tp.tradepiece
 WHERE tp.statusmain <> 6
 AND tp.company IN (44, 45)
 AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
-AND (tp.STARTDATE <= @valdate) AND (tp.enddate > @valdate OR tp.enddate IS NULL) AND (tp.CLOSEDATE > @valdate OR tp.CLOSEDATE IS NULL)
+AND (tp.STARTDATE <= :valdate) AND (tp.enddate > :valdate OR tp.enddate IS NULL) AND (tp.CLOSEDATE > :valdate OR tp.CLOSEDATE IS NULL)
 GROUP BY
     CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END,
     RTRIM(tp.ledgername)
 ORDER BY fund ASC, Series ASC;
 """
 
+
+# Might be deprecated based on how we can interactively use parameters
 active_trade_as_of_custom_date = """
 DECLARE @valdate DATE = '2024-07-24';
 
