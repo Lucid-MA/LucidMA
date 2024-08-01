@@ -22,7 +22,7 @@ pattern = "CashBal"
 directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive")
 # directory = get_file_path(r"S:/Users/THoang/Data")
 # Sample file path
-framework_file = "S:/Users/THoang/Data/CashBal_20052024.csv"
+framework_file = get_file_path(r"S:/Users/THoang/Data/CashBal_20052024.csv")
 
 
 def extract_date_and_indicator(filename):

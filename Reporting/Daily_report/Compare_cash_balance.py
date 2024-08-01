@@ -71,8 +71,7 @@ cash_account_numbers = [
 df_nexen = df_nexen[df_nexen["Cash Account Number"].isin(cash_account_numbers)]
 
 df_nexen = df_nexen[
-    (df_nexen["Cash Account Number"].isin(cash_account_numbers))
-    & (df_nexen["Ending Balance Reporting Currency"] > 0)
+    df_nexen["Cash Account Number"].isin(cash_account_numbers)
 ]
 
 # # If there are duplicates, keep only the first occurrence
