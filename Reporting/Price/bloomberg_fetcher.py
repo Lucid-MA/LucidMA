@@ -1,9 +1,25 @@
 import blpapi
 from typing import List, Dict
-from sqlalchemy import create_engine, Table, Column, String, Float, DateTime, MetaData
+
+import pandas as pd
+from sqlalchemy import (
+    create_engine,
+    Table,
+    Column,
+    String,
+    Float,
+    DateTime,
+    MetaData,
+    text,
+)
 from datetime import datetime
 
+from sqlalchemy.exc import SQLAlchemyError
+
+from Utils.Constants import benchmark_ticker
 from Utils.database_utils import engine_prod
+
+PUBLISH_TO_PROD = True
 
 
 class BloombergDataFetcher:
@@ -51,9 +67,9 @@ class BloombergDataFetcher:
             print(f"{field} not found for security: {security}")
             return {}
 
-    def get_latest_prices(self, securities: List[str]) -> Dict[str, Dict[str, float]]:
+    def get_latest_prices(self, securities: List[str]) -> pd.DataFrame:
         if not self._start_session():
-            return {}
+            return []
 
         try:
             service = self.session.getService("//blp/refdata")
@@ -88,7 +104,7 @@ class BloombergDataFetcher:
                                     field_data = security_data.getElement("fieldData")
                                     if field_data.hasElement("PX_LAST"):
                                         price = field_data.getElementAsFloat("PX_LAST")
-                                        prices[security] = price
+                                        prices[benchmark_ticker.get(security)] = price
                                     else:
                                         print(
                                             f"PX_LAST not found for security: {security}"
@@ -98,10 +114,20 @@ class BloombergDataFetcher:
                     print("Timeout occurred while waiting for response.")
                     break
 
-            return prices
+            benchmark_date = datetime.now().strftime("%Y-%m-%d")
+            timestamp = datetime.now()
+
+            data = {
+                "benchmark_date": benchmark_date,
+                "timestamp": timestamp,
+                **prices,
+            }
+
+            return pd.DataFrame([data])
+
         except blpapi.Exception as e:
             print(f"Bloomberg API exception: {e}")
-            return {}
+            return []
         finally:
             self._stop_session()
 
@@ -170,51 +196,73 @@ class BloombergDataFetcher:
             self._stop_session()
 
 
-def upsert_to_table(
-    self, engine, tb_name: str, metadata: MetaData, prices: Dict[str, float]
-):
-    table = Table(
-        tb_name,
-        metadata,
-        Column("benchmark_date", String(255), primary_key=True),
-        Column("1m A1/P1 CP", Float, nullable=True),
-        Column("3m A1/P1 CP", Float, nullable=True),
-        Column("6m A1/P1 CP", Float, nullable=True),
-        Column("9m A1/P1 CP", Float, nullable=True),
-        Column("1m SOFR", Float, nullable=True),
-        Column("3m SOFR", Float, nullable=True),
-        Column("6m SOFR", Float, nullable=True),
-        Column("1y SOFR", Float, nullable=True),
-        Column("1m LIBOR", Float, nullable=True),
-        Column("3m LIBOR", Float, nullable=True),
-        Column("timestamp", DateTime),
-        extend_existing=True,
-    )
+def upsert_data(tb_name, df):
+    with engine.connect() as conn:
+        try:
+            with conn.begin():  # Start a transaction
+                # Constructing the UPSERT SQL dynamically based on DataFrame columns
+                column_names = ", ".join([f'"{col}"' for col in df.columns])
 
-    benchmark_date = datetime.now().strftime("%Y-%m-%d")
-    timestamp = datetime.now()
+                value_placeholders = ", ".join(
+                    [
+                        f":{col.replace(' ', '_').replace('/', '_')}"
+                        for col in df.columns
+                    ]
+                )
+                # NOTE: THIS WORKS! For MS SQL, 'nan' data must be converted to None this way
+                df = df.astype(object).where(pd.notnull(df), None)
 
-    data = {
-        "benchmark_date": benchmark_date,
-        "timestamp": timestamp,
-    }
+                if PUBLISH_TO_PROD:
+                    # Using MERGE statement for MS SQL Server
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}" = SOURCE."{col}"'
+                            for col in df.columns
+                            if col != "benchmark_date"
+                        ]
+                    )
 
-    for security, price in prices.items():
-        column_name = self.bloomberg_to_column.get(security)
-        if column_name:
-            data[column_name] = price
+                    upsert_sql = text(
+                        f"""
+                        MERGE INTO {tb_name} AS TARGET
+                        USING (SELECT {','.join(f'SOURCE."{col}"' for col in df.columns)} FROM (VALUES ({value_placeholders})) AS SOURCE ({column_names})) AS SOURCE
+                        ON TARGET."benchmark_date" = SOURCE."benchmark_date"
+                        WHEN MATCHED THEN
+                            UPDATE SET {update_clause}
+                        WHEN NOT MATCHED THEN
+                            INSERT ({column_names}) VALUES ({','.join(f'SOURCE."{col}"' for col in df.columns)});
+                        """
+                    )
+                else:
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}"=EXCLUDED."{col}"'
+                            for col in df.columns
+                            if col
+                            != "benchmark_date"  # Assuming "benchmark_date" is unique and used for conflict resolution
+                        ]
+                    )
 
-    with engine.begin() as connection:
-        upsert_stmt = (
-            table.update().where(table.c.benchmark_date == benchmark_date).values(data)
-        )
-        connection.execute(upsert_stmt)
+                    upsert_sql = text(
+                        f"""
+                        INSERT INTO {tb_name} ({column_names})
+                        VALUES ({value_placeholders})
+                        ON CONFLICT ("benchmark_date")
+                        DO UPDATE SET {update_clause};
+                        """
+                    )
 
-        if not connection.execute(
-            table.select().where(table.c.benchmark_date == benchmark_date)
-        ).fetchone():
-            insert_stmt = table.insert().values(data)
-            connection.execute(insert_stmt)
+                # Replace spaces and slashes with underscores in the DataFrame column names
+                df.columns = [
+                    col.replace(" ", "_").replace("/", "_") for col in df.columns
+                ]
+
+                # Execute upsert in a transaction
+                conn.execute(upsert_sql, df.to_dict(orient="records"))
+            print(f"Latest data upserted successfully into {tb_name}.")
+        except SQLAlchemyError as e:
+            print(f"An error occurred: {e}")
+            raise
 
 
 # Example usage:
@@ -239,9 +287,8 @@ if __name__ == "__main__":
     fetcher = BloombergDataFetcher()
 
     print("Fetching latest prices...")
-    prices_latest = fetcher.get_latest_prices(securities)
-    print(prices_latest)
+    prices_latest_df = fetcher.get_latest_prices(securities)
+    print(prices_latest_df)
 
     print("Upserting data to table...")
-    upsert_to_table(engine, "your_table_name", metadata, prices_latest)
-    print("Upsert completed.")
+    upsert_data("your_table_name", prices_latest_df)
