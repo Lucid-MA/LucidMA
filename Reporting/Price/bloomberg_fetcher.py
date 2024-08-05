@@ -17,9 +17,10 @@ from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Constants import benchmark_ticker
-from Utils.database_utils import engine_prod
+from Utils.database_utils import engine_prod, get_database_engine
 
-PUBLISH_TO_PROD = True
+PUBLISH_TO_PROD = False
+tb_name = "bronze_benchmark"
 
 
 class BloombergDataFetcher:
@@ -281,8 +282,11 @@ if __name__ == "__main__":
     ]
     custom_date = "20240618"  # Specify the desired date in YYYYMMDD format
 
-    engine = engine_prod
-    metadata = MetaData()
+    # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
+    if PUBLISH_TO_PROD:
+        engine = get_database_engine("sql_server_2")
+    else:
+        engine = get_database_engine("postgres")
 
     fetcher = BloombergDataFetcher()
 
@@ -291,4 +295,4 @@ if __name__ == "__main__":
     print(prices_latest_df)
 
     print("Upserting data to table...")
-    upsert_data("your_table_name", prices_latest_df)
+    upsert_data(tb_name, prices_latest_df)

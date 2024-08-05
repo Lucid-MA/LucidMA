@@ -1,343 +1,269 @@
-import os
-
-import msal
+import blpapi
+from typing import List, Dict
 import pandas as pd
-import requests
-
-# import win32com.client as win32
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
-from Utils.Common import get_file_path
+import logging
+from dataclasses import dataclass
 
-current_date = datetime.now().strftime("%Y-%m-%d")
-valdate = current_date
+from Utils.Constants import benchmark_ticker
+from Utils.database_utils import engine_prod, get_database_engine
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-def authenticate_and_get_token():
-    client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
-    tenant_id = "86cd4a88-29b5-4f22-ab55-8d9b2c81f747"
-    config = {
-        "client_id": client_id,
-        "authority": f"https://login.microsoftonline.com/{tenant_id}",
-        "scope": ["https://graph.microsoft.com/Mail.Send"],
-        "redirect_uri": "http://localhost:8080",
-    }
-
-    cache_file = "token_cache.bin"
-    token_cache = msal.SerializableTokenCache()
-
-    if os.path.exists(cache_file):
-        with open(cache_file, "r") as f:
-            token_cache.deserialize(f.read())
-
-    client = msal.PublicClientApplication(
-        config["client_id"], authority=config["authority"], token_cache=token_cache
-    )
-
-    accounts = client.get_accounts()
-    if accounts:
-        result = client.acquire_token_silent(config["scope"], account=accounts[0])
-        if not result:
-            print("No cached token found. Authenticating interactively...")
-            result = client.acquire_token_interactive(scopes=config["scope"])
-    else:
-        print("No cached accounts found. Authenticating interactively...")
-        result = client.acquire_token_interactive(scopes=config["scope"])
-
-    if "error" in result:
-        raise Exception(f"Error acquiring token: {result['error_description']}")
-
-    with open(cache_file, "w") as f:
-        f.write(token_cache.serialize())
-
-    return result["access_token"]
+PUBLISH_TO_PROD = False
+tb_name = "bronze_benchmark"
 
 
-def send_email(subject, body, recipients):
-    token = authenticate_and_get_token()
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    email_data = {
-        "message": {
-            "subject": subject,
-            "body": {"contentType": "HTML", "content": body},
-            "from": {"emailAddress": {"address": "operations@lucidma.com"}},
-            "toRecipients": [
-                {"emailAddress": {"address": recipient}} for recipient in recipients
-            ],
-        }
-    }
-    response = requests.post(
-        "https://graph.microsoft.com/v1.0/me/sendMail", headers=headers, json=email_data
-    )
-    if response.status_code != 202:
-        raise Exception(f"Error sending email: {response.text}")
-    else:
-        if response.status_code == 202:
-            print(f"Email {subject} sent successfully")
+@dataclass
+class SecurityPrice:
+    security: str
+    price: float
+    date: str
 
 
-def refresh_data_and_send_email():
-    file_path = get_file_path(
-        r"S:/Lucid/Investment Committee & Risk/Approved Counterparties/CPRiskMonitor/Ctpy Risk Monitor Active.xlsm"
-    )
-    sheet_name = "Ctpy Usage"
-    header_row = 12
-    data_start_row = 13
+class BloombergDataFetcher:
+    def __init__(self, host: str = "localhost", port: int = 8194):
+        self.session_options = blpapi.SessionOptions()
+        self.session_options.setServerHost(host)
+        self.session_options.setServerPort(port)
+        self.session = None
 
-    # # Open the Excel file and refresh the data connection
-    # excel = win32.gencache.EnsureDispatch("Excel.Application")
-    # workbook = excel.Workbooks.Open(file_path)
-    # workbook.RefreshAll()
-    # excel.CalculateUntilAsyncQueriesDone()
-    # workbook.Save()
-    # workbook.Close(SaveChanges=True)
+    def _start_session(self) -> bool:
+        try:
+            if not self.session:
+                self.session = blpapi.Session(self.session_options)
+            if not self.session.start():
+                logger.error("Failed to start session.")
+                return False
+            if not self.session.openService("//blp/refdata"):
+                logger.error("Failed to open //blp/refdata")
+                return False
+            return True
+        except blpapi.Exception as e:
+            logger.error(f"Bloomberg API exception: {e}")
+            return False
 
-    # Read the data from the specified sheet, starting from row 13
-    data = pd.read_excel(
-        file_path,
-        sheet_name=sheet_name,
-        usecols="A,B,I:K,M:P,R:T",
-        skiprows=11,
-    )
+    def _stop_session(self):
+        if self.session:
+            self.session.stop()
+            self.session = None
 
-    # Filter the data based on the criteria
-    filtered_data = data[data["Counterparty Group"].notna()]
+    def _prepare_security(self, security: str) -> str:
+        return f"/cusip/{security}" if len(security) == 9 else security
 
-    # Replace NaN with empty strings
-    filtered_data = filtered_data.fillna("")
+    def get_latest_prices(self, securities: List[str]) -> pd.DataFrame:
+        if not self._start_session():
+            return pd.DataFrame()
 
-    filtered_data = filtered_data.sort_values(
-        by=["Total Cash Out", "Counterparty Group"],
-        ascending=[False, True],
-        key=lambda x: pd.to_numeric(x, errors="coerce"),
-    )
+        try:
+            service = self.session.getService("//blp/refdata")
+            request = service.createRequest("ReferenceDataRequest")
 
-    filtered_data_counterparty_group = filtered_data.sort_values(
-        by=["Counterparty Group"], ascending=[True]
-    )
+            for security in securities:
+                request.getElement("securities").appendValue(
+                    self._prepare_security(security)
+                )
+            request.getElement("fields").appendValue("PX_LAST")
 
-    columns_list = [
-        "Counterparty Group",
-        "Counterparty Entity",
-        "Total Cash Out",
-        "Tenor",
-        "Prime Repo Loan Limit ($mm)",
-        "Prime Current Usage",
-        "Prime Credit Remaining",
-        "Prime % of Usage",
-        "USG Repo Loan Limit ($mm)",
-        "USG Current Usage",
-        "USG Credit Remaining",
-        "USG % of Usage",
-    ]
+            self.session.sendRequest(request, correlationId=blpapi.CorrelationId(1))
 
-    filtered_data.columns = columns_list
-    filtered_data_counterparty_group.columns = columns_list
+            prices = {}
+            while True:
+                event = self.session.nextEvent(500)
+                if event.eventType() == blpapi.Event.RESPONSE:
+                    for msg in event:
+                        if msg.messageType() == "ReferenceDataResponse":
+                            self._process_reference_data_response(msg, prices)
+                    break
+                elif event.eventType() == blpapi.Event.TIMEOUT:
+                    logger.warning("Timeout occurred while waiting for response.")
+                    break
 
-    # Define the columns to be bolded
-    bold_columns = [
-        "Counterparty Entity",
-        "Total Cash Out",
-        "Tenor",
-        "Prime % of Usage",
-        "USG % of Usage",
-    ]
+            benchmark_date = datetime.now().strftime("%Y-%m-%d")
+            timestamp = datetime.now()
 
-    # Define the columns with light green background
-    green_columns = ["Total Cash Out", "Prime Current Usage", "USG Current Usage"]
-    # Round specified columns to the nearest whole number
-    round_columns = [
-        "Total Cash Out",
-        "Prime Repo Loan Limit ($mm)",
-        "Prime Current Usage",
-        "Prime Credit Remaining",
-        "USG Repo Loan Limit ($mm)",
-        "USG Current Usage",
-        "USG Credit Remaining",
-    ]
-    # Round specified columns to the nearest whole number, handling empty strings
-    for col in round_columns:
-        if col in filtered_data.columns:
-            filtered_data[col] = (
-                pd.to_numeric(filtered_data[col], errors="coerce")
-                .round(0)
-                .fillna("")
-                .apply(lambda x: f"{x:,.0f}" if x != "" else "")
-            )
-        if col in filtered_data_counterparty_group.columns:
-            filtered_data_counterparty_group[col] = (
-                pd.to_numeric(filtered_data_counterparty_group[col], errors="coerce")
-                .round(0)
-                .fillna("")
-                .apply(lambda x: f"{x:,.0f}" if x != "" else "")
-            )
+            data = {
+                "benchmark_date": benchmark_date,
+                "timestamp": timestamp,
+                **prices,
+            }
 
-    # Convert percentage columns to whole percentages, handling empty strings
-    percent_columns = ["Prime % of Usage", "USG % of Usage"]
-    for col in percent_columns:
-        if col in filtered_data.columns:
-            filtered_data[col] = (
-                pd.to_numeric(filtered_data[col], errors="coerce")
-                .multiply(100)
-                .round(0)
-                .fillna("")
-            )
-        if col in filtered_data_counterparty_group.columns:
-            filtered_data_counterparty_group[col] = (
-                pd.to_numeric(filtered_data_counterparty_group[col], errors="coerce")
-                .multiply(100)
-                .round(0)
-                .fillna("")
-            )
+            return pd.DataFrame([data])
 
-    # Define styling functions
-    def style_percentage(val):
-        if pd.isna(val) or val == "":
-            return "background-color: #dff0d8"
-        val = float(val)
-        if val >= 90 and val <= 100:
-            return "background-color: #FFD700"  # Dark yellow
-        elif val > 100:
-            return "background-color: #FF0000"  # Red
-        return "background-color: #dff0d8"  # Dark green
+        except blpapi.Exception as e:
+            logger.error(f"Bloomberg API exception: {e}")
+            return pd.DataFrame()
+        finally:
+            self._stop_session()
 
-    def style_col(val):
-        if pd.isna(val) or val == "":
-            return ""
-        elif isinstance(val, pd.Series) and val.name in percent_columns:
-            return style_percentage(val)
+    def _process_reference_data_response(
+        self, msg: blpapi.Message, prices: Dict[str, float]
+    ):
+        for security_data in msg.getElement("securityData").values():
+            security = security_data.getElementAsString("security")
+            if security.startswith("/cusip/"):
+                security = security[7:]  # Remove "/cusip/" prefix
+            if security_data.hasElement("securityError"):
+                error_msg = security_data.getElement("securityError")
+                logger.error(f"Security error for {security}: {error_msg}")
+            else:
+                field_data = security_data.getElement("fieldData")
+                if field_data.hasElement("PX_LAST"):
+                    price = field_data.getElementAsFloat("PX_LAST")
+                    prices[benchmark_ticker.get(security)] = price
+                else:
+                    logger.warning(f"PX_LAST not found for security: {security}")
+
+    def get_historical_prices(
+        self, securities: List[str], custom_date: str
+    ) -> Dict[str, SecurityPrice]:
+        if not self._start_session():
+            return {}
+
+        try:
+            service = self.session.getService("//blp/refdata")
+            prices = {}
+
+            for security in securities:
+                request = service.createRequest("HistoricalDataRequest")
+                request.getElement("securities").appendValue(
+                    self._prepare_security(security)
+                )
+                request.getElement("fields").appendValue("PX_LAST")
+                request.set("startDate", custom_date)
+                request.set("endDate", custom_date)
+
+                self.session.sendRequest(request, correlationId=blpapi.CorrelationId(1))
+
+                while True:
+                    event = self.session.nextEvent(500)
+                    if event.eventType() == blpapi.Event.RESPONSE:
+                        for msg in event:
+                            if msg.messageType() == "HistoricalDataResponse":
+                                self._process_historical_data_response(
+                                    msg, prices, security
+                                )
+                        break
+                    elif event.eventType() == blpapi.Event.TIMEOUT:
+                        logger.warning(
+                            f"Timeout occurred while waiting for response for security: {security}"
+                        )
+                        break
+
+            return prices
+        except blpapi.Exception as e:
+            logger.error(f"Bloomberg API exception: {e}")
+            return {}
+        finally:
+            self._stop_session()
+
+    def _process_historical_data_response(
+        self, msg: blpapi.Message, prices: Dict[str, SecurityPrice], security: str
+    ):
+        security_data = msg.getElement("securityData")
+        if not security_data.hasElement("securityError"):
+            field_data_array = security_data.getElement("fieldData")
+            for field_data in field_data_array.values():
+                date = field_data.getElementAsString("date")
+                if field_data.hasElement("PX_LAST"):
+                    price = field_data.getElement("PX_LAST").getValueAsFloat()
+                    prices[security] = SecurityPrice(
+                        security=security, date=date, price=price
+                    )
+                else:
+                    logger.warning(f"PX_LAST not found for security: {security}")
         else:
-            return "background-color: #dff0d8"  # Dark green
+            error_msg = security_data.getElement("securityError")
+            logger.error(f"Security error for {security}: {error_msg}")
 
-    limit_breach_data = filtered_data[
-        pd.to_numeric(filtered_data["Prime % of Usage"], errors="coerce") > 97
+
+def upsert_data(tb_name: str, df: pd.DataFrame):
+    engine = engine_prod if PUBLISH_TO_PROD else get_database_engine("postgres")
+
+    with engine.connect() as conn:
+        try:
+            with conn.begin():
+                column_names = ", ".join([f'"{col}"' for col in df.columns])
+                value_placeholders = ", ".join(
+                    [
+                        f":{col.replace(' ', '_').replace('/', '_')}"
+                        for col in df.columns
+                    ]
+                )
+                df = df.astype(object).where(pd.notnull(df), None)
+
+                if PUBLISH_TO_PROD:
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}" = SOURCE."{col}"'
+                            for col in df.columns
+                            if col != "benchmark_date"
+                        ]
+                    )
+                    upsert_sql = text(
+                        f"""
+                        MERGE INTO {tb_name} AS TARGET
+                        USING (SELECT {','.join(f'SOURCE."{col}"' for col in df.columns)} FROM (VALUES ({value_placeholders})) AS SOURCE ({column_names})) AS SOURCE
+                        ON TARGET."benchmark_date" = SOURCE."benchmark_date"
+                        WHEN MATCHED THEN
+                            UPDATE SET {update_clause}
+                        WHEN NOT MATCHED THEN
+                            INSERT ({column_names}) VALUES ({','.join(f'SOURCE."{col}"' for col in df.columns)});
+                    """
+                    )
+                else:
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}"=EXCLUDED."{col}"'
+                            for col in df.columns
+                            if col != "benchmark_date"
+                        ]
+                    )
+                    upsert_sql = text(
+                        f"""
+                        INSERT INTO {tb_name} ({column_names})
+                        VALUES ({value_placeholders})
+                        ON CONFLICT ("benchmark_date")
+                        DO UPDATE SET {update_clause};
+                    """
+                    )
+
+                df.columns = [
+                    col.replace(" ", "_").replace("/", "_") for col in df.columns
+                ]
+                conn.execute(upsert_sql, df.to_dict(orient="records"))
+            logger.info(f"Latest data upserted successfully into {tb_name}.")
+        except SQLAlchemyError as e:
+            logger.error(f"An error occurred: {e}")
+            raise
+
+
+if __name__ == "__main__":
+    securities = [
+        "TSFR1M Index",
+        "TSFR3M Index",
+        "TSFR6M Index",
+        "TSFR12M Index",
+        "US0001M Index",
+        "US0003M Index",
+        "DCPA030Y Index",
+        "DCPA090Y Index",
+        "DCPA180Y Index",
+        "DCPA270Y Index",
     ]
+    custom_date = "20240618"  # Specify the desired date in YYYYMMDD format
 
-    limit_breach_html_table = (
-        limit_breach_data.style.format(
-            {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
-        )
-        .map(style_percentage, subset=percent_columns)
-        .map(
-            lambda x: "background-color: #dff0d8",
-            subset=["Total Cash Out", "Prime Current Usage", "USG Current Usage"],
-        )
-        .set_table_attributes('class="dataframe"')
-        .hide(axis="index")
-        .to_html()
-    )
+    fetcher = BloombergDataFetcher()
 
-    # Create a styled HTML table
-    styled_html_table = (
-        filtered_data.style.format(
-            {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
-        )
-        .map(style_percentage, subset=percent_columns)
-        .set_table_attributes('class="dataframe"')
-        .hide(axis="index")
-        .to_html()
-    )
+    logger.info("Fetching latest prices...")
+    prices_latest_df = fetcher.get_latest_prices(securities)
+    logger.info(prices_latest_df)
 
-    # Create a styled HTML table
-    styled_html_counterparty_group_table = (
-        filtered_data_counterparty_group.style.format(
-            {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
-        )
-        .map(style_percentage, subset=percent_columns)
-        .set_table_attributes('class="dataframe"')
-        .hide(axis="index")
-        .to_html()
-    )
-
-    html_content = f"""
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                        }}
-                        th, td {{
-                            border: 1px solid black;
-                            padding: 8px;
-                            text-align: center;
-                        }}
-                        th {{
-                            background-color: #f2f2f2;
-                        }}
-                        .header {{
-                            background-color: #d9edf7;
-                        }}
-                        .header span {{
-                            font-size: 24px;
-                            font-weight: bold;
-                        }}
-                        .subheader {{
-                            background-color: #dff0d8;
-                        }}
-                        .usage-table {{
-                            width: 150%;
-                        }}
-                        {' '.join([f'.dataframe td:nth-child({filtered_data.columns.get_loc(col) + 1}) {{ font-weight: bold; }}' for col in bold_columns])}
-                    </style>
-                </head>
-                <body>
-                    <table>
-                        <tr class="header">
-                            <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
-                        </tr>
-                        <tr class="subheader">
-                            <td colspan="{len(filtered_data.columns)}">Counterparty usage limit breach</td>
-                        </tr>
-                        {limit_breach_html_table}
-                    </table>
-                    <br>
-                    <br>
-                    <table>
-                        <tr class="header">
-                            <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
-                        </tr>
-                        <tr class="subheader">
-                            <td colspan="{len(filtered_data.columns)}">Counterparty Usage - Total Cash Out</td>
-                        </tr>
-                        {styled_html_table}
-                    </table>
-                    <br>
-                    <br>
-                    <table>
-                        <tr class="header">
-                            <td colspan="{len(filtered_data_counterparty_group.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
-                        </tr>
-                        <tr class="subheader">
-                            <td colspan="{len(filtered_data_counterparty_group.columns)}">Counterparty Usage - Counterparty Group</td>
-                        </tr>
-                        {styled_html_counterparty_group_table}
-                    </table>
-                </body>
-                </html>
-                """
-
-    subject = f"Counterparty Usage Report - {valdate}"
-    recipients = [
-        "tony.hoang@lucidma.com",
-        # "thomas.durante@lucidma.com",
-        # "operations@lucidma.com",
-        # "simmy.richton@lucidma.com",
-        # "Aly.Izquierdo@lucidma.com",
-    ]
-
-    # Save the filtered_data dataframe as an Excel file
-    output_folder = get_file_path(
-        r"S:/Lucid/Investment Committee & Risk/Approved Counterparties/CPRiskMonitor/Archive"
-    )
-    output_file = f"CPExposures_{valdate}.xlsx"
-    output_path = os.path.join(output_folder, output_file)
-    filtered_data.to_excel(output_path, index=False)
-
-    send_email(subject, html_content, recipients)
-
-
-# Run the script
-refresh_data_and_send_email()
+    logger.info("Upserting data to table...")
+    upsert_data(tb_name, prices_latest_df)
