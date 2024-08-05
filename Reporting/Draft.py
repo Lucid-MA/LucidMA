@@ -265,5 +265,20 @@ if __name__ == "__main__":
     prices_latest_df = fetcher.get_latest_prices(securities)
     logger.info(prices_latest_df)
 
+    new_column_order = [
+        "benchmark_date",
+        "1m A1/P1 CP",
+        "3m A1/P1 CP",
+        "6m A1/P1 CP",
+        "9m A1/P1 CP",
+        "1m SOFR",
+        "3m SOFR",
+        "6m SOFR",
+        "1y SOFR",
+        "1m LIBOR",
+        "3m LIBOR",
+        "timestamp",
+    ]
+    prices_latest_df = prices_latest_df[new_column_order]
     logger.info("Upserting data to table...")
     upsert_data(tb_name, prices_latest_df)

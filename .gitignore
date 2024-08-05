@@ -54,6 +54,7 @@ output.json #Since Android Studio 3.0
 *.iml
 .idea/workspace.xml
 .idea/libraries
+../../.idea/LucidMA.iml
 
 # Keystore files
 *.jks
