@@ -53,6 +53,12 @@ bronze_benchmark_df = read_table_from_db(bronze_benchmark_table_name, prod_db_ty
 bronze_crane_df = read_table_from_db(bronze_crane_table_name, staging_db_type)
 bronze_crane_df = bronze_crane_df[crane_columns]
 
+# Divide the data by 100 (excluding the 'benchmark_date' and 'timestamp' columns)
+for col in bronze_benchmark_df.columns[1:-1]:
+    bronze_benchmark_df[col] = bronze_benchmark_df[col].apply(
+        lambda x: x / 100 if pd.notna(x) and isinstance(x, (int, float)) else None
+    )
+
 # Convert the 3 columns of bronze_crane_df (excluding "Date") to float and divide by 100
 for col in crane_columns[1:]:
     bronze_crane_df[col] = bronze_crane_df[col].astype(float) / 100
