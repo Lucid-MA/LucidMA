@@ -28,6 +28,19 @@ benchmark_shortern = {
     CP_3M: CP_3M,
 }
 
+benchmark_ticker = {
+    "TSFR1M Index": SOFR_1M,
+    "TSFR3M Index": SOFR_3M,
+    "TSFR6M Index": SOFR_6M,
+    "TSFR12M Index": SOFR_1Y,
+    "US0001M Index": LIBOR_1M,
+    "US0003M Index": LIBOR_3M,
+    "DCPA030Y Index": CP_1M,
+    "DCPA090Y Index": CP_3M,
+    "DCPA180Y Index": CP_6M,
+    "DCPA270Y Index": CP_9M,
+}
+
 
 ### TRANSACTION MAP ###
 transaction_map = {
