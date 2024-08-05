@@ -112,3 +112,77 @@ def DatabaseConnection(db_type):
 engine_staging = get_database_engine(staging_db_type)
 engine_prod = get_database_engine(prod_db_type)
 engine_helix = get_database_engine(helix_db_type)
+
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
+import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def upsert_data(
+    engine,
+    table_name: str,
+    df: pd.DataFrame,
+    primary_key_name: str,
+    publish_to_prod: bool,
+):
+    with engine.connect() as connection:
+        try:
+            with connection.begin():
+                # Construct the INSERT statement dynamically
+                column_names = ", ".join([f'"{col}"' for col in df.columns])
+                value_placeholders = ", ".join([f":{col}" for col in df.columns])
+
+                # Convert 'nan' data to None for MS SQL
+                df = df.astype(object).where(pd.notnull(df), None)
+
+                if publish_to_prod:
+                    # Using MERGE statement for MS SQL Server
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}" = SOURCE."{col}"'
+                            for col in df.columns
+                            if col != primary_key_name
+                        ]
+                    )
+
+                    upsert_sql = text(
+                        f"""
+                        MERGE INTO {table_name} AS TARGET
+                        USING (SELECT {','.join(f'SOURCE."{col}"' for col in df.columns)} FROM (VALUES ({value_placeholders})) AS SOURCE ({column_names})) AS SOURCE
+                        ON TARGET."{primary_key_name}" = SOURCE."{primary_key_name}"
+                        WHEN MATCHED THEN
+                            UPDATE SET {update_clause}
+                        WHEN NOT MATCHED THEN
+                            INSERT ({column_names}) VALUES ({','.join(f'SOURCE."{col}"' for col in df.columns)});
+                        """
+                    )
+                else:
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}"=EXCLUDED."{col}"'
+                            for col in df.columns
+                            if col != primary_key_name
+                        ]
+                    )
+
+                    upsert_sql = text(
+                        f"""
+                        INSERT INTO {table_name} ({column_names})
+                        VALUES ({value_placeholders})
+                        ON CONFLICT ("{primary_key_name}")
+                        DO UPDATE SET {update_clause};
+                        """
+                    )
+
+                # Execute the upsert statement
+                connection.execute(upsert_sql, df.to_dict(orient="records"))
+            logger.info(f"Latest data upserted successfully into {table_name}.")
+        except SQLAlchemyError as e:
+            logger.error(f"An error occurred: {e}")
+            raise
+
+    logger.info(f"Data upserted successfully into {table_name}.")

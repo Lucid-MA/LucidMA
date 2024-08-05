@@ -14,10 +14,34 @@ from sqlalchemy import (
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path
-from Utils.database_utils import get_database_engine
+from Utils.database_utils import (
+    get_database_engine,
+    engine_prod,
+    engine_staging,
+    upsert_data,
+)
+
+import logging
+
+# Set up basic configuration for logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+# Create a logger for the main module
+logger = logging.getLogger(__name__)
+
+table_name = "bronze_benchmark_crane_data"
+
+PUBLISH_TO_PROD = False
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine("postgres")
+if PUBLISH_TO_PROD:
+    engine = engine_prod
+else:
+    engine = engine_staging
 
 # Path to the input file
 file_path = get_file_path(
@@ -104,12 +128,11 @@ column_names = [
 crane_data_df.columns = column_names
 
 # Create a table schema
-table_name = "bronze_benchmark_crane_data"
 metadata = MetaData()
 crane_data_table = Table(
     table_name,
     metadata,
-    Column("Date", String, primary_key=True),
+    Column("Date", String(255), primary_key=True),
     *[Column(column_name, String) for column_name in column_names[1:-1]],
     Column("timestamp", DateTime),
 )
@@ -117,29 +140,4 @@ crane_data_table = Table(
 # Create the table if it doesn't exist
 metadata.create_all(engine)
 
-# Insert the data into the table
-with engine.connect() as connection:
-    try:
-        with connection.begin():
-
-            # Construct the INSERT statement dynamically
-            column_names = ", ".join([f'"{col}"' for col in crane_data_df.columns])
-            value_placeholders = ", ".join([f":{col}" for col in crane_data_df.columns])
-            insert_statement = text(
-                f"""
-                INSERT INTO {table_name} ({column_names})
-                VALUES ({value_placeholders})
-                ON CONFLICT ("Date") DO NOTHING;
-            """
-            )
-
-            # Execute the INSERT statement
-            connection.execute(
-                insert_statement, crane_data_df.to_dict(orient="records")
-            )
-        print(f"Latest data upserted successfully into {table_name}.")
-    except SQLAlchemyError as e:
-        print(f"An error occurred: {e}")
-        raise
-
-    print(f"Data inserted successfully into {table_name}.")
+upsert_data(engine, table_name, crane_data_df, "Date", PUBLISH_TO_PROD)
