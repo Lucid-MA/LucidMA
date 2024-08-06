@@ -19,7 +19,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Utils.Constants import benchmark_ticker
 from Utils.database_utils import engine_prod, get_database_engine
 
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 tb_name = "bronze_benchmark"
 
 
