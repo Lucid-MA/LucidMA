@@ -1,6 +1,10 @@
+import logging
 from datetime import timedelta
 import pandas as pd
-from Utils.Common import to_YYYY_MM_DD, format_date_YYYY_MM_DD
+from sqlalchemy import MetaData, Table, Column, Date, String, DateTime, text
+from sqlalchemy.exc import SQLAlchemyError
+
+from Utils.Common import to_YYYY_MM_DD, format_date_YYYY_MM_DD, get_datetime_object
 from Utils.Constants import (
     SOFR_1M,
     CP_1M,
@@ -25,7 +29,13 @@ from Utils.database_utils import (
     engine_prod,
     staging_db_type,
     engine_staging,
+    upsert_data,
 )
+
+# Configure the logging in the current file
+logging.basicConfig(level=logging.INFO)
+# Get the logger for the current file
+logger = logging.getLogger(__name__)
 
 # Configuration
 PUBLISH_TO_PROD = False
@@ -190,3 +200,63 @@ roll_schedule_prime_q_df = apply_index_calculations(
 )
 
 print(roll_schedule_prime_df)
+
+
+def create_table_with_schema(tb_name, columns):
+    metadata = MetaData()
+    metadata.bind = engine
+    table = Table(
+        tb_name,
+        metadata,
+        Column("start_date", Date, primary_key=True),
+        Column("end_date", Date),
+        *[
+            Column(col, String)
+            for col in columns
+            if col not in ["start_date", "end_date"]
+        ],
+        Column("timestamp", DateTime),
+        extend_existing=True,
+    )
+
+    metadata.create_all(engine)
+    print(f"Table {tb_name} created successfully or already exists.")
+
+
+# Create tables and upsert data for each DataFrame
+create_table_with_schema("bronze_benchmark_prime_v2", roll_schedule_prime_df.columns)
+# upsert_data("bronze_benchmark_prime_v2", roll_schedule_prime_df)
+
+roll_schedule_prime_df["timestamp"] = get_datetime_object()
+upsert_data(
+    engine,
+    "bronze_benchmark_prime_v2",
+    roll_schedule_prime_df,
+    "start_date",
+    PUBLISH_TO_PROD,
+)
+
+create_table_with_schema(
+    "bronze_benchmark_prime_quarterly_v2", roll_schedule_prime_q_df.columns
+)
+# upsert_data("bronze_benchmark_prime_quarterly_v2", roll_schedule_prime_q_df)
+roll_schedule_prime_q_df["timestamp"] = get_datetime_object()
+upsert_data(
+    engine,
+    "bronze_benchmark_prime_quarterly_v2",
+    roll_schedule_prime_q_df,
+    "start_date",
+    PUBLISH_TO_PROD,
+)
+
+
+create_table_with_schema("bronze_benchmark_usg_v2", roll_schedule_usg_df.columns)
+roll_schedule_usg_df["timestamp"] = get_datetime_object()
+# upsert_data("bronze_benchmark_usg_v2", roll_schedule_usg_df)
+upsert_data(
+    engine,
+    "bronze_benchmark_usg_v2",
+    roll_schedule_usg_df,
+    "start_date",
+    PUBLISH_TO_PROD,
+)

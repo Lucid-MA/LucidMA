@@ -5,6 +5,10 @@ from contextlib import contextmanager
 import pandas as pd
 from sqlalchemy import create_engine
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 ###### CONSTANTS ######
 staging_db_type = "postgres"
 prod_db_type = "sql_server_2"
@@ -122,7 +126,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def upsert_data(
+def  upsert_data(
     engine,
     table_name: str,
     df: pd.DataFrame,
@@ -134,7 +138,12 @@ def upsert_data(
             with connection.begin():
                 # Construct the INSERT statement dynamically
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
-                value_placeholders = ", ".join([f":{col}" for col in df.columns])
+                value_placeholders = ", ".join(
+                    [
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&','').replace('#','').replace('*','').replace("'", "").replace("?", "").replace(".","")}"
+                        for col in df.columns
+                    ]
+                )
 
                 # Convert 'nan' data to None for MS SQL
                 df = df.astype(object).where(pd.notnull(df), None)
@@ -177,6 +186,18 @@ def upsert_data(
                         DO UPDATE SET {update_clause};
                         """
                     )
+
+                df.columns = [
+                    col.replace(" ", "_")
+                    .replace("/", "_")
+                    .replace("&", "")
+                    .replace("#", "")
+                    .replace("*", "")
+                    .replace("'", "")
+                    .replace("?", "")
+                    .replace(".","")
+                    for col in df.columns
+                ]
 
                 # Execute the upsert statement
                 connection.execute(upsert_sql, df.to_dict(orient="records"))
