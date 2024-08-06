@@ -8,7 +8,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float
 from sqlalchemy.exc import SQLAlchemyError
 import win32com.client as win32
 
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, current_timestamp
 from Utils.database_utils import get_database_engine
 
 # Flag to enable publish to prod
@@ -154,27 +154,6 @@ def upsert_data(tb_name, df):
 create_table_with_schema(tb_name)
 
 try:
-    # # Set the range of cells to read
-    # start_row = 8  # Row number for the header
-    # start_col = "D"  # Column letter for the start of the table
-    # end_col = "N"  # Column letter for the end of the table
-    #
-    # # Create a list of column letters
-    # cols = [chr(i) for i in range(ord(start_col), ord(end_col) + 1)]
-    # col_range = "".join(cols)
-    #
-    # # Construct the range of cells
-    # cell_range = f"{start_col}:{end_col}"  # e.g., 'D:N'
-    #
-    # # Attempt to read the test Excel file
-    # benchmark_df = pd.read_excel(
-    #     benchmark_file_path,
-    #     sheet_name="bberg historical raw",
-    #     header=start_row - 1,
-    #     usecols=cell_range,
-    #     skiprows=range(8, 11),  # Skip rows to start data from row 12
-    # )
-
     # Open the workbook and select the sheet
     wb = openpyxl.load_workbook(benchmark_file_path, read_only=True)
     sheet = wb["bberg historical raw"]
@@ -222,7 +201,7 @@ try:
         benchmark_df["benchmark_date"].dt.strftime("%Y-%m-%d").astype(str)
     )
 
-    benchmark_df["timestamp"] = pd.to_datetime(datetime.now())
+    benchmark_df["timestamp"] = current_timestamp()
 
     # Divide the data by 100 (excluding the 'benchmark_date' and 'timestamp' columns)
     for col in benchmark_df.columns[1:-1]:

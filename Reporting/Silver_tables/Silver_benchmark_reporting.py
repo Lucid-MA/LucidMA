@@ -8,12 +8,9 @@ from Utils.Common import to_YYYY_MM_DD, format_date_YYYY_MM_DD, get_datetime_obj
 from Utils.Constants import (
     SOFR_1M,
     CP_1M,
-    TBILL_1M,
     SOFR_3M,
     CP_3M,
-    TBILL_3M,
     CRANE_GOVT_IDX,
-    FHLB_NOTES,
     SOFR_12M_cummulative,
     SOFR_3M_cummulative,
     CP_3M_cummulative,
@@ -91,34 +88,57 @@ roll_schedule_prime_q_df = roll_schedule_df[
 ][["start_date", "end_date"]]
 
 # Data Preprocessing
-roll_schedule_prime_df["start_date"] = pd.to_datetime(
-    roll_schedule_prime_df["start_date"]
-)
+roll_schedule_usg_df["start_date"] = pd.to_datetime(roll_schedule_usg_df["start_date"])
+roll_schedule_usg_df["end_date"] = pd.to_datetime(roll_schedule_usg_df["end_date"])
+
+roll_schedule_prime_df["start_date"] = pd.to_datetime(roll_schedule_prime_df["start_date"])
 roll_schedule_prime_df["end_date"] = pd.to_datetime(roll_schedule_prime_df["end_date"])
+
+roll_schedule_prime_q_df["start_date"] = pd.to_datetime(roll_schedule_prime_q_df["start_date"])
+roll_schedule_prime_q_df["end_date"] = pd.to_datetime(roll_schedule_prime_q_df["end_date"])
+
 benchmark_df["benchmark_date"] = pd.to_datetime(benchmark_df["benchmark_date"])
 
 
 # Functions
 def get_index_value_offset(start_date, end_date, index_name):
-    if start_date > pd.to_datetime("2020-01-01"):
+    try:
         benchmark_dt = format_date_YYYY_MM_DD(
             start_date - timedelta(benchmark_offset[index_name])
         )
         benchmark_value = benchmark_df.loc[
             benchmark_df["benchmark_date"] == benchmark_dt, index_name
         ]
-        return benchmark_value.iloc[0] if not benchmark_value.empty else None
-    return None
+        if not benchmark_value.empty:
+            return benchmark_value.iloc[0]
+        else:
+            logger.warning(f"No benchmark value found for date {benchmark_dt} and index {index_name}")
+            return None
+    except KeyError:
+        logger.warning(f"Index {index_name} not found in benchmark_offset dictionary")
+        return None
+    except Exception as e:
+        logger.error(f"An error occurred while retrieving index value: {e}")
+        return None
 
 
 def get_index_value_crane(start_date, end_date, index_name):
-    if start_date >= pd.to_datetime("2020-01-01"):
+    try:
         mask = (benchmark_df["benchmark_date"] >= start_date) & (
             benchmark_df["benchmark_date"] < end_date
         )
         benchmark_values = benchmark_df.loc[mask, index_name]
-        return benchmark_values.mean() if not benchmark_values.empty else None
-    return None
+        if not benchmark_values.empty:
+            return benchmark_values.mean()
+        else:
+            logger.warning(f"No benchmark values found between {start_date} and {end_date} for index {index_name}")
+            return None
+    except KeyError:
+        logger.warning(f"Column {index_name} not found in benchmark_df")
+        return None
+    except Exception as e:
+        logger.error(f"An error occurred while retrieving index value: {e}")
+        return None
 
 
 def calculate_period_interest_rate(start_date, end_date, interest_rate):
@@ -166,12 +186,10 @@ def calculate_custom_index(row, index_name, look_back_period, df):
 def apply_index_calculations(df, benchmark_dict, index_func, custom_index_func):
     for index_name in benchmark_dict:
         df[index_name] = df.apply(
-            lambda row: index_func(row["start_date"], row["end_date"], index_name),
+            lambda row: index_func(pd.to_datetime(row["start_date"]), pd.to_datetime(row["end_date"]), index_name),
             axis=1,
         )
-        for custom_index_column, look_back_period in cummulative_benchmark_dict[
-            index_name
-        ]:
+        for custom_index_column, look_back_period in cummulative_benchmark_dict[index_name]:
             df[custom_index_column] = df.apply(
                 lambda row: custom_index_func(row, index_name, look_back_period, df),
                 axis=1,
@@ -224,38 +242,38 @@ def create_table_with_schema(tb_name, columns):
 
 
 # Create tables and upsert data for each DataFrame
-create_table_with_schema("bronze_benchmark_prime_v2", roll_schedule_prime_df.columns)
-# upsert_data("bronze_benchmark_prime_v2", roll_schedule_prime_df)
-
+############################# PRIME ################################
+create_table_with_schema("silver_benchmark_prime", roll_schedule_prime_df.columns)
 roll_schedule_prime_df["timestamp"] = get_datetime_object()
 upsert_data(
     engine,
-    "bronze_benchmark_prime_v2",
+    "silver_benchmark_prime",
     roll_schedule_prime_df,
     "start_date",
     PUBLISH_TO_PROD,
 )
 
+############################# PRIME QUARTERLY ########################
 create_table_with_schema(
-    "bronze_benchmark_prime_quarterly_v2", roll_schedule_prime_q_df.columns
+    "silver_benchmark_prime_quarterly", roll_schedule_prime_q_df.columns
 )
 # upsert_data("bronze_benchmark_prime_quarterly_v2", roll_schedule_prime_q_df)
 roll_schedule_prime_q_df["timestamp"] = get_datetime_object()
 upsert_data(
     engine,
-    "bronze_benchmark_prime_quarterly_v2",
+    "silver_benchmark_prime_quarterly",
     roll_schedule_prime_q_df,
     "start_date",
     PUBLISH_TO_PROD,
 )
 
-
-create_table_with_schema("bronze_benchmark_usg_v2", roll_schedule_usg_df.columns)
+############################# USG FUND ##############################
+create_table_with_schema("silver_benchmark_usg", roll_schedule_usg_df.columns)
 roll_schedule_usg_df["timestamp"] = get_datetime_object()
 # upsert_data("bronze_benchmark_usg_v2", roll_schedule_usg_df)
 upsert_data(
     engine,
-    "bronze_benchmark_usg_v2",
+    "silver_benchmark_usg",
     roll_schedule_usg_df,
     "start_date",
     PUBLISH_TO_PROD,

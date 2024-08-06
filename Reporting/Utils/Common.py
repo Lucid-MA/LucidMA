@@ -69,8 +69,8 @@ def get_trading_days(start_date, end_date):
     return trading_days_str
 
 
-def current_timestamp():
-    return datetime.now().strftime("%B-%d-%y %H:%M:%S")
+def current_timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def format_date_mm_dd_yyyy(date: datetime) -> str:

@@ -72,11 +72,18 @@ bronze_crane_df.rename(
     inplace=True,
 )
 
-# Join the dataframes on "benchmark_date" and "Date" columns
+# Perform an outer join on the dataframes
 silver_benchmark_df = bronze_benchmark_df.merge(
-    bronze_crane_df, left_on="benchmark_date", right_on="Date"
+    bronze_crane_df,
+    left_on="benchmark_date",
+    right_on="Date",
+    how='outer'
 )
+
 silver_benchmark_df = silver_benchmark_df.drop(columns=["Date", "timestamp"])
+
+# Fill NaN values with None
+silver_benchmark_df = silver_benchmark_df.where(pd.notnull(silver_benchmark_df), None)
 
 silver_benchmark_df["timestamp"] = get_datetime_object()
 
