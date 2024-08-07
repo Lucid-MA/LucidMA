@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 table_name = "bronze_benchmark_crane_data"
 
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if PUBLISH_TO_PROD:
