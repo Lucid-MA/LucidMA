@@ -1090,3 +1090,99 @@ AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
 AND (tp.STARTDATE <= @valdate) AND (tp.enddate > @valdate OR tp.enddate IS NULL) AND (tp.CLOSEDATE > @valdate OR tp.CLOSEDATE IS NULL)
 ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
 """
+
+
+# This is coming from HELIX - Mattias want to join this and the investors table
+# Part 1
+mattias_query_counterparty = """
+SELECT
+    Tradepieces.TRADEPIECE AS "Trade ID",
+    Tradepieces.LEDGERNAME AS "Ledger",
+    TRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
+    Tradepieces.TRADEDATE AS "Trade Date",
+    Tradepieces.STARTDATE AS "Start Date",
+    CASE
+        WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
+        ELSE Tradepieces.CLOSEDATE
+    END AS "End Date",
+    - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION AS "Money",
+    CURRENCYS.CURRENCYCODE AS "Currency",
+    TRIM(Tradepieces.CONTRANAME) AS "Counterparty", -- > Want this FIELD TO BE THE LEGAL ENTITY NAME FROM INVESTORS TABLE (based on mapping of ContraName from TradePieces to Helix Code from Investors)
+    Tradepieces.REPORATE AS "Orig. Rate",
+    TRADEPIECECALCDATAS.todayrate AS "Today Rate",
+    TRADEPIECECALCDATAS.REPOINTEREST_ONEDAY AS "Daily Int.",
+    TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Accrued Int.",
+    TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED AS "Unrealized Int.",
+    TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Total Interest Due",
+    (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "Crnt Money Due",
+    (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED) + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "End Money",
+    TRIM(Tradepieces.ISIN) AS "BondID",
+    - Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Par/Quantity",
+    Tradepiececalcdatas.CURRENTMBSFACTOR AS "Issue Factor",
+    - Tradepiececalcdatas.CURRENTMBSFACTOR * Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Current Face",
+    TRADEPIECECALCDATAS.CURRENTPRICE AS "Current Price",
+    - TRADEPIECECALCDATAS.CURRENTMARKETVALUE * TRADETYPES.PAR_DIRECTION AS "Mkt Value",
+    Tradepieces.PRICE AS "Repo Price",
+    Tradepieces.PRICEFULL AS "Trade Price",
+    Tradepieces.HAIRCUT AS "HairCut",
+    CASE
+        WHEN Tradepieces.HAIRCUTMETHOD = 0 THEN 'No Haircut'
+        WHEN Tradepieces.HAIRCUTMETHOD = 1 THEN '% Proceeds'
+        WHEN Tradepieces.HAIRCUTMETHOD = 2 THEN 'Adj By %'
+        WHEN Tradepieces.HAIRCUTMETHOD = 3 THEN 'Adj By Points'
+        ELSE Tradepieces.X_SPECIALCODE1
+    END AS "Haircut Method",
+    RTRIM(CASE
+        WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+        ELSE ISSUESUBTYPES2.DESCRIPTION
+    END) AS "Product Type",
+    RTRIM(CASE
+        WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD'
+        ELSE ISSUESUBTYPES1.DESCRIPTION
+    END) AS "Product",
+    Tradepieces.USERNAME AS "User",
+       RTRIM(ISNULL(Tradepieces.DEPOSITORY, '')) AS "Depository",
+       RTRIM(STATUSDETAILS.DESCRIPTION) AS "Status Detail",
+       TRIM(Tradepieces.ACCT_NUMBER) AS "CP Short Name",
+       RTRIM(STATUSMAINS.DESCRIPTION) AS "Status Main",
+       RTRIM(CASE
+             WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'Cash'
+             WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'Cash'
+             ELSE ISSUESUBTYPES3.DESCRIPTION
+       END) AS "Product Sub",
+       RTRIM(CASE
+             WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
+             WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'EUR Cash'
+             ELSE ISNULL(ISSUES.DESCRIPTION_1, '')
+       END) AS "Description",
+       TRADEPIECEXREFS.FRONTOFFICEID AS "Facility",
+       Tradepieces.COMMENTS AS "Comments",
+       Tradecommissionpieceinfo.commissionvalue AS "Commission",
+       ISNULL(Tradepieces.STRATEGY, '') AS "Fund Entity"
+       FROM
+       tradepieces
+       INNER JOIN TRADEPIECEXREFS ON TRADEPIECEXREFS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+       INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+       INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
+       INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE = TRADEPIECES.SHELLTRADETYPE
+       INNER JOIN ISSUES ON ISSUES.CUSIP = TRADEPIECES.CUSIP
+       INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY = TRADEPIECES.CURRENCY_PAR
+       INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL = TRADEPIECES.STATUSDETAIL
+       INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN = TRADEPIECES.STATUSMAIN
+       INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY = TRADEPIECES.ISSUECATEGORY
+       INNER JOIN ISSUESUBTYPES1 ON ISSUESUBTYPES1.ISSUESUBTYPE1 = ISSUECATEGORIES.ISSUESUBTYPE1
+       INNER JOIN ISSUESUBTYPES2 ON ISSUESUBTYPES2.ISSUESUBTYPE2 = ISSUECATEGORIES.ISSUESUBTYPE2
+       INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3 = ISSUECATEGORIES.ISSUESUBTYPE3
+       WHERE
+       tradepieces.company = 49
+       AND tradepieces.statusmain <> 6 and tradepieces.STARTDATE > DATEADD(DAY, -180, GETDATE())
+"""
+
+# Part 2
+investors_db_query = """
+SELECT 
+    investors."Legal entity", 
+    investors."Helix Code"
+FROM 
+    investors
+"""
