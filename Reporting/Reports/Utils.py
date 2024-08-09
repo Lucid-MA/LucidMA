@@ -375,7 +375,7 @@ def bps_spread(t, b):
         diff = abs(t_value - b_value)
 
         # Format output string
-        return f"+{int(diff * 100)} bps"
+        return f"+{round(diff * 100)} bps"
     except:
         return "n/a"
 

@@ -1360,7 +1360,6 @@ for reporting_series_id in reporting_series:
                 "alloc_tbills": form_as_percent(aloc_tbills, 1),  # TODO: review
                 "alloc_total": form_as_percent(1, 1),  # TODO: review
                 "tablevstretch": tablevstretch(fund_name),  # done
-                # "return_table_plot": "\n\t\\textbf{Lucid USG - Series M}                    & \\textbf{5.55\\%}                              & \\textbf{-}                                  & \\textbf{5.55\\%}                               & \\textbf{-}                           & \\textbf{5.55\\%}                             & \\textbf{-}                          \\\\\n1m T-Bills                       & 5.55\\%                                       & \\textbf{+16 bps}                            & 5.55\\%                               & \\textbf{+17 bps}                     & 5.55\\%                              & \\textbf{+16 bps}                    \\\\\nCrane Govt MM Index                       & 5.55\\%                                       & \\textbf{+43 bps}                           & 5.55\\%                               & \\textbf{+43 bps}                     & 5.55\\%                              & \\textbf{+40 bps}                    \\\\ \\arrayrulecolor{light_grey}\\hline\n\t",
                 "return_table_plot": return_table_plot(
                     fund_name=fund_name,  # done
                     prev_pd_return=previous_target_return,
