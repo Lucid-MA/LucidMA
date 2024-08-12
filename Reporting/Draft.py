@@ -7,6 +7,7 @@ from datetime import datetime
 import logging
 from dataclasses import dataclass
 
+from Utils.Common import print_df
 from Utils.Constants import benchmark_ticker
 from Utils.database_utils import engine_prod, get_database_engine
 
@@ -182,6 +183,57 @@ class BloombergDataFetcher:
             error_msg = security_data.getElement("securityError")
             logger.error(f"Security error for {security}: {error_msg}")
 
+    def get_security_attributes(
+        self, securities: List[str], fields: List[str]
+    ) -> pd.DataFrame:
+        if not self._start_session():
+            return pd.DataFrame()
+
+        try:
+            service = self.session.getService("//blp/refdata")
+            request = service.createRequest("ReferenceDataRequest")
+
+            for security in securities:
+                request.getElement("securities").appendValue(security)
+
+            for field in fields:
+                request.getElement("fields").appendValue(field)
+
+            self.session.sendRequest(request)
+
+            data = []
+            while True:
+                event = self.session.nextEvent(500)
+                if event.eventType() == blpapi.Event.RESPONSE:
+                    for msg in event:
+                        security_data = msg.getElement("securityData")
+                        for i in range(security_data.numValues()):
+                            security = security_data.getValueAsElement(i)
+                            ticker = security.getElementAsString("security")
+                            field_data = security.getElement("fieldData")
+
+                            row = {"security": ticker}
+                            for field in fields:
+                                if field_data.hasElement(field):
+                                    row[field] = field_data.getElement(field).getValue()
+                                else:
+                                    row[field] = None
+                            data.append(row)
+                    break
+                elif event.eventType() == blpapi.Event.PARTIAL_RESPONSE:
+                    logging.info("Received partial response")
+                elif event.eventType() == blpapi.Event.TIMEOUT:
+                    logging.warning("Timeout occurred while waiting for response.")
+                    break
+
+            return pd.DataFrame(data)
+
+        except blpapi.Exception as e:
+            logging.error(f"Bloomberg API exception: {e}")
+            return pd.DataFrame()
+        finally:
+            self._stop_session()
+
 
 def upsert_data(tb_name: str, df: pd.DataFrame):
     engine = engine_prod if PUBLISH_TO_PROD else get_database_engine("postgres")
@@ -280,5 +332,90 @@ if __name__ == "__main__":
         "timestamp",
     ]
     prices_latest_df = prices_latest_df[new_column_order]
-    logger.info("Upserting data to table...")
-    upsert_data(tb_name, prices_latest_df)
+    # logger.info("Upserting data to table...")
+    # upsert_data(tb_name, prices_latest_df)
+
+    securities = [
+        "/cusip/00037VAC2",
+        "/cusip/000825AJ8",
+        "/cusip/00103CAC3",
+        "/cusip/PPFR5TTD6",
+        "/cusip/ALMONDEUR",
+        "/cusip/ALMONDUSD",
+        "/cusip/EASTCYPR1",
+        "/cusip/ECYP-----",
+        "/cusip/EELM-----",
+        "/isin/EUR Curncy",
+        "/cusip/EWILLEUR-",
+        "/cusip/EWILLUSD-",
+        "/isin/FR0000571218",
+        "/isin/FR0014007TY9",
+        "/cusip/PPE9DMNR8",
+        "/cusip/PPE4DGC45",
+        "/cusip/HEXZT----",
+        "/cusip/HZLNT----",
+        "/cusip/JPM-352CP",
+        "/cusip/JPM-HLDNE",
+        "/cusip/JPM-ISOFD",
+        "/cusip/JPM-PEARL",
+        "/cusip/JPM-STPT1",
+        "/cusip/MCHY-----",
+        "/cusip/PPEBEGFI4",
+        "/cusip/PPFX3C1P5",
+        "/cusip/OLIVEEUR-",
+        "/cusip/OLIVEUSD-",
+        "/cusip/OPPOR----",
+        "/cusip/PPFQKMXT6",
+        "/cusip/PAAPLEUR-",
+        "/cusip/PAAPLUSD-",
+        "/cusip/PFIR-----",
+        "/isin/PRIME-2YIG",
+        "/isin/PRIME-A100",
+        "/isin/PRIME-C100",
+        "/isin/PRIME-M000",
+        "/isin/PRIME-MIG0",
+        "/isin/PRIME-Q100",
+        "/isin/PRIME-Q364",
+        "/isin/PRIME-QX00",
+        "/cusip/SOSPRUCE1",
+        "/cusip/SOSPRUCE2",
+        "/cusip/SSPRUCE--",
+        "/cusip/STAPL----",
+        "/cusip/PPE32P4N6",
+        "/cusip/PPED2BZX9",
+        "/cusip/PPE939O30",
+        "/cusip/PPF54YY06",
+        "/cusip/PPFT6V9U0",
+        "/cusip/TREATY---",
+        "/cusip/PPG1JQ3D1",
+        "/isin/USG91013AD76",
+        "/isin/USGFD-M000",
+        "/cusip/PP30JD700",
+        "/cusip/PP075HWJ5",
+        "/cusip/PP9FCKDZ8",
+        "/cusip/PPEF1MMY3",
+        "/cusip/PPEZDK875",
+        "/cusip/PPE0FKE65",
+        "/cusip/PPGA0OKN5",
+        "/cusip/PPG80PFP8",
+        "/cusip/PPG91FR41",
+        "/cusip/PPG1K4CZ9",
+        "/cusip/PPG5K61F1",
+        "/cusip/PPG1K4CY2",
+        "/cusip/PPG5K61D6",
+        "EUR Curncy",
+    ]
+
+    fields = [
+        "SECURITY_TYP,ISSUER,Collat Typ,Name,Industry Sector,Issue DT,Maturity,Amt Outstanding,Coupon,Floater,"
+        "MTG Factor,PX Bid,PX Mid,Int Acc,Mtg WAL,MTG ORIG_WAL,DUR ADJ OAS BID,YAS_MOD_DUR,Days Acc,YLD_ytm_BID,I_SPRD_BID,"
+        "FLT_SPREAD,OAS_SPREAD_ASK,MTG TRANCHE TYP LONG,MTG PL CPR 1M,MTG PL CPR 6M,MTG_WHLN_GEO1,MTG_WHLN_GEO2,"
+        "MTG_WHLN_GEO3,RTG_SP,RTG_MOODY,RTG_FITCH,RTG_KBRA,RTG_DBRS,RTG_EGAN_JONES,DELIVERY_TYP,DTC_REGISTERED,DTC_ELIGIBLE,MTG_DTC_TYP,"
+        "TRADE_DT_ACC_INT,PRINCIPAL_FACTOR,MTG_PREV_FACTOR,MTG_RECORD_DT,MTG_FACTOR_PAY_DT,MTG_NXT_PAY_DT_SET_DT,IDX_RATIO"
+    ]
+
+    logging.info("Fetching security attributes...")
+    security_attributes_df = fetcher.get_security_attributes(securities, fields)
+    logging.info(security_attributes_df)
+
+    print_df(security_attributes_df)
