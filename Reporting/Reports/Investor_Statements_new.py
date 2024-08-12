@@ -48,17 +48,17 @@ from Reports.Utils import (
 # CONSTANT
 reporting_series = [
     # "PRIME-C10",
-    "PRIME-M00",
-    "PRIME-MIG",
+    # "PRIME-M00",
+    # "PRIME-MIG",
     # "PRIME-Q10",
     # "PRIME-QX0",
     # "74166WAE4",  # Prime Note QX-1
     # "74166WAM6",  # Prime Note Q1
-    # "74166WAK0",  # Prime Note M-2
-    # "74166WAN4",  # Prime Note MIG
-    # "90366JAG2",  # USG Note M-8
-    # "90366JAH0",  # USG Note M-9
-    "USGFD-M00",
+    "74166WAK0",  # Prime Note M-2
+    "74166WAN4",  # Prime Note MIG
+    "90366JAG2",  # USG Note M-8
+    "90366JAH0",  # USG Note M-9
+    # "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -1178,7 +1178,7 @@ for reporting_series_id in reporting_series:
 
     def get_coupon_plot(reporting_series_id, reporting_date):
         # This is the maximum of lines that we want to show on coupon tables
-        lookback_period = 5
+        lookback_period = 30
         (
             int_period_starts,
             int_period_ends,
