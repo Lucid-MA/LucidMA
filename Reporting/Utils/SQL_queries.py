@@ -196,6 +196,16 @@ daily_price_securities_helix_query = """
             order by Fund ASC
         """
 
+bloomberg_bond_id_query = """
+            select distinct
+            case when tradepieces.company = 44 then 'USG Fund' when tradepieces.company = 45 then 'Prime Fund' when tradepieces.COMPANY = 46 then 'MMT IM Fund' when tradepieces.COMPANY = 48 then 'LMCP Inv Fund'  when tradepieces.COMPANY = 49 then 'LucidRepo' end Fund,
+            ltrim(rtrim(Tradepieces.ISIN)) BondID
+            from tradepieces 
+            where tradepieces.isvisible = 1
+            and tradepieces.company in (44,45,46, 48,49)
+            order by Fund ASC
+"""
+
 # Query trade with trade_type in (22,23) excluding (37090, 37089, 37088, 37087, 37086, 37085, 37084, 37083, 37082, 37081)
 trade_helix_query = """
         DECLARE @valdate DATE;

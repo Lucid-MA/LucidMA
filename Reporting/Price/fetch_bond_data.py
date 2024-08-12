@@ -106,7 +106,7 @@ def helix_match():
     finally:
         connection.close()
         cursor.close()
-
+    # PNI123456789 -> 123456789
     for f in cusips_all.keys():
         to_add = set()
         for x in cusips_all[f]:
