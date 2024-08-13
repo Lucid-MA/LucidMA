@@ -184,7 +184,7 @@ class BloombergDataFetcher:
             logger.error(f"Security error for {security}: {error_msg}")
 
     def get_security_attributes(
-            self, securities: List[str], fields: List[str], timeout: int = 5000
+        self, securities: List[str], fields: List[str], timeout: int = 5000
     ) -> pd.DataFrame:
         if not self._start_session():
             return pd.DataFrame()
@@ -201,19 +201,34 @@ class BloombergDataFetcher:
 
             self.session.sendRequest(request)
 
+            def remove_prefix(text, prefixes):
+                for prefix in prefixes:
+                    if text.startswith(prefix):
+                        return text[len(prefix) :]
+                return text  # Return original if no prefix matches
+
+            prefixes_to_remove = ["/cusip/", "/isin/"]
+
             data = []
             retries = 3
             while retries > 0:
                 event = self.session.nextEvent(timeout)
-                if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
+                if event.eventType() in [
+                    blpapi.Event.RESPONSE,
+                    blpapi.Event.PARTIAL_RESPONSE,
+                ]:
                     for msg in event:
                         security_data = msg.getElement("securityData")
                         for i in range(security_data.numValues()):
                             security = security_data.getValueAsElement(i)
-                            ticker = security.getElementAsString("security")
+                            ticker = remove_prefix(
+                                security.getElementAsString("security"),
+                                prefixes_to_remove,
+                            )
                             field_data = security.getElement("fieldData")
 
-                            row = {"security": ticker}
+                            row = {"CUSIP": ticker}
+
                             for field in fields:
                                 if field_data.hasElement(field):
                                     row[field] = field_data.getElement(field).getValue()
@@ -223,10 +238,14 @@ class BloombergDataFetcher:
                     if event.eventType() == blpapi.Event.RESPONSE:
                         break  # Full response received, exit loop
                 elif event.eventType() == blpapi.Event.TIMEOUT:
-                    logging.warning("Timeout occurred while waiting for response. Retrying...")
+                    logging.warning(
+                        "Timeout occurred while waiting for response. Retrying..."
+                    )
                     retries -= 1  # Decrement retry count and retry
                     if retries == 0:
-                        logging.error("Maximum retries reached. Returning partial data.")
+                        logging.error(
+                            "Maximum retries reached. Returning partial data."
+                        )
                         break
 
             if not data:
@@ -300,10 +319,11 @@ def upsert_data(tb_name: str, df: pd.DataFrame):
             logger.error(f"An error occurred: {e}")
             raise
 
+
 def read_securities_from_file(file_path: str) -> List[str]:
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         content = file.read().strip()
-    return content.split(',')
+    return content.split(",")
 
 
 if __name__ == "__main__":
@@ -376,23 +396,104 @@ if __name__ == "__main__":
 
     securities = read_securities_from_file(securities_file_path)
 
-
     # # Print or use `securities_str` as needed
     # print(securities)
 
     fields = [
-        "SECURITY_TYP", "ISSUER", "COLLAT_TYP", "NAME", "INDUSTRY_SECTOR",
-        "ISSUE_DT", "MATURITY", "AMT_OUTSTANDING", "COUPON", "FLOATER",
-        "MTG_FACTOR", "PX_BID", "PX_MID", "INT_ACC", "MTG_WAL",
-        "MTG_ORIG_WAL", "DUR_ADJ_OAS_BID", "YAS_MOD_DUR", "DAYS_ACC",
-        "YLD_YTM_BID", "I_SPRD_BID", "FLT_SPREAD", "OAS_SPREAD_ASK",
-        "MTG_TRANCHE_TYP_LONG", "MTG_PL_CPR_1M", "MTG_PL_CPR_6M",
-        "MTG_WHLN_GEO1", "MTG_WHLN_GEO2", "MTG_WHLN_GEO3", "RTG_SP",
-        "RTG_MOODY", "RTG_FITCH", "RTG_KBRA", "RTG_DBRS", "RTG_EGAN_JONES",
-        "DELIVERY_TYP", "DTC_REGISTERED", "DTC_ELIGIBLE", "MTG_DTC_TYP",
-        "TRADE_DT_ACC_INT", "PRINCIPAL_FACTOR", "MTG_PREV_FACTOR",
-        "MTG_RECORD_DT", "MTG_FACTOR_PAY_DT", "MTG_NXT_PAY_DT_SET_DT",
-        "IDX_RATIO"
+        "SECURITY_TYP",
+        "ISSUER",
+        "COLLAT_TYP",
+        "NAME",
+        "INDUSTRY_SECTOR",
+        "ISSUE_DT",
+        "MATURITY",
+        "AMT_OUTSTANDING",
+        "COUPON",
+        "FLOATER",
+        "MTG_FACTOR",
+        "PX_BID",
+        "PX_MID",
+        "INT_ACC",
+        "MTG_WAL",
+        "MTG_ORIG_WAL",
+        "DUR_ADJ_OAS_BID",
+        "YAS_MOD_DUR",
+        "DAYS_ACC",
+        "YLD_YTM_BID",
+        "I_SPRD_BID",
+        "FLT_SPREAD",
+        "OAS_SPREAD_ASK",
+        "MTG_TRANCHE_TYP_LONG",
+        "MTG_PL_CPR_1M",
+        "MTG_PL_CPR_6M",
+        "MTG_WHLN_GEO1",
+        "MTG_WHLN_GEO2",
+        "MTG_WHLN_GEO3",
+        "RTG_SP",
+        "RTG_MOODY",
+        "RTG_FITCH",
+        "RTG_KBRA",
+        "RTG_DBRS",
+        "RTG_EGAN_JONES",
+        "DELIVERY_TYP",
+        "DTC_REGISTERED",
+        "DTC_ELIGIBLE",
+        "MTG_DTC_TYP",
+        "TRADE_DT_ACC_INT",
+        "PRINCIPAL_FACTOR",
+        "MTG_PREV_FACTOR",
+        "MTG_RECORD_DT",
+        "MTG_FACTOR_PAY_DT",
+        "MTG_NXT_PAY_DT_SET_DT",
+        "IDX_RATIO",
+    ]
+
+    cols = [
+        "CUSIP",
+        "SECURITY_TYP",
+        "ISSUER",
+        "Collat Typ",
+        "Name",
+        "Industry Sector",
+        "Issue DT",
+        "Maturity",
+        "Amt Outstanding",
+        "Coupon",
+        "Floater",
+        "MTG Factor",
+        "PX Bid",
+        "PX Mid",
+        "Int Acc",
+        "Mtg WAL",
+        "DUR ADJ OAS BID",
+        "YAS_MOD_DUR",
+        "USED DURATION",
+        "Days Acc",
+        "YLD_ytm_BID",
+        "I_SPRD_BID",
+        "FLT_SPREAD",
+        "OAS_SPREAD_ASK",
+        "MTG TRANCHE TYP LONG",
+        "MTG PL CPR 1M",
+        "MTG PL CPR 6M",
+        "MTG_WHLN_GEO1",
+        "MTG_WHLN_GEO2",
+        "MTG_WHLN_GEO3",
+        "RATINGS BUCKET",
+        "RTG_SP",
+        "RTG_MOODY",
+        "RTG_FITCH",
+        "RTG_KBRA",
+        "RTG_DBRS",
+        "RTG_EGAN_JONES",
+        "DELIVERY_TYP",
+        "Est'd Asset Class",
+        "CUSIP or ISIN",
+        "MTG_PREV_FACTOR",
+        "MTG_RECORD_DT",
+        "MTG_FACTOR_PAY_DT",
+        "MTG_NXT_PAY_DT_SET_DT",
+        "IDX_RATIO",
     ]
 
     logging.info("Fetching security attributes...")
@@ -400,5 +501,5 @@ if __name__ == "__main__":
     logging.info(security_attributes_df)
 
     print_df(security_attributes_df)
-    output_path = 'security_attributes.xlsx'
+    output_path = "security_attributes.xlsx"
     security_attributes_df.to_excel(output_path, engine="openpyxl", index=False)
