@@ -1,6 +1,7 @@
 import subprocess
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 
 from Reporting.Utils.Common import (
@@ -21,7 +22,11 @@ from Reporting.Utils.Constants import (
     SOFR_3M,
     CP_3M,
 )
-from Reporting.Utils.database_utils import get_database_engine, read_table_from_db
+from Reporting.Utils.database_utils import (
+    get_database_engine,
+    read_table_from_db,
+    prod_db_type,
+)
 from Reports.Constants import fund_report_template, note_report_template
 from Reports.Utils import (
     heightmap,
@@ -208,7 +213,7 @@ for reporting_series_id in reporting_series:
     historical_returns_table_name = "historical_returns"
     target_return_table_name = "target_returns"
     benchmark_table_name = "bronze_benchmark"
-    oc_rate_table_name = "oc_rates"
+    oc_rate_table_name = "oc_rates_v2"
     daily_nav_table_name = "bronze_daily_nav"
     roll_schedule_table_name = "roll_schedule"
     cash_balance_table_name = "bronze_cash_balance"
@@ -231,7 +236,7 @@ for reporting_series_id in reporting_series:
 
     df_benchmark = read_table_from_db(benchmark_table_name, db_type)
 
-    df_oc_rates = read_table_from_db(oc_rate_table_name, db_type)
+    df_oc_rates = read_table_from_db(oc_rate_table_name, prod_db_type)
 
     df_daily_nav = read_table_from_db(daily_nav_table_name, db_type)
 
@@ -835,7 +840,11 @@ for reporting_series_id in reporting_series:
         col_mv_allocated_usg, inv_usg = get_values("USG")
         col_mv_allocated_usgcmo, inv_usgcmo = get_values("USGCMO")
 
-        oc_total = data["collateral_mv"].sum() / data["investment_amount"].sum()
+        oc_total = np.divide(data["collateral_mv"].sum(), data["investment_amount"].sum(),
+                                  where=data["investment_amount"].sum() != 0)
+        if np.isnan(oc_total):
+            # Handle the case when oc_total is np.nan
+            oc_total = 0  # Assigning a default value of 0
         # oc_total = (
         #     data["collateral_mv_allocated"].sum() / data["investment_amount"].sum()
         # )
@@ -1016,7 +1025,7 @@ for reporting_series_id in reporting_series:
 
     def get_oc_rates_coupon_table(reporting_dates):
         oc_rates = []  # oc_rate of end date - 1 business days
-        df_oc_rates_temp = read_table_from_db(oc_rate_table_name, db_type)
+        df_oc_rates_temp = read_table_from_db(oc_rate_table_name, prod_db_type)
 
         for end_dt in reporting_dates:
             oc_date_temp = (
@@ -1059,10 +1068,17 @@ for reporting_series_id in reporting_series:
 
             oc_rate_temp_df = df_oc_rates_temp[oc_rate_condition]
             # TODO: See if we want to use allocated OC Rate instead of actual OC Rate
-            oc_total_temp = (
-                oc_rate_temp_df["collateral_mv"].sum()
-                / oc_rate_temp_df["investment_amount"].sum()
-            )
+            # oc_total_temp = (
+            #     oc_rate_temp_df["collateral_mv"].sum()
+            #     / oc_rate_temp_df["investment_amount"].sum()
+            # )
+            oc_total_temp = np.divide(oc_rate_temp_df["collateral_mv"].sum(), oc_rate_temp_df["investment_amount"].sum(),
+                                 where=oc_rate_temp_df["investment_amount"].sum() != 0)
+
+            if np.isnan(oc_total_temp):
+                # Handle the case when oc_total is np.nan
+                oc_total_temp = 0  # Assigning a default value of 0
+
             # oc_total_temp = (
             #     oc_rate_temp_df["collateral_mv_allocated"].sum()
             #     / oc_rate_temp_df["investment_amount"].sum()
