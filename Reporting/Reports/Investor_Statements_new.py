@@ -52,18 +52,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
-    "PRIME-M00",
-    "PRIME-MIG",
-    "PRIME-Q10",
-    "PRIME-QX0",
-    "74166WAE4",  # Prime Note QX-1
+    # "PRIME-C10",
+    # "PRIME-M00",
+    # "PRIME-MIG",
+    # "PRIME-Q10",
+    # "PRIME-QX0",
+    # "74166WAE4",  # Prime Note QX-1
     "74166WAM6",  # Prime Note Q1
-    "74166WAK0",  # Prime Note M-2
-    "74166WAN4",  # Prime Note MIG
-    "90366JAG2",  # USG Note M-8
-    "90366JAH0",  # USG Note M-9
-    "USGFD-M00",
+    # "74166WAK0",  # Prime Note M-2
+    # "74166WAN4",  # Prime Note MIG
+    # "90366JAG2",  # USG Note M-8
+    # "90366JAH0",  # USG Note M-9
+    # "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -1081,15 +1081,19 @@ for reporting_series_id in reporting_series:
             #     oc_rate_temp_df["collateral_mv"].sum()
             #     / oc_rate_temp_df["investment_amount"].sum()
             # )
-            oc_total_temp = np.divide(
-                oc_rate_temp_df["collateral_mv"].sum(),
-                oc_rate_temp_df["investment_amount"].sum(),
-                where=oc_rate_temp_df["investment_amount"].sum() != 0,
-            )
 
-            if np.isnan(oc_total_temp):
-                # Handle the case when oc_total is np.nan
-                oc_total_temp = 0  # Assigning a default value of 0
+            if oc_rate_temp_df.empty:
+                oc_total_temp = 'n/a'
+            else:
+                oc_total_temp = np.divide(
+                    oc_rate_temp_df["collateral_mv"].sum(),
+                    oc_rate_temp_df["investment_amount"].sum(),
+                    where=oc_rate_temp_df["investment_amount"].sum() != 0,
+                )
+
+                if np.isnan(oc_total_temp):
+                    # Handle the case when oc_total is np.nan
+                    oc_total_temp = 0  # Assigning a default value of 0
 
             # oc_total_temp = (
             #     oc_rate_temp_df["collateral_mv_allocated"].sum()
