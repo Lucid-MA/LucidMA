@@ -52,18 +52,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
-    # "PRIME-M00",
-    # "PRIME-MIG",
-    # "PRIME-Q10",
-    # "PRIME-QX0",
-    # "74166WAE4",  # Prime Note QX-1
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    "PRIME-Q10",
+    "PRIME-QX0",
+    "74166WAE4",  # Prime Note QX-1
     "74166WAM6",  # Prime Note Q1
-    # "74166WAK0",  # Prime Note M-2
-    # "74166WAN4",  # Prime Note MIG
-    # "90366JAG2",  # USG Note M-8
-    # "90366JAH0",  # USG Note M-9
-    # "USGFD-M00",
+    "74166WAK0",  # Prime Note M-2
+    "74166WAN4",  # Prime Note MIG
+    "90366JAG2",  # USG Note M-8
+    "90366JAH0",  # USG Note M-9
+    "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -1083,7 +1083,7 @@ for reporting_series_id in reporting_series:
             # )
 
             if oc_rate_temp_df.empty:
-                oc_total_temp = 'n/a'
+                oc_total_temp = "n/a"
             else:
                 oc_total_temp = np.divide(
                     oc_rate_temp_df["collateral_mv"].sum(),
@@ -1095,11 +1095,12 @@ for reporting_series_id in reporting_series:
                     # Handle the case when oc_total is np.nan
                     oc_total_temp = 0  # Assigning a default value of 0
 
+                oc_total_temp = round(oc_total_temp, 4)
             # oc_total_temp = (
             #     oc_rate_temp_df["collateral_mv_allocated"].sum()
             #     / oc_rate_temp_df["investment_amount"].sum()
             # )
-            oc_rates.append(round(oc_total_temp, 4))
+            oc_rates.append(oc_total_temp)
 
         return oc_rates
 
@@ -1169,7 +1170,10 @@ for reporting_series_id in reporting_series:
         interest_payment_dates = [
             format_date_mm_dd_yyyy(date) for date in interest_payment_dates
         ]
-        oc_rates = [format_interest_rate_one_decimal(rate) for rate in oc_rates]
+        oc_rates = [
+            format_interest_rate_one_decimal(rate) if rate != "n/a" else "n/a"
+            for rate in oc_rates
+        ]
         related_fund_cap_accounts = note_principals
 
         # TODO: REFRACTOR THIS. THIS IS SO BAD BECAUSE THE LENGTH OF THE LIST ARE NOT EQUAL AND WE ONLY WANT TO GET THE LAST ELEMENTS OF EACH LIST
