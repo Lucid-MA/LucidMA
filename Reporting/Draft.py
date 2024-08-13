@@ -70,8 +70,8 @@ class BloombergDataFetcher:
                 request.getElement("securities").appendValue(
                     self._prepare_security(security)
                 )
-            request.getElement("fields").appendValue("PX_LAST")
 
+            request.getElement("fields").appendValue("PX_LAST")
             self.session.sendRequest(request, correlationId=blpapi.CorrelationId(1))
 
             prices = {}
@@ -184,7 +184,7 @@ class BloombergDataFetcher:
             logger.error(f"Security error for {security}: {error_msg}")
 
     def get_security_attributes(
-        self, securities: List[str], fields: List[str]
+            self, securities: List[str], fields: List[str], timeout: int = 5000
     ) -> pd.DataFrame:
         if not self._start_session():
             return pd.DataFrame()
@@ -202,9 +202,10 @@ class BloombergDataFetcher:
             self.session.sendRequest(request)
 
             data = []
-            while True:
-                event = self.session.nextEvent(500)
-                if event.eventType() == blpapi.Event.RESPONSE:
+            retries = 3
+            while retries > 0:
+                event = self.session.nextEvent(timeout)
+                if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
                     for msg in event:
                         security_data = msg.getElement("securityData")
                         for i in range(security_data.numValues()):
@@ -219,13 +220,17 @@ class BloombergDataFetcher:
                                 else:
                                     row[field] = None
                             data.append(row)
-                    break
-                elif event.eventType() == blpapi.Event.PARTIAL_RESPONSE:
-                    logging.info("Received partial response")
+                    if event.eventType() == blpapi.Event.RESPONSE:
+                        break  # Full response received, exit loop
                 elif event.eventType() == blpapi.Event.TIMEOUT:
-                    logging.warning("Timeout occurred while waiting for response.")
-                    break
+                    logging.warning("Timeout occurred while waiting for response. Retrying...")
+                    retries -= 1  # Decrement retry count and retry
+                    if retries == 0:
+                        logging.error("Maximum retries reached. Returning partial data.")
+                        break
 
+            if not data:
+                logging.info("No data received. Returning empty DataFrame.")
             return pd.DataFrame(data)
 
         except blpapi.Exception as e:
@@ -295,6 +300,11 @@ def upsert_data(tb_name: str, df: pd.DataFrame):
             logger.error(f"An error occurred: {e}")
             raise
 
+def read_securities_from_file(file_path: str) -> List[str]:
+    with open(file_path, 'r') as file:
+        content = file.read().strip()
+    return content.split(',')
+
 
 if __name__ == "__main__":
     securities = [
@@ -313,105 +323,76 @@ if __name__ == "__main__":
 
     fetcher = BloombergDataFetcher()
 
-    logger.info("Fetching latest prices...")
-    prices_latest_df = fetcher.get_latest_prices(securities)
-    logger.info(prices_latest_df)
-
-    new_column_order = [
-        "benchmark_date",
-        "1m A1/P1 CP",
-        "3m A1/P1 CP",
-        "6m A1/P1 CP",
-        "9m A1/P1 CP",
-        "1m SOFR",
-        "3m SOFR",
-        "6m SOFR",
-        "1y SOFR",
-        "1m LIBOR",
-        "3m LIBOR",
-        "timestamp",
-    ]
-    prices_latest_df = prices_latest_df[new_column_order]
+    # logger.info("Fetching latest prices...")
+    # prices_latest_df = fetcher.get_latest_prices(securities)
+    # logger.info(prices_latest_df)
+    #
+    # new_column_order = [
+    #     "benchmark_date",
+    #     "1m A1/P1 CP",
+    #     "3m A1/P1 CP",
+    #     "6m A1/P1 CP",
+    #     "9m A1/P1 CP",
+    #     "1m SOFR",
+    #     "3m SOFR",
+    #     "6m SOFR",
+    #     "1y SOFR",
+    #     "1m LIBOR",
+    #     "3m LIBOR",
+    #     "timestamp",
+    # ]
+    # prices_latest_df = prices_latest_df[new_column_order]
     # logger.info("Upserting data to table...")
     # upsert_data(tb_name, prices_latest_df)
 
-    securities = [
-        "/cusip/00037VAC2",
-        "/cusip/000825AJ8",
-        "/cusip/00103CAC3",
-        "/cusip/PPFR5TTD6",
-        "/cusip/ALMONDEUR",
-        "/cusip/ALMONDUSD",
-        "/cusip/EASTCYPR1",
-        "/cusip/ECYP-----",
-        "/cusip/EELM-----",
-        "/isin/EUR Curncy",
-        "/cusip/EWILLEUR-",
-        "/cusip/EWILLUSD-",
-        "/isin/FR0000571218",
-        "/isin/FR0014007TY9",
-        "/cusip/PPE9DMNR8",
-        "/cusip/PPE4DGC45",
-        "/cusip/HEXZT----",
-        "/cusip/HZLNT----",
-        "/cusip/JPM-352CP",
-        "/cusip/JPM-HLDNE",
-        "/cusip/JPM-ISOFD",
-        "/cusip/JPM-PEARL",
-        "/cusip/JPM-STPT1",
-        "/cusip/MCHY-----",
-        "/cusip/PPEBEGFI4",
-        "/cusip/PPFX3C1P5",
-        "/cusip/OLIVEEUR-",
-        "/cusip/OLIVEUSD-",
-        "/cusip/OPPOR----",
-        "/cusip/PPFQKMXT6",
-        "/cusip/PAAPLEUR-",
-        "/cusip/PAAPLUSD-",
-        "/cusip/PFIR-----",
-        "/isin/PRIME-2YIG",
-        "/isin/PRIME-A100",
-        "/isin/PRIME-C100",
-        "/isin/PRIME-M000",
-        "/isin/PRIME-MIG0",
-        "/isin/PRIME-Q100",
-        "/isin/PRIME-Q364",
-        "/isin/PRIME-QX00",
-        "/cusip/SOSPRUCE1",
-        "/cusip/SOSPRUCE2",
-        "/cusip/SSPRUCE--",
-        "/cusip/STAPL----",
-        "/cusip/PPE32P4N6",
-        "/cusip/PPED2BZX9",
-        "/cusip/PPE939O30",
-        "/cusip/PPF54YY06",
-        "/cusip/PPFT6V9U0",
-        "/cusip/TREATY---",
-        "/cusip/PPG1JQ3D1",
-        "/isin/USG91013AD76",
-        "/isin/USGFD-M000",
-        "/cusip/PP30JD700",
-        "/cusip/PP075HWJ5",
-        "/cusip/PP9FCKDZ8",
-        "/cusip/PPEF1MMY3",
-        "/cusip/PPEZDK875",
-        "/cusip/PPE0FKE65",
-        "/cusip/PPGA0OKN5",
-        "/cusip/PPG80PFP8",
-        "/cusip/PPG91FR41",
-        "/cusip/PPG1K4CZ9",
-        "/cusip/PPG5K61F1",
-        "/cusip/PPG1K4CY2",
-        "/cusip/PPG5K61D6",
-        "EUR Curncy",
-    ]
+    # securities = [
+    #     "/cusip/00037VAC2", "/cusip/000825AJ8", "/cusip/00103CAC3",
+    #     "/cusip/PPFR5TTD6", "/cusip/ALMONDEUR", "/cusip/ALMONDUSD",
+    #     "/cusip/EASTCYPR1", "/cusip/ECYP-----", "/cusip/EELM-----",
+    #     "/isin/EUR Curncy", "/cusip/EWILLEUR-", "/cusip/EWILLUSD-",
+    #     "/isin/FR0000571218", "/isin/FR0014007TY9", "/cusip/PPE9DMNR8",
+    #     "/cusip/PPE4DGC45", "/cusip/HEXZT----", "/cusip/HZLNT----",
+    #     "/cusip/JPM-352CP", "/cusip/JPM-HLDNE", "/cusip/JPM-ISOFD",
+    #     "/cusip/JPM-PEARL", "/cusip/JPM-STPT1", "/cusip/MCHY-----",
+    #     "/cusip/PPEBEGFI4", "/cusip/PPFX3C1P5", "/cusip/OLIVEEUR-",
+    #     "/cusip/OLIVEUSD-", "/cusip/OPPOR----", "/cusip/PPFQKMXT6",
+    #     "/cusip/PAAPLEUR-", "/cusip/PAAPLUSD-", "/cusip/PFIR-----",
+    #     "/isin/PRIME-2YIG", "/isin/PRIME-A100", "/isin/PRIME-C100",
+    #     "/isin/PRIME-M000", "/isin/PRIME-MIG0", "/isin/PRIME-Q100",
+    #     "/isin/PRIME-Q364", "/isin/PRIME-QX00", "/cusip/SOSPRUCE1",
+    #     "/cusip/SOSPRUCE2", "/cusip/SSPRUCE--", "/cusip/STAPL----",
+    #     "/cusip/PPE32P4N6", "/cusip/PPED2BZX9", "/cusip/PPE939O30",
+    #     "/cusip/PPF54YY06", "/cusip/PPFT6V9U0", "/cusip/TREATY---",
+    #     "/cusip/PPG1JQ3D1", "/isin/USG91013AD76", "/isin/USGFD-M000",
+    #     "/cusip/PP30JD700", "/cusip/PP075HWJ5", "/cusip/PP9FCKDZ8",
+    #     "/cusip/PPEF1MMY3", "/cusip/PPEZDK875", "/cusip/PPE0FKE65",
+    #     "/cusip/PPGA0OKN5", "/cusip/PPG80PFP8", "/cusip/PPG91FR41",
+    #     "/cusip/PPG1K4CZ9", "/cusip/PPG5K61F1", "/cusip/PPG1K4CY2",
+    #     "/cusip/PPG5K61D6", "EUR Curncy"
+    # ]
+
+    # File path
+    securities_file_path = r"Price/curr_fetch_batch.txt"
+
+    securities = read_securities_from_file(securities_file_path)
+
+
+    # # Print or use `securities_str` as needed
+    # print(securities)
 
     fields = [
-        "SECURITY_TYP,ISSUER,Collat Typ,Name,Industry Sector,Issue DT,Maturity,Amt Outstanding,Coupon,Floater,"
-        "MTG Factor,PX Bid,PX Mid,Int Acc,Mtg WAL,MTG ORIG_WAL,DUR ADJ OAS BID,YAS_MOD_DUR,Days Acc,YLD_ytm_BID,I_SPRD_BID,"
-        "FLT_SPREAD,OAS_SPREAD_ASK,MTG TRANCHE TYP LONG,MTG PL CPR 1M,MTG PL CPR 6M,MTG_WHLN_GEO1,MTG_WHLN_GEO2,"
-        "MTG_WHLN_GEO3,RTG_SP,RTG_MOODY,RTG_FITCH,RTG_KBRA,RTG_DBRS,RTG_EGAN_JONES,DELIVERY_TYP,DTC_REGISTERED,DTC_ELIGIBLE,MTG_DTC_TYP,"
-        "TRADE_DT_ACC_INT,PRINCIPAL_FACTOR,MTG_PREV_FACTOR,MTG_RECORD_DT,MTG_FACTOR_PAY_DT,MTG_NXT_PAY_DT_SET_DT,IDX_RATIO"
+        "SECURITY_TYP", "ISSUER", "COLLAT_TYP", "NAME", "INDUSTRY_SECTOR",
+        "ISSUE_DT", "MATURITY", "AMT_OUTSTANDING", "COUPON", "FLOATER",
+        "MTG_FACTOR", "PX_BID", "PX_MID", "INT_ACC", "MTG_WAL",
+        "MTG_ORIG_WAL", "DUR_ADJ_OAS_BID", "YAS_MOD_DUR", "DAYS_ACC",
+        "YLD_YTM_BID", "I_SPRD_BID", "FLT_SPREAD", "OAS_SPREAD_ASK",
+        "MTG_TRANCHE_TYP_LONG", "MTG_PL_CPR_1M", "MTG_PL_CPR_6M",
+        "MTG_WHLN_GEO1", "MTG_WHLN_GEO2", "MTG_WHLN_GEO3", "RTG_SP",
+        "RTG_MOODY", "RTG_FITCH", "RTG_KBRA", "RTG_DBRS", "RTG_EGAN_JONES",
+        "DELIVERY_TYP", "DTC_REGISTERED", "DTC_ELIGIBLE", "MTG_DTC_TYP",
+        "TRADE_DT_ACC_INT", "PRINCIPAL_FACTOR", "MTG_PREV_FACTOR",
+        "MTG_RECORD_DT", "MTG_FACTOR_PAY_DT", "MTG_NXT_PAY_DT_SET_DT",
+        "IDX_RATIO"
     ]
 
     logging.info("Fetching security attributes...")
@@ -419,3 +400,5 @@ if __name__ == "__main__":
     logging.info(security_attributes_df)
 
     print_df(security_attributes_df)
+    output_path = 'security_attributes.xlsx'
+    security_attributes_df.to_excel(output_path, engine="openpyxl", index=False)
