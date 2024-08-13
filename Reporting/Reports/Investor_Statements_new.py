@@ -54,9 +54,9 @@ reporting_series = [
     # "PRIME-QX0",
     # "74166WAE4",  # Prime Note QX-1
     # "74166WAM6",  # Prime Note Q1
-    "74166WAK0",  # Prime Note M-2
-    "74166WAN4",  # Prime Note MIG
-    "90366JAG2",  # USG Note M-8
+    # "74166WAK0",  # Prime Note M-2
+    # "74166WAN4",  # Prime Note MIG
+    # "90366JAG2",  # USG Note M-8
     "90366JAH0",  # USG Note M-9
     # "USGFD-M00",
 ]
@@ -1098,18 +1098,16 @@ for reporting_series_id in reporting_series:
         # Get the result DataFrame
         result_df = note_data_df.iloc[index - lookback : index + 1].copy()
 
-        int_period_starts = result_df["interest_period_start"].tolist()[-lookback:] + [
+        int_period_starts = result_df["interest_period_start"].tolist() + [
             pd.Timestamp(next_start)
         ]
-        int_period_ends = result_df["interest_period_end"].tolist()[-lookback:] + [
+        int_period_ends = result_df["interest_period_end"].tolist() + [
             pd.Timestamp(next_end)
         ]
-        int_rates = result_df["interest_rate"].tolist()[-lookback:]
-        note_principals = result_df["principal_outstanding"].tolist()[-lookback:]
-        interest_paid = result_df["interest_paid"].tolist()[-lookback:]
-        interest_payment_dates = result_df["interest_payment_date"].tolist()[
-            -lookback:
-        ] + [pd.Timestamp(next_end)]
+        int_rates = result_df["interest_rate"].tolist()
+        note_principals = result_df["principal_outstanding"].tolist()
+        interest_paid = result_df["interest_paid"].tolist()
+        interest_payment_dates = result_df["interest_payment_date"].tolist() + [pd.Timestamp(next_end)]
 
         # Other variables
         target_int_rates, spread_to_benchmarks = (
@@ -1147,9 +1145,8 @@ for reporting_series_id in reporting_series:
             len(int_rates),
             len(interest_payment_dates),
             len(spread_to_benchmarks),
-            len(note_principals),
             len(interest_paid),
-            len(related_fund_cap_accounts),
+            len(related_fund_cap_accounts),  # extra here, can be removed later
         )
 
         # Get the indices for the last coupon_table_nrow items
