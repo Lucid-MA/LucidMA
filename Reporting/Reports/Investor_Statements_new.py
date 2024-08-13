@@ -47,18 +47,18 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
-    # "PRIME-M00",
-    # "PRIME-MIG",
-    # "PRIME-Q10",
-    # "PRIME-QX0",
-    # "74166WAE4",  # Prime Note QX-1
-    # "74166WAM6",  # Prime Note Q1
-    # "74166WAK0",  # Prime Note M-2
-    # "74166WAN4",  # Prime Note MIG
-    # "90366JAG2",  # USG Note M-8
+    "PRIME-C10",
+    "PRIME-M00",
+    "PRIME-MIG",
+    "PRIME-Q10",
+    "PRIME-QX0",
+    "74166WAE4",  # Prime Note QX-1
+    "74166WAM6",  # Prime Note Q1
+    "74166WAK0",  # Prime Note M-2
+    "74166WAN4",  # Prime Note MIG
+    "90366JAG2",  # USG Note M-8
     "90366JAH0",  # USG Note M-9
-    # "USGFD-M00",
+    "USGFD-M00",
 ]
 
 reporting_type_dict = {
@@ -1107,7 +1107,9 @@ for reporting_series_id in reporting_series:
         int_rates = result_df["interest_rate"].tolist()
         note_principals = result_df["principal_outstanding"].tolist()
         interest_paid = result_df["interest_paid"].tolist()
-        interest_payment_dates = result_df["interest_payment_date"].tolist() + [pd.Timestamp(next_end)]
+        interest_payment_dates = result_df["interest_payment_date"].tolist() + [
+            pd.Timestamp(next_end)
+        ]
 
         # Other variables
         target_int_rates, spread_to_benchmarks = (
