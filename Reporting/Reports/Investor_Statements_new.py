@@ -1,5 +1,5 @@
 import subprocess
-from datetime import datetime
+from datetime import datetime, date
 
 import numpy as np
 import pandas as pd
@@ -504,6 +504,9 @@ for reporting_series_id in reporting_series:
         "%Y-%m-%d"
     )
 
+    # This is for oc_rates_v2 where report_date is a date object
+    oc_date = date.fromisoformat(oc_date)
+
     if reporting_type_dict[reporting_series_id] == "NOTE":
         if reporting_series_id == "74166WAK0":
             oc_rate_condition = (
@@ -840,8 +843,11 @@ for reporting_series_id in reporting_series:
         col_mv_allocated_usg, inv_usg = get_values("USG")
         col_mv_allocated_usgcmo, inv_usgcmo = get_values("USGCMO")
 
-        oc_total = np.divide(data["collateral_mv"].sum(), data["investment_amount"].sum(),
-                                  where=data["investment_amount"].sum() != 0)
+        oc_total = np.divide(
+            data["collateral_mv"].sum(),
+            data["investment_amount"].sum(),
+            where=data["investment_amount"].sum() != 0,
+        )
         if np.isnan(oc_total):
             # Handle the case when oc_total is np.nan
             oc_total = 0  # Assigning a default value of 0
@@ -1032,6 +1038,9 @@ for reporting_series_id in reporting_series:
                 pd.to_datetime(end_dt) - pd.offsets.BusinessDay(1)
             ).strftime("%Y-%m-%d")
 
+            # This is for oc_rates_v2 where report_date is a date column
+            oc_date_temp = date.fromisoformat(oc_date_temp)
+
             if reporting_series_id == "74166WAK0":
                 oc_rate_condition = (
                     (df_oc_rates_temp["fund"] == "PRIME")
@@ -1072,8 +1081,11 @@ for reporting_series_id in reporting_series:
             #     oc_rate_temp_df["collateral_mv"].sum()
             #     / oc_rate_temp_df["investment_amount"].sum()
             # )
-            oc_total_temp = np.divide(oc_rate_temp_df["collateral_mv"].sum(), oc_rate_temp_df["investment_amount"].sum(),
-                                 where=oc_rate_temp_df["investment_amount"].sum() != 0)
+            oc_total_temp = np.divide(
+                oc_rate_temp_df["collateral_mv"].sum(),
+                oc_rate_temp_df["investment_amount"].sum(),
+                where=oc_rate_temp_df["investment_amount"].sum() != 0,
+            )
 
             if np.isnan(oc_total_temp):
                 # Handle the case when oc_total is np.nan
