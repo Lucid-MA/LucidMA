@@ -11,6 +11,8 @@ from Utils.Common import print_df
 from Utils.Constants import benchmark_ticker
 from Utils.database_utils import engine_prod, get_database_engine
 
+from Price.bloomberg_utils import diff_cusip_map
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -498,6 +500,11 @@ if __name__ == "__main__":
 
     logging.info("Fetching security attributes...")
     security_attributes_df = fetcher.get_security_attributes(securities, fields)
+
+    # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
+    security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
+        lambda x: diff_cusip_map.get(x, x)
+    )
     logging.info(security_attributes_df)
 
     print_df(security_attributes_df)
