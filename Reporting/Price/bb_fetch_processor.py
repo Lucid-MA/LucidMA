@@ -305,7 +305,7 @@ def bb_fetch_v2(cusips):
     cusip_pass.append("EUR Curncy")
     cypress_mapped = False
     # Sept 2020 write to file instead of potentially overloading command line
-    list_path = "curr_fetch_batch.txt"
+    list_path = "curr_fetch_batch_v2.txt"
     outp = open(list_path, "w")  # should overwrite
     outp.write(",".join(cusip_pass))
     outp.close()
@@ -315,13 +315,13 @@ def bb_fetch_v2(cusips):
     logging.info("Fetching security attributes...")
     security_attributes_df = fetcher.get_security_attributes(cusip_pass, bb_fields)
 
-    # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
-    security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
-        lambda x: diff_cusip_map.get(x, x)
-    )
-    logging.info(security_attributes_df)
+    # Invert the diff_cusip_map dictionary so that values become keys and keys become values
+    inverted_diff_cusip_map = {v: k for k, v in diff_cusip_map.items()}
 
-    print_df(security_attributes_df)
+    # Replace CUSIP values using the inverted_diff_cusip_map dictionary
+    security_attributes_df['CUSIP'] = security_attributes_df['CUSIP'].map(lambda x: inverted_diff_cusip_map.get(x, x))
+    security_attributes_df.set_index("CUSIP", inplace=True)
+    logging.info(security_attributes_df)
     return security_attributes_df
 
 
@@ -425,8 +425,109 @@ def bb_fetch_with_overrides(mktsymbol_map):
                             df.loc[cusip, pair[0]] = float(pair[1])
                         except:
                             df.loc[cusip, pair[0]] = pair[1]
+        print(df)
     return df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
 
+def bb_fetch_with_overrides_v2(mktsymbol_map):
+    print("Fetching overrides by product type")
+    param_file = PureWindowsPath(
+        Path("S:/Lucid/Data/Bond Data/Bloomberg_Calc_Parameters.xlsx")
+    )
+    param_df = pd.read_excel(param_file, header=2, usecols="B:E").dropna()
+    cols = []
+
+    for col in param_df:
+        cols.append(col)
+
+    try:
+        cols.remove("Asset Class")
+    except:
+        pass
+    param_df.set_index("Asset Class", inplace=True)
+    df = pd.DataFrame(columns=cols + ["CUSIP", "Asset Class"])
+    df.set_index("CUSIP", inplace=True)
+
+    for cusip in mktsymbol_map:
+        asset_class = mktsymbol_map[cusip]
+        defined = True
+        for col in param_df:
+            try:
+                df.loc[cusip, col] = param_df.loc[asset_class, col]
+            except:
+                defined = False
+                continue
+        if defined:
+            df.loc[cusip, "Asset Class"] = asset_class
+        else:
+            try:
+                df.drop([cusip])
+            except:
+                continue
+
+    df_no_index = df.reset_index()
+    distincts = df_no_index[cols].drop_duplicates()
+
+    list_path = "curr_fetch_batch.txt"
+    fields = "MTG_WAL"
+    overrides_init = " MTG_PREPAY_TYP CPR DEFAULT_TYPE CDR"
+
+    override_name_map = dict()
+    override_name_map["CPR"] = "PREPAY_SPEED_VECTOR"
+    override_name_map["CDR"] = "DEFAULT_SPEED_VECTOR"
+
+    for i, row in distincts.iterrows():
+        iterdf = df_no_index
+        overrides = overrides_init
+        for col in cols:
+            iterdf = iterdf.loc[df_no_index[col] == row[col]]
+            overrides = (
+                overrides
+                + " "
+                + (override_name_map[col] if col in override_name_map else col)
+                + " "
+                + str(row[col])
+            )
+        cusip_pass = iterdf["CUSIP"].values
+        cusip_pass = [
+            (
+                "/cusip/"
+                if len(x) == 9
+                else "/mtge/" if x in ("3137F8RH8", "3137F8ZC0") else "/isin/"
+            )
+            + x
+            for x in cusip_pass
+        ]
+
+        outp = open(list_path, "w")  # should overwrite
+        outp.write(",".join(cusip_pass))
+        outp.close()
+
+        cmd = (
+            'java -cp "blpapi3.jar;" BloombergFetch "'
+            + list_path
+            + '" "'
+            + fields
+            + '"'
+            + overrides
+        )
+        print("Fetching for " + overrides + "...")
+        bb_response = subprocess.check_output(cmd, shell=True).decode("utf-8")
+        if "xxfailurexx" in bb_response:
+            print("problem")  # TODO error handle
+        data_by_cusip = bb_response.splitlines()
+        for line in data_by_cusip:
+            if line and ("BAD_SEC" not in line):
+                spl = line.split(":")
+                cusip = spl[0]
+                flds = spl[1].split(";")
+                for entry in flds:
+                    if entry:
+                        pair = entry.split("~")
+                        try:
+                            df.loc[cusip, pair[0]] = float(pair[1])
+                        except:
+                            df.loc[cusip, pair[0]] = pair[1]
+    return df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
 
 # (checked) msp's lucid rating function, made pythonic
 def lucid_rating(sp, moodys, fitch, kroll, dbrs, ej, issuer, sectype):
