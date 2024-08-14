@@ -21,7 +21,7 @@ import openpyxl
 import psutil
 
 from Price.bloomberg_utils import BloombergDataFetcher, bb_fields
-from Utils.Common import print_df
+from Utils.Common import print_df, get_file_path
 
 # Configure logging
 logging.basicConfig(
@@ -73,13 +73,11 @@ def fetch_helix_symbols():
     print("Fetching CUSIPs from Helix backup...")
     cusips_all = dict()
     for f in ["Prime", "USG", "MMT", "LMCP Inv"]:
-        helix_backup_file = PureWindowsPath(
-            Path(
-                "S:/Mandates/Operations/Helix Trade Files/"
-                + f
-                + (" Fund" if f != "LMCP Inv" else "")
-                + ".txt"
-            )
+        helix_backup_file = get_file_path(
+            "S:/Mandates/Operations/Helix Trade Files/"
+            + f
+            + (" Fund" if f != "LMCP Inv" else "")
+            + ".txt"
         )
         fund_df = pd.read_csv(helix_backup_file, sep="\t")
         for c in fund_df["BondID"]:
@@ -319,7 +317,9 @@ def bb_fetch_v2(cusips):
     inverted_diff_cusip_map = {v: k for k, v in diff_cusip_map.items()}
 
     # Replace CUSIP values using the inverted_diff_cusip_map dictionary
-    security_attributes_df['CUSIP'] = security_attributes_df['CUSIP'].map(lambda x: inverted_diff_cusip_map.get(x, x))
+    security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
+        lambda x: inverted_diff_cusip_map.get(x, x)
+    )
     security_attributes_df.set_index("CUSIP", inplace=True)
     logging.info(security_attributes_df)
     return security_attributes_df
@@ -328,9 +328,8 @@ def bb_fetch_v2(cusips):
 # jan 2021
 def bb_fetch_with_overrides(mktsymbol_map):
     print("Fetching overrides by product type")
-    param_file = PureWindowsPath(
-        Path("S:/Lucid/Data/Bond Data/Bloomberg_Calc_Parameters.xlsx")
-    )
+    param_file = get_file_path("S:/Lucid/Data/Bond Data/Bloomberg_Calc_Parameters.xlsx")
+
     param_df = pd.read_excel(param_file, header=2, usecols="B:E").dropna()
     cols = []
 
@@ -428,11 +427,11 @@ def bb_fetch_with_overrides(mktsymbol_map):
         print(df)
     return df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
 
+
 def bb_fetch_with_overrides_v2(mktsymbol_map):
     print("Fetching overrides by product type")
-    param_file = PureWindowsPath(
-        Path("S:/Lucid/Data/Bond Data/Bloomberg_Calc_Parameters.xlsx")
-    )
+    param_file = get_file_path("S:/Lucid/Data/Bond Data/Bloomberg_Calc_Parameters.xlsx")
+
     param_df = pd.read_excel(param_file, header=2, usecols="B:E").dropna()
     cols = []
 
@@ -464,70 +463,45 @@ def bb_fetch_with_overrides_v2(mktsymbol_map):
             except:
                 continue
 
-    df_no_index = df.reset_index()
-    distincts = df_no_index[cols].drop_duplicates()
+    ### Here is fine ###
+    cusip_pass = df["CUSIP"].values
+    cusip_pass = [
+        (
+            "/cusip/"
+            if len(x) == 9
+            else "/mtge/" if x in ("3137F8RH8", "3137F8ZC0") else "/isin/"
+        )
+        + x
+        for x in cusip_pass
+    ]
 
     list_path = "curr_fetch_batch.txt"
-    fields = "MTG_WAL"
-    overrides_init = " MTG_PREPAY_TYP CPR DEFAULT_TYPE CDR"
+    fields = ["MTG_WAL"]
 
-    override_name_map = dict()
-    override_name_map["CPR"] = "PREPAY_SPEED_VECTOR"
-    override_name_map["CDR"] = "DEFAULT_SPEED_VECTOR"
+    outp = open(list_path, "w")  # should overwrite
+    outp.write(",".join(cusip_pass))
+    outp.close()
 
-    for i, row in distincts.iterrows():
-        iterdf = df_no_index
-        overrides = overrides_init
-        for col in cols:
-            iterdf = iterdf.loc[df_no_index[col] == row[col]]
-            overrides = (
-                overrides
-                + " "
-                + (override_name_map[col] if col in override_name_map else col)
-                + " "
-                + str(row[col])
-            )
-        cusip_pass = iterdf["CUSIP"].values
-        cusip_pass = [
-            (
-                "/cusip/"
-                if len(x) == 9
-                else "/mtge/" if x in ("3137F8RH8", "3137F8ZC0") else "/isin/"
-            )
-            + x
-            for x in cusip_pass
-        ]
+    fetcher = BloombergDataFetcher()
 
-        outp = open(list_path, "w")  # should overwrite
-        outp.write(",".join(cusip_pass))
-        outp.close()
+    logging.info("Fetching security attributes...")
+    security_attributes_overrides_df = fetcher.get_security_attributes(
+        cusip_pass, fields
+    )
 
-        cmd = (
-            'java -cp "blpapi3.jar;" BloombergFetch "'
-            + list_path
-            + '" "'
-            + fields
-            + '"'
-            + overrides
-        )
-        print("Fetching for " + overrides + "...")
-        bb_response = subprocess.check_output(cmd, shell=True).decode("utf-8")
-        if "xxfailurexx" in bb_response:
-            print("problem")  # TODO error handle
-        data_by_cusip = bb_response.splitlines()
-        for line in data_by_cusip:
-            if line and ("BAD_SEC" not in line):
-                spl = line.split(":")
-                cusip = spl[0]
-                flds = spl[1].split(";")
-                for entry in flds:
-                    if entry:
-                        pair = entry.split("~")
-                        try:
-                            df.loc[cusip, pair[0]] = float(pair[1])
-                        except:
-                            df.loc[cusip, pair[0]] = pair[1]
-    return df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
+    security_attributes_overrides_df.set_index("CUSIP", inplace=True)
+    logging.info(security_attributes_overrides_df)
+
+    df_no_index = df.reset_index()
+
+    result_df = df_no_index.merge(
+        security_attributes_overrides_df[["CUSIP", "MTG_WAL"]], on="CUSIP", how="left"
+    )
+
+    result_df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
+
+    return result_df
+
 
 # (checked) msp's lucid rating function, made pythonic
 def lucid_rating(sp, moodys, fitch, kroll, dbrs, ej, issuer, sectype):
@@ -1918,7 +1892,7 @@ if __name__ == "__main__":
     if bond_data_type == "Helix":
         # include additional cusips to data-fetch
         addl_df = pd.read_excel(
-            Path(PureWindowsPath("S:/Lucid/Data/Bond Data/Non-Collateral Cusips.xlsx")),
+            get_file_path("S:/Lucid/Data/Bond Data/Non-Collateral Cusips.xlsx"),
             skiprows=3,
         )
         input_cusips = (
@@ -1947,6 +1921,7 @@ if __name__ == "__main__":
         raw_df = bb_fetch(bb_cusips)
         raw_df_v2 = bb_fetch_v2(bb_cusips)
         df_custom_overrides = bb_fetch_with_overrides(mktsymbol_map)
+        df_custom_overrides_v2 = bb_fetch_with_overrides_v2(mktsymbol_map)
         procd_df = process_bb_data(
             raw_df.fillna(""), mktsymbol_map, df_custom_overrides
         )  # crucial to replace the nan's with "" because changed isnull to falsy throughout the processing. did to avoid errors trying to stringify nan
@@ -1976,24 +1951,25 @@ if __name__ == "__main__":
 
     if bond_data_type == "Helix":
         # then do helix and non-collateral cusips (prices fetched daily so bond data is too)
-        currdest = PureWindowsPath(Path("S:/Lucid/Data/Bond Data/Bond Data.xlsx"))
-        savedeststr = (
+        currdest = get_file_path("S:/Lucid/Data/Bond Data/Bond Data.xlsx")
+        savedeststr = get_file_path(
             "S:/Lucid/Data/Bond Data/Historical/Bond_Data_"
             + vdate.strftime("%m_%d_%Y")
             + "_AM.xlsx"
         )
     elif bond_data_type == "Proxies":
         # since prices fetched less often here needs to save down separately
-        currdest = PureWindowsPath(
-            Path("S:/Lucid/Data/Bond Data/ProxySecurities Bond Data.xlsx")
+        currdest = get_file_path(
+            "S:/Lucid/Data/Bond Data/ProxySecurities Bond Data.xlsx"
         )
-        savedeststr = (
+
+        savedeststr = get_file_path(
             "S:/Lucid/Data/Bond Data/Historical/ProxySecurities_Bond_Data_"
             + vdate.strftime("%m_%d_%Y")
             + ".xlsx"
         )
 
-    savedest = PureWindowsPath(Path(savedeststr))
+    savedest = savedeststr
 
     try:
         wb = op.load_workbook(currdest)
@@ -2048,11 +2024,11 @@ if __name__ == "__main__":
     wb.save(currdest)  # overwrite current
     wb.save(savedest)  # overwrite backup
     if bond_data_type == "Helix":
-        savedeststrPM = (
+        savedeststrPM = get_file_path(
             "S:/Lucid/Data/Bond Data/Historical/Bond_Data_"
             + vdate.strftime("%m_%d_%Y")
             + "_PM.xlsx"
         )
-        savedestPM = PureWindowsPath(Path(savedeststrPM))
+        savedestPM = savedeststrPM
         wb.save(savedestPM)  # save PM file
     wb.close()
