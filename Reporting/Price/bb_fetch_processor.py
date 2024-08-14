@@ -424,7 +424,7 @@ def bb_fetch_with_overrides(mktsymbol_map):
                             df.loc[cusip, pair[0]] = float(pair[1])
                         except:
                             df.loc[cusip, pair[0]] = pair[1]
-        print(df)
+
     return df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
 
 
@@ -464,6 +464,8 @@ def bb_fetch_with_overrides_v2(mktsymbol_map):
                 continue
 
     ### Here is fine ###
+    df = df.reset_index()
+
     cusip_pass = df["CUSIP"].values
     cusip_pass = [
         (
@@ -488,19 +490,15 @@ def bb_fetch_with_overrides_v2(mktsymbol_map):
     security_attributes_overrides_df = fetcher.get_security_attributes(
         cusip_pass, fields
     )
-
-    security_attributes_overrides_df.set_index("CUSIP", inplace=True)
     logging.info(security_attributes_overrides_df)
 
-    df_no_index = df.reset_index()
-
-    result_df = df_no_index.merge(
+    result_df = df.merge(
         security_attributes_overrides_df[["CUSIP", "MTG_WAL"]], on="CUSIP", how="left"
     )
 
-    result_df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
+    result_df.set_index("CUSIP", inplace=True)
 
-    return result_df
+    return result_df.rename(columns={"MTG_WAL": "Mtg WAL"}).fillna("")
 
 
 # (checked) msp's lucid rating function, made pythonic
