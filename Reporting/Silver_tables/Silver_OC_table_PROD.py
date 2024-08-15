@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates_prod
 from Utils.Common import get_file_path, get_trading_days
-from Utils.SQL_queries import OC_query_historical, OC_query_historical_v2
+from Utils.SQL_queries import OC_query_historical_v2
 from Utils.database_utils import get_database_engine, read_table_from_db
 
 # Constants
@@ -198,8 +198,8 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2021-01-01"
-    end_date = "2024-07-24"
+    start_date = "2024-07-24"
+    end_date = "2024-08-14"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         df_bronze_oc, df_price_and_factor, df_cash_balance = fetch_and_prepare_data(

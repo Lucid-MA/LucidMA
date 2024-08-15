@@ -256,7 +256,7 @@ note_report_template = r"""
 
 
 {{\color[HTML]{{FFFFFF}} \textbf{{Program Series}}}} & \multicolumn{{2}}{{p{{11.78cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
-\textbf{{Lucid {fundname} Series {series_abbrev} / Note Series {note_abbrev}}}
+\textbf{{{reporting_series_name}}}
 }} \\
 {{\color[HTML]{{FFFFFF}} \textbf{{Issuer}}}} & \multicolumn{{2}}{{p{{11.78cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
 {issuer_name}
@@ -333,7 +333,7 @@ note_report_template = r"""
 \textbf{{{cusip}}}
 }} \\
 {{\color[HTML]{{FFFFFF}} \textbf{{Note Series}}}} & \multicolumn{{2}}{{p{{11.56cm}}!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}} 
-\textbf{{{note_abbrev}}} (Secured by related fund series {series_abbrev})
+\textbf{{{note_abbrev}}} (Secured by related fund series {fund_abbrev})
 }} \\
 {{\color[HTML]{{FFFFFF}} \textbf{{Current Principal}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}\textbf{{{principal_outstanding}}}}} \\
 {{\color[HTML]{{FFFFFF}} \textbf{{Original Issue Date}}}} & \multicolumn{{2}}{{l!{{\color{{light_grey}}\vrule}}}}{{\cellcolor[HTML]{{EFEFEF}}{issue_date}}} \\

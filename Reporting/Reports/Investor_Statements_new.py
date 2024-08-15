@@ -52,7 +52,7 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    "PRIME-C10",
+    # "PRIME-C10",
     "PRIME-M00",
     "PRIME-MIG",
     "PRIME-Q10",
@@ -209,7 +209,7 @@ for reporting_series_id in reporting_series:
 
     # Table names
     db_type = "postgres"
-    attributes_table_name = "bronze_series_attributes"
+    attributes_table_name = "silver_series_attributes"
     historical_returns_table_name = "historical_returns"
     target_return_table_name = "target_returns"
     benchmark_table_name = "bronze_benchmark"
@@ -497,7 +497,16 @@ for reporting_series_id in reporting_series:
     series_abbrev = df_attributes["series_abbreviation"].iloc[0]
     fund_description = df_attributes["fund_description"].iloc[0]
     series_description = df_attributes["series_description"].iloc[0]
-
+    # NOTE: for notes only, used in 'Note Series' section (page 2)
+    # i.e: Note Series M-9 (Secured by related fund series M)
+    fund_abbrev_dict = {
+        "74166WAE4": "QX",  # Prime Note QX-1
+        "74166WAK0": "M",  # Prime Note M-2
+        "74166WAM6": "Q1",  # Prime Note Q1
+        "74166WAN4": "MIG",  # Prime Note MIG
+        "90366JAG2": "M",  # USG Note M-8
+        "90366JAH0": "M",  # USG Note M-9
+    }
     ############################## OC RATES #####################################
     # OC Rate should be 2 business days before the reporting date, or as of the date before the last date of current reporting period
     oc_date = (pd.to_datetime(report_date) - pd.offsets.BusinessDay(2)).strftime(
@@ -1426,7 +1435,7 @@ for reporting_series_id in reporting_series:
                 "lucid_aum": get_aum(report_date),
                 "rating": df_attributes["rating"].iloc[0],  # done
                 "rating_org": df_attributes["rating_org"].iloc[0],  # done
-                "calc_frequency": "Monthly at par",  # done
+                "calc_frequency": df_attributes["series_withdrawal"].iloc[0],  # done
                 "next_withdrawal_date": pd.to_datetime(next_withdrawal).strftime(
                     "%B %d, %Y"
                 ),  # done
@@ -1512,9 +1521,11 @@ for reporting_series_id in reporting_series:
         elif reporting_type == "NOTE":  # note report template
 
             report_data_note = {
+                "reporting_series_name": reporting_series_name,
                 "report_date": report_date_formal,  # done
                 "fundname": fund_name,  # done
                 "series_abbrev": series_abbrev,  # done
+                "fund_abbrev": fund_abbrev_dict[reporting_series_id],  # done
                 "issuer_name": issuer_from_fundname(fund_name),  # done
                 "frequency": frequency,  # TODO: Review for quarterly
                 "rating": df_attributes["rating"].iloc[0],  # done
@@ -1540,7 +1551,7 @@ for reporting_series_id in reporting_series:
                 "return_table_plot": return_table_plot(
                     fund_name=fund_name,  # done
                     prev_pd_return=previous_target_return,
-                    series_abbrev=series_abbrev,
+                    series_abbrev=fund_abbrev_dict[reporting_series_id],
                     r_this_1=r_this_1,
                     r_this_2=r_this_2,
                     comp_a=benchmark_to_use[0],
@@ -1632,12 +1643,14 @@ for reporting_series_id in reporting_series:
 
             script = note_report_template.format(
                 report_date=report_data_note["report_date"],
+                reporting_series_name=report_data_note["reporting_series_name"],
                 fundname=report_data_note["fundname"],
                 series_abbrev=report_data_note["series_abbrev"],
+                fund_abbrev=report_data_note["fund_abbrev"],
                 issuer_name=report_data_note["issuer_name"],
                 frequency=report_data_note["frequency"],
                 rating=report_data_note["rating"],
-                rating_org=report_data_note["rating_org"],
+                rating_org=report_data_note["rating_org"] + " (NAIC 1)",
                 benchmark=report_data_note["benchmark"],
                 tgt_outperform=report_data_note["tgt_outperform"],
                 prev_pd_start=report_data_note["prev_pd_start"],

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pandas as pd
 from sqlalchemy import (
     text,
@@ -16,8 +14,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path, get_datetime_object
 from Utils.database_utils import (
-    get_database_engine,
-    staging_db_type,
     engine_prod,
     engine_staging,
 )
@@ -30,7 +26,7 @@ if PUBLISH_TO_PROD:
 else:
     engine = engine_staging
 
-tb_name = "series_attributes"
+tb_name = "silver_series_attributes"
 # Path to the "Series attributes.xlsx" file
 file_path = get_file_path(r"S:/Users/THoang/Data/Series attributes.xlsx")
 
