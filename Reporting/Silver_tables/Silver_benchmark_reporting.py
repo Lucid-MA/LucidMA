@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 db_config = {
     "prod": {"db_type": prod_db_type, "engine": engine_prod},
     "staging": {"db_type": staging_db_type, "engine": engine_staging},

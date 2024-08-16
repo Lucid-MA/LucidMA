@@ -30,6 +30,8 @@ from Utils.Constants import (
     LIBOR_3M,
 )
 
+# TODO: Create table in PostGres
+
 PUBLISH_TO_PROD = True
 
 if PUBLISH_TO_PROD:
