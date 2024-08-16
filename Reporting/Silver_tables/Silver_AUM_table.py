@@ -25,7 +25,7 @@ from Utils.database_utils import (
 
 TABLE_NAME = "bronze_lucid_aum"
 # FLAG to enable update to PROD
-publish_to_PROD = False
+publish_to_PROD =True
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if publish_to_PROD:
@@ -222,7 +222,7 @@ def get_trading_days(start_date, end_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine)
     start_date = "2024-04-15"
-    end_date = "2024-07-18"
+    end_date = "2024-08-15"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():
