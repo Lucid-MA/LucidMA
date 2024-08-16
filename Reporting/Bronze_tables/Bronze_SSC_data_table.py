@@ -12,6 +12,8 @@ from Utils.Constants import needed_columns
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
+# TODO: Include the Bonrze_returns_SSC_file_crawler.py here
+
 """
 This script depends on Bronze_returns_SSC_file_crawler.py to generate excel file in the specified directories by crawling through 
     "S:/Mandates/Funds/Fund NAV Calculations/USG/USG NAV Packets/End of Month",

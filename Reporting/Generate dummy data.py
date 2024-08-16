@@ -1,63 +1,148 @@
 import numpy as np
 import pandas as pd
 
-# Load the CSV files
-returns_df = pd.read_csv("/mnt/data/Returns.csv")
-silver_benchmark_df = pd.read_csv("/mnt/data/silver_benchmark.csv")
-oc_rates_df = pd.read_csv("/mnt/data/oc_rates.csv")
+# Load the original data
+file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\Capital Account Balance CSV.csv"  # Replace with your actual file path
+data = pd.read_csv(file_path)
 
-# Define the structure for the dummy data
-# Returns.csv columns: series_id, pool_name, calculated_starting_balance, calculated_ending_balance, day_count, period_return, annualized_returns_360, annualized_returns_365
-returns_dummy_data = {
-    "series_id": [f"series_{i}" for i in range(1, 11)],
-    "pool_name": [f"pool_{i}" for i in range(1, 11)],
-    "start_date": pd.date_range(start="2023-01-01", periods=10, freq="M"),
-    "end_date": pd.date_range(start="2023-02-01", periods=10, freq="M"),
-    "calculated_starting_balance": np.random.uniform(1000, 5000, 10),
-    "calculated_ending_balance": np.random.uniform(1000, 5000, 10),
-    "day_count": np.random.randint(30, 31, 10),
-    "period_return": np.random.uniform(0, 0.1, 10),
-    "annualized_returns_360": np.random.uniform(0, 0.1, 10),
-    "annualized_returns_365": np.random.uniform(0, 0.1, 10),
-}
+# Define a pool of sensible names for each category
+investor_names = [
+    "Orion Ventures",
+    "Lunar Capital",
+    "Solaris Holdings",
+    "Pioneer Fund",
+    "Astra Investment",
+    "Nova Partners",
+    "Zenith Global",
+    "Atlas Group",
+    "Quantum Capital",
+    "Horizon Trust",
+    "Vertex Investments",
+    "Aurora Capital",
+    "Stellar Holdings",
+    "Galaxy Partners",
+    "Polaris Ventures",
+    "Cosmos Fund",
+    "Stratosphere Capital",
+    "Meteor Investments",
+    "Nebula Ventures",
+    "Comet Partners",
+    "Radiant Investments",
+    "Celestial Capital",
+    "Eclipse Holdings",
+    "Vortex Capital",
+    "Pinnacle Fund",
+    "Summit Investments",
+    "Infinity Partners",
+    "Equinox Capital",
+    "Odyssey Fund",
+    "Vertex Trust",
+    "Interstellar Capital",
+    "Solar Flare Ventures",
+    "Aurora Holdings",
+    "Nebula Trust",
+    "Quantum Ventures",
+    "Zenith Holdings",
+    "Nova Fund",
+    "Atlas Investments",
+    "Pioneer Ventures",
+    "Astra Holdings",
+    "Orion Fund",
+    "Lunar Trust",
+    "Stellar Capital",
+    "Galaxy Holdings",
+    "Polaris Capital",
+    "Stratosphere Ventures",
+    "Meteor Fund",
+    "Comet Holdings",
+    "Radiant Ventures",
+    "Celestial Trust",
+    "Eclipse Capital",
+    "Vortex Holdings",
+    "Summit Ventures",
+    "Infinity Trust",
+    "Odyssey Capital",
+    "Interstellar Ventures",
+    "Solar Flare Fund",
+    "Aurora Trust",
+    "Nebula Capital",
+    "Zenith Ventures",
+    "Nova Holdings",
+    "Atlas Fund",
+    "Pioneer Trust",
+    "Astra Ventures",
+    "Orion Holdings",
+    "Lunar Fund",
+    "Solaris Ventures",
+    "Horizon Capital",
+    "Vertex Ventures",
+    "Aurora Fund",
+    "Galaxy Ventures",
+    "Polaris Holdings",
+    "Stellar Fund",
+    "Comet Capital",
+    "Pinnacle Trust",
+    "Eclipse Ventures",
+    "Vortex Fund",
+    "Pioneer Capital",
+    "Zenith Trust",
+    "Infinity Capital",
+    "Quantum Holdings",
+    "Odyssey Ventures",
+    "Summit Capital",
+    "Cosmos Ventures",
+    "Stratosphere Fund",
+    "Radiant Capital",
+    "Interstellar Trust",
+]
 
-# silver_benchmark.csv columns: 1m A1/P1 CP, 3m A1/P1 CP, 6m A1/P1 CP, 9m A1/P1 CP, 1m SOFR, 3m SOFR, 6m SOFR, 1y SOFR, 1m LIBOR, 3m LIBOR, Crane 100 Index, Crane Govt Inst Index, Crane Prime Inst Index
-silver_benchmark_dummy_data = {
-    "1m A1/P1 CP": np.random.uniform(0, 0.1, 10),
-    "3m A1/P1 CP": np.random.uniform(0, 0.1, 10),
-    "6m A1/P1 CP": np.random.uniform(0, 0.1, 10),
-    "9m A1/P1 CP": np.random.uniform(0, 0.1, 10),
-    "1m SOFR": np.random.uniform(0, 0.1, 10),
-    "3m SOFR": np.random.uniform(0, 0.1, 10),
-    "6m SOFR": np.random.uniform(0, 0.1, 10),
-    "1y SOFR": np.random.uniform(0, 0.1, 10),
-    "1m LIBOR": np.random.uniform(0, 0.1, 10),
-    "3m LIBOR": np.random.uniform(0, 0.1, 10),
-    "Crane 100 Index": np.random.uniform(0, 0.1, 10),
-    "Crane Govt Inst Index": np.random.uniform(0, 0.1, 10),
-    "Crane Prime Inst Index": np.random.uniform(0, 0.1, 10),
-}
+group_names = [f"Group {i+1}" for i in range(32)]
+type_names = [
+    "Equity Fund",
+    "Hedge Fund",
+    "Pension Fund",
+    "Venture Capital",
+    "Real Estate Fund",
+    "Private Equity",
+    "Endowment",
+    "Foundation",
+    "Mutual Fund",
+    "Sovereign Wealth Fund",
+]
+fund_names = ["Alpha Fund", "Beta Fund", "Gamma Fund"]
+series_names = [
+    f"Series {chr(65+i)}" for i in range(11)
+]  # Generates Series A to Series K
 
-# oc_rates.csv columns: fund, series, oc_rate, oc_rate_allocated, collateral_mv, collateral_mv_allocated, investment_amount, wtd_avg_rate, wtd_avg_spread, wtd_avg_haircut, percentage_of_series_portfolio, trade_invest, pledged_cash_margin, projected_total_balance, total_invest
-oc_rates_dummy_data = {
-    "fund": [f"fund_{i}" for i in range(1, 11)],
-    "series": [f"series_{i}" for i in range(1, 11)],
-    "oc_rate": np.random.uniform(0, 0.1, 10),
-    "oc_rate_allocated": np.random.uniform(0, 0.1, 10),
-    "collateral_mv": np.random.uniform(1000, 5000, 10),
-    "collateral_mv_allocated": np.random.uniform(1000, 5000, 10),
-    "investment_amount": np.random.uniform(1000, 5000, 10),
-    "wtd_avg_rate": np.random.uniform(0, 0.1, 10),
-    "wtd_avg_spread": np.random.uniform(0, 0.1, 10),
-    "wtd_avg_haircut": np.random.uniform(0, 0.1, 10),
-    "percentage_of_series_portfolio": np.random.uniform(0, 0.1, 10),
-    "trade_invest": np.random.uniform(1000, 5000, 10),
-    "pledged_cash_margin": np.random.uniform(1000, 5000, 10),
-    "projected_total_balance": np.random.uniform(1000, 5000, 10),
-    "total_invest": np.random.uniform(1000, 5000, 10),
-}
+# Create mappings for each column
+investor_mapping = dict(zip(data["Investor"].unique(), investor_names))
+group_mapping = dict(zip(data["Group"].unique(), group_names))
+type_mapping = dict(zip(data["Type"].unique(), type_names))
+fund_mapping = dict(zip(data["Fund"].unique(), fund_names))
+series_mapping = dict(zip(data["Series"].unique(), series_names))
 
-# Convert to DataFrames
-returns_dummy_df = pd.DataFrame(returns_dummy_data)
-silver_benchmark_dummy_df = pd.DataFrame(silver_benchmark_dummy_data)
-oc_rates_dummy_df = pd.DataFrame(oc_rates_dummy_data)
+# Apply the mappings to the data
+data["Investor"] = data["Investor"].map(investor_mapping)
+data["Group"] = data["Group"].map(group_mapping)
+data["Type"] = data["Type"].map(type_mapping)
+data["Fund"] = data["Fund"].map(fund_mapping)
+data["Series"] = data["Series"].map(series_mapping)
+
+# Convert financial columns to numeric, replacing errors with 0
+financial_columns = ["Pre AUM", "Subscriptions", "Redemptions", "Post AUM"]
+for col in financial_columns:
+    data[col] = pd.to_numeric(
+        data[col].str.replace(",", "").str.replace("-", "0"), errors="coerce"
+    ).fillna(0)
+
+# Recalculate Post AUM
+data["Post AUM"] = data["Pre AUM"] + data["Subscriptions"] - data["Redemptions"]
+
+# Divide all financial columns by 55 and round up
+data[financial_columns] = np.ceil(data[financial_columns] / 55)
+
+# Save the masked data to a new CSV file
+output_file_path = r"C:\Users\Tony.Hoang\OneDrive - Lucid Management and Capital Partne\Desktop\masked_capital_account_balance.csv"  # Replace with your desired output path
+data.to_csv(output_file_path, index=False)
+
+print(f"Masked data saved to {output_file_path}")

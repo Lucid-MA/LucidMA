@@ -52,7 +52,7 @@ from Reports.Utils import (
 
 # CONSTANT
 reporting_series = [
-    # "PRIME-C10",
+    "PRIME-C10",
     "PRIME-M00",
     "PRIME-MIG",
     "PRIME-Q10",
@@ -214,13 +214,15 @@ for reporting_series_id in reporting_series:
     target_return_table_name = "target_returns"
     benchmark_table_name = "bronze_benchmark"
     oc_rate_table_name = "oc_rates_v2"
-    daily_nav_table_name = "bronze_daily_nav"
     roll_schedule_table_name = "roll_schedule"
     cash_balance_table_name = "bronze_cash_balance"
-    benchmark_comparison_table_name = "silver_return_by_series"
     benchmark_usg_table_name = "bronze_benchmark_usg"
     benchmark_prime_table_name = "bronze_benchmark_prime"
     benchmark_prime_quarterly_table_name = "bronze_benchmark_prime_quarterly"
+    benchmark_usg_table_name_v2 = "silver_benchmark_usg"
+    benchmark_prime_table_name_v2 = "silver_benchmark_prime"
+    benchmark_prime_quarterly_table_name_v2 = "silver_benchmark_prime_quarterly"
+
     note_principal_table_name = "bronze_notes_principal"
     aum_table_name = "bronze_lucid_aum"
 
@@ -238,15 +240,9 @@ for reporting_series_id in reporting_series:
 
     df_oc_rates = read_table_from_db(oc_rate_table_name, prod_db_type)
 
-    df_daily_nav = read_table_from_db(daily_nav_table_name, db_type)
-
     df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
 
     df_cash_balance = read_table_from_db(cash_balance_table_name, db_type)
-
-    df_benchmark_comparison = read_table_from_db(
-        benchmark_comparison_table_name, db_type
-    )
 
     df_benchmark_usg = read_table_from_db(benchmark_usg_table_name, db_type)
 
@@ -254,6 +250,14 @@ for reporting_series_id in reporting_series:
 
     df_benchmark_prime_quarterly = read_table_from_db(
         benchmark_prime_quarterly_table_name, db_type
+    )
+
+    df_benchmark_usg_v2 = read_table_from_db(benchmark_usg_table_name_v2, db_type)
+
+    df_benchmark_prime_v2 = read_table_from_db(benchmark_prime_table_name_v2, db_type)
+
+    df_benchmark_prime_quarterly_v2 = read_table_from_db(
+        benchmark_prime_quarterly_table_name_v2, db_type
     )
 
     df_notes_principal = read_table_from_db(note_principal_table_name, db_type)
