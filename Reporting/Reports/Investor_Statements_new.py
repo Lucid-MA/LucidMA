@@ -1693,13 +1693,13 @@ for reporting_series_id in reporting_series:
         # write script to file
         print("Generating Latex file...")
         filepath = report_name.replace(" ", "_")
-        script_file = filepath + ".tex"
+        script_file = filepath + "_v2.tex"
         with open(script_file, "w") as out:
             out.write(script)
             out.close()
         # generate pdf
         print("Generating PDF...")
-        pdf_file = filepath + ".pdf"
+        pdf_file = filepath + "_v2.pdf"
         cmd_str = "pdflatex -interaction nonstopmode {} {}".format(
             script_file, pdf_file
         )
