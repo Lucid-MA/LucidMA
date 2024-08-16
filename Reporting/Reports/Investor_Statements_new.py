@@ -171,8 +171,8 @@ daycount_dict = {
 quarterly_reporting_ids = ["74166WAE4", "74166WAM6", "PRIME-QX0", "PRIME-Q10"]
 
 ############## MANUAL INPUT##############
-tbill_data = [0.0531, 0.0537, 0.0548]
-tbill_data_prime = [0.0526, 0.0530, 0.0541]
+tbill_data = [0.0533, 0.0536, 0.0549]
+tbill_data_prime = [0.0526, 0.0528, 0.0541]
 tbill_data_quarterly = [0.0520, 0.0526, 0.0540]
 crane_data = [0.0511, 0.0513, 0.0525]
 fhlb_data = [0, 0, 0]
@@ -1373,11 +1373,11 @@ for reporting_series_id in reporting_series:
                 "exp_rat_footnote": expense_ratio_footnote_text,
                 "prev_pd_start": pd.to_datetime(prev_start).strftime("%B %d"),  # done
                 "this_pd_start": pd.to_datetime(next_start).strftime("%B %d"),  # done
-                "prev_pd_return": previous_target_return,  # done
+                "prev_pd_return": form_as_percent(prev_target_return, 3),  # done
                 "prev_pd_benchmark": benchmark_short,  # done
                 "prev_pd_outperform": prev_target_outperform,  # done
                 "this_pd_end": pd.to_datetime(next_end).strftime("%B %d"),  # done
-                "this_pd_est_return": current_target_return,  # done
+                "this_pd_est_return": form_as_percent(target_return, 3),  # done
                 "this_pd_est_outperform": target_outperform_net,  # done
                 "benchmark_short": benchmark_short,  # done
                 "interval1": month_wordify(interval_tuple[0]),  # TODO: review this
@@ -1542,11 +1542,11 @@ for reporting_series_id in reporting_series:
                 "this_pd_start": pd.to_datetime(next_start).strftime(
                     "%B %d"
                 ),  # Previous coupon period
-                "prev_pd_return": previous_target_return,
+                "prev_pd_return": form_as_percent(prev_target_return, 3),
                 "prev_pd_benchmark": benchmark_short,
                 "prev_pd_outperform": prev_target_outperform,
                 "this_pd_end": pd.to_datetime(next_end).strftime("%B %d"),
-                "this_pd_est_return": current_target_return,
+                "this_pd_est_return": form_as_percent(target_return, 3),
                 "this_pd_est_outperform": target_outperform_net,
                 "benchmark_short": benchmark_short,
                 "interval1": month_wordify(interval_tuple[0]),
