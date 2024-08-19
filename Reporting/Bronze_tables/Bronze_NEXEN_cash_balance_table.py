@@ -7,20 +7,24 @@ import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, DateTime, inspect, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 engine = get_database_engine("sql_server_2")
 
-# File to track processed files
-processed_files_tracker = "Bronze Table Processed NEXEN Cash Balance"
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+processed_files_tracker = (
+    bronze_tracker_dir / "Bronze Table Processed NEXEN Cash Balance"
+)
 
 # Directory and file pattern
 pattern = "CashBal"
 directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive")
-# directory = get_file_path(r"S:/Users/THoang/Data")
+
 # Sample file path
 framework_file = get_file_path(r"S:/Users/THoang/Data/CashBal_20052024.csv")
 

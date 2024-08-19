@@ -1,14 +1,16 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import numpy as np
+import pandas as pd
 from openpyxl import Workbook
 from openpyxl.reader.excel import load_workbook
 from pandas._libs.tslibs.offsets import BDay
-from sqlalchemy import create_engine, text
-import pandas as pd
+from sqlalchemy import text
 
+from Utils.Common import get_file_path
 from Utils.database_utils import get_database_engine
+
 
 def get_previous_business_day_filename(price_date):
     # Convert price_date to datetime if it's a string
@@ -25,7 +27,7 @@ def get_previous_business_day_filename(price_date):
 
 def replace_am_prices_with_pm_prices(current_excel, price_date):
     # Path to the archives folder
-    archive_folder = "S:/Lucid/Data/Bond Data/Price Source/Archives"
+    archive_folder = get_file_path("S:/Lucid/Data/Bond Data/Price Source/Archives")
 
     # Get filename for the previous business day
     prev_business_day_file = get_previous_business_day_filename(price_date)
@@ -40,10 +42,14 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
             # Insert a blank column between "Cusip/ISIN" and "IDC"
             pm_prices_df.insert(1, "", "")
             # Drop the "Unnamed: 1" column if it exists
-            pm_prices_df = pm_prices_df.loc[:, ~pm_prices_df.columns.str.contains('^Unnamed')]
+            pm_prices_df = pm_prices_df.loc[
+                :, ~pm_prices_df.columns.str.contains("^Unnamed")
+            ]
 
             # Fill blank values in "IDC" and "Pricing Direct" columns with "N/A"
-            pm_prices_df[["IDC", "Pricing Direct"]] = pm_prices_df[["IDC", "Pricing Direct"]].fillna("N/A")
+            pm_prices_df[["IDC", "Pricing Direct"]] = pm_prices_df[
+                ["IDC", "Pricing Direct"]
+            ].fillna("N/A")
 
             # Check if the current Excel file exists
             if os.path.exists(current_excel):
@@ -76,7 +82,9 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
                 current_book.close()
 
             # Write using pandas ExcelWriter with explicit handling
-            with pd.ExcelWriter(current_excel, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+            with pd.ExcelWriter(
+                current_excel, engine="openpyxl", mode="a", if_sheet_exists="replace"
+            ) as writer:
                 pm_prices_df.to_excel(writer, sheet_name="AM Prices", index=False)
 
             print("Replaced AM Prices with PM Prices successfully.")
@@ -87,24 +95,26 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
             info_df = pd.read_excel(full_path, sheet_name="Info")
 
             # Remove the "Unnamed: 1" and "Unnamed: 2" columns if they exist
-            info_df = info_df.loc[:, ~info_df.columns.str.contains('^Unnamed')]
+            info_df = info_df.loc[:, ~info_df.columns.str.contains("^Unnamed")]
             # Generate the dates based on conditions
-            today = pd.Timestamp('today').normalize().strftime('%Y-%m-%d')
-            previous_business_day = (pd.Timestamp('today') - BDay(1)).normalize().strftime('%Y-%m-%d')
+            today = pd.Timestamp("today").normalize().strftime("%Y-%m-%d")
+            previous_business_day = (
+                (pd.Timestamp("today") - BDay(1)).normalize().strftime("%Y-%m-%d")
+            )
 
             # Define conditions
             conditions = [
-                (info_df['Price fetch info'] == "Pulled cusips from Helix"),
-                (info_df['Price fetch info'] == "Helix file used"),
-                (info_df['Price fetch info'] == "Pulled prices from IDC"),
-                (info_df['Price fetch info'] == "Pulled prices from PD"),
+                (info_df["Price fetch info"] == "Pulled cusips from Helix"),
+                (info_df["Price fetch info"] == "Helix file used"),
+                (info_df["Price fetch info"] == "Pulled prices from IDC"),
+                (info_df["Price fetch info"] == "Pulled prices from PD"),
             ]
 
             # Define choices corresponding to the conditions
             choices = [today, today, previous_business_day, previous_business_day]
 
             # Use numpy select to apply these conditions and choices
-            info_df['date'] = np.select(conditions, choices, default=None)
+            info_df["date"] = np.select(conditions, choices, default=None)
 
             # Check if the current Excel file exists
             if os.path.exists(current_excel):
@@ -133,7 +143,9 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
                 current_book.close()
 
             # Write using pandas ExcelWriter with explicit handling
-            with pd.ExcelWriter(current_excel, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+            with pd.ExcelWriter(
+                current_excel, engine="openpyxl", mode="a", if_sheet_exists="replace"
+            ) as writer:
                 info_df.to_excel(writer, sheet_name="Info", index=False)
 
             print("Copied Info sheet from the previous day's file.")
@@ -144,8 +156,9 @@ def replace_am_prices_with_pm_prices(current_excel, price_date):
 
 
 def create_pm_prices_tab(price_date, excel_file):
-    engine = get_database_engine('sql_server_2')
-    query = text(f"""
+    engine = get_database_engine("sql_server_2")
+    query = text(
+        f"""
         SELECT 
             COALESCE(idc.bond_id, jppd.bond_id) AS "Cusip/ISIN",
             '' AS "Blank", -- Add a blank column
@@ -156,10 +169,11 @@ def create_pm_prices_tab(price_date, excel_file):
             FULL OUTER JOIN
             (SELECT bond_id, price FROM bronze_daily_price_jppd WHERE price_date = :price_date) jppd
             ON idc.bond_id = jppd.bond_id
-    """)
+    """
+    )
 
     with engine.connect() as conn:
-        result = conn.execute(query, {'price_date': price_date})
+        result = conn.execute(query, {"price_date": price_date})
         data = result.fetchall()
 
         # Create a DataFrame with the specified column names
@@ -167,12 +181,12 @@ def create_pm_prices_tab(price_date, excel_file):
 
     if os.path.exists(excel_file):
         book = load_workbook(excel_file)
-        mode = 'a'
+        mode = "a"
     else:
         book = Workbook()
-        mode = 'w'
+        mode = "w"
 
-    with pd.ExcelWriter(excel_file, engine='openpyxl', mode=mode) as writer:
+    with pd.ExcelWriter(excel_file, engine="openpyxl", mode=mode) as writer:
         if "PM Prices" in writer.book.sheetnames:
             std = writer.book["PM Prices"]
             writer.book.remove(std)
@@ -188,7 +202,7 @@ def create_helix_cusips_tab(excel_file):
             helix_pull_time = datetime.now()
 
         print("Fetching CUSIPs from Helix...")
-        engine_1 = get_database_engine('sql_server_1')
+        engine_1 = get_database_engine("sql_server_1")
         query = text(
             """
                 select distinct
@@ -206,8 +220,14 @@ def create_helix_cusips_tab(excel_file):
             result = conn_1.execute(query)
             data = result.fetchall()
             for row in data:
-                if row[0] in ['USG Fund', 'Prime Fund', 'MMT IM Fund', 'LMCP Inv Fund', 'LucidRepo']:
-                    k = row[0][:-5] if row[0] in ['USG Fund', 'Prime Fund'] else 'MMT'
+                if row[0] in [
+                    "USG Fund",
+                    "Prime Fund",
+                    "MMT IM Fund",
+                    "LMCP Inv Fund",
+                    "LucidRepo",
+                ]:
+                    k = row[0][:-5] if row[0] in ["USG Fund", "Prime Fund"] else "MMT"
                     cusips_all[k].add(row[1])
 
         for f in cusips_all.keys():
@@ -215,7 +235,7 @@ def create_helix_cusips_tab(excel_file):
             for x in cusips_all[f]:
                 if len(x) >= 3:
                     if x[:3] == "PNI":
-                        to_add.add(x[3:len(x)])
+                        to_add.add(x[3 : len(x)])
             for extra_f in to_add:
                 cusips_all[f].add(extra_f)
 
@@ -225,12 +245,12 @@ def create_helix_cusips_tab(excel_file):
 
     if os.path.exists(excel_file):
         book = load_workbook(excel_file)
-        mode = 'a'
+        mode = "a"
     else:
         book = Workbook()
-        mode = 'w'
+        mode = "w"
 
-    with pd.ExcelWriter(excel_file, engine='openpyxl', mode=mode) as writer:
+    with pd.ExcelWriter(excel_file, engine="openpyxl", mode=mode) as writer:
         if "Helix Cusips" in writer.book.sheetnames:
             hcs = writer.book["Helix Cusips"]
             writer.book.remove(hcs)
@@ -246,11 +266,12 @@ def create_helix_cusips_tab(excel_file):
 
 
 def main(excel_file):
-    price_date = (datetime.now().date()).strftime('%Y-%m-%d')
+    price_date = (datetime.now().date()).strftime("%Y-%m-%d")
+    # price_date = '2024-08-16'
     current_time = datetime.now().time()
     am_time = datetime.strptime("12:00:00", "%H:%M:%S").time()
 
-    if current_time < am_time:
+    if current_time > am_time:
         print("Running AM tasks...")
         replace_am_prices_with_pm_prices(excel_file, price_date)
         create_helix_cusips_tab(excel_file)
@@ -261,8 +282,8 @@ def main(excel_file):
 
         # Save the file to the destination folder
         destination_path = "S:/Lucid/Data/Bond Data/Price Source/Archives/"
-        formatted_date = datetime.strptime(price_date, '%Y-%m-%d').strftime('%m_%d_%Y')
-        destination_file = f"Price_Source_{formatted_date}.xlsx"
+        formatted_date = datetime.strptime(price_date, "%Y-%m-%d").strftime("%m_%d_%Y")
+        destination_file = f"Price_Source_{formatted_date}_test.xlsx"
         destination_full_path = os.path.join(destination_path, destination_file)
 
         # Check if the destination folder exists, create it if not
@@ -276,5 +297,7 @@ def main(excel_file):
 
 
 if __name__ == "__main__":
-    excel_file = "S:/Users/THoang/Data/Price Source/Price_Source.xlsx"
+    excel_file = get_file_path(
+        "S:/Lucid/Data/Bond Data/Price Source/Price_Source_test.xlsx"
+    )
     main(excel_file)

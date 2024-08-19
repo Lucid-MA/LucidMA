@@ -2,27 +2,31 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, Integer, Float, Date
+from sqlalchemy import Table, MetaData, Column, String, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_repo_root
 from Utils.Constants import cash_balance_column_order
 from Utils.Hash import hash_string
 from Utils.database_utils import (
-    get_database_engine,
     engine_prod,
     engine_staging,
     upsert_data,
 )
 
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
 if PUBLISH_TO_PROD:
     engine = engine_prod
-    processed_files_tracker = "Bronze Table Processed Cash Balance PROD"
+    processed_files_tracker = (
+        bronze_tracker_dir / "Bronze Table Processed Cash Balance PROD"
+    )
 else:
     engine = engine_staging
-    processed_files_tracker = "Bronze Table Processed Cash Balance"
+    processed_files_tracker = bronze_tracker_dir / "Bronze Table Processed Cash Balance"
 
 
 # Directory and file pattern

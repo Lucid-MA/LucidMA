@@ -9,31 +9,40 @@ from Utils.Common import get_file_path
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
+##############
+"""
+This script is to backfill the data with IDC price file
+"""
+##############
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine('postgres')
+engine = get_database_engine("postgres")
 
 # File to track processed files
-processed_files_tracker = "Bronze Table Processed Daily Prices"
+processed_files_tracker = "Bronze Table Processed Daily Prices - IDC"
 
 # Directory and file pattern
 
-pattern = "Used Prices "
-directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical/")
-date_pattern = re.compile(r"(\d{4}-\d{2}-\d{2})(AM|PM)")
+pattern = "IDC_"
+# Compile the regex pattern outside of the function if this function is called frequently
+date_pattern = re.compile(r"IDC_(\d{4})(\d{2})(\d{2})")
+directory = get_file_path(r"S:/Users/THoang/Data/Price/")
+
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
     metadata.bind = engine
-    table = Table(tb_name, metadata,
-                  Column("Price_ID", String, primary_key=True),
-                  Column("Price_date", Date),
-                  Column("Is_AM", Integer),
-                  Column("Bond_ID", String),
-                  Column("Clean_price", Float),
-                  Column("Final_price", Float),
-                  Column("Price_source", String),
-                  Column("Source", String),
-                  extend_existing=True)
+    table = Table(
+        tb_name,
+        metadata,
+        Column("Price_ID", String, primary_key=True),
+        Column("Price_date", Date),
+        Column("Is_AM", Integer),
+        Column("Bond_ID", String),
+        Column("Clean_price", Float),
+        Column("Final_price", Float),
+        Column("Source", String),
+        extend_existing=True,
+    )
     metadata.create_all(engine)
     print(f"Table {tb_name} created successfully or already exists.")
 
@@ -49,7 +58,8 @@ def upsert_data(tb_name, df):
                     [
                         f'"{col}"=EXCLUDED."{col}"'
                         for col in df.columns
-                        if col != "Price_ID"  # Assuming "Bond_ID" is unique and used for conflict resolution
+                        if col
+                        != "Price_ID"  # Assuming "Bond_ID" is unique and used for conflict resolution
                     ]
                 )
 
@@ -65,7 +75,8 @@ def upsert_data(tb_name, df):
                 # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
             print(
-                f"Data for {df['Price_date'][0]} {'AM' if df['Is_AM'][0] == 1 else 'PM'} upserted successfully into {tb_name}.")
+                f"Data for {df['Price_date'][0]} {'AM' if df['Is_AM'][0] == 1 else 'PM'} upserted successfully into {tb_name}."
+            )
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
             raise
@@ -73,43 +84,43 @@ def upsert_data(tb_name, df):
 
 def read_processed_files():
     try:
-        with open(processed_files_tracker, 'r') as file:
+        with open(processed_files_tracker, "r") as file:
             return set(file.read().splitlines())
     except FileNotFoundError:
         return set()
 
 
 def mark_file_processed(filename):
-    with open(processed_files_tracker, 'a') as file:
-        file.write(filename + '\n')
-
+    with open(processed_files_tracker, "a") as file:
+        file.write(filename + "\n")
 
 
 def extract_date_and_indicator(filename):
     """
-    This function extracts the date and AM/PM indicator from a filename.
+    This function extracts the date from a filename using a precompiled regex pattern.
     Args:
-        filename (str): The filename to extract the date and AM/PM indicator from.
+        filename (str): The filename to extract the date from.
     Returns:
-        tuple: A tuple containing the date and a boolean indicating whether it's AM (True) or PM (False).
+        str: The date in 'YYYY-MM-DD' format.
     """
-    # Use regex to match the date and AM/PM indicator
     match = date_pattern.search(filename)
-
     if match:
-        date = match.group(1)  # This should be "2020-02-11"
-        is_am = 1 if match.group(2) == "AM" else 0  # This should be 1 for AM and 2 for PM
-        return date, is_am
-    return None, None
+        year, month, day = match.groups()
+        return f"{year}-{month}-{day}"
+    return None
 
 
 # Assuming df is your DataFrame after processing an unprocessed file
-tb_name = "bronze_daily_price"
+tb_name = "bronze_daily_price_idc"
 create_table_with_schema(tb_name)
 
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
-    if filename.startswith(pattern) and filename.endswith(".xls") and filename not in read_processed_files():
+    if (
+        filename.startswith(pattern)
+        and filename.endswith(".xls")
+        and filename not in read_processed_files()
+    ):
         filepath = os.path.join(directory, filename)
 
         date, is_am = extract_date_and_indicator(filename)
@@ -125,25 +136,27 @@ for filename in os.listdir(directory):
         # Convert all column names to lowercase
         df.columns = df.columns.str.lower()
 
-        # Check if 'set source' column exists, if not, create it with default value 'Unknown'
-        if 'set source' not in df.columns:
-            df['set source'] = 'Unknown'
-
         # Now you can use the lowercase column names
-        df = df[["cusip", "clean price", "price to use", "set source"]]
+        df = df[["cusip", "clean price", "price to use"]]
 
         # Rename columns
-        df.rename(columns={"cusip": "Bond_ID", "clean price": "Clean_price", "price to use": "Final_price", "set source": "Price_source"},
-                  inplace=True)
+        df.rename(
+            columns={
+                "cusip": "Bond_ID",
+                "clean price": "Clean_price",
+                "price to use": "Final_price",
+            },
+            inplace=True,
+        )
         # Create Price_ID
-        df["Price_ID"] = df.apply(lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1)
+        df["Price_ID"] = df.apply(
+            lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1
+        )
         df["Price_date"] = date
-        df['Price_date'] = pd.to_datetime(df['Price_date']).dt.strftime('%Y-%m-%d')
+        df["Price_date"] = pd.to_datetime(df["Price_date"]).dt.strftime("%Y-%m-%d")
         df["Is_AM"] = is_am
         df["Source"] = filename
 
-        df = df.dropna(subset=['Bond_ID'], how='any')
-        df = df.dropna(subset=['Clean_price', 'Final_price'], how='all')
         try:
             # Insert into PostgreSQL table
             upsert_data(tb_name, df)

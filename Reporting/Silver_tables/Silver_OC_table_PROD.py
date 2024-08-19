@@ -6,7 +6,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateT
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates_prod
-from Utils.Common import get_file_path, get_trading_days
+from Utils.Common import get_trading_days, get_repo_root
 from Utils.SQL_queries import OC_query_historical_v2
 from Utils.database_utils import get_database_engine, read_table_from_db
 
@@ -19,24 +19,23 @@ engine = get_database_engine("postgres")
 engine_oc_rate = get_database_engine("sql_server_1")
 engine_oc_rate_prod = get_database_engine("sql_server_2")
 
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_repo_path = repo_path / "Reporting" / "Bronze_tables"
+bronze_tracker_path = bronze_repo_path / "File_trackers"
+
 # Dependent files
-cash_balance_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_cash_balance_table.py"
-)
-cash_balance_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Cash Balance"
-)
+cash_balance_python_file_path = bronze_repo_path / "Bronze_cash_balance_table.py"
 
-price_and_factor_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_HELIX_price_factor_table.py"
-)
+cash_balance_status_file_path = bronze_tracker_path / "Bronze Table Processed Cash Balance PROD"
 
-price_and_factor_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed HELIX Price and Factor"
-)
+price_and_factor_python_file_path = bronze_repo_path / "Bronze_HELIX_price_factor_table.py"
 
-update_sub_table = False
+price_and_factor_status_file_path = bronze_tracker_path / "Bronze Table Processed HELIX Price and Factor PROD"
 
+# This flag is to see whether subtable needs to be updated
+# Set to True if they already are to save time
+update_sub_table = True
 
 def create_table_with_schema(tb_name, engine):
     metadata = MetaData()
@@ -198,7 +197,7 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2024-08-14"
+    start_date = "2024-07-20"
     end_date = "2024-08-15"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:

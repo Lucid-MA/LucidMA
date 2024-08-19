@@ -4,26 +4,28 @@ import time
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, DateTime, inspect, Date
-from sqlalchemy.exc import SQLAlchemyError, DBAPIError
+from sqlalchemy import Table, MetaData, Column, String, DateTime, inspect, Date
+from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine
+from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
-# Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine("sql_server_2")
+PUBLISH_TO_PROD = True
 
-# File to track processed files
-processed_files_tracker = "Bronze Table Processed HELIX Price and Factor"
-
-# # Directory and file pattern
-# pattern = "MSTR_"
-#
-# base_directories = [
-#     r"S:/Mandates/Operations/Helix Trade Files/Prime Archive",
-#     r"S:/Mandates/Operations/Helix Trade Files/USG Archive",
-# ]
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+if PUBLISH_TO_PROD:
+    engine = engine_prod
+    processed_files_tracker = (
+        bronze_tracker_dir / "Bronze Table Processed HELIX Price and Factor PROD"
+    )
+else:
+    engine = engine_staging
+    processed_files_tracker = (
+        bronze_tracker_dir / "Bronze Table Processed HELIX Price and Factor"
+    )
 
 
 base_directories = {
@@ -87,61 +89,62 @@ def create_table_with_schema(tb_name):
     print(f"Table {tb_name} created successfully or already exists.")
 
 
-def upsert_data(tb_name, df):
-    with engine.connect() as conn:
-        try:
-            with conn.begin():  # Start a transaction
-                # Prepare a SQL MERGE statement using a subquery
-                column_names = [
-                    "data_id",
-                    "data_date",
-                    "bond_id",
-                    "price",
-                    "factor",
-                    "source",
-                    "timestamp",
-                ]
-                df = df[column_names]
-                target_columns = ", ".join(
-                    [f'target."{col}" = source."{col}"' for col in column_names]
-                )
-                source_columns = ", ".join(
-                    [f':{col} AS "{col}"' for col in column_names]
-                )
-                insert_columns = ", ".join([f'"{col}"' for col in column_names])
-                insert_values = ", ".join([f'source."{col}"' for col in column_names])
-
-                upsert_sql = text(
-                    f"""
-                    MERGE INTO {tb_name} AS target
-                    USING (
-                        SELECT {source_columns}
-                    ) AS source
-                    ON target."data_id" = source."data_id"
-                    WHEN MATCHED THEN
-                        UPDATE SET {target_columns}
-                    WHEN NOT MATCHED THEN
-                        INSERT ({insert_columns})
-                        VALUES ({insert_values});
-                    """
-                )
-                conn.execute(upsert_sql, df.to_dict(orient="records"))
-            print(
-                f"Data for {df['data_date'][0]} upserted successfully into {tb_name}."
-            )
-        # except SQLAlchemyError as e:
-        #     print(f"An error occurred: {e}")
-        #     raise
-        except DBAPIError as e:
-            print(f"An error occurred: {e}")
-            print("Printing rows causing the error:")
-            for index, row in df.iterrows():
-                try:
-                    conn.execute(upsert_sql, row.to_dict())
-                except DBAPIError as e:
-                    print(f"Error row: {row}")
-                    print(f"Data types: {row.apply(lambda x: type(x).__name__)}")
-            raise
+#
+# def upsert_data(tb_name, df):
+#     with engine.connect() as conn:
+#         try:
+#             with conn.begin():  # Start a transaction
+#                 # Prepare a SQL MERGE statement using a subquery
+#                 column_names = [
+#                     "data_id",
+#                     "data_date",
+#                     "bond_id",
+#                     "price",
+#                     "factor",
+#                     "source",
+#                     "timestamp",
+#                 ]
+#                 df = df[column_names]
+#                 target_columns = ", ".join(
+#                     [f'target."{col}" = source."{col}"' for col in column_names]
+#                 )
+#                 source_columns = ", ".join(
+#                     [f':{col} AS "{col}"' for col in column_names]
+#                 )
+#                 insert_columns = ", ".join([f'"{col}"' for col in column_names])
+#                 insert_values = ", ".join([f'source."{col}"' for col in column_names])
+#
+#                 upsert_sql = text(
+#                     f"""
+#                     MERGE INTO {tb_name} AS target
+#                     USING (
+#                         SELECT {source_columns}
+#                     ) AS source
+#                     ON target."data_id" = source."data_id"
+#                     WHEN MATCHED THEN
+#                         UPDATE SET {target_columns}
+#                     WHEN NOT MATCHED THEN
+#                         INSERT ({insert_columns})
+#                         VALUES ({insert_values});
+#                     """
+#                 )
+#                 conn.execute(upsert_sql, df.to_dict(orient="records"))
+#             print(
+#                 f"Data for {df['data_date'][0]} upserted successfully into {tb_name}."
+#             )
+#         # except SQLAlchemyError as e:
+#         #     print(f"An error occurred: {e}")
+#         #     raise
+#         except DBAPIError as e:
+#             print(f"An error occurred: {e}")
+#             print("Printing rows causing the error:")
+#             for index, row in df.iterrows():
+#                 try:
+#                     conn.execute(upsert_sql, row.to_dict())
+#                 except DBAPIError as e:
+#                     print(f"Error row: {row}")
+#                     print(f"Data types: {row.apply(lambda x: type(x).__name__)}")
+#             raise
 
 
 tb_name = "bronze_helix_price_and_factor"
@@ -246,8 +249,7 @@ for directory, pattern in base_directories.items():
             )
 
             try:
-                # Insert into PostgreSQL table
-                upsert_data(tb_name, extracted_df)
+                upsert_data(engine, tb_name, extracted_df, "data_id", PUBLISH_TO_PROD)
                 # Mark file as processed
                 mark_file_processed(filename)
             except SQLAlchemyError:

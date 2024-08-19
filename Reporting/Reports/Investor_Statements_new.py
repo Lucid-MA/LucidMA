@@ -260,7 +260,7 @@ for reporting_series_id in reporting_series:
         benchmark_prime_quarterly_table_name_v2, db_type
     )
 
-    df_notes_principal = read_table_from_db(note_principal_table_name, db_type)
+    df_notes_principal = read_table_from_db(note_principal_table_name, prod_db_type)
 
     df_aum = read_table_from_db(aum_table_name, db_type)
     ############################################## REPORTING VARIABLE ##################################################
@@ -1127,7 +1127,15 @@ for reporting_series_id in reporting_series:
             .reset_index()
         )
 
-        mask = note_data_df["interest_period_end"] >= reporting_date
+        # Convert reporting_date to datetime object for comparison
+        reporting_date_datetime = pd.to_datetime(reporting_date)
+
+        # Convert interest_period_end to datetime objects for comparison
+        note_data_df["interest_period_end_datetime"] = pd.to_datetime(
+            note_data_df["interest_period_end"]
+        )
+
+        mask = note_data_df["interest_period_end_datetime"] >= reporting_date_datetime
         if mask.any():
             index = note_data_df[mask].index[0]
             # Calculate the number of rows that satisfy the condition
@@ -1136,6 +1144,9 @@ for reporting_series_id in reporting_series:
             # Handle the case when no row satisfies the condition
             index = len(note_data_df)
             rows_before = index
+
+        # Drop the temporary column
+        note_data_df.drop(columns=["interest_period_end_datetime"], inplace=True)
 
         # Use the minimum of lookback_period and rows_before
         # TODO: Refractor this lookback period logic to combine with the max_length below

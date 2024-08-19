@@ -1,9 +1,10 @@
 #### THIS SHOULD BE THE TEMPLATE FOR CREATING NEW TABLE FROM EXCEL FILE ###
 
 
+from datetime import datetime
+
 import pandas as pd
 from sqlalchemy import (
-    create_engine,
     Table,
     Column,
     String,
@@ -14,14 +15,12 @@ from sqlalchemy import (
     inspect,
     text,
 )
-from datetime import datetime
-
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path
+from Utils.Constants import notes_series_name_mapping
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
-from Utils.Constants import notes_series_name_mapping
 
 # FLAG to enable update to PROD
 publish_to_PROD = True

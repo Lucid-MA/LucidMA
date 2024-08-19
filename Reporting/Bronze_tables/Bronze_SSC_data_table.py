@@ -1,18 +1,17 @@
 import os
 import re
+import subprocess
 import time
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import MetaData, Column, String, Date, Table
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path
-from Utils.Constants import needed_columns
+from Utils.Common import get_file_path, get_repo_root
+from Utils.Constants import bronze_ssc_table_needed_columns
 from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine
-
-# TODO: Include the Bonrze_returns_SSC_file_crawler.py here
+from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
 """
 This script depends on Bronze_returns_SSC_file_crawler.py to generate excel file in the specified directories by crawling through 
@@ -41,10 +40,43 @@ The specific steps are:
 6. Log the processing time for each file.
 """
 
-# Connect to the PostgreSQL database
-engine = get_database_engine("postgres")
-# File to track processed files
-bronze_table_tracker = "Bronze Table Processed SSC Files"
+PUBLISH_TO_PROD = True
+
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+
+# Need to extract zip files before uploading to Bronze table
+ssc_file_crawler_file_path = (
+    repo_path / "Reporting/Bronze_tables/Bronze_returns_SSC_file_crawler.py"
+)
+
+if PUBLISH_TO_PROD:
+    engine = engine_prod
+    bronze_table_tracker = bronze_tracker_dir / "Bronze Table Processed SSC Files PROD"
+else:
+    engine = engine_staging
+    bronze_table_tracker = bronze_tracker_dir / "Bronze Table Processed SSC Files"
+
+try:
+    result_price = subprocess.run(
+        [
+            "python",
+            ssc_file_crawler_file_path,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    print("SSC file crawler executed successfully.")
+except subprocess.CalledProcessError as e:
+    error_message = (
+        f"Error preparing raw SSC file with the crawler. Return code: {e.returncode}"
+    )
+    error_output = e.stderr
+    print(error_message)
+    print("Error output:", error_output)
+    raise Exception(error_message) from e
 
 
 # Function to extract date from filename using regex
@@ -80,6 +112,35 @@ class DatabaseConnection:
 
 
 # Function to create transactions table if not exists
+# TODO: Remove this
+# def create_transactions_table(tb_name):
+#     """
+#     Creates a new database table based on predefined list of columns.
+#     Also adds an index on the 'TransactionID' column for efficient updates.
+#
+#     Args:
+#         tb_name (str): The name of the table to create.
+#     """
+#     # Construct column definitions
+#     try:
+#         columns_sql = ", ".join(
+#             [f'"{col}" STRING' for col in bronze_ssc_table_needed_columns]
+#             + ['"FileDate" DATE', '"TransactionID" STRING(255)', '"FileName" STRING']
+#         )
+#
+#         # Create the table with IF NOT EXISTS
+#         create_table_sql = f"""
+#                     CREATE TABLE IF NOT EXISTS {tb_name} ({columns_sql}, PRIMARY KEY ("TransactionID"))
+#                 """
+#
+#         with DatabaseConnection() as conn:
+#             with conn.begin():
+#                 conn.execute(text(create_table_sql))
+#                 print(f"Table {tb_name} created successfully or already exists.")
+#
+#     except Exception as e:
+#         print(f"Failed to create table {tb_name}: {e}")
+#         raise
 def create_transactions_table(tb_name):
     """
     Creates a new database table based on predefined list of columns.
@@ -88,22 +149,23 @@ def create_transactions_table(tb_name):
     Args:
         tb_name (str): The name of the table to create.
     """
-    # Construct column definitions
     try:
-        columns_sql = ", ".join(
-            [f'"{col}" TEXT' for col in needed_columns]
-            + ['"FileDate" DATE', '"TransactionID" TEXT', '"FileName" TEXT']
-        )
+        metadata = MetaData()
+        metadata.bind = engine
 
-        # Create the table with IF NOT EXISTS
-        create_table_sql = f"""
-                    CREATE TABLE IF NOT EXISTS {tb_name} ({columns_sql}, PRIMARY KEY ("TransactionID"))
-                """
+        # Define the columns
+        columns = [Column(col, String) for col in bronze_ssc_table_needed_columns] + [
+            Column("FileDate", Date),
+            Column("TransactionID", String(255), primary_key=True),
+            Column("FileName", String),
+        ]
 
-        with DatabaseConnection() as conn:
-            with conn.begin():
-                conn.execute(text(create_table_sql))
-                print(f"Table {tb_name} created successfully or already exists.")
+        # Create the table with the specified columns
+        table = Table(tb_name, metadata, *columns, extend_existing=True)
+
+        # Create the table
+        metadata.create_all(engine)
+        print(f"Table {tb_name} created successfully or already exists.")
 
     except Exception as e:
         print(f"Failed to create table {tb_name}: {e}")
@@ -116,35 +178,35 @@ def generate_transaction_id(row):
     return hash_string(unique_string)
 
 
-def upsert_data(tb_name, df):
-    with engine.connect() as conn:
-        try:
-            with conn.begin():  # Start a transaction
-                # Constructing the UPSERT SQL dynamically based on DataFrame columns
-                column_names = ", ".join([f'"{col}"' for col in df.columns])
-                value_placeholders = ", ".join([f":{col}" for col in df.columns])
-                update_clause = ", ".join(
-                    [
-                        f'"{col}"=EXCLUDED."{col}"'
-                        for col in df.columns
-                        if col != "TransactionID"
-                    ]
-                )
-
-                upsert_sql = text(
-                    f"""
-                        INSERT INTO {tb_name} ({column_names})
-                        VALUES ({value_placeholders})
-                        ON CONFLICT ("TransactionID")
-                        DO UPDATE SET {update_clause}; 
-                    """
-                )
-                # Execute upsert in a transaction
-                conn.execute(upsert_sql, df.to_dict(orient="records"))
-            print(f"Data for {df['FileDate'][0]} upserted successfully into {tb_name}.")
-        except SQLAlchemyError as e:
-            print(f"An error occurred: {e}")
-            raise
+# def upsert_data(tb_name, df):
+#     with engine.connect() as conn:
+#         try:
+#             with conn.begin():  # Start a transaction
+#                 # Constructing the UPSERT SQL dynamically based on DataFrame columns
+#                 column_names = ", ".join([f'"{col}"' for col in df.columns])
+#                 value_placeholders = ", ".join([f":{col}" for col in df.columns])
+#                 update_clause = ", ".join(
+#                     [
+#                         f'"{col}"=EXCLUDED."{col}"'
+#                         for col in df.columns
+#                         if col != "TransactionID"
+#                     ]
+#                 )
+#
+#                 upsert_sql = text(
+#                     f"""
+#                         INSERT INTO {tb_name} ({column_names})
+#                         VALUES ({value_placeholders})
+#                         ON CONFLICT ("TransactionID")
+#                         DO UPDATE SET {update_clause};
+#                     """
+#                 )
+#                 # Execute upsert in a transaction
+#                 conn.execute(upsert_sql, df.to_dict(orient="records"))
+#             print(f"Data for {df['FileDate'][0]} upserted successfully into {tb_name}.")
+#         except SQLAlchemyError as e:
+#             print(f"An error occurred: {e}")
+#             raise
 
 
 # Function to validate schema consistency and update database
@@ -182,12 +244,14 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 # Read Excel data
                 df_header = pd.read_excel(file_path, nrows=0)  # Reads only the header
                 missing_columns = [
-                    col for col in needed_columns if col not in df_header.columns
+                    col
+                    for col in bronze_ssc_table_needed_columns
+                    if col not in df_header.columns
                 ]
                 if missing_columns:
                     print(f"File {file} is missing required columns: {e}. Skipping...")
                     continue  # Skip to the next file if some columns are missing
-                df = pd.read_excel(file_path, usecols=needed_columns)
+                df = pd.read_excel(file_path, usecols=bronze_ssc_table_needed_columns)
 
                 df["FileName"] = file
                 df["FileDate"] = file_date
@@ -201,7 +265,7 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 
                 try:
                     # Insert into PostgreSQL table
-                    upsert_data(tb_name, df)
+                    upsert_data(engine, tb_name, df, "TransactionID", PUBLISH_TO_PROD)
                     # Mark file as processed
                     mark_file_processed(file)
                 except SQLAlchemyError:

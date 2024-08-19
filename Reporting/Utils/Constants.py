@@ -84,7 +84,7 @@ transaction_map = {
 }
 
 # Define the columns needed for the Bronze returns table
-needed_columns = [
+bronze_ssc_table_needed_columns = [
     "SK",
     "VehicleCode",
     "VehicleDescription",

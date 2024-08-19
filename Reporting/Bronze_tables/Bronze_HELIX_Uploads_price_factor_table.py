@@ -2,10 +2,10 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, Integer, Float, Date
+from sqlalchemy import text, Table, MetaData, Column, String, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string
 from Utils.database_utils import get_database_engine
 
@@ -13,7 +13,9 @@ from Utils.database_utils import get_database_engine
 engine = get_database_engine('postgres')
 
 # File to track processed files
-processed_files_tracker = "Bronze Table Processed Daily Price Factor"
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+processed_files_tracker = bronze_tracker_dir / "Bronze Table Processed Daily Price Factor HELIX Upload"
 
 # Directory and file pattern
 

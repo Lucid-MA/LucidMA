@@ -1,7 +1,9 @@
 import math
 import platform
+import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import holidays
 import pandas as pd
@@ -107,3 +109,19 @@ def get_datetime_string():
 
 def get_datetime_object():
     return pd.to_datetime(datetime.now())
+
+
+def get_repo_root():
+    """
+    :return: Repo root (LucidMA folder)
+    """
+    try:
+        repo_root = (
+            subprocess.check_output(["git", "rev-parse", "--show-toplevel"])
+            .decode("utf-8")
+            .strip()
+        )
+        return Path(repo_root)
+    except subprocess.CalledProcessError:
+        print("Not a Git repository. Using the current directory as the root.")
+        return Path.cwd()

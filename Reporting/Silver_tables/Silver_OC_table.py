@@ -6,7 +6,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateT
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates
-from Utils.Common import get_file_path, get_trading_days
+from Utils.Common import get_trading_days, get_repo_root
 from Utils.SQL_queries import OC_query_historical
 from Utils.database_utils import get_database_engine, read_table_from_db
 
@@ -18,28 +18,23 @@ TABLE_NAME = "oc_rates"
 engine = get_database_engine("postgres")
 engine_oc_rate = get_database_engine("sql_server_1")
 
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_repo_path = repo_path / "Reporting" / "Bronze_tables"
+bronze_tracker_path = bronze_repo_path / "File_trackers"
+
 # Dependent files
-cash_balance_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_cash_balance_table.py"
-)
-cash_balance_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Cash Balance"
-)
+price_python_file_path = bronze_repo_path / "Bronze_daily_used_prices_table.py"
 
-factor_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_bond_data_bloomberg_table.py"
-)
-factor_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Daily Bond Data"
-)
+price_status_file_path = bronze_tracker_path / "Bronze Table Processed Daily Used Prices"
 
-price_python_file_path = get_file_path(
-    "S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze_daily_prices_table.py"
-)
-price_status_file_path = get_file_path(
-    r"S:/Users/THoang/Tech/LucidMA/Reporting/Bronze_tables/Bronze Table Processed Daily Prices"
-)
+cash_balance_python_file_path = bronze_repo_path / "Bronze_cash_balance_table.py"
 
+cash_balance_status_file_path = bronze_tracker_path / "Bronze Table Processed Cash Balance"
+
+factor_python_file_path = bronze_repo_path / "Bronze_bond_data_bloomberg_table.py"
+
+factor_status_file_path = bronze_tracker_path / "Bronze Table Processed Daily Bond Data"
 
 def create_table_with_schema(tb_name, engine):
     metadata = MetaData()

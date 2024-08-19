@@ -2,7 +2,7 @@ import os
 import time
 import zipfile
 
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_repo_root
 
 """
 This script automates the extraction and organization of financial documents from zip archives 
@@ -33,7 +33,7 @@ start_time = time.time()
 # Base directories to search
 base_directories = [
     r"S:/Mandates/Funds/Fund NAV Calculations/USG/USG NAV Packets/End of Month",
-    r"S:/Mandates/Funds/Fund NAV Calculations/Prime/Prime NAV Packets/End of Month"
+    r"S:/Mandates/Funds/Fund NAV Calculations/Prime/Prime NAV Packets/End of Month",
 ]
 
 # Destination folder base
@@ -48,39 +48,24 @@ year_threshold = 2021
 # List to store relevant filenames
 relevant_filenames = []
 
-# File to store processed filenames
-processed_file_path = get_file_path(os.path.join(destination_folder_base, "Processed file.txt"))
-processed_file_tracker = 'Processed SSC Zip files'
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+processed_file_tracker = bronze_tracker_dir / "Processed SSC Zip files"
+
 
 def read_processed_files():
     try:
-        with open(processed_file_tracker, 'r') as file:
+        with open(processed_file_tracker, "r") as file:
             return set(file.read().splitlines())
     except FileNotFoundError:
         return set()
 
 
 def mark_file_processed(filename):
-    with open(processed_file_tracker, 'a') as file:
-        file.write(filename + '\n')
+    with open(processed_file_tracker, "a") as file:
+        file.write(filename + "\n")
 
-# Function to load processed files
-def load_processed_files():
-    if os.path.exists(processed_file_path):
-        with open(processed_file_path, 'r') as file:
-            return file.read().splitlines()
-    else:
-        return []
-
-
-# Function to save processed files
-def save_processed_file(filename):
-    with open(processed_file_path, 'a') as file:
-        file.write(filename + '\n')
-
-
-# Load processed files
-processed_files = load_processed_files()
 
 # Iterate through base directories
 for base_dir in base_directories:
@@ -103,19 +88,24 @@ for base_dir in base_directories:
                     zip_path = os.path.join(year_path, zip_file)
 
                     # Unzip contents
-                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    with zipfile.ZipFile(zip_path, "r") as zip_ref:
                         for inner_file in zip_ref.namelist():
                             if target_filename_pattern in inner_file:
                                 # Extract target file
                                 zip_ref.extract(inner_file, destination_folder)
 
                                 # Generate new, post-fixed filename
-                                new_filename = inner_file.split('.')[0]
+                                new_filename = inner_file.split(".")[0]
                                 new_filename = f"{new_filename}.xlsx"
-                                new_filepath = os.path.join(destination_folder, new_filename)
+                                new_filepath = os.path.join(
+                                    destination_folder, new_filename
+                                )
 
                                 # Move file with postfix
-                                os.rename(os.path.join(destination_folder, inner_file), new_filepath)
+                                os.rename(
+                                    os.path.join(destination_folder, inner_file),
+                                    new_filepath,
+                                )
                                 new_filepath = os.path.normpath(new_filepath)
                                 relevant_filenames.append(new_filepath)
 
