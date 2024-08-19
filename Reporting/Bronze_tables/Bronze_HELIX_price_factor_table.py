@@ -27,7 +27,7 @@ processed_files_tracker = "Bronze Table Processed HELIX Price and Factor"
 
 
 base_directories = {
-    # r"S:/Mandates/Operations/Helix Trade Files/Prime Archive": "MSTR_",
+    r"S:/Mandates/Operations/Helix Trade Files/Prime Archive": "MSTR_",
     r"S:/Mandates/Operations/Helix Trade Files/USG Archive": "",
 }
 
