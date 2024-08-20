@@ -30,8 +30,9 @@ def get_query_date(custom_date=None):
         date_time = datetime.fromtimestamp(current_time)
         return date_time.strftime("%m/%d/%Y")
 
+
 # INSERT CUSTOM DATE in 'MM/DD/YYYY' format here if need to run manually
-custom_date = ''
+custom_date = ""
 query_date = get_query_date(custom_date)
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
