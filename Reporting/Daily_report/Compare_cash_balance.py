@@ -31,200 +31,209 @@ output_path = get_file_path(
     f"S:/Mandates/Operations/Daily Reconciliation/Comparison/Comparison_{process_date_tracker}.xlsx"
 )
 
-# Read File 1 (CashBal_09052024.csv)
-df_nexen = pd.read_csv(nexen_report_path)
 
-df_nexen["Ending Balance Reporting Currency"] = (
-    df_nexen["Ending Balance Reporting Currency"]
-    .str.replace(",", "")  # Remove commas
-    .apply(
-        lambda x: -float(x[1:-1]) if x.startswith("(") and x.endswith(")") else float(x)
+def read_and_process_nexen_data(nexen_report_path):
+    df_nexen = pd.read_csv(nexen_report_path)
+
+    df_nexen["Ending Balance Reporting Currency"] = (
+        df_nexen["Ending Balance Reporting Currency"]
+        .str.replace(",", "")  # Remove commas
+        .apply(
+            lambda x: (
+                -float(x[1:-1]) if x.startswith("(") and x.endswith(")") else float(x)
+            )
+        )
     )
-)
 
-# Filter rows based on the specified 'Cash Account Number' values
-cash_account_numbers = [
-    2775408400,
-    2775408401,
-    2782048400,
-    2782048401,
-    9904578400,
-    9904578401,
-    6577208400,
-    1417578400,
-    1417578401,
-    2782078400,
-    2782078401,
-    1420198400,
-    1420198401,
-    2782088400,
-    2782088401,
-    6577248400,
-    6577248401,
-    6577238400,
-    6577238401,
-    2782058400,
-    2782058401,
-    6577188400,
-    6577188401,
-]
-df_nexen = df_nexen[df_nexen["Cash Account Number"].isin(cash_account_numbers)]
-
-df_nexen = df_nexen[
-    df_nexen["Cash Account Number"].isin(cash_account_numbers)
-]
-
-# # If there are duplicates, keep only the first occurrence
-# df_nexen = df_nexen.drop_duplicates(subset='Cash Account Number', keep='first')
-
-# Read File 2 (openTrackerState_20240509.xlsx)
-df_tracker_state = pd.read_excel(
-    tracker_state_path, sheet_name="Main", skiprows=11, nrows=17, usecols="B:F"
-)
-
-# Create a mapping dictionary for 'Cash Account Number' and corresponding conditions
-mapping = {
-    277540: (
-        (df_tracker_state["Fund"] == "PRIME") & (df_tracker_state["Account"] == "MAIN")
-    ),
-    278204: (
-        (df_tracker_state["Fund"] == "PRIME")
-        & (df_tracker_state["Account"] == "MARGIN")
-    ),
-    990457: (
-        (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "MAIN")
-    ),
-    657720: (
-        (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "MARGIN")
-    ),
-    278207: (
-        (df_tracker_state["Fund"] == "PRIME")
-        & (df_tracker_state["Account"] == "EXPENSE")
-    ),
-    278208: (
-        (df_tracker_state["Fund"] == "PRIME")
-        & (df_tracker_state["Account"] == "MANAGEMENT")
-    ),
-    657724: (
-        (df_tracker_state["Fund"] == "USG")
-        & (df_tracker_state["Account"] == "MANAGEMENT")
-    ),
-    657723: (
-        (df_tracker_state["Fund"] == "USG") & (df_tracker_state["Account"] == "EXPENSE")
-    ),
-    278205: (
-        (df_tracker_state["Fund"] == "PRIME")
-        & (df_tracker_state["Account"] == "SUBSCRIPTION")
-    ),
-    657718: (
-        (df_tracker_state["Fund"] == "USG")
-        & (df_tracker_state["Account"] == "SUBSCRIPTION")
-    ),
-}
-
-# Combine Elliott account into Prime Margin
-elliott_account_number_mapping = {141757: 278204, 142019: 278204}
-elliot_account_name_mapping = {
-    "LUCID PRIME PLEDGEE OF ELLIOTT INTL": "LUCID PRIME MARGIN CASH AC",
-    "LUCID PRIME PLEDGEE OF ELLIOTTASSOC": "LUCID PRIME MARGIN CASH AC",
-}
-df_nexen["Account Number"] = (
-    df_nexen["Account Number"]
-    .map(elliott_account_number_mapping)
-    .fillna(df_nexen["Account Number"])
-)
-df_nexen["Account Name"] = (
-    df_nexen["Account Name"]
-    .map(elliot_account_name_mapping)
-    .fillna(df_nexen["Account Name"])
-)
-
-# Group By result
-df_nexen = (
-    df_nexen.groupby("Account Number")
-    .agg(
-        {
-            "Account Name": "first",
-            "Cash Account Number": lambda x: list(x),
-            "Ending Balance Reporting Currency": "sum",
-        }
-    )
-    .reset_index()
-)
-
-# Create new columns 'Fund', 'Account', and 'Cash Tracker Balance' in df_nexen based on the mapping
-df_nexen["Cash Tracker Balance"] = df_nexen["Account Number"].map(
-    lambda x: (
-        df_tracker_state.loc[mapping[x], "Projected Total Balance"].values[0]
-        if mapping[x] is not None
-        else None
-    )
-)
-df_nexen["Fund"] = df_nexen["Account Number"].map(
-    lambda x: (
-        df_tracker_state.loc[mapping[x], "Fund"].values[0]
-        if mapping[x] is not None
-        else None
-    )
-)
-df_nexen["Account"] = df_nexen["Account Number"].map(
-    lambda x: (
-        df_tracker_state.loc[mapping[x], "Account"].values[0]
-        if mapping[x] is not None
-        else None
-    )
-)
-
-# Create df_3 with the required columns
-df_diff = df_nexen[
-    [
-        "Account Number",
-        "Fund",
-        "Account",
-        "Account Name",
-        "Cash Account Number",
-        "Ending Balance Reporting Currency",
-        "Cash Tracker Balance",
+    # Filter rows based on the specified 'Cash Account Number' values
+    cash_account_numbers = [
+        2775408400,
+        2775408401,
+        2782048400,
+        2782048401,
+        9904578400,
+        9904578401,
+        6577208400,
+        1417578400,
+        1417578401,
+        2782078400,
+        2782078401,
+        1420198400,
+        1420198401,
+        2782088400,
+        2782088401,
+        6577248400,
+        6577248401,
+        6577238400,
+        6577238401,
+        2782058400,
+        2782058401,
+        6577188400,
+        6577188401,
     ]
-]
-df_diff = df_diff.rename(columns={"Ending Balance Reporting Currency": "Nexen Balance"})
-sort_order = [
-    277540,
-    278204,
-    990457,
-    657720,
-    278207,
-    278208,
-    657724,
-    657723,
-    278205,
-    657718,
-]
-df_diff["Cash Account Number"] = pd.Categorical(
-    df_diff["Account Number"], categories=sort_order, ordered=True
-)
+    df_nexen = df_nexen[df_nexen["Cash Account Number"].isin(cash_account_numbers)]
 
-# Failing trade
-df_fail_trade = pd.read_excel(
-    tracker_state_path, sheet_name="Main", skiprows=30, nrows=30, usecols="B:G"
-)
-df_fail_trade = df_fail_trade.groupby(["Fund", "Account"])["Amount"].sum().reset_index()
+    # Combine Elliott account into Prime Margin
+    elliott_account_number_mapping = {141757: 278204, 142019: 278204}
+    elliot_account_name_mapping = {
+        "LUCID PRIME PLEDGEE OF ELLIOTT INTL": "LUCID PRIME MARGIN CASH AC",
+        "LUCID PRIME PLEDGEE OF ELLIOTTASSOC": "LUCID PRIME MARGIN CASH AC",
+    }
+    df_nexen["Account Number"] = (
+        df_nexen["Account Number"]
+        .map(elliott_account_number_mapping)
+        .fillna(df_nexen["Account Number"])
+    )
+    df_nexen["Account Name"] = (
+        df_nexen["Account Name"]
+        .map(elliot_account_name_mapping)
+        .fillna(df_nexen["Account Name"])
+    )
 
-df_diff = pd.merge(df_diff, df_fail_trade, on=["Fund", "Account"], how="left")
+    # Group By result
+    df_nexen = (
+        df_nexen.groupby("Account Number")
+        .agg(
+            {
+                "Account Name": "first",
+                "Cash Account Number": lambda x: list(x),
+                "Ending Balance Reporting Currency": "sum",
+            }
+        )
+        .reset_index()
+    )
 
-# Rename the 'Amount' column from the result DataFrame to 'Failed trade amount'
-df_diff = df_diff.rename(columns={"Amount": "Failed trade amount"})
-df_diff["Failed trade amount"] = df_diff["Failed trade amount"].fillna(0)
-df_diff["Difference"] = (
-    df_diff["Nexen Balance"]
-    - df_diff["Cash Tracker Balance"]
-    + df_diff["Failed trade amount"]
-)
-df_diff["Difference"] = df_diff["Difference"].round(2)
+    return df_nexen
 
-# Write df_3 to an Excel file
-df_diff.to_excel(output_path, index=False)
-print(f"Output file created at: {output_path}")
+
+def read_and_process_tracker_state_data(tracker_state_path):
+    df_tracker_state = pd.read_excel(
+        tracker_state_path, sheet_name="Main", skiprows=11, nrows=17, usecols="B:F"
+    )
+
+    return df_tracker_state
+
+
+def create_difference_dataframe(df_nexen, df_tracker_state):
+    # Create a mapping dictionary for 'Cash Account Number' and corresponding conditions
+    mapping = {
+        277540: (
+            (df_tracker_state["Fund"] == "PRIME")
+            & (df_tracker_state["Account"] == "MAIN")
+        ),
+        278204: (
+            (df_tracker_state["Fund"] == "PRIME")
+            & (df_tracker_state["Account"] == "MARGIN")
+        ),
+        990457: (
+            (df_tracker_state["Fund"] == "USG")
+            & (df_tracker_state["Account"] == "MAIN")
+        ),
+        657720: (
+            (df_tracker_state["Fund"] == "USG")
+            & (df_tracker_state["Account"] == "MARGIN")
+        ),
+        278207: (
+            (df_tracker_state["Fund"] == "PRIME")
+            & (df_tracker_state["Account"] == "EXPENSE")
+        ),
+        278208: (
+            (df_tracker_state["Fund"] == "PRIME")
+            & (df_tracker_state["Account"] == "MANAGEMENT")
+        ),
+        657724: (
+            (df_tracker_state["Fund"] == "USG")
+            & (df_tracker_state["Account"] == "MANAGEMENT")
+        ),
+        657723: (
+            (df_tracker_state["Fund"] == "USG")
+            & (df_tracker_state["Account"] == "EXPENSE")
+        ),
+        278205: (
+            (df_tracker_state["Fund"] == "PRIME")
+            & (df_tracker_state["Account"] == "SUBSCRIPTION")
+        ),
+        657718: (
+            (df_tracker_state["Fund"] == "USG")
+            & (df_tracker_state["Account"] == "SUBSCRIPTION")
+        ),
+    }
+
+    # Create new columns 'Fund', 'Account', and 'Cash Tracker Balance' in df_nexen based on the mapping
+    df_nexen["Cash Tracker Balance"] = df_nexen["Account Number"].map(
+        lambda x: (
+            df_tracker_state.loc[mapping[x], "Projected Total Balance"].values[0]
+            if mapping[x] is not None
+            else None
+        )
+    )
+    df_nexen["Fund"] = df_nexen["Account Number"].map(
+        lambda x: (
+            df_tracker_state.loc[mapping[x], "Fund"].values[0]
+            if mapping[x] is not None
+            else None
+        )
+    )
+    df_nexen["Account"] = df_nexen["Account Number"].map(
+        lambda x: (
+            df_tracker_state.loc[mapping[x], "Account"].values[0]
+            if mapping[x] is not None
+            else None
+        )
+    )
+
+    # Create df_3 with the required columns
+    df_diff = df_nexen[
+        [
+            "Account Number",
+            "Fund",
+            "Account",
+            "Account Name",
+            "Cash Account Number",
+            "Ending Balance Reporting Currency",
+            "Cash Tracker Balance",
+        ]
+    ]
+    df_diff = df_diff.rename(
+        columns={"Ending Balance Reporting Currency": "Nexen Balance"}
+    )
+    sort_order = [
+        277540,
+        278204,
+        990457,
+        657720,
+        278207,
+        278208,
+        657724,
+        657723,
+        278205,
+        657718,
+    ]
+    df_diff["Cash Account Number"] = pd.Categorical(
+        df_diff["Account Number"], categories=sort_order, ordered=True
+    )
+
+    # Failing trade
+    df_fail_trade = pd.read_excel(
+        tracker_state_path, sheet_name="Main", skiprows=30, nrows=30, usecols="B:G"
+    )
+    df_fail_trade = (
+        df_fail_trade.groupby(["Fund", "Account"])["Amount"].sum().reset_index()
+    )
+
+    df_diff = pd.merge(df_diff, df_fail_trade, on=["Fund", "Account"], how="left")
+
+    # Rename the 'Amount' column from the result DataFrame to 'Failed trade amount'
+    df_diff = df_diff.rename(columns={"Amount": "Failed trade amount"})
+    df_diff["Failed trade amount"] = df_diff["Failed trade amount"].fillna(0)
+    df_diff["Difference"] = (
+        df_diff["Nexen Balance"]
+        - df_diff["Cash Tracker Balance"]
+        + df_diff["Failed trade amount"]
+    )
+    df_diff["Difference"] = df_diff["Difference"].round(2)
+
+    return df_diff
 
 
 def highlight_diff(value):
@@ -238,68 +247,96 @@ def highlight_diff(value):
         return ""
 
 
-# Format the numbers as dollar amounts with a maximum of 2 decimal places
-pd.options.display.float_format = "${:,.2f}".format
-df_diff["Nexen Balance"] = df_diff["Nexen Balance"].apply(lambda x: f"${x:,.2f}")
-df_diff["Cash Tracker Balance"] = df_diff["Cash Tracker Balance"].apply(
-    lambda x: f"${x:,.2f}"
-)
-df_diff["Failed trade amount"] = df_diff["Failed trade amount"].apply(
-    lambda x: f"${x:,.2f}"
-)
-df_diff["Difference"] = df_diff["Difference"].apply(lambda x: f"${x:,.2f}")
+def format_dataframe(df_diff):
+    pd.options.display.float_format = "${:,.2f}".format
+    df_diff["Nexen Balance"] = df_diff["Nexen Balance"].apply(lambda x: f"${x:,.2f}")
+    df_diff["Cash Tracker Balance"] = df_diff["Cash Tracker Balance"].apply(
+        lambda x: f"${x:,.2f}"
+    )
+    df_diff["Failed trade amount"] = df_diff["Failed trade amount"].apply(
+        lambda x: f"${x:,.2f}"
+    )
+    df_diff["Difference"] = df_diff["Difference"].apply(lambda x: f"${x:,.2f}")
 
-df_diff_styled = df_diff.style.map(highlight_diff, subset=["Difference"])
+    df_diff_styled = df_diff.style.map(highlight_diff, subset=["Difference"])
 
-# Azure AD app configuration
-client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
-tenant_id = "86cd4a88-29b5-4f22-ab55-8d9b2c81f747"
-uri = "http://localhost:8080"  # Replace with your app's redirect URI
-config = {
-    "client_id": client_id,
-    "authority": f"https://login.microsoftonline.com/{tenant_id}",
-    "scope": ["https://graph.microsoft.com/Mail.Send"],
-    "redirect_uri": "http://localhost:8080",  # Add the redirect URL here
-}
+    return df_diff_styled
 
-cache_file = "token_cache.bin"
-token_cache = msal.SerializableTokenCache()
 
-if os.path.exists(cache_file):
-    with open(cache_file, "r") as f:
-        token_cache.deserialize(f.read())
-
-client = msal.PublicClientApplication(
-    config["client_id"], authority=config["authority"], token_cache=token_cache
-)
-
-accounts = client.get_accounts()
-if accounts:
-    result = client.acquire_token_silent(config["scope"], account=accounts[0])
-    if not result:
-        print("No cached token found. Authenticating interactively...")
-        result = client.acquire_token_interactive(scopes=config["scope"])
-else:
-    print("No cached accounts found. Authenticating interactively...")
-    result = client.acquire_token_interactive(scopes=config["scope"])
-
-if "error" in result:
-    print(f"Authentication failed with error: {result['error']}")
-    print(f"Error description: {result.get('error_description')}")
-    exit(1)
-
-with open(cache_file, "w") as f:
-    f.write(token_cache.serialize())
-
-if "access_token" in result:
-    access_token = result["access_token"]
-
-    # Send the email using Microsoft Graph API
-    graph_api_url = "https://graph.microsoft.com/v1.0/me/sendMail"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
+def authenticate_and_get_token():
+    client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
+    tenant_id = "86cd4a88-29b5-4f22-ab55-8d9b2c81f747"
+    config = {
+        "client_id": client_id,
+        "authority": f"https://login.microsoftonline.com/{tenant_id}",
+        "scope": ["https://graph.microsoft.com/Mail.Send"],
+        "redirect_uri": "http://localhost:8080",
     }
+
+    cache_file = "token_cache.bin"
+    token_cache = msal.SerializableTokenCache()
+
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            token_cache.deserialize(f.read())
+
+    client = msal.PublicClientApplication(
+        config["client_id"], authority=config["authority"], token_cache=token_cache
+    )
+
+    accounts = client.get_accounts()
+    if accounts:
+        result = client.acquire_token_silent(config["scope"], account=accounts[0])
+        if not result:
+            print("No cached token found. Authenticating interactively...")
+            result = client.acquire_token_interactive(scopes=config["scope"])
+    else:
+        print("No cached accounts found. Authenticating interactively...")
+        result = client.acquire_token_interactive(scopes=config["scope"])
+
+    if "error" in result:
+        raise Exception(f"Error acquiring token: {result['error_description']}")
+
+    with open(cache_file, "w") as f:
+        f.write(token_cache.serialize())
+
+    return result["access_token"]
+
+
+def send_email(subject, body, recipients):
+    token = authenticate_and_get_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    email_data = {
+        "message": {
+            "subject": subject,
+            "body": {"contentType": "HTML", "content": body},
+            "from": {"emailAddress": {"address": "operations@lucidma.com"}},
+            "toRecipients": [
+                {"emailAddress": {"address": recipient}} for recipient in recipients
+            ],
+        }
+    }
+    response = requests.post(
+        "https://graph.microsoft.com/v1.0/me/sendMail", headers=headers, json=email_data
+    )
+    if response.status_code != 202:
+        raise Exception(f"Error sending email: {response.text}")
+    else:
+        if response.status_code == 202:
+            print(f"Email {subject} sent successfully")
+
+
+def main():
+    df_nexen = read_and_process_nexen_data(nexen_report_path)
+    df_tracker_state = read_and_process_tracker_state_data(tracker_state_path)
+    df_diff = create_difference_dataframe(df_nexen, df_tracker_state)
+
+    # Write df_3 to an Excel file
+    df_diff.to_excel(output_path, index=False)
+    print(f"Output file created at: {output_path}")
+
+    df_diff_styled = format_dataframe(df_diff)
+
     # Convert the styled DataFrame to an HTML table
     html_table = df_diff_styled.to_html(index=False)
 
@@ -339,27 +376,15 @@ if "access_token" in result:
     </html>
     """
 
-    payload = {
-        "message": {
-            "subject": f"Cash Comparison Report - {process_date}",
-            "body": {"contentType": "HTML", "content": body},
-            "from": {"emailAddress": {"address": "operations@lucidma.com"}},
-            "toRecipients": [
-                {"emailAddress": {"address": "operations@lucidma.com"}},
-                {"emailAddress": {"address": "Heather.Campbell@lucidma.com"}},
-                {"emailAddress": {"address": "tony.hoang@lucidma.com"}},
-            ],
-        }
-    }
+    subject = f"Cash Comparison Report - {process_date}"
+    recipients = [
+        # "operations@lucidma.com",
+        # "Heather.Campbell@lucidma.com",
+        "tony.hoang@lucidma.com",
+    ]
 
-    response = requests.post(graph_api_url, headers=headers, json=payload)
+    send_email(subject, body, recipients)
 
-    if response.status_code == 202:
-        print("Email sent successfully.")
-    else:
-        print(f"Failed to send email. Status code: {response.status_code}")
-        print(f"Error message: {response.text}")
-else:
-    print("Authentication failed.")
-    print(result.get("error"))
-    print(result.get("error_description"))
+
+if __name__ == "__main__":
+    main()
