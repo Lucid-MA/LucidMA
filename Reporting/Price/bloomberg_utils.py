@@ -797,52 +797,51 @@ class BloombergDataFetcher:
             print(f"{field} not found for security: {security}")
             return {}
 
-    def get_latest_prices(self, securities: List[str]) -> pd.DataFrame:
+    def get_latest_prices(self, securities: List[str], timeout: int = 5000) -> pd.DataFrame:
         if not self._start_session():
-            return []
+            logging.error("Failed to start Bloomberg session")
+            return pd.DataFrame()
 
         try:
             service = self.session.getService("//blp/refdata")
             request = service.createRequest("ReferenceDataRequest")
 
             for security in securities:
-                request.getElement("securities").appendValue(
-                    self._prepare_security(security)
-                )
+                request.getElement("securities").appendValue(self._prepare_security(security))
             request.getElement("fields").appendValue("PX_LAST")
 
-            self.session.sendRequest(request, correlationId=blpapi.CorrelationId(1))
+            self.session.sendRequest(request)
 
             prices = {}
-            while True:
-                event = self.session.nextEvent(500)  # Wait for 500ms max
-                if event.eventType() == blpapi.Event.RESPONSE:
+            retries = 3
+            while retries > 0:
+                event = self.session.nextEvent(timeout)
+                if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
                     for msg in event:
                         if msg.messageType() == "ReferenceDataResponse":
-                            for security_data in msg.getElement(
-                                "securityData"
-                            ).values():
+                            for security_data in msg.getElement("securityData").values():
                                 security = security_data.getElementAsString("security")
                                 if security.startswith("/cusip/"):
                                     security = security[7:]  # Remove "/cusip/" prefix
                                 if security_data.hasElement("securityError"):
-                                    error_msg = security_data.getElement(
-                                        "securityError"
-                                    )
-                                    print(f"Security error for {security}: {error_msg}")
+                                    error_msg = security_data.getElement("securityError")
+                                    logging.error(f"Security error for {security}: {error_msg}")
                                 else:
                                     field_data = security_data.getElement("fieldData")
                                     if field_data.hasElement("PX_LAST"):
                                         price = field_data.getElementAsFloat("PX_LAST")
-                                        prices[benchmark_ticker.get(security)] = price
+                                        prices[benchmark_ticker.get(security, security)] = price
                                     else:
-                                        print(
-                                            f"PX_LAST not found for security: {security}"
-                                        )
-                    break
+                                        logging.warning(f"PX_LAST not found for security: {security}")
+
+                    if event.eventType() == blpapi.Event.RESPONSE:
+                        break  # Full response received, exit loop
                 elif event.eventType() == blpapi.Event.TIMEOUT:
-                    print("Timeout occurred while waiting for response.")
-                    break
+                    logging.warning("Timeout occurred while waiting for response. Retrying...")
+                    retries -= 1
+                    if retries == 0:
+                        logging.error("Maximum retries reached. Returning partial data.")
+                        break
 
             benchmark_date = datetime.now().strftime("%Y-%m-%d")
             timestamp = datetime.now()
@@ -853,75 +852,145 @@ class BloombergDataFetcher:
                 **prices,
             }
 
+            if not prices:
+                logging.info("No price data retrieved")
+
             return pd.DataFrame([data])
 
         except blpapi.Exception as e:
-            print(f"Bloomberg API exception: {e}")
-            return []
+            logging.exception(f"Bloomberg API exception: {e}")
+            return pd.DataFrame()
         finally:
             self._stop_session()
 
-    def get_historical_prices(
-        self, securities: List[str], custom_date: str
-    ) -> Dict[str, Dict[str, float]]:
+
+    # def get_historical_prices(
+    #     self, securities: List[str], custom_date: str
+    # ) -> Dict[str, Dict[str, float]]:
+    #     if not self._start_session():
+    #         return {}
+    #
+    #     try:
+    #         service = self.session.getService("//blp/refdata")
+    #         prices = {}
+    #
+    #         for security in securities:
+    #             request = service.createRequest("HistoricalDataRequest")
+    #             request.getElement("securities").appendValue(
+    #                 self._prepare_security(security)
+    #             )
+    #             request.getElement("fields").appendValue("PX_LAST")
+    #             request.set("startDate", custom_date)
+    #             request.set("endDate", custom_date)
+    #
+    #             self.session.sendRequest(request, correlationId=blpapi.CorrelationId(1))
+    #
+    #             while True:
+    #                 event = self.session.nextEvent(500)  # Wait for 500ms max
+    #                 if event.eventType() == blpapi.Event.RESPONSE:
+    #                     for msg in event:
+    #                         if msg.messageType() == "HistoricalDataResponse":
+    #                             security_data = msg.getElement("securityData")
+    #                             if not security_data.hasElement("securityError"):
+    #                                 field_data_array = security_data.getElement(
+    #                                     "fieldData"
+    #                                 )
+    #                                 for field_data in field_data_array.values():
+    #                                     date = field_data.getElementAsString("date")
+    #                                     if field_data.hasElement("PX_LAST"):
+    #                                         price = field_data.getElement(
+    #                                             "PX_LAST"
+    #                                         ).getValueAsFloat()
+    #                                         prices[security] = {
+    #                                             "date": date,
+    #                                             "price": price,
+    #                                         }
+    #                                     else:
+    #                                         print(
+    #                                             f"PX_LAST not found for security: {security}"
+    #                                         )
+    #                             else:
+    #                                 error_msg = security_data.getElement(
+    #                                     "securityError"
+    #                                 )
+    #                                 print(f"Security error for {security}: {error_msg}")
+    #                     break
+    #                 elif event.eventType() == blpapi.Event.TIMEOUT:
+    #                     print(
+    #                         f"Timeout occurred while waiting for response for security: {security}"
+    #                     )
+    #                     break
+    #
+    #         return prices
+    #     except blpapi.Exception as e:
+    #         print(f"Bloomberg API exception: {e}")
+    #         return {}
+    #     finally:
+    #         self._stop_session()
+
+    def get_historical_prices(self, securities: List[str], custom_date: str, timeout: int = 5000) -> pd.DataFrame:
         if not self._start_session():
-            return {}
+            logging.error("Failed to start Bloomberg session")
+            return pd.DataFrame()
 
         try:
             service = self.session.getService("//blp/refdata")
-            prices = {}
+            request = service.createRequest("HistoricalDataRequest")
 
             for security in securities:
-                request = service.createRequest("HistoricalDataRequest")
-                request.getElement("securities").appendValue(
-                    self._prepare_security(security)
-                )
-                request.getElement("fields").appendValue("PX_LAST")
-                request.set("startDate", custom_date)
-                request.set("endDate", custom_date)
+                request.getElement("securities").appendValue(self._prepare_security(security))
+            request.getElement("fields").appendValue("PX_LAST")
+            request.set("startDate", custom_date)
+            request.set("endDate", custom_date)
 
-                self.session.sendRequest(request, correlationId=blpapi.CorrelationId(1))
+            self.session.sendRequest(request)
 
-                while True:
-                    event = self.session.nextEvent(500)  # Wait for 500ms max
+            prices = []
+            retries = 3
+            while retries > 0:
+                event = self.session.nextEvent(timeout)
+                if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
+                    for msg in event:
+                        if msg.messageType() == "HistoricalDataResponse":
+                            security_data = msg.getElement("securityData")
+                            security = security_data.getElementAsString("security")
+                            if security.startswith("/cusip/"):
+                                security = security[7:]  # Remove "/cusip/" prefix
+
+                            if not security_data.hasElement("securityError"):
+                                field_data_array = security_data.getElement("fieldData")
+                                for field_data in field_data_array.values():
+                                    date = field_data.getElementAsString("date")
+                                    if field_data.hasElement("PX_LAST"):
+                                        price = field_data.getElementAsFloat("PX_LAST")
+                                        prices.append({
+                                            "security": benchmark_ticker.get(security, security),
+                                            "date": date,
+                                            "price": price
+                                        })
+                                    else:
+                                        logging.warning(f"PX_LAST not found for security: {security} on {date}")
+                            else:
+                                error_msg = security_data.getElement("securityError")
+                                logging.error(f"Security error for {security}: {error_msg}")
+
                     if event.eventType() == blpapi.Event.RESPONSE:
-                        for msg in event:
-                            if msg.messageType() == "HistoricalDataResponse":
-                                security_data = msg.getElement("securityData")
-                                if not security_data.hasElement("securityError"):
-                                    field_data_array = security_data.getElement(
-                                        "fieldData"
-                                    )
-                                    for field_data in field_data_array.values():
-                                        date = field_data.getElementAsString("date")
-                                        if field_data.hasElement("PX_LAST"):
-                                            price = field_data.getElement(
-                                                "PX_LAST"
-                                            ).getValueAsFloat()
-                                            prices[security] = {
-                                                "date": date,
-                                                "price": price,
-                                            }
-                                        else:
-                                            print(
-                                                f"PX_LAST not found for security: {security}"
-                                            )
-                                else:
-                                    error_msg = security_data.getElement(
-                                        "securityError"
-                                    )
-                                    print(f"Security error for {security}: {error_msg}")
-                        break
-                    elif event.eventType() == blpapi.Event.TIMEOUT:
-                        print(
-                            f"Timeout occurred while waiting for response for security: {security}"
-                        )
+                        break  # Full response received, exit loop
+                elif event.eventType() == blpapi.Event.TIMEOUT:
+                    logging.warning("Timeout occurred while waiting for response. Retrying...")
+                    retries -= 1
+                    if retries == 0:
+                        logging.error("Maximum retries reached. Returning partial data.")
                         break
 
-            return prices
+            if not prices:
+                logging.info("No historical price data retrieved")
+
+            return pd.DataFrame(prices)
+
         except blpapi.Exception as e:
-            print(f"Bloomberg API exception: {e}")
-            return {}
+            logging.exception(f"Bloomberg API exception: {e}")
+            return pd.DataFrame()
         finally:
             self._stop_session()
 
@@ -937,6 +1006,83 @@ class BloombergDataFetcher:
 
             for security in securities:
                 request.getElement("securities").appendValue(security)
+
+            for field in fields:
+                request.getElement("fields").appendValue(field)
+
+            self.session.sendRequest(request)
+
+            def remove_prefix(text, prefixes):
+                for prefix in prefixes:
+                    if text.startswith(prefix):
+                        return text[len(prefix) :]
+                return text  # Return original if no prefix matches
+
+            prefixes_to_remove = ["/cusip/", "/isin/"]
+
+            data = []
+            retries = 3
+            while retries > 0:
+                event = self.session.nextEvent(timeout)
+                if event.eventType() in [
+                    blpapi.Event.RESPONSE,
+                    blpapi.Event.PARTIAL_RESPONSE,
+                ]:
+                    for msg in event:
+                        security_data = msg.getElement("securityData")
+                        for i in range(security_data.numValues()):
+                            security = security_data.getValueAsElement(i)
+                            ticker = remove_prefix(
+                                security.getElementAsString("security"),
+                                prefixes_to_remove,
+                            )
+                            field_data = security.getElement("fieldData")
+
+                            row = {"CUSIP": ticker}
+
+                            for field in fields:
+                                if field_data.hasElement(field):
+                                    row[field] = field_data.getElement(field).getValue()
+                                else:
+                                    row[field] = None
+                            data.append(row)
+                    if event.eventType() == blpapi.Event.RESPONSE:
+                        break  # Full response received, exit loop
+                elif event.eventType() == blpapi.Event.TIMEOUT:
+                    logging.warning(
+                        "Timeout occurred while waiting for response. Retrying..."
+                    )
+                    retries -= 1  # Decrement retry count and retry
+                    if retries == 0:
+                        logging.error(
+                            "Maximum retries reached. Returning partial data."
+                        )
+                        break
+
+            if not data:
+                logging.info("No data received. Returning empty DataFrame.")
+            return pd.DataFrame(data)
+
+        except blpapi.Exception as e:
+            logging.error(f"Bloomberg API exception: {e}")
+            return pd.DataFrame()
+        finally:
+            self._stop_session()
+
+    def get_security_attributes_v2(
+        self, securities: List[str], fields: List[str], timeout: int = 5000
+    ) -> pd.DataFrame:
+        if not self._start_session():
+            return pd.DataFrame()
+
+        try:
+            service = self.session.getService("//blp/refdata")
+            request = service.createRequest("ReferenceDataRequest")
+
+            for security in securities:
+                request.getElement("securities").appendValue(
+                    self._prepare_security(security)
+                )
 
             for field in fields:
                 request.getElement("fields").appendValue(field)

@@ -219,8 +219,11 @@ if __name__ == "__main__":
         "DCPA090Y Index",
         "DCPA180Y Index",
         "DCPA270Y Index",
+        "GBM Govt",
+        "GB3 Govt",
+        "912797LH8"
     ]
-    custom_date = "20240618"  # Specify the desired date in YYYYMMDD format
+    custom_date = "20240820"  # Specify the desired date in YYYYMMDD format
 
     # # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
     if PUBLISH_TO_PROD:
@@ -230,22 +233,34 @@ if __name__ == "__main__":
 
     fetcher = BloombergDataFetcher()
 
-    # print("Fetching latest prices...")
-    # prices_latest_df = fetcher.get_latest_prices(securities)
-    # print(prices_latest_df)
+    print("Fetching latest prices...")
+    prices_latest_df = fetcher.get_latest_prices(securities)
+    print_df(prices_latest_df)
+
+
+    logging.info("Fetching security attributes...")
+    security_attributes_df = fetcher.get_security_attributes_v2(securities, ['PX_LAST'])
+    print_df(security_attributes_df)
+
+
+    logging.info("Fetching historical price...")
+    prices_historical_df = fetcher.get_historical_prices(securities, '2024-08-19')
+    print_df(prices_historical_df)
+
     #
     # print("Upserting data to table...")
     # upsert_data(tb_name, prices_latest_df)
-    sec_list = get_bond_list()
-    print(sec_list)
 
-    logging.info("Fetching security attributes...")
-    security_attributes_df = fetcher.get_security_attributes(securities, bb_fields)
-
-    # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
-    security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
-        lambda x: diff_cusip_map.get(x, x)
-    )
-    logging.info(security_attributes_df)
-
-    print_df(security_attributes_df)
+    # sec_list = get_bond_list()
+    # print(sec_list)
+    #
+    # logging.info("Fetching security attributes...")
+    # security_attributes_df = fetcher.get_security_attributes(securities, bb_fields)
+    #
+    # # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
+    # security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
+    #     lambda x: diff_cusip_map.get(x, x)
+    # )
+    # logging.info(security_attributes_df)
+    #
+    # print_df(security_attributes_df)
