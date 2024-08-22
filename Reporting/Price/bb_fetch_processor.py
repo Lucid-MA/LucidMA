@@ -1916,7 +1916,7 @@ if __name__ == "__main__":
         bb_cusips = np.setdiff1d(
             bb_cusips, pni_cusips
         )  # remove pni dummy cusips from bb fetch proc
-        raw_df = bb_fetch(bb_cusips)
+        # raw_df = bb_fetch(bb_cusips)
         raw_df_v2 = bb_fetch_v2(bb_cusips)
         df_custom_overrides = bb_fetch_with_overrides(mktsymbol_map)
         df_custom_overrides_v2 = bb_fetch_with_overrides_v2(mktsymbol_map)
