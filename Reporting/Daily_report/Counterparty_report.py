@@ -4,7 +4,7 @@ import msal
 import pandas as pd
 import requests
 
-# import win32com.client as win32
+import win32com.client as win32
 from datetime import datetime
 from Utils.Common import get_file_path
 
@@ -83,13 +83,13 @@ def refresh_data_and_send_email():
     header_row = 12
     data_start_row = 13
 
-    # # Open the Excel file and refresh the data connection
-    # excel = win32.gencache.EnsureDispatch("Excel.Application")
-    # workbook = excel.Workbooks.Open(file_path)
-    # workbook.RefreshAll()
-    # excel.CalculateUntilAsyncQueriesDone()
-    # workbook.Save()
-    # workbook.Close(SaveChanges=True)
+    # Open the Excel file and refresh the data connection
+    excel = win32.gencache.EnsureDispatch("Excel.Application")
+    workbook = excel.Workbooks.Open(file_path)
+    workbook.RefreshAll()
+    excel.CalculateUntilAsyncQueriesDone()
+    workbook.Save()
+    workbook.Close(SaveChanges=True)
 
     # Read the data from the specified sheet, starting from row 13
     data = pd.read_excel(
