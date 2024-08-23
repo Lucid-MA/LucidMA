@@ -890,7 +890,7 @@ class BloombergDataFetcher:
 
     @_session_wrapper
     def get_historical_prices(
-        self, session: blpapi.Session, securities: List[str], custom_date: str
+        self, session: blpapi.Session, securities: List[str], start_date: str, end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
         request = service.createRequest("HistoricalDataRequest")
@@ -900,8 +900,8 @@ class BloombergDataFetcher:
                 self._prepare_security(security)
             )
         request.getElement("fields").appendValue("PX_LAST")
-        request.set("startDate", custom_date)
-        request.set("endDate", custom_date)
+        request.set("startDate", start_date)
+        request.set("endDate", end_date or start_date)
 
         data = self._send_request_and_get_data(session, request)
 

@@ -132,7 +132,7 @@ if __name__ == "__main__":
     prices_latest_df.to_excel("df_prices.xlsx", engine="openpyxl")
 
     print("Fetching historical prices...")
-    prices_historical_df = fetcher.get_historical_prices(securities, "20240819")
+    prices_historical_df = fetcher.get_historical_prices(securities, "20240819", "20240822")
     print_df(prices_historical_df)
     prices_historical_df.to_excel("df_prices_historical.xlsx", engine="openpyxl")
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     logging.info("Fetching historical price")
     security_attributes_historical_df = fetcher.get_historical_security_attributes(
-        securities, "20240819", ["PX_LAST", "MATURITY"]
+        securities, "20240819", ["PX_LAST", "MATURITY"], "20240822"
     )
     print_df(security_attributes_historical_df)
 
