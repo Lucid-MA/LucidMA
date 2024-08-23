@@ -8,7 +8,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float
 from sqlalchemy.exc import SQLAlchemyError
 import win32com.client as win32
 
-from Utils.Common import get_file_path, current_timestamp
+from Utils.Common import get_file_path, get_current_timestamp
 from Utils.database_utils import get_database_engine
 
 # Flag to enable publish to prod
@@ -57,6 +57,7 @@ if MANUAL_REFRESH:
     del sheet
     del workbook
     del excel
+
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
@@ -173,7 +174,7 @@ try:
         header=7,  # Header is on row 8 (index 7)
         usecols=f"{start_col}:{end_col}",
         skiprows=range(8, 11),  # Skip rows to start data from row 12
-        nrows=last_row - start_row + 1  # Explicitly specify number of rows to read
+        nrows=last_row - start_row + 1,  # Explicitly specify number of rows to read
     )
 
     # Close the workbook
@@ -201,7 +202,7 @@ try:
         benchmark_df["benchmark_date"].dt.strftime("%Y-%m-%d").astype(str)
     )
 
-    benchmark_df["timestamp"] = current_timestamp()
+    benchmark_df["timestamp"] = get_current_timestamp()
 
     # Divide the data by 100 (excluding the 'benchmark_date' and 'timestamp' columns)
     for col in benchmark_df.columns[1:-1]:

@@ -12,7 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import insert
 
-from Utils.Common import current_timestamp
+from Utils.Common import get_current_timestamp
 from Utils.Constants import reverse_cusip_mapping, series_return_intervals
 from Utils.database_utils import read_table_from_db, get_database_engine
 
@@ -249,7 +249,7 @@ for series_id in reporting_series:
         inplace=True,
     )
     subset_df = subset_df.dropna(subset=["series_id"])
-    subset_df["timestamp"] = current_timestamp()
+    subset_df["timestamp"] = get_current_timestamp()
 
     # Fill missing columns with None
     missing_columns = set(silver_return_by_series_table.columns.keys()) - set(

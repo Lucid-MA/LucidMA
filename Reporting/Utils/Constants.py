@@ -48,6 +48,8 @@ benchmark_ticker = {
     "DCPA090Y Index": CP_3M,
     "DCPA180Y Index": CP_6M,
     "DCPA270Y Index": CP_9M,
+    "GBM Govt": TBILL_1M,
+    "GB3 Govt": TBILL_3M,
 }
 
 

@@ -12,16 +12,12 @@ import logging
 import openpyxl as op
 import pandas as pd
 import numpy as np
-import requests, base64, http.client, os, subprocess
-from datetime import datetime, timedelta
-from pathlib import Path, PureWindowsPath
+import subprocess
+from datetime import datetime
 import sys
-from shutil import copyfile
-import openpyxl
-import psutil
 
-from Price.bloomberg_utils import BloombergDataFetcher, bb_fields
-from Utils.Common import print_df, get_file_path
+from Bronze_tables.Price.bloomberg_utils import BloombergDataFetcher, bb_fields
+from Utils.Common import get_file_path
 
 # Configure logging
 logging.basicConfig(

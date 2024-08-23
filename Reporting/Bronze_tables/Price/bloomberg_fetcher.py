@@ -7,7 +7,11 @@ from sqlalchemy import (
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from Price.bloomberg_utils import diff_cusip_map, bb_fields, BloombergDataFetcher
+from Bronze_tables.Price.bloomberg_utils import (
+    BloombergDataFetcher,
+    diff_cusip_map,
+    bb_fields,
+)
 from Utils.Common import get_file_path, print_df
 from Utils.SQL_queries import daily_price_securities_helix_query
 from Utils.database_utils import (
@@ -107,51 +111,6 @@ def get_bond_list():
         "Vantage Proxies"
         "Other"
     - All the values in diff_cusip_map. These are cusips in BBerg but different ticker to access
-        diff_cusip_map = {
-            "EURFX": "EUR Curncy",
-            "XS2606220999": "PPG91FR41",
-            "XS2592024009": "PPGA0OKN5",
-            "XS2592025071": "PPG80PFP8",
-            "ALMNDUSD7": "PPFM1GA98",
-            "ALMNDUSD8": "PPFR5TTD6",
-            "STHAPPLE5": "PPFT6V9U0",
-            "OPPORTUN1": "PPFQKMXT6",
-            "STHAPPLE4": "PPF54YY06",
-            "MNTNCHRY1": "PPEBEGFI4",
-            "MNTNCHRY2": "PPFX3C1P5",
-            "52953BBJ1": "PPEG3JY56",
-            "STHAPPLE2": "PPED2BZX9",
-            "XS2373029664": "PPEZDK875",
-            "52468JX82": "PPE43E6K2",
-            "XS2373029748": "PPE0FKE65",
-            "STHAPPLE1": "PPE32P4N6",
-            "HEXZETA01": "PPE9DMNR8",
-            "HEXZETA02": "PPE4DGC45",
-            "STHAPPLE3": "PPE939O30",
-            "ALMNDUSD4": "PPE0F22A9",
-            "ALMNDUSD5": "PPEA34F46",
-            "ALMNDUSD6": "PPEBFPHO8",
-            "ALMNDEUR4": "PPE5GG8O0",
-            "ALMNDEUR3": "PPEA34F53",
-            "ALMNDUSD3": "PPE139546",
-            "ALMNDUSD2": "PPEE2UU10",
-            "ALMNDUSD1": "PPE32P4O4",
-            "ALMNDEUR2": "PPE42XYF1",
-            "ALMNDEUR1": "PPEA2SM53",
-            "XS2225938831": "PPEF1MMY3",
-            "XS2091648928": "PP9FCKDZ8",
-            "XS1951177309": "PP30JD700",
-            "XS2004377136": "PP075HWJ5",
-            "XS2643730695": "PPG64I278",
-            "XS2644211281": "PPG24HYG4",
-            "XS2644210986": "PPG64I468",
-            "XS2644211109": "PPG64I4G6",
-            "TREATYUS1": "PPG1JQ3D1",
-            "XS2643730695": "PPG1K4CZ9",
-            "XS2644210986": "PPG5K61F1",
-            "XS2644211109": "PPG1K4CY2",
-            "XS2644211281": "PPG5K61D6",
-        }
     - Remove Hardwired cusips:
         special_bond_data = fetch_spec_df()
         special_cusips = [x for x in special_bond_data.index]
@@ -161,9 +120,6 @@ def get_bond_list():
     - Transform to Bloomberg format:
         cusip_pass = [("/cusip/" if len(x) == 9 else "/mtge/" if x in ('3137F8RH8','3137F8ZC0') else "/isin/") + x for x in cusip_pass]
 
-
-
-
     """
     # List of additional cusips not included in the Helix query
     non_collateral_cusip_file_path = get_file_path(
@@ -172,22 +128,6 @@ def get_bond_list():
     additional_cusips_df = pd.read_excel(non_collateral_cusip_file_path, skiprows=3)
     additional_cusips_list = additional_cusips_df["Vantage Proxies"].tolist() + [
         "38178DAA5"
-    ]
-
-    fields = [
-        "SECURITY_TYP,ISSUER,Collat Typ,Name,Industry Sector,Issue DT,Maturity,Amt Outstanding,Coupon,Floater,"
-        "MTG Factor,PX Bid,PX Mid,Int Acc,Mtg WAL,MTG ORIG_WAL,DUR ADJ OAS BID,YAS_MOD_DUR,Days Acc,YLD_ytm_BID,I_SPRD_BID,"
-        "FLT_SPREAD,OAS_SPREAD_ASK,MTG TRANCHE TYP LONG,MTG PL CPR 1M,MTG PL CPR 6M,MTG_WHLN_GEO1,MTG_WHLN_GEO2,"
-        "MTG_WHLN_GEO3,RTG_SP,RTG_MOODY,RTG_FITCH,RTG_KBRA,RTG_DBRS,RTG_EGAN_JONES,DELIVERY_TYP,DTC_REGISTERED,DTC_ELIGIBLE,MTG_DTC_TYP,"
-        "TRADE_DT_ACC_INT,PRINCIPAL_FACTOR,MTG_PREV_FACTOR,MTG_RECORD_DT,MTG_FACTOR_PAY_DT,MTG_NXT_PAY_DT_SET_DT,IDX_RATIO"
-    ]
-
-    cols = [
-        "CUSIP,SECURITY_TYP,ISSUER,Collat Typ,Name,Industry Sector,Issue DT,Maturity,Amt Outstanding,Coupon,Floater,"
-        "MTG Factor,PX Bid,PX Mid,Int Acc,Mtg WAL,DUR ADJ OAS BID,YAS_MOD_DUR,USED DURATION,Days Acc,YLD_ytm_BID,"
-        "I_SPRD_BID,FLT_SPREAD,OAS_SPREAD_ASK,MTG TRANCHE TYP LONG,MTG PL CPR 1M,MTG PL CPR 6M,MTG_WHLN_GEO1,"
-        "MTG_WHLN_GEO2,MTG_WHLN_GEO3,RATINGS BUCKET,RTG_SP,RTG_MOODY,RTG_FITCH,RTG_KBRA,RTG_DBRS,RTG_EGAN_JONES,"
-        "DELIVERY_TYP,Est'd Asset Class,CUSIP or ISIN,MTG_PREV_FACTOR,MTG_RECORD_DT,MTG_FACTOR_PAY_DT,MTG_NXT_PAY_DT_SET_DT,IDX_RATIO"
     ]
 
     records = execute_sql_query(
@@ -221,7 +161,7 @@ if __name__ == "__main__":
         "DCPA270Y Index",
         "GBM Govt",
         "GB3 Govt",
-        "912797LH8"
+        "912797LH8",
     ]
     custom_date = "20240820"  # Specify the desired date in YYYYMMDD format
 
@@ -236,38 +176,44 @@ if __name__ == "__main__":
     print("Fetching latest prices...")
     prices_latest_df = fetcher.get_latest_prices(securities)
     print_df(prices_latest_df)
-    prices_latest_df.to_excel('df_prices.xlsx', engine="openpyxl")
+    prices_latest_df.to_excel("df_prices.xlsx", engine="openpyxl")
 
     print("Fetching historical prices...")
-    prices_historical_df = fetcher.get_historical_prices(securities, '20240819')
+    prices_historical_df = fetcher.get_historical_prices(securities, "20240819")
     print_df(prices_historical_df)
-    prices_historical_df.to_excel('df_prices_historical.xlsx', engine="openpyxl")
+    prices_historical_df.to_excel("df_prices_historical.xlsx", engine="openpyxl")
 
     #
     logging.info("Fetching security attributes...")
-    security_attributes_df = fetcher.get_security_attributes(securities, ['PX_LAST', 'MATURITY'])
+    security_attributes_df = fetcher.get_security_attributes(
+        securities, ["PX_LAST", "MATURITY"]
+    )
     print_df(security_attributes_df)
-    security_attributes_df.to_excel('df_sec_attribute.xlsx', engine="openpyxl")
+    security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
 
     logging.info("Fetching historical price")
-    security_attributes_historical_df = fetcher.get_historical_security_attributes(securities, '20240819',['PX_LAST', 'MATURITY'])
+    security_attributes_historical_df = fetcher.get_historical_security_attributes(
+        securities, "20240819", ["PX_LAST", "MATURITY"]
+    )
     print_df(security_attributes_historical_df)
 
-    security_attributes_historical_df.to_excel('df_sec_attribute_historical.xlsx', engine="openpyxl")
+    security_attributes_historical_df.to_excel(
+        "df_sec_attribute_historical.xlsx", engine="openpyxl"
+    )
 
     # print("Upserting data to table...")
     # upsert_data(tb_name, prices_latest_df)
 
-    # sec_list = get_bond_list()
-    # print(sec_list)
-    #
-    # logging.info("Fetching security attributes...")
-    # security_attributes_df = fetcher.get_security_attributes(securities, bb_fields)
-    #
-    # # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
-    # security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
-    #     lambda x: diff_cusip_map.get(x, x)
-    # )
-    # logging.info(security_attributes_df)
-    #
-    # print_df(security_attributes_df)
+    sec_list = get_bond_list()
+    print(sec_list)
+
+    logging.info("Fetching security attributes...")
+    security_attributes_df = fetcher.get_security_attributes(securities, bb_fields)
+
+    # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
+    security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
+        lambda x: diff_cusip_map.get(x, x)
+    )
+    logging.info(security_attributes_df)
+
+    print_df(security_attributes_df)
