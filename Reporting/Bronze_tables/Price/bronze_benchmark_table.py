@@ -114,7 +114,6 @@ if __name__ == "__main__":
         "DCPA270Y Index",
         "GBM Govt",
         "GB3 Govt",
-        "912797LH8",
     ]
     custom_date = "20240820"  # Specify the desired date in YYYYMMDD format
 

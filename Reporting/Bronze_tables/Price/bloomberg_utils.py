@@ -903,21 +903,33 @@ class BloombergDataFetcher:
         request.set("startDate", start_date)
         request.set("endDate", end_date or start_date)
 
-        data = self._send_request_and_get_data(session, request)
+        raw_data = self._send_request_and_get_data(session, request)
 
-        benchmark_date = get_current_date()
-        timestamp = get_current_timestamp()
+        # Process the raw data to ensure all fields are present
+        processed_data = []
+        for item in raw_data:
+            processed_item = {"security": item["security"], "date": item["date"]}
+            processed_item["PX_LAST"] = item.get("PX_LAST", self.missing_value)
+            processed_data.append(processed_item)
 
-        prices = {item["security"]: item["PX_LAST"] for item in data}
-        result = {
-            "benchmark_date": benchmark_date,
-            "timestamp": timestamp,
-            **prices,
-        }
+        df = pd.DataFrame(processed_data)
 
-        return pd.DataFrame([result])
+        # Pivot the DataFrame to achieve the desired format
+        df_pivot = df.pivot(index="date", columns="security", values="PX_LAST")
+        df_pivot.columns.name = None
 
-        return pd.DataFrame(data)
+        # Reorder the columns based on the specified order
+        column_order = [
+            '1m SOFR', '3m SOFR', '6m SOFR', '1y SOFR', '1m LIBOR', '3m LIBOR',
+            '1m A1/P1 CP', '3m A1/P1 CP', '6m A1/P1 CP', '9m A1/P1 CP',
+            '1m T-Bill', '3m T-Bill'
+        ]
+        df_pivot = df_pivot.reindex(columns=column_order)
+
+        # Reset the index to turn 'date' into a regular column
+        df_pivot.reset_index(inplace=True)
+
+        return df_pivot
 
     @_session_wrapper
     def get_security_attributes(
@@ -936,14 +948,25 @@ class BloombergDataFetcher:
         raw_data = self._send_request_and_get_data(session, request)
 
         # Process the raw data to ensure all fields are present
-        processed_data = []
+        processed_data = {}
         for item in raw_data:
-            processed_item = {"security": item["security"]}
-            for field in fields:
-                processed_item[field] = item.get(field, self.missing_value)
-            processed_data.append(processed_item)
+            security = item["security"]
+            processed_data[security] = item.get("PX_LAST", self.missing_value)
+            if security in ['1m T-Bill', '3m T-Bill']:
+                processed_data[f"{security} Maturity"] = item.get("MATURITY", self.missing_value)
 
-        return pd.DataFrame(processed_data)
+        # Create a DataFrame from the processed data
+        df = pd.DataFrame([processed_data])
+
+        # Reorder the columns based on the specified order
+        column_order = [
+            '1m SOFR', '3m SOFR', '6m SOFR', '1y SOFR', '1m LIBOR', '3m LIBOR',
+            '1m A1/P1 CP', '3m A1/P1 CP', '6m A1/P1 CP', '9m A1/P1 CP',
+            '1m T-Bill', '1m T-Bill Maturity', '3m T-Bill', '3m T-Bill Maturity'
+        ]
+        df = df.reindex(columns=column_order)
+
+        return df
 
     @_session_wrapper
     def get_historical_security_attributes(
@@ -977,4 +1000,30 @@ class BloombergDataFetcher:
                 processed_item[field] = item.get(field, self.missing_value)
             processed_data.append(processed_item)
 
-        return pd.DataFrame(processed_data)
+        df = pd.DataFrame(processed_data)
+
+        # Pivot the DataFrame to achieve the desired format
+        df_pivot = df.pivot(index="date", columns="security", values="PX_LAST")
+        df_pivot.columns.name = None
+
+        # Rename the '1m T-Bill' and '3m T-Bill' columns to include 'Maturity'
+        maturity_columns = {}
+        for col in ['1m T-Bill', '3m T-Bill']:
+            if col in df_pivot.columns:
+                maturity_columns[col] = df[df['security'] == col].set_index('date')['MATURITY']
+
+        for col, maturity_col in maturity_columns.items():
+            df_pivot[f"{col} Maturity"] = maturity_col
+
+        # Reorder the columns based on the specified order
+        column_order = [
+            '1m SOFR', '3m SOFR', '6m SOFR', '1y SOFR', '1m LIBOR', '3m LIBOR',
+            '1m A1/P1 CP', '3m A1/P1 CP', '6m A1/P1 CP', '9m A1/P1 CP',
+            '1m T-Bill', '1m T-Bill Maturity', '3m T-Bill', '3m T-Bill Maturity'
+        ]
+        df_pivot = df_pivot.reindex(columns=column_order)
+
+        # Reset the index to turn 'date' into a regular column
+        df_pivot.reset_index(inplace=True)
+
+        return df_pivot
