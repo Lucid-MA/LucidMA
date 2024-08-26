@@ -15,13 +15,20 @@ from Bronze_tables.Price.bloomberg_utils import (
     bb_fields_selected,
     bb_cols_selected,
 )
-from Utils.Common import get_file_path, print_df
+from Utils.Common import (
+    get_file_path,
+    print_df,
+    get_current_date,
+    get_current_timestamp,
+)
+from Utils.Hash import hash_string
 from Utils.SQL_queries import daily_price_securities_helix_query
 from Utils.database_utils import (
     get_database_engine,
     execute_sql_query,
     helix_db_type,
     create_custom_bronze_table,
+    upsert_data,
 )
 
 # Configure logging
@@ -80,7 +87,6 @@ def get_bond_list():
 
 # Example usage:
 if __name__ == "__main__":
-    custom_date = "20240820"  # Specify the desired date in YYYYMMDD format
 
     # # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
     if PUBLISH_TO_PROD:
@@ -107,21 +113,44 @@ if __name__ == "__main__":
         securities=sec_list[:10], fields=bb_fields_selected
     )
 
-    logging.info(security_attributes_df)
+    security_attributes_df.columns = ["security"] + bb_cols_selected
+
+    security_attributes_df["date"] = get_current_date()
+    security_attributes_df["timestamp"] = get_current_timestamp()
+    security_attributes_df["data_id"] = security_attributes_df.apply(
+        lambda row: hash_string(f"{row['security']}{row['date']}"), axis=1
+    )
+
+    security_attributes_df = security_attributes_df[
+        ["data_id", "date", "security"] + bb_cols_selected + ["timestamp"]
+    ]
 
     print_df(security_attributes_df)
     security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
+    #
+    # logging.info("Fetching historical security attributes...")
+    # security_attributes_df = fetcher.get_historical_security_attributes(
+    #     sec_list[:10], "20240819", bb_fields_selected, "20240822"
+    # )
+    # security_attributes_df.columns = ["security", "date"] + bb_cols_selected
+    # security_attributes_df["timestamp"] = get_current_timestamp()
+    # security_attributes_df["data_id"] = security_attributes_df.apply(
+    #     lambda row: hash_string(f"{row['security']}{row['date']}"), axis=1
+    # )
 
-    security_attributes_df.columns = ["security"] + bb_cols_selected
+    # security_attributes_df = security_attributes_df[
+    #     ["data_id", "date", "security"] + bb_cols_selected + ["timestamp"]
+    #     ]
+    #
+    # print_df(security_attributes_df)
+    # security_attributes_df.to_excel(
+    #     "df_sec_historical_attribute.xlsx", engine="openpyxl"
+    # )
 
-    logging.info("Fetching historical security attributes...")
-    security_attributes_df = fetcher.get_historical_security_attributes(
-        sec_list[:10], "20240819", bb_fields_selected, "20240822"
-    )
-    security_attributes_df.columns = ["security", "date"] + bb_cols_selected
-    logging.info(security_attributes_df)
-
-    print_df(security_attributes_df)
-    security_attributes_df.to_excel(
-        "df_sec_historical_attribute.xlsx", engine="openpyxl"
+    upsert_data(
+        engine=engine,
+        table_name=tb_name,
+        df=security_attributes_df,
+        primary_key_name="data_id",
+        publish_to_prod=PUBLISH_TO_PROD,
     )
