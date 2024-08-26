@@ -28,7 +28,7 @@ from Utils.database_utils import (
     execute_sql_query,
     helix_db_type,
     create_custom_bronze_table,
-    upsert_data,
+    upsert_data, read_table_from_db, prod_db_type,
 )
 
 # Configure logging
@@ -101,11 +101,13 @@ if __name__ == "__main__":
             engine=engine,
             tb_name=tb_name,
             primary_column_name="data_id",
-            string_columns_list=["date", "security"] + bb_cols_selected,
+            string_columns_list=["date", "bond_id"] + bb_cols_selected,
         )
 
+    # Initialization
     fetcher = BloombergDataFetcher()
 
+    # Get bond list
     sec_list = get_bond_list()
 
     logging.info("Fetching security attributes...")
@@ -127,6 +129,15 @@ if __name__ == "__main__":
 
     print_df(security_attributes_df)
     security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
+    security_attributes_df.rename(columns={'security':'bond_id'}, inplace=True)
+    upsert_data(
+        engine=engine,
+        table_name=tb_name,
+        df=security_attributes_df,
+        primary_key_name="data_id",
+        publish_to_prod=PUBLISH_TO_PROD,
+    )
+
     #
     # logging.info("Fetching historical security attributes...")
     # security_attributes_df = fetcher.get_historical_security_attributes(
@@ -147,10 +158,7 @@ if __name__ == "__main__":
     #     "df_sec_historical_attribute.xlsx", engine="openpyxl"
     # )
 
-    upsert_data(
-        engine=engine,
-        table_name=tb_name,
-        df=security_attributes_df,
-        primary_key_name="data_id",
-        publish_to_prod=PUBLISH_TO_PROD,
-    )
+    # # Back populating data
+    # df_backfill = read_table_from_db('bronze_helix_price_and_factor', prod_db_type)
+    # df_backfill = df_backfill[df_backfill['data_date']
+
