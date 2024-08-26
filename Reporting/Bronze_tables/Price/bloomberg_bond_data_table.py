@@ -96,14 +96,6 @@ if __name__ == "__main__":
 
     inspector = inspect(engine)
 
-    if not inspector.has_table(tb_name):
-        create_custom_bronze_table(
-            engine=engine,
-            tb_name=tb_name,
-            primary_column_name="data_id",
-            string_columns_list=["date", "bond_id"] + bb_cols_selected,
-        )
-
     # Initialization
     fetcher = BloombergDataFetcher()
 
@@ -112,7 +104,7 @@ if __name__ == "__main__":
 
     logging.info("Fetching security attributes...")
     security_attributes_df = fetcher.get_security_attributes(
-        securities=sec_list[:10], fields=bb_fields_selected
+        securities=sec_list, fields=bb_fields_selected
     )
 
     security_attributes_df.columns = ["security"] + bb_cols_selected
@@ -127,9 +119,22 @@ if __name__ == "__main__":
         ["data_id", "date", "security"] + bb_cols_selected + ["timestamp"]
     ]
 
+
+    security_attributes_df.rename(columns={'security':'bond_id'}, inplace=True)
+
     print_df(security_attributes_df)
     security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
-    security_attributes_df.rename(columns={'security':'bond_id'}, inplace=True)
+
+    ## TABLE UPDATE ##
+    if not inspector.has_table(tb_name):
+        create_custom_bronze_table(
+            engine=engine,
+            tb_name=tb_name,
+            primary_column_name="data_id",
+            string_columns_list=["date", "bond_id"] + bb_cols_selected,
+        )
+
+
     upsert_data(
         engine=engine,
         table_name=tb_name,
@@ -137,26 +142,6 @@ if __name__ == "__main__":
         primary_key_name="data_id",
         publish_to_prod=PUBLISH_TO_PROD,
     )
-
-    #
-    # logging.info("Fetching historical security attributes...")
-    # security_attributes_df = fetcher.get_historical_security_attributes(
-    #     sec_list[:10], "20240819", bb_fields_selected, "20240822"
-    # )
-    # security_attributes_df.columns = ["security", "date"] + bb_cols_selected
-    # security_attributes_df["timestamp"] = get_current_timestamp()
-    # security_attributes_df["data_id"] = security_attributes_df.apply(
-    #     lambda row: hash_string(f"{row['security']}{row['date']}"), axis=1
-    # )
-
-    # security_attributes_df = security_attributes_df[
-    #     ["data_id", "date", "security"] + bb_cols_selected + ["timestamp"]
-    #     ]
-    #
-    # print_df(security_attributes_df)
-    # security_attributes_df.to_excel(
-    #     "df_sec_historical_attribute.xlsx", engine="openpyxl"
-    # )
 
     # # Back populating data
     # df_backfill = read_table_from_db('bronze_helix_price_and_factor', prod_db_type)

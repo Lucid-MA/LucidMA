@@ -233,11 +233,13 @@ def create_custom_bronze_table(
     metadata.bind = engine
 
     main_columns = [Column(primary_column_name, String(255), primary_key=True)]
-    if include_timestamp:
-        main_columns.append(Column("timestamp", DateTime))
+
 
     string_columns = [Column(col, String) for col in string_columns_list]
-    columns = string_columns + main_columns
+    columns = main_columns + string_columns
+
+    if include_timestamp:
+        columns.append(Column("timestamp", DateTime))
 
     table = Table(tb_name, metadata, *columns, extend_existing=True)
 
