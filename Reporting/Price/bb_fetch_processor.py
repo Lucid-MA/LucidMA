@@ -316,6 +316,7 @@ def bb_fetch_v2(cusips):
     security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
         lambda x: inverted_diff_cusip_map.get(x, x)
     )
+    # TODO: Review this to make sure the returned dataframe has neccesary column 8/26/24
     security_attributes_df.set_index("CUSIP", inplace=True)
     logging.info(security_attributes_df)
     return security_attributes_df
@@ -488,6 +489,7 @@ def bb_fetch_with_overrides_v2(mktsymbol_map):
     )
     logging.info(security_attributes_overrides_df)
 
+    # TODO: Review this to make sure the returned dataframe has neccesary column 8/26/24
     result_df = df.merge(
         security_attributes_overrides_df[["CUSIP", "MTG_WAL"]], on="CUSIP", how="left"
     )

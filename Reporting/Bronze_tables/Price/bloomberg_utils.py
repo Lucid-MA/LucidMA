@@ -708,14 +708,15 @@ bb_fields = [
 bb_fields_selected = [
     "SECURITY_TYP",
     "ISSUER",
+    "COLLAT_TYP",
     "NAME",
+    "INDUSTRY_SECTOR",
     "ISSUE_DT",
     "MATURITY",
     "AMT_OUTSTANDING",
     "COUPON",
     "FLOATER",
     "MTG_FACTOR",
-    "PX_LAST",
     "INT_ACC",
     "MTG_WAL",
     "DAYS_ACC",
@@ -725,6 +726,49 @@ bb_fields_selected = [
     "RTG_KBRA",
     "RTG_DBRS",
     "RTG_EGAN_JONES",
+    "DELIVERY_TYP",
+    "DTC_REGISTERED",
+    "DTC_ELIGIBLE",
+    "MTG_DTC_TYP",
+    "PRINCIPAL_FACTOR",
+    "MTG_PREV_FACTOR",
+    "MTG_RECORD_DT",
+    "MTG_FACTOR_PAY_DT",
+    "MTG_NXT_PAY_DT_SET_DT",
+    "IDX_RATIO",
+]
+
+bb_cols_selected = [
+    "Security_type",
+    "Issuer",
+    "Collateral_type",
+    "Name",
+    "Industry_sector",
+    "Issue_date",
+    "Maturity",
+    "Amt_outstanding",
+    "Coupon",
+    "Floater",
+    "MTG_factor",
+    "Interest_accrued",
+    "MTG_WAL",
+    "Days_accrual",
+    "RTG_SP",
+    "RTG_MOODY",
+    "RTG_FITCH",
+    "RTG_KBRA",
+    "RTG_DBRS",
+    "RTG_EGAN_JONES",
+    "Delivery_type",
+    "DTC_registered",
+    "DTC_eligible",
+    "MTG_DTC_type",
+    "Principal_factor",
+    "MTG_prev_factor",
+    "MTG_record_date",
+    "MTG_factor_pay_date",
+    "MTG_next_pay_date_set_date",
+    "IDX_ratio",
 ]
 
 bb_cols = [
@@ -911,7 +955,7 @@ class BloombergDataFetcher:
         return pd.DataFrame([result])
 
     @_session_wrapper
-    def get_historical_prices(
+    def get_benchmark_historical_prices(
         self,
         session: blpapi.Session,
         securities: List[str],
@@ -967,7 +1011,7 @@ class BloombergDataFetcher:
         return df_pivot
 
     @_session_wrapper
-    def get_security_attributes(
+    def get_benchmark_security_attributes(
         self, session: blpapi.Session, securities: List[str], fields: List[str]
     ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
@@ -1017,7 +1061,7 @@ class BloombergDataFetcher:
         return df
 
     @_session_wrapper
-    def get_historical_security_attributes(
+    def get_historical_benchmark_attributes(
         self,
         session: blpapi.Session,
         securities: List[str],
@@ -1092,7 +1136,7 @@ class BloombergDataFetcher:
     ## TEST OUT FACTOR AND ACCRUED INTEREST
 
     @_session_wrapper
-    def get_security_attributes_v2(
+    def get_security_attributes(
         self, session: blpapi.Session, securities: List[str], fields: List[str]
     ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
@@ -1121,7 +1165,7 @@ class BloombergDataFetcher:
         return df
 
     @_session_wrapper
-    def get_historical_security_attributes_v2(
+    def get_historical_security_attributes(
         self,
         session: blpapi.Session,
         securities: List[str],

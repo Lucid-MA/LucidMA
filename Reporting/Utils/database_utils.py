@@ -3,7 +3,7 @@ import platform
 from contextlib import contextmanager
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData, String, Column, Table, Date, DateTime
 
 import logging
 
@@ -126,7 +126,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def  upsert_data(
+def upsert_data(
     engine,
     table_name: str,
     df: pd.DataFrame,
@@ -207,3 +207,43 @@ def  upsert_data(
             raise
 
     logger.info(f"Data upserted successfully into {table_name}.")
+
+def create_custom_bronze_table(
+    engine,
+    tb_name,
+    primary_column_name,
+    string_columns_list,
+    include_timestamp=True,
+):
+    """
+    Creates a new database table based on predefined list of columns.
+    Also adds an index on the 'TransactionID' column for efficient updates.
+
+    Args:
+        engine (sqlalchemy.engine.Engine): The database engine.
+        tb_name (str): The name of the table to create.
+        primary_column_name (str): The name of the primary key column.
+        string_columns_list (list): List of column names to create as string columns.
+        include_timestamp (bool, optional): Whether to include a timestamp column. Defaults to True.
+
+    Raises:
+        sqlalchemy.exc.SQLAlchemyError: If an error occurs while creating the table.
+    """
+    metadata = MetaData()
+    metadata.bind = engine
+
+    main_columns = [Column(primary_column_name, String(255), primary_key=True)]
+    if include_timestamp:
+        main_columns.append(Column("timestamp", DateTime))
+
+    string_columns = [Column(col, String) for col in string_columns_list]
+    columns = string_columns + main_columns
+
+    table = Table(tb_name, metadata, *columns, extend_existing=True)
+
+    try:
+        metadata.create_all(engine)
+        print(f"Table {tb_name} created successfully or already exists.")
+    except Exception as e:
+        print(f"Failed to create table {tb_name}: {e}")
+        raise
