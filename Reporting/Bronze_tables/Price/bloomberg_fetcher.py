@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Bronze_tables.Price.bloomberg_utils import (
     BloombergDataFetcher,
     diff_cusip_map,
-    bb_fields,
+    bb_fields, bb_fields_selected,
 )
 from Utils.Common import get_file_path, print_df
 from Utils.SQL_queries import daily_price_securities_helix_query
@@ -148,21 +148,6 @@ def get_bond_list():
 
 # Example usage:
 if __name__ == "__main__":
-    securities = [
-        "TSFR1M Index",
-        "TSFR3M Index",
-        "TSFR6M Index",
-        "TSFR12M Index",
-        "US0001M Index",
-        "US0003M Index",
-        "DCPA030Y Index",
-        "DCPA090Y Index",
-        "DCPA180Y Index",
-        "DCPA270Y Index",
-        "GBM Govt",
-        "GB3 Govt",
-        "912797LH8",
-    ]
     custom_date = "20240820"  # Specify the desired date in YYYYMMDD format
 
     # # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
@@ -173,47 +158,21 @@ if __name__ == "__main__":
 
     fetcher = BloombergDataFetcher()
 
-    print("Fetching latest prices...")
-    prices_latest_df = fetcher.get_latest_prices(securities)
-    print_df(prices_latest_df)
-    prices_latest_df.to_excel("df_prices.xlsx", engine="openpyxl")
-
-    print("Fetching historical prices...")
-    prices_historical_df = fetcher.get_historical_prices(securities, "20240819")
-    print_df(prices_historical_df)
-    prices_historical_df.to_excel("df_prices_historical.xlsx", engine="openpyxl")
-
-    #
-    logging.info("Fetching security attributes...")
-    security_attributes_df = fetcher.get_security_attributes(
-        securities, ["PX_LAST", "MATURITY"]
-    )
-    print_df(security_attributes_df)
-    security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
-
-    logging.info("Fetching historical price")
-    security_attributes_historical_df = fetcher.get_historical_security_attributes(
-        securities, "20240819", ["PX_LAST", "MATURITY"]
-    )
-    print_df(security_attributes_historical_df)
-
-    security_attributes_historical_df.to_excel(
-        "df_sec_attribute_historical.xlsx", engine="openpyxl"
-    )
-
-    # print("Upserting data to table...")
-    # upsert_data(tb_name, prices_latest_df)
-
     sec_list = get_bond_list()
-    print(sec_list)
+    print(len(sec_list), sec_list[:10])
 
     logging.info("Fetching security attributes...")
-    security_attributes_df = fetcher.get_security_attributes(securities, bb_fields)
+    security_attributes_df = fetcher.get_security_attributes_v2(
+        sec_list[:20], bb_fields_selected)
 
-    # Replace CUSIP values using the diff_cusip_map dictionary and keep original if not found
-    security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
-        lambda x: diff_cusip_map.get(x, x)
-    )
+    logging.info(security_attributes_df)
+
+    print_df(security_attributes_df)
+
+    logging.info("Fetching historical security attributes...")
+    security_attributes_df = fetcher.get_historical_security_attributes_v2(
+        '20240819', sec_list[:20], bb_fields_selected, '20240822')
+
     logging.info(security_attributes_df)
 
     print_df(security_attributes_df)

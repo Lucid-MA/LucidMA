@@ -705,6 +705,28 @@ bb_fields = [
     "IDX_RATIO",
 ]
 
+bb_fields_selected = [
+    "SECURITY_TYP",
+    "ISSUER",
+    "NAME",
+    "ISSUE_DT",
+    "MATURITY",
+    "AMT_OUTSTANDING",
+    "COUPON",
+    "FLOATER",
+    "MTG_FACTOR",
+    "PX_LAST",
+    "INT_ACC",
+    "MTG_WAL",
+    "DAYS_ACC",
+    "RTG_SP",
+    "RTG_MOODY",
+    "RTG_FITCH",
+    "RTG_KBRA",
+    "RTG_DBRS",
+    "RTG_EGAN_JONES",
+]
+
 bb_cols = [
     "CUSIP",
     "SECURITY_TYP",
@@ -890,7 +912,11 @@ class BloombergDataFetcher:
 
     @_session_wrapper
     def get_historical_prices(
-        self, session: blpapi.Session, securities: List[str], start_date: str, end_date: Optional[str] = None,
+        self,
+        session: blpapi.Session,
+        securities: List[str],
+        start_date: str,
+        end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
         request = service.createRequest("HistoricalDataRequest")
@@ -920,9 +946,18 @@ class BloombergDataFetcher:
 
         # Reorder the columns based on the specified order
         column_order = [
-            '1m SOFR', '3m SOFR', '6m SOFR', '1y SOFR', '1m LIBOR', '3m LIBOR',
-            '1m A1/P1 CP', '3m A1/P1 CP', '6m A1/P1 CP', '9m A1/P1 CP',
-            '1m T-Bill', '3m T-Bill'
+            "1m SOFR",
+            "3m SOFR",
+            "6m SOFR",
+            "1y SOFR",
+            "1m LIBOR",
+            "3m LIBOR",
+            "1m A1/P1 CP",
+            "3m A1/P1 CP",
+            "6m A1/P1 CP",
+            "9m A1/P1 CP",
+            "1m T-Bill",
+            "3m T-Bill",
         ]
         df_pivot = df_pivot.reindex(columns=column_order)
 
@@ -952,17 +987,30 @@ class BloombergDataFetcher:
         for item in raw_data:
             security = item["security"]
             processed_data[security] = item.get("PX_LAST", self.missing_value)
-            if security in ['1m T-Bill', '3m T-Bill']:
-                processed_data[f"{security} Maturity"] = item.get("MATURITY", self.missing_value)
+            if security in ["1m T-Bill", "3m T-Bill"]:
+                processed_data[f"{security} Maturity"] = item.get(
+                    "MATURITY", self.missing_value
+                )
 
         # Create a DataFrame from the processed data
         df = pd.DataFrame([processed_data])
 
         # Reorder the columns based on the specified order
         column_order = [
-            '1m SOFR', '3m SOFR', '6m SOFR', '1y SOFR', '1m LIBOR', '3m LIBOR',
-            '1m A1/P1 CP', '3m A1/P1 CP', '6m A1/P1 CP', '9m A1/P1 CP',
-            '1m T-Bill', '1m T-Bill Maturity', '3m T-Bill', '3m T-Bill Maturity'
+            "1m SOFR",
+            "3m SOFR",
+            "6m SOFR",
+            "1y SOFR",
+            "1m LIBOR",
+            "3m LIBOR",
+            "1m A1/P1 CP",
+            "3m A1/P1 CP",
+            "6m A1/P1 CP",
+            "9m A1/P1 CP",
+            "1m T-Bill",
+            "1m T-Bill Maturity",
+            "3m T-Bill",
+            "3m T-Bill Maturity",
         ]
         df = df.reindex(columns=column_order)
 
@@ -1008,18 +1056,31 @@ class BloombergDataFetcher:
 
         # Rename the '1m T-Bill' and '3m T-Bill' columns to include 'Maturity'
         maturity_columns = {}
-        for col in ['1m T-Bill', '3m T-Bill']:
+        for col in ["1m T-Bill", "3m T-Bill"]:
             if col in df_pivot.columns:
-                maturity_columns[col] = df[df['security'] == col].set_index('date')['MATURITY']
+                maturity_columns[col] = df[df["security"] == col].set_index("date")[
+                    "MATURITY"
+                ]
 
         for col, maturity_col in maturity_columns.items():
             df_pivot[f"{col} Maturity"] = maturity_col
 
         # Reorder the columns based on the specified order
         column_order = [
-            '1m SOFR', '3m SOFR', '6m SOFR', '1y SOFR', '1m LIBOR', '3m LIBOR',
-            '1m A1/P1 CP', '3m A1/P1 CP', '6m A1/P1 CP', '9m A1/P1 CP',
-            '1m T-Bill', '1m T-Bill Maturity', '3m T-Bill', '3m T-Bill Maturity'
+            "1m SOFR",
+            "3m SOFR",
+            "6m SOFR",
+            "1y SOFR",
+            "1m LIBOR",
+            "3m LIBOR",
+            "1m A1/P1 CP",
+            "3m A1/P1 CP",
+            "6m A1/P1 CP",
+            "9m A1/P1 CP",
+            "1m T-Bill",
+            "1m T-Bill Maturity",
+            "3m T-Bill",
+            "3m T-Bill Maturity",
         ]
         df_pivot = df_pivot.reindex(columns=column_order)
 
@@ -1027,3 +1088,69 @@ class BloombergDataFetcher:
         df_pivot.reset_index(inplace=True)
 
         return df_pivot
+
+    ## TEST OUT FACTOR AND ACCRUED INTEREST
+
+    def get_security_attributes_v2(
+        self, session: blpapi.Session, securities: List[str], fields: List[str]
+    ) -> pd.DataFrame:
+        service = session.getService("//blp/refdata")
+        request = service.createRequest("ReferenceDataRequest")
+
+        for security in securities:
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
+        for field in fields:
+            request.getElement("fields").appendValue(field)
+
+        raw_data = self._send_request_and_get_data(session, request)
+
+        # Process the raw data to ensure all fields are present
+        processed_data = []
+        for item in raw_data:
+            processed_item = {"security": item["security"]}
+            for field in fields:
+                processed_item[field] = item.get(field, self.missing_value)
+            processed_data.append(processed_item)
+
+        # Create a DataFrame from the processed data
+        df = pd.DataFrame(processed_data)
+
+        return df
+
+    @_session_wrapper
+    def get_historical_security_attributes_v2(
+        self,
+        session: blpapi.Session,
+        securities: List[str],
+        start_date: str,
+        fields: List[str],
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        service = session.getService("//blp/refdata")
+        request = service.createRequest("HistoricalDataRequest")
+
+        for security in securities:
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
+        for field in fields:
+            request.getElement("fields").appendValue(field)
+
+        request.set("startDate", start_date)
+        request.set("endDate", end_date or start_date)
+
+        raw_data = self._send_request_and_get_data(session, request)
+
+        # Process the raw data to ensure all fields are present
+        processed_data = []
+        for item in raw_data:
+            processed_item = {"security": item["security"], "date": item["date"]}
+            for field in fields:
+                processed_item[field] = item.get(field, self.missing_value)
+            processed_data.append(processed_item)
+
+        df = pd.DataFrame(processed_data)
+
+        return df
