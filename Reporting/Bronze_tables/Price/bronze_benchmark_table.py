@@ -150,7 +150,7 @@ if __name__ == "__main__":
     print_df(security_attributes_historical_df)
 
     security_attributes_historical_df.to_excel(
-        "df_sec_attribute_historical.xlsx", engine="openpyxl"
+        "df_sec_historical_attribute.xlsx", engine="openpyxl"
     )
 
     # print("Upserting data to table...")

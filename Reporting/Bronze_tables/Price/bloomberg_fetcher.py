@@ -159,20 +159,20 @@ if __name__ == "__main__":
     fetcher = BloombergDataFetcher()
 
     sec_list = get_bond_list()
-    print(len(sec_list), sec_list[:10])
 
     logging.info("Fetching security attributes...")
-    security_attributes_df = fetcher.get_security_attributes_v2(
-        sec_list[:20], bb_fields_selected)
+    security_attributes_df = fetcher.get_security_attributes_v2(securities=sec_list[:10], fields= bb_fields_selected)
 
     logging.info(security_attributes_df)
 
     print_df(security_attributes_df)
+    security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
 
     logging.info("Fetching historical security attributes...")
     security_attributes_df = fetcher.get_historical_security_attributes_v2(
-        '20240819', sec_list[:20], bb_fields_selected, '20240822')
+        sec_list[:10],'20240819', bb_fields_selected, '20240822')
 
     logging.info(security_attributes_df)
 
     print_df(security_attributes_df)
+    security_attributes_df.to_excel("df_sec_historical_attribute.xlsx", engine="openpyxl")

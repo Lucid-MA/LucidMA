@@ -1091,6 +1091,7 @@ class BloombergDataFetcher:
 
     ## TEST OUT FACTOR AND ACCRUED INTEREST
 
+    @_session_wrapper
     def get_security_attributes_v2(
         self, session: blpapi.Session, securities: List[str], fields: List[str]
     ) -> pd.DataFrame:
