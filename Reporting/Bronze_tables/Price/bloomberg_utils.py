@@ -817,6 +817,38 @@ bb_cols = [
     "IDX_RATIO",
 ]
 
+excluded_cusips = [
+    "52953AJS5",
+    "52953ALL7",
+    "CASHEUR01",
+    "CASHUSD01",
+    "EASTCYPR1",
+    "JPCASHUSD",
+    "JPM-352CP",
+    "JPM-4631",
+    "JPM-DYM1",
+    "JPM-HLDNE",
+    "JPM-ISOFD",
+    "JPM-MANT1",
+    "JPM-PBTA1",
+    "JPM-PEARL",
+    "JPM-SCHF1",
+    "JPM-STPT1",
+    "JPM-SVI1",
+    "JPM-TH2O",
+    "PRIME-2YIG",
+    "PRIME-A100",
+    "PRIME-C100",
+    "PRIME-M000",
+    "PRIME-MIG0",
+    "PRIME-Q100",
+    "PRIME-Q364",
+    "PRIME-QX00",
+    "SOSPRUCE1",
+    "SOSPRUCE2",
+    "USGFD-M000",
+]
+
 
 class BloombergDataFetcher:
     def __init__(

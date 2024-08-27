@@ -11,10 +11,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from Bronze_tables.Price.bloomberg_utils import (
     BloombergDataFetcher,
     diff_cusip_map,
-    bb_fields,
     bb_fields_selected,
     bb_cols_selected,
-    special_cusips,
+    excluded_cusips,
 )
 from Utils.Common import (
     get_file_path,
@@ -24,7 +23,6 @@ from Utils.Common import (
 )
 from Utils.Hash import hash_string
 from Utils.SQL_queries import (
-    daily_price_securities_helix_query,
     bloomberg_bond_id_query,
 )
 from Utils.database_utils import (
@@ -70,37 +68,6 @@ def get_bond_list():
     cusips_list = records["BondID"].tolist()
 
     # Define the excluded_cusips list
-    excluded_cusips = [
-        "52953AJS5",
-        "52953ALL7",
-        "CASHEUR01",
-        "CASHUSD01",
-        "EASTCYPR1",
-        "JPCASHUSD",
-        "JPM-352CP",
-        "JPM-4631",
-        "JPM-DYM1",
-        "JPM-HLDNE",
-        "JPM-ISOFD",
-        "JPM-MANT1",
-        "JPM-PBTA1",
-        "JPM-PEARL",
-        "JPM-SCHF1",
-        "JPM-STPT1",
-        "JPM-SVI1",
-        "JPM-TH2O",
-        "PRIME-2YIG",
-        "PRIME-A100",
-        "PRIME-C100",
-        "PRIME-M000",
-        "PRIME-MIG0",
-        "PRIME-Q100",
-        "PRIME-Q364",
-        "PRIME-QX00",
-        "SOSPRUCE1",
-        "SOSPRUCE2",
-        "USGFD-M000",
-    ]
 
     # Excluding all PNI cusips and cusips in the excluded_cusips list
     cusips_list = [
