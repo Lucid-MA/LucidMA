@@ -23,7 +23,10 @@ from Utils.Common import (
     get_current_timestamp,
 )
 from Utils.Hash import hash_string
-from Utils.SQL_queries import daily_price_securities_helix_query
+from Utils.SQL_queries import (
+    daily_price_securities_helix_query,
+    bloomberg_bond_id_query,
+)
 from Utils.database_utils import (
     get_database_engine,
     execute_sql_query,
@@ -63,14 +66,47 @@ def get_bond_list():
         cusip_pass = [("/cusip/" if len(x) == 9 else "/mtge/" if x in ('3137F8RH8','3137F8ZC0') else "/isin/") + x for x in cusip_pass]
 
     """
-    records = execute_sql_query(
-        daily_price_securities_helix_query, helix_db_type, params=[]
-    )
+    records = execute_sql_query(bloomberg_bond_id_query, helix_db_type, params=[])
     cusips_list = records["BondID"].tolist()
 
-    # Excluding all PNI cusips
+    # Define the excluded_cusips list
+    excluded_cusips = [
+        "52953AJS5",
+        "52953ALL7",
+        "CASHEUR01",
+        "CASHUSD01",
+        "EASTCYPR1",
+        "JPCASHUSD",
+        "JPM-352CP",
+        "JPM-4631",
+        "JPM-DYM1",
+        "JPM-HLDNE",
+        "JPM-ISOFD",
+        "JPM-MANT1",
+        "JPM-PBTA1",
+        "JPM-PEARL",
+        "JPM-SCHF1",
+        "JPM-STPT1",
+        "JPM-SVI1",
+        "JPM-TH2O",
+        "PRIME-2YIG",
+        "PRIME-A100",
+        "PRIME-C100",
+        "PRIME-M000",
+        "PRIME-MIG0",
+        "PRIME-Q100",
+        "PRIME-Q364",
+        "PRIME-QX00",
+        "SOSPRUCE1",
+        "SOSPRUCE2",
+        "USGFD-M000",
+    ]
+
+    # Excluding all PNI cusips and cusips in the excluded_cusips list
     cusips_list = [
-        cusip for cusip in cusips_list if not (len(cusip) >= 3 and cusip[:3] == "PNI")
+        cusip
+        for cusip in cusips_list
+        if not (len(cusip) >= 3 and cusip[:3] == "PNI") and cusip not in excluded_cusips
     ]
 
     joined_cusips_list = list(set(cusips_list))
@@ -79,7 +115,6 @@ def get_bond_list():
         diff_cusip_map.get(cusip, cusip) for cusip in joined_cusips_list
     ]
 
-    # TODO: work here
     return joined_cusips_list
 
 
