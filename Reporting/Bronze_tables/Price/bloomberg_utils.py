@@ -856,7 +856,13 @@ class BloombergDataFetcher:
 
     @staticmethod
     def _prepare_security(security: str) -> str:
-        return f"/cusip/{security}" if len(security) == 9 else security
+        if len(security) == 9:
+            prefix = "/cusip/"
+        elif security in ("3137F8RH8", "3137F8ZC0"):
+            prefix = "/mtge/"
+        else:
+            prefix = "/isin/"
+        return prefix + security
 
     @staticmethod
     def _remove_prefix(text: str, prefixes: List[str]) -> str:

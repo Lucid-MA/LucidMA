@@ -14,6 +14,7 @@ from Bronze_tables.Price.bloomberg_utils import (
     bb_fields,
     bb_fields_selected,
     bb_cols_selected,
+    special_cusips,
 )
 from Utils.Common import (
     get_file_path,
@@ -28,7 +29,9 @@ from Utils.database_utils import (
     execute_sql_query,
     helix_db_type,
     create_custom_bronze_table,
-    upsert_data, read_table_from_db, prod_db_type,
+    upsert_data,
+    read_table_from_db,
+    prod_db_type,
 )
 
 # Configure logging
@@ -61,6 +64,7 @@ def get_bond_list():
 
     """
     # List of additional cusips not included in the Helix query
+    # Cusips from Vantage
     non_collateral_cusip_file_path = get_file_path(
         "S:/Lucid/Data/Bond Data/Non-Collateral Cusips.xlsx"
     )
@@ -81,8 +85,15 @@ def get_bond_list():
 
     joined_cusips_list = list(set(cusips_list) | set(additional_cusips_list))
 
-    print(joined_cusips_list)
-    return cusips_list
+    # Special cusip is excluded from Bloomberg
+    # special_cusip_df = pd.DataFrame(special_cusips)
+    # joined_cusips_list.append(special_cusip_df['CUSIP'].tolist())
+    joined_cusips_list = [
+        diff_cusip_map.get(cusip, cusip) for cusip in joined_cusips_list
+    ]
+
+    # TODO: work here
+    return joined_cusips_list
 
 
 # Example usage:
@@ -119,8 +130,7 @@ if __name__ == "__main__":
         ["data_id", "date", "security"] + bb_cols_selected + ["timestamp"]
     ]
 
-
-    security_attributes_df.rename(columns={'security':'bond_id'}, inplace=True)
+    security_attributes_df.rename(columns={"security": "bond_id"}, inplace=True)
 
     print_df(security_attributes_df)
     security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
@@ -134,7 +144,6 @@ if __name__ == "__main__":
             string_columns_list=["date", "bond_id"] + bb_cols_selected,
         )
 
-
     upsert_data(
         engine=engine,
         table_name=tb_name,
@@ -146,4 +155,3 @@ if __name__ == "__main__":
     # # Back populating data
     # df_backfill = read_table_from_db('bronze_helix_price_and_factor', prod_db_type)
     # df_backfill = df_backfill[df_backfill['data_date']
-
