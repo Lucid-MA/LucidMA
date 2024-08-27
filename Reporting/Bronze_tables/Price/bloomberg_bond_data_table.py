@@ -63,16 +63,6 @@ def get_bond_list():
         cusip_pass = [("/cusip/" if len(x) == 9 else "/mtge/" if x in ('3137F8RH8','3137F8ZC0') else "/isin/") + x for x in cusip_pass]
 
     """
-    # List of additional cusips not included in the Helix query
-    # Cusips from Vantage
-    non_collateral_cusip_file_path = get_file_path(
-        "S:/Lucid/Data/Bond Data/Non-Collateral Cusips.xlsx"
-    )
-    additional_cusips_df = pd.read_excel(non_collateral_cusip_file_path, skiprows=3)
-    additional_cusips_list = additional_cusips_df["Vantage Proxies"].tolist() + [
-        "38178DAA5"
-    ]
-
     records = execute_sql_query(
         daily_price_securities_helix_query, helix_db_type, params=[]
     )
@@ -83,11 +73,8 @@ def get_bond_list():
         cusip for cusip in cusips_list if not (len(cusip) >= 3 and cusip[:3] == "PNI")
     ]
 
-    joined_cusips_list = list(set(cusips_list) | set(additional_cusips_list))
+    joined_cusips_list = list(set(cusips_list))
 
-    # Special cusip is excluded from Bloomberg
-    # special_cusip_df = pd.DataFrame(special_cusips)
-    # joined_cusips_list.append(special_cusip_df['CUSIP'].tolist())
     joined_cusips_list = [
         diff_cusip_map.get(cusip, cusip) for cusip in joined_cusips_list
     ]
@@ -122,12 +109,16 @@ if __name__ == "__main__":
 
     security_attributes_df["date"] = get_current_date()
     security_attributes_df["timestamp"] = get_current_timestamp()
+    # Create the is_am column directly from the timestamp string
+    security_attributes_df["is_am"] = (
+        pd.to_datetime(security_attributes_df["timestamp"]).dt.hour < 12
+    )
     security_attributes_df["data_id"] = security_attributes_df.apply(
-        lambda row: hash_string(f"{row['security']}{row['date']}"), axis=1
+        lambda row: hash_string(f"{row['security']}{row['date']}{row['is_am']}"), axis=1
     )
 
     security_attributes_df = security_attributes_df[
-        ["data_id", "date", "security"] + bb_cols_selected + ["timestamp"]
+        ["data_id", "date", "security"] + bb_cols_selected + ["is_am", "timestamp"]
     ]
 
     security_attributes_df.rename(columns={"security": "bond_id"}, inplace=True)
@@ -141,7 +132,7 @@ if __name__ == "__main__":
             engine=engine,
             tb_name=tb_name,
             primary_column_name="data_id",
-            string_columns_list=["date", "bond_id"] + bb_cols_selected,
+            string_columns_list=["date", "bond_id"] + bb_cols_selected + ["is_am"],
         )
 
     upsert_data(
