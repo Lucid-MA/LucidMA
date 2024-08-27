@@ -613,7 +613,6 @@ special_cusips = [
 diff_cusip_map = {
     "EURFX": "EUR Curncy",
     "XS2606220999": "PPG91FR41",
-    "XS2592024009": "PPGA0OKN5",
     "XS2592025071": "PPG80PFP8",
     "ALMNDUSD7": "PPFM1GA98",
     "ALMNDUSD8": "PPFR5TTD6",
@@ -645,15 +644,11 @@ diff_cusip_map = {
     "XS2091648928": "PP9FCKDZ8",
     "XS1951177309": "PP30JD700",
     "XS2004377136": "PP075HWJ5",
-    "XS2643730695": "PPG64I278",
-    "XS2644211281": "PPG24HYG4",
-    "XS2644210986": "PPG64I468",
-    "XS2644211109": "PPG64I4G6",
-    "TREATYUS1": "PPG1JQ3D1",
     "XS2643730695": "PPG1K4CZ9",
+    "XS2644211281": "PPG5K61D6",
     "XS2644210986": "PPG5K61F1",
     "XS2644211109": "PPG1K4CY2",
-    "XS2644211281": "PPG5K61D6",
+    "TREATYUS1": "PPG5K9U06",
 }
 
 bb_fields = [
@@ -845,6 +840,26 @@ excluded_cusips = [
     "SOSPRUCE1",
     "SOSPRUCE2",
     "USGFD-M000",
+    "HEXZT----",
+    "HZLNT----",
+    "MCHY-----",
+    "OLIVEEUR-",
+    "OLIVEUSD-",
+    "OPPOR----",
+    "OPPORTUN1",
+    "PAAPLEUR-",
+    "PAAPLUSD-",
+    "PFIR-----",
+    "SSPRUCE--",
+    "STAPL----",
+    "TREATY---",
+    "ALM2EUR--",
+    "ALM2USD--",
+    "ALMONDUSD",
+    "ECYP-----",
+    "EELM-----",
+    "EWILLEUR-",
+    "EWILLUSD-",
 ]
 
 
