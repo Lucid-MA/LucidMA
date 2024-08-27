@@ -12,16 +12,12 @@ import logging
 import openpyxl as op
 import pandas as pd
 import numpy as np
-import requests, base64, http.client, os, subprocess
-from datetime import datetime, timedelta
-from pathlib import Path, PureWindowsPath
+import subprocess
+from datetime import datetime
 import sys
-from shutil import copyfile
-import openpyxl
-import psutil
 
-from Price.bloomberg_utils import BloombergDataFetcher, bb_fields
-from Utils.Common import print_df, get_file_path
+from Bronze_tables.Price.bloomberg_utils import BloombergDataFetcher, bb_fields
+from Utils.Common import get_file_path
 
 # Configure logging
 logging.basicConfig(
@@ -320,6 +316,7 @@ def bb_fetch_v2(cusips):
     security_attributes_df["CUSIP"] = security_attributes_df["CUSIP"].map(
         lambda x: inverted_diff_cusip_map.get(x, x)
     )
+    # TODO: Review this to make sure the returned dataframe has neccesary column 8/26/24
     security_attributes_df.set_index("CUSIP", inplace=True)
     logging.info(security_attributes_df)
     return security_attributes_df
@@ -492,6 +489,7 @@ def bb_fetch_with_overrides_v2(mktsymbol_map):
     )
     logging.info(security_attributes_overrides_df)
 
+    # TODO: Review this to make sure the returned dataframe has neccesary column 8/26/24
     result_df = df.merge(
         security_attributes_overrides_df[["CUSIP", "MTG_WAL"]], on="CUSIP", how="left"
     )
@@ -1916,7 +1914,7 @@ if __name__ == "__main__":
         bb_cusips = np.setdiff1d(
             bb_cusips, pni_cusips
         )  # remove pni dummy cusips from bb fetch proc
-        raw_df = bb_fetch(bb_cusips)
+        # raw_df = bb_fetch(bb_cusips)
         raw_df_v2 = bb_fetch_v2(bb_cusips)
         df_custom_overrides = bb_fetch_with_overrides(mktsymbol_map)
         df_custom_overrides_v2 = bb_fetch_with_overrides_v2(mktsymbol_map)

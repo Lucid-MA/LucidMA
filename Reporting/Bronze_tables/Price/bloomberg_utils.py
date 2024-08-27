@@ -6,6 +6,7 @@ from typing import Dict, List, Any, Optional
 import blpapi
 import pandas as pd
 
+from Utils.Common import get_current_date, get_current_timestamp
 from Utils.Constants import benchmark_ticker
 
 special_cusips = [
@@ -704,7 +705,69 @@ bb_fields = [
     "IDX_RATIO",
 ]
 
-cols = [
+bb_fields_selected = [
+    "SECURITY_TYP",
+    "ISSUER",
+    "COLLAT_TYP",
+    "NAME",
+    "INDUSTRY_SECTOR",
+    "ISSUE_DT",
+    "MATURITY",
+    "AMT_OUTSTANDING",
+    "COUPON",
+    "FLOATER",
+    "MTG_FACTOR",
+    "INT_ACC",
+    "DAYS_ACC",
+    "RTG_SP",
+    "RTG_MOODY",
+    "RTG_FITCH",
+    "RTG_KBRA",
+    "RTG_DBRS",
+    "RTG_EGAN_JONES",
+    "DELIVERY_TYP",
+    "DTC_REGISTERED",
+    "DTC_ELIGIBLE",
+    "MTG_DTC_TYP",
+    "PRINCIPAL_FACTOR",
+    "MTG_RECORD_DT",
+    "MTG_FACTOR_PAY_DT",
+    "MTG_NXT_PAY_DT_SET_DT",
+    "IDX_RATIO",
+]
+
+bb_cols_selected = [
+    "security_type",
+    "issuer",
+    "collateral_type",
+    "name",
+    "industry_sector",
+    "issue_date",
+    "maturity",
+    "amt_outstanding",
+    "coupon",
+    "floater",
+    "mtg_factor",
+    "interest_accrued",
+    "days_accrual",
+    "rtg_sp",
+    "rtg_moody",
+    "rtg_fitch",
+    "rtg_kbra",
+    "rtg_dbrs",
+    "rtg_egan_jones",
+    "delivery_type",
+    "dtc_registered",
+    "dtc_eligible",
+    "mtg_dtc_type",
+    "principal_factor",
+    "mtg_record_date",
+    "mtg_factor_pay_date",
+    "mtg_next_pay_date_set_date",
+    "idx_ratio",
+]
+
+bb_cols = [
     "CUSIP",
     "SECURITY_TYP",
     "ISSUER",
@@ -752,8 +815,43 @@ cols = [
     "IDX_RATIO",
 ]
 
+excluded_cusips = [
+    "52953AJS5",
+    "52953ALL7",
+    "CASHEUR01",
+    "CASHUSD01",
+    "EASTCYPR1",
+    "JPCASHUSD",
+    "JPM-352CP",
+    "JPM-4631",
+    "JPM-DYM1",
+    "JPM-HLDNE",
+    "JPM-ISOFD",
+    "JPM-MANT1",
+    "JPM-PBTA1",
+    "JPM-PEARL",
+    "JPM-SCHF1",
+    "JPM-STPT1",
+    "JPM-SVI1",
+    "JPM-TH2O",
+    "PRIME-2YIG",
+    "PRIME-A100",
+    "PRIME-C100",
+    "PRIME-M000",
+    "PRIME-MIG0",
+    "PRIME-Q100",
+    "PRIME-Q364",
+    "PRIME-QX00",
+    "SOSPRUCE1",
+    "SOSPRUCE2",
+    "USGFD-M000",
+]
+
+
 class BloombergDataFetcher:
-    def __init__(self, host: str = "localhost", port: int = 8194, missing_value: Any = None):
+    def __init__(
+        self, host: str = "localhost", port: int = 8194, missing_value: Any = None
+    ):
         self.session_options = blpapi.SessionOptions()
         self.session_options.setServerHost(host)
         self.session_options.setServerPort(port)
@@ -779,32 +877,46 @@ class BloombergDataFetcher:
             finally:
                 if session:
                     session.stop()
+
         return wrapper
 
     @staticmethod
     def _prepare_security(security: str) -> str:
-        return f"/cusip/{security}" if len(security) == 9 else security
+        if len(security) == 9:
+            prefix = "/cusip/"
+        elif security in ("3137F8RH8", "3137F8ZC0"):
+            prefix = "/mtge/"
+        else:
+            prefix = "/isin/"
+        return prefix + security
 
     @staticmethod
     def _remove_prefix(text: str, prefixes: List[str]) -> str:
         for prefix in prefixes:
             if text.startswith(prefix):
-                return text[len(prefix):]
+                return text[len(prefix) :]
         return text
 
-    def _send_request_and_get_data(self, session: blpapi.Session, request: blpapi.Request, timeout: int = 5000) -> List[Dict[str, Any]]:
+    def _send_request_and_get_data(
+        self, session: blpapi.Session, request: blpapi.Request, timeout: int = 5000
+    ) -> List[Dict[str, Any]]:
         session.sendRequest(request)
         data = []
         retries = 3
         while retries > 0:
             event = session.nextEvent(timeout)
-            if event.eventType() in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
+            if event.eventType() in [
+                blpapi.Event.RESPONSE,
+                blpapi.Event.PARTIAL_RESPONSE,
+            ]:
                 for msg in event:
                     data.extend(self._process_message(msg))
                 if event.eventType() == blpapi.Event.RESPONSE:
                     break
             elif event.eventType() == blpapi.Event.TIMEOUT:
-                logging.warning("Timeout occurred while waiting for response. Retrying...")
+                logging.warning(
+                    "Timeout occurred while waiting for response. Retrying..."
+                )
                 retries -= 1
                 if retries == 0:
                     logging.error("Maximum retries reached. Returning partial data.")
@@ -817,7 +929,9 @@ class BloombergDataFetcher:
             security_data = msg.getElement("securityData")
             for i in range(security_data.numValues()):
                 security = security_data.getValueAsElement(i)
-                ticker = self._remove_prefix(security.getElementAsString("security"), ["/cusip/", "/isin/"])
+                ticker = self._remove_prefix(
+                    security.getElementAsString("security"), ["/cusip/", "/isin/"]
+                )
                 field_data = security.getElement("fieldData")
                 row = {"security": benchmark_ticker.get(ticker, ticker)}
                 for field in field_data.elements():
@@ -848,20 +962,24 @@ class BloombergDataFetcher:
         return data
 
     @_session_wrapper
-    def get_latest_prices(self, session: blpapi.Session, securities: List[str]) -> pd.DataFrame:
+    def get_latest_prices(
+        self, session: blpapi.Session, securities: List[str]
+    ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
         request = service.createRequest("ReferenceDataRequest")
 
         for security in securities:
-            request.getElement("securities").appendValue(self._prepare_security(security))
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
         request.getElement("fields").appendValue("PX_LAST")
 
         data = self._send_request_and_get_data(session, request)
 
-        benchmark_date = datetime.now().strftime("%Y-%m-%d")
-        timestamp = datetime.now()
+        benchmark_date = get_current_date()
+        timestamp = get_current_timestamp()
 
-        prices = {item['security']: item['PX_LAST'] for item in data}
+        prices = {item["security"]: item["PX_LAST"] for item in data}
         result = {
             "benchmark_date": benchmark_date,
             "timestamp": timestamp,
@@ -871,28 +989,197 @@ class BloombergDataFetcher:
         return pd.DataFrame([result])
 
     @_session_wrapper
-    def get_historical_prices(self, session: blpapi.Session, securities: List[str], custom_date: str) -> pd.DataFrame:
+    def get_benchmark_historical_prices(
+        self,
+        session: blpapi.Session,
+        securities: List[str],
+        start_date: str,
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
         request = service.createRequest("HistoricalDataRequest")
 
         for security in securities:
-            request.getElement("securities").appendValue(self._prepare_security(security))
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
         request.getElement("fields").appendValue("PX_LAST")
-        request.set("startDate", custom_date)
-        request.set("endDate", custom_date)
+        request.set("startDate", start_date)
+        request.set("endDate", end_date or start_date)
 
-        data = self._send_request_and_get_data(session, request)
+        raw_data = self._send_request_and_get_data(session, request)
 
-        return pd.DataFrame(data)
+        # Process the raw data to ensure all fields are present
+        processed_data = []
+        for item in raw_data:
+            processed_item = {"security": item["security"], "date": item["date"]}
+            processed_item["PX_LAST"] = item.get("PX_LAST", self.missing_value)
+            processed_data.append(processed_item)
+
+        df = pd.DataFrame(processed_data)
+
+        # Pivot the DataFrame to achieve the desired format
+        df_pivot = df.pivot(index="date", columns="security", values="PX_LAST")
+        df_pivot.columns.name = None
+
+        # Reorder the columns based on the specified order
+        column_order = [
+            "1m SOFR",
+            "3m SOFR",
+            "6m SOFR",
+            "1y SOFR",
+            "1m LIBOR",
+            "3m LIBOR",
+            "1m A1/P1 CP",
+            "3m A1/P1 CP",
+            "6m A1/P1 CP",
+            "9m A1/P1 CP",
+            "1m T-Bill",
+            "3m T-Bill",
+        ]
+        df_pivot = df_pivot.reindex(columns=column_order)
+
+        # Reset the index to turn 'date' into a regular column
+        df_pivot.reset_index(inplace=True)
+
+        return df_pivot
 
     @_session_wrapper
-    def get_security_attributes(self, session: blpapi.Session, securities: List[str],
-                                fields: List[str]) -> pd.DataFrame:
+    def get_benchmark_security_attributes(
+        self, session: blpapi.Session, securities: List[str], fields: List[str]
+    ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
         request = service.createRequest("ReferenceDataRequest")
 
         for security in securities:
-            request.getElement("securities").appendValue(self._prepare_security(security))
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
+        for field in fields:
+            request.getElement("fields").appendValue(field)
+
+        raw_data = self._send_request_and_get_data(session, request)
+
+        # Process the raw data to ensure all fields are present
+        processed_data = {}
+        for item in raw_data:
+            security = item["security"]
+            processed_data[security] = item.get("PX_LAST", self.missing_value)
+            if security in ["1m T-Bill", "3m T-Bill"]:
+                processed_data[f"{security} Maturity"] = item.get(
+                    "MATURITY", self.missing_value
+                )
+
+        # Create a DataFrame from the processed data
+        df = pd.DataFrame([processed_data])
+
+        # Reorder the columns based on the specified order
+        column_order = [
+            "1m SOFR",
+            "3m SOFR",
+            "6m SOFR",
+            "1y SOFR",
+            "1m LIBOR",
+            "3m LIBOR",
+            "1m A1/P1 CP",
+            "3m A1/P1 CP",
+            "6m A1/P1 CP",
+            "9m A1/P1 CP",
+            "1m T-Bill",
+            "1m T-Bill Maturity",
+            "3m T-Bill",
+            "3m T-Bill Maturity",
+        ]
+        df = df.reindex(columns=column_order)
+
+        return df
+
+    @_session_wrapper
+    def get_historical_benchmark_attributes(
+        self,
+        session: blpapi.Session,
+        securities: List[str],
+        start_date: str,
+        fields: List[str],
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
+        service = session.getService("//blp/refdata")
+        request = service.createRequest("HistoricalDataRequest")
+
+        for security in securities:
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
+        for field in fields:
+            request.getElement("fields").appendValue(field)
+
+        request.set("startDate", start_date)
+        request.set("endDate", end_date or start_date)
+
+        raw_data = self._send_request_and_get_data(session, request)
+
+        # Process the raw data to ensure all fields are present
+        processed_data = []
+        for item in raw_data:
+            processed_item = {"security": item["security"], "date": item["date"]}
+            for field in fields:
+                processed_item[field] = item.get(field, self.missing_value)
+            processed_data.append(processed_item)
+
+        df = pd.DataFrame(processed_data)
+
+        # Pivot the DataFrame to achieve the desired format
+        df_pivot = df.pivot(index="date", columns="security", values="PX_LAST")
+        df_pivot.columns.name = None
+
+        # Rename the '1m T-Bill' and '3m T-Bill' columns to include 'Maturity'
+        maturity_columns = {}
+        for col in ["1m T-Bill", "3m T-Bill"]:
+            if col in df_pivot.columns:
+                maturity_columns[col] = df[df["security"] == col].set_index("date")[
+                    "MATURITY"
+                ]
+
+        for col, maturity_col in maturity_columns.items():
+            df_pivot[f"{col} Maturity"] = maturity_col
+
+        # Reorder the columns based on the specified order
+        column_order = [
+            "1m SOFR",
+            "3m SOFR",
+            "6m SOFR",
+            "1y SOFR",
+            "1m LIBOR",
+            "3m LIBOR",
+            "1m A1/P1 CP",
+            "3m A1/P1 CP",
+            "6m A1/P1 CP",
+            "9m A1/P1 CP",
+            "1m T-Bill",
+            "1m T-Bill Maturity",
+            "3m T-Bill",
+            "3m T-Bill Maturity",
+        ]
+        df_pivot = df_pivot.reindex(columns=column_order)
+
+        # Reset the index to turn 'date' into a regular column
+        df_pivot.reset_index(inplace=True)
+
+        return df_pivot
+
+    ## TEST OUT FACTOR AND ACCRUED INTEREST
+
+    @_session_wrapper
+    def get_security_attributes(
+        self, session: blpapi.Session, securities: List[str], fields: List[str]
+    ) -> pd.DataFrame:
+        service = session.getService("//blp/refdata")
+        request = service.createRequest("ReferenceDataRequest")
+
+        for security in securities:
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
         for field in fields:
             request.getElement("fields").appendValue(field)
 
@@ -906,17 +1193,27 @@ class BloombergDataFetcher:
                 processed_item[field] = item.get(field, self.missing_value)
             processed_data.append(processed_item)
 
-        return pd.DataFrame(processed_data)
+        # Create a DataFrame from the processed data
+        df = pd.DataFrame(processed_data)
+
+        return df
 
     @_session_wrapper
-    def get_historical_security_attributes(self, session: blpapi.Session, securities: List[str], start_date: str,
-                                           fields: List[str],
-                                           end_date: Optional[str] = None) -> pd.DataFrame:
+    def get_historical_security_attributes(
+        self,
+        session: blpapi.Session,
+        securities: List[str],
+        start_date: str,
+        fields: List[str],
+        end_date: Optional[str] = None,
+    ) -> pd.DataFrame:
         service = session.getService("//blp/refdata")
         request = service.createRequest("HistoricalDataRequest")
 
         for security in securities:
-            request.getElement("securities").appendValue(self._prepare_security(security))
+            request.getElement("securities").appendValue(
+                self._prepare_security(security)
+            )
         for field in fields:
             request.getElement("fields").appendValue(field)
 
@@ -928,13 +1225,11 @@ class BloombergDataFetcher:
         # Process the raw data to ensure all fields are present
         processed_data = []
         for item in raw_data:
-            processed_item = {
-                "security": item["security"],
-                "date": item["date"]
-            }
+            processed_item = {"security": item["security"], "date": item["date"]}
             for field in fields:
                 processed_item[field] = item.get(field, self.missing_value)
             processed_data.append(processed_item)
 
-        return pd.DataFrame(processed_data)
+        df = pd.DataFrame(processed_data)
 
+        return df

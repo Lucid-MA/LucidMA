@@ -17,7 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Utils.Common import get_file_path, to_YYYY_MM_DD, get_datetime_object
 from Utils.database_utils import get_database_engine
 
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if PUBLISH_TO_PROD:

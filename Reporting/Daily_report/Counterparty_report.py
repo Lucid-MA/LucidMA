@@ -133,6 +133,97 @@ def refresh_data_and_send_email():
     filtered_data.columns = columns_list
     filtered_data_counterparty_group.columns = columns_list
 
+    ### CASH OUT BY MANAGER ###
+
+    # Cash out by manager report
+    # Read the data from the specified sheet, starting from row 13
+    sheet_name_manager_rpt = "Cash Out by Manager"
+    data_manager_rpt = pd.read_excel(
+        file_path,
+        sheet_name=sheet_name_manager_rpt,
+        usecols="A:H",
+        skiprows=11,
+    )
+
+    # Filter the data based on the criteria
+    filtered_manager_rpt = data_manager_rpt[
+        data_manager_rpt["Counterparty Group"].notna()
+    ]
+
+    # Replace NaN with empty strings
+    filtered_manager_rpt = filtered_manager_rpt.fillna("")
+
+    # Order the dataframe by 'Total Cash Out' from largest to smallest and then by 'Counterparty Group' alphabetically
+    filtered_manager_rpt = filtered_manager_rpt.sort_values(
+        by=["Total Cash Out", "Counterparty Group"],
+        ascending=[False, True],
+        key=lambda x: pd.to_numeric(x, errors="coerce"),
+    )
+
+    columns_list_manager_rpt = [
+        "Counterparty Group",
+        "Capital ($mm)",
+        "Adjusted Leverage",
+        "Estimated Leverage",
+        "Cash Out as % of Capital",
+        "Total Cash Out",
+        "Prime Current Usage",
+        "USG Current Usage",
+    ]
+
+    filtered_manager_rpt.columns = columns_list_manager_rpt
+    ##################
+
+    filtered_data = pd.merge(
+        filtered_data,
+        filtered_manager_rpt[
+            [
+                "Counterparty Group",
+                "Capital ($mm)",
+                "Adjusted Leverage",
+                "Estimated Leverage",
+                "Cash Out as % of Capital",
+            ]
+        ],
+        on="Counterparty Group",
+        how="left",
+    )
+
+    filtered_data.rename(
+        columns={
+            "Capital ($mm)": "Total Manager's Capital ($mm)",
+            "Adjusted Leverage": "Total Manager's Adjusted Leverage",
+            "Estimated Leverage": "Total Manager's Estimated Leverage",
+            "Cash Out as % of Capital": "Total Manager's Cash Out as % of Capital",
+        },
+        inplace=True,
+    )
+
+    filtered_data_counterparty_group = pd.merge(
+        filtered_data_counterparty_group,
+        filtered_manager_rpt[
+            [
+                "Counterparty Group",
+                "Capital ($mm)",
+                "Adjusted Leverage",
+                "Estimated Leverage",
+                "Cash Out as % of Capital",
+            ]
+        ],
+        on="Counterparty Group",
+        how="left",
+    )
+
+    filtered_data_counterparty_group.rename(
+        columns={
+            "Capital ($mm)": "Total Manager's Capital ($mm)",
+            "Adjusted Leverage": "Total Manager's Adjusted Leverage",
+            "Estimated Leverage": "Total Manager's Estimated Leverage",
+            "Cash Out as % of Capital": "Total Manager's Cash Out as % of Capital",
+        },
+        inplace=True,
+    )
+
     # Define the columns to be bolded
     bold_columns = [
         "Counterparty Entity",
@@ -153,26 +244,34 @@ def refresh_data_and_send_email():
         "USG Repo Loan Limit ($mm)",
         "USG Current Usage",
         "USG Credit Remaining",
+    ] + [
+        "Total Manager's Capital ($mm)",
+        "Total Manager's Adjusted Leverage",
+        "Total Manager's Estimated Leverage",
     ]
     # Round specified columns to the nearest whole number, handling empty strings
     for col in round_columns:
         if col in filtered_data.columns:
             filtered_data[col] = (
                 pd.to_numeric(filtered_data[col], errors="coerce")
-                .round(0)
+                .round(2)
                 .fillna("")
-                .apply(lambda x: f"{x:,.0f}" if x != "" else "")
+                .apply(lambda x: f"{x:,.2f}" if x != "" else "")
             )
         if col in filtered_data_counterparty_group.columns:
             filtered_data_counterparty_group[col] = (
                 pd.to_numeric(filtered_data_counterparty_group[col], errors="coerce")
-                .round(0)
+                .round(2)
                 .fillna("")
-                .apply(lambda x: f"{x:,.0f}" if x != "" else "")
+                .apply(lambda x: f"{x:,.2f}" if x != "" else "")
             )
 
     # Convert percentage columns to whole percentages, handling empty strings
-    percent_columns = ["Prime % of Usage", "USG % of Usage"]
+    percent_columns = [
+        "Prime % of Usage",
+        "USG % of Usage",
+        "Total Manager's Cash Out as % of Capital",
+    ]
     for col in percent_columns:
         if col in filtered_data.columns:
             filtered_data[col] = (
@@ -212,6 +311,14 @@ def refresh_data_and_send_email():
         pd.to_numeric(filtered_data["Prime % of Usage"], errors="coerce") > 97
     ]
 
+    def style_percentage_cashout(val):
+        if pd.isna(val) or val == "":
+            return ""
+        val = float(val)
+        if val >= 0.20:
+            return "background-color: #FFA500"
+        return ""
+
     limit_breach_html_table = (
         limit_breach_data.style.format(
             {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
@@ -229,7 +336,50 @@ def refresh_data_and_send_email():
     # Create a styled HTML table
     styled_html_table = (
         filtered_data.style.format(
-            {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
+            {
+                **{
+                    col: lambda x: (
+                        f'<span style="background-color: {"#FFD700" if 90 <= float(x) <= 100 else "#FF0000" if float(x) > 100 else ""}">{x:.0f}%</span>'
+                        if x != ""
+                        else ""
+                    )
+                    for col in percent_columns
+                },
+                "Total Cash Out": lambda x: (
+                    f'<span style="background-color: """><b>{float(x):,.0f}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "Prime Current Usage": lambda x: (
+                    f'<span style="background-color: """><b>{float(x):,.0f}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "USG Current Usage": lambda x: (
+                    f'<span style="background-color: """><b>{float(x):,.0f}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "Total manager's Capital ($mm)": lambda x: (
+                    f"<b>{float(x):,.0f}</b>" if x != "" else ""
+                ),
+                "Total manager's Adjusted Leverage": lambda x: (
+                    f"<b>{float(x):.1f} x</b>" if x != "" else ""
+                ),
+                "Total manager's Estimated Leverage": lambda x: (
+                    f"<b>{float(x):.1f} x</b>" if x != "" else ""
+                ),
+                "Total manager's Cash Out as % of Capital": lambda x: (
+                    f'<span style="background-color: {"#FFA500" if float(x) >= 0.20 else ""}""><b>{x:.1%}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "Cash Out as % of Capital": lambda x: (
+                    f'<span style="background-color: {"#FFA500" if float(x) >= 0.20 else ""}""><b>{x:.1%}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+            }
         )
         .map(style_percentage, subset=percent_columns)
         .set_table_attributes('class="dataframe"')
@@ -237,15 +387,56 @@ def refresh_data_and_send_email():
         .to_html()
     )
 
-    # Create a styled HTML table
     styled_html_counterparty_group_table = (
         filtered_data_counterparty_group.style.format(
-            {col: lambda x: f"{x:.0f}%" if x != "" else "" for col in percent_columns}
+            {
+                **{
+                    col: lambda x: (
+                        f'<span style="background-color: {"#FFD700" if 90 <= float(x) <= 100 else "#FF0000" if float(x) > 100 else ""}">{x:.0f}%</span>'
+                        if x != ""
+                        else ""
+                    )
+                    for col in percent_columns
+                },
+                "Total Cash Out": lambda x: (
+                    f'<span style="background-color: """><b>{float(x):,.0f}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "Prime Current Usage": lambda x: (
+                    f'<span style="background-color: """><b>{float(x):,.0f}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "USG Current Usage": lambda x: (
+                    f'<span style="background-color: """><b>{float(x):,.0f}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "Total manager's Capital ($mm)": lambda x: (
+                    f"<b>{float(x):,.0f}</b>" if x != "" else ""
+                ),
+                "Total manager's Adjusted Leverage": lambda x: (
+                    f"<b>{float(x):.1f} x</b>" if x != "" else ""
+                ),
+                "Total manager's Estimated Leverage": lambda x: (
+                    f"<b>{float(x):.1f} x</b>" if x != "" else ""
+                ),
+                "Total manager's Cash Out as % of Capital": lambda x: (
+                    f'<span style="background-color: {"#FFA500" if float(x) >= 0.20 else ""}""><b>{x:.1%}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+                "Cash Out as % of Capital": lambda x: (
+                    f'<span style="background-color: {"#FFA500" if float(x) >= 0.20 else ""}""><b>{x:.1%}</b></span>'
+                    if x != ""
+                    else ""
+                ),
+            }
         )
-        .map(style_percentage, subset=percent_columns)
         .set_table_attributes('class="dataframe"')
         .hide(axis="index")
-        .to_html()
+        .to_html(escape=False)
     )
 
     html_content = f"""
@@ -322,10 +513,10 @@ def refresh_data_and_send_email():
     subject = f"Counterparty Usage Report - {valdate}"
     recipients = [
         "tony.hoang@lucidma.com",
-        "thomas.durante@lucidma.com",
-        "operations@lucidma.com",
-        "simmy.richton@lucidma.com",
-        "Aly.Izquierdo@lucidma.com",
+        # "thomas.durante@lucidma.com",
+        # "operations@lucidma.com",
+        # "simmy.richton@lucidma.com",
+        # "Aly.Izquierdo@lucidma.com",
     ]
 
     # Save the filtered_data dataframe as an Excel file
@@ -338,53 +529,7 @@ def refresh_data_and_send_email():
 
     send_email(subject, html_content, recipients)
 
-    # Cash out by manager report
-    # Read the data from the specified sheet, starting from row 13
-    sheet_name_manager_rpt = "Cash Out by Manager"
-    data_manager_rpt = pd.read_excel(
-        file_path,
-        sheet_name=sheet_name_manager_rpt,
-        usecols="A:H",
-        skiprows=11,
-    )
-
-    # Filter the data based on the criteria
-    filtered_manager_rpt = data_manager_rpt[
-        data_manager_rpt["Counterparty Group"].notna()
-    ]
-
-    # Replace NaN with empty strings
-    filtered_manager_rpt = filtered_manager_rpt.fillna("")
-
-    # Order the dataframe by 'Total Cash Out' from largest to smallest and then by 'Counterparty Group' alphabetically
-    filtered_manager_rpt = filtered_manager_rpt.sort_values(
-        by=["Total Cash Out", "Counterparty Group"],
-        ascending=[False, True],
-        key=lambda x: pd.to_numeric(x, errors="coerce"),
-    )
-
-    columns_list_manager_rpt = [
-        "Counterparty Group",
-        "Capital ($mm)",
-        "Adjusted Leverage",
-        "Estimated Leverage",
-        "Cash Out as % of Capital",
-        "Total Cash Out",
-        "Prime Current Usage",
-        "USG Current Usage",
-    ]
-
-    filtered_manager_rpt.columns = columns_list_manager_rpt
-
-    def style_percentage_cashout(val):
-        if pd.isna(val) or val == "":
-            return ""
-        val = float(val)
-        if val >= 0.20:
-            return "background-color: #FFA500"
-        return ""
-
-        # Create a styled HTML table
+    # Create a styled HTML table
 
     styled_html_table_manager_rpt = (
         filtered_manager_rpt.style.format(
@@ -461,10 +606,10 @@ def refresh_data_and_send_email():
     subject_manager_rpt = f"Counterparty - Cash Out by Manager Report - {valdate}"
     recipients_manager_rpt = [
         "tony.hoang@lucidma.com",
-        "thomas.durante@lucidma.com",
-        "operations@lucidma.com",
-        "simmy.richton@lucidma.com",
-        "Aly.Izquierdo@lucidma.com",
+        # "thomas.durante@lucidma.com",
+        # "operations@lucidma.com",
+        # "simmy.richton@lucidma.com",
+        # "Aly.Izquierdo@lucidma.com",
     ]
 
     # Save the filtered_data dataframe as an Excel file
@@ -472,7 +617,7 @@ def refresh_data_and_send_email():
     output_path_manager_rpt = os.path.join(output_folder, output_file_manager_rpt)
     filtered_data.to_excel(output_path_manager_rpt, index=False)
 
-    send_email(subject_manager_rpt, html_content_manager_rpt, recipients_manager_rpt)
+    # send_email(subject_manager_rpt, html_content_manager_rpt, recipients_manager_rpt)
 
 
 # Run the script

@@ -71,7 +71,7 @@ def get_trading_days(start_date, end_date):
     return trading_days_str
 
 
-def current_timestamp() -> str:
+def get_current_timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -109,6 +109,10 @@ def get_datetime_string():
 
 def get_datetime_object():
     return pd.to_datetime(datetime.now())
+
+
+def get_current_date() -> str:
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def get_repo_root():
