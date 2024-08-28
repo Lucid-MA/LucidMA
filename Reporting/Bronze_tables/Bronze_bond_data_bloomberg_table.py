@@ -6,7 +6,7 @@ from sqlalchemy import Table, MetaData, Column, String, Integer, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path, get_repo_root
-from Utils.Hash import hash_string
+from Utils.Hash import hash_string_v2
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
 PUBLISH_TO_PROD = True
@@ -179,7 +179,7 @@ for filename in os.listdir(directory):
         )
         # Create Price_ID
         df["bond_data_id"] = df.apply(
-            lambda row: hash_string(f"{row['bond_id']}{filename}"), axis=1
+            lambda row: hash_string_v2(f"{row['bond_id']}{filename}"), axis=1
         )
         df["bond_data_date"] = date
         df["bond_data_date"] = pd.to_datetime(
