@@ -2,7 +2,7 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import Table, MetaData, Column, String, Integer, Date
+from sqlalchemy import Table, MetaData, Column, String, Integer, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path, get_repo_root
@@ -135,7 +135,10 @@ def create_table_with_schema(tb_name):
 
 # Create the table if it does not exist
 tb_name = "bronze_bond_data_bloomberg"
-create_table_with_schema(tb_name)
+inspector = inspect(engine)
+
+if not inspector.has_table(tb_name):
+    create_table_with_schema(tb_name)
 
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
@@ -185,9 +188,50 @@ for filename in os.listdir(directory):
         df["is_am"] = is_am
         df["source"] = filename
 
+        Column("collateral_type", String),
+        Column("name", String),
+        Column("issue_date", String),
+        Column("maturity", String),
+        Column("amt_outstanding", String),
+        Column("coupon", String),
+        Column("rtg_sp", String),
+        Column("rtg_moody", String),
+        Column("rtg_fitch", String),
+        Column("rtg_kbra", String),
+        Column("rtg_dbrs", String),
+        Column("rtg_egan_jones", String),
+        Column("bond_data_date", Date),
+        Column("is_am", Integer),
+        Column("source", String),
+
+        df = df[
+            [
+                "bond_data_id",
+                "bond_id",
+                "factor",
+                "security_type",
+                "issuer",
+                "collateral_type",
+                "name",
+                "issue_date",
+                "maturity",
+                "amt_outstanding",
+                "coupon",
+                "rtg_sp",
+                "rtg_moody",
+                "rtg_fitch",
+                "rtg_kbra",
+                "rtg_dbrs",
+                "rtg_egan_jones",
+                "bond_data_date",
+                "is_am",
+                "source",
+            ]
+        ]
+
         try:
             # Insert into PostgreSQL table
-            upsert_data(engine, tb_name, df, 'bond_data_id', PUBLISH_TO_PROD)
+            upsert_data(engine, tb_name, df, "bond_data_id", PUBLISH_TO_PROD)
             # Mark file as processed
             mark_file_processed(filename)
         except SQLAlchemyError:
