@@ -2,12 +2,12 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, Integer, Date
+from sqlalchemy import Table, MetaData, Column, String, Integer, Date
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine, engine_prod, engine_staging, upsert_data
+from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
 PUBLISH_TO_PROD = True
 
@@ -187,7 +187,7 @@ for filename in os.listdir(directory):
 
         try:
             # Insert into PostgreSQL table
-            upsert_data(tb_name, df, 'bond_data_id', PUBLISH_TO_PROD)
+            upsert_data(engine, tb_name, df, 'bond_data_id', PUBLISH_TO_PROD)
             # Mark file as processed
             mark_file_processed(filename)
         except SQLAlchemyError:
