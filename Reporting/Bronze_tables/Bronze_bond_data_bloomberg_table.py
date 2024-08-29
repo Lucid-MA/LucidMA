@@ -98,41 +98,6 @@ def create_table_with_schema(tb_name):
     print(f"Table {tb_name} created successfully or already exists.")
 
 
-# def upsert_data(tb_name, df):
-#     with engine.connect() as conn:
-#         try:
-#             with conn.begin():  # Start a transaction
-#                 # Constructing the UPSERT SQL dynamically based on DataFrame columns
-#                 column_names = ", ".join([f'"{col}"' for col in df.columns])
-#                 value_placeholders = ", ".join([f":{col}" for col in df.columns])
-#                 update_clause = ", ".join(
-#                     [
-#                         f'"{col}"=EXCLUDED."{col}"'
-#                         for col in df.columns
-#                         if col
-#                         != "bond_data_id"  # Assuming "Factor_ID" is unique and used for conflict resolution
-#                     ]
-#                 )
-#
-#                 upsert_sql = text(
-#                     f"""
-#                     INSERT INTO {tb_name} ({column_names})
-#                     VALUES ({value_placeholders})
-#                     ON CONFLICT ("bond_data_id")
-#                     DO UPDATE SET {update_clause};
-#                     """
-#                 )
-#
-#                 # Execute upsert in a transaction
-#                 conn.execute(upsert_sql, df.to_dict(orient="records"))
-#             print(
-#                 f"Data for {df['bond_data_date'][0]} upserted successfully into {tb_name}."
-#             )
-#         except SQLAlchemyError as e:
-#             print(f"An error occurred: {e}")
-#             raise
-
-
 # Create the table if it does not exist
 tb_name = "bronze_bond_data_bloomberg"
 inspector = inspect(engine)
