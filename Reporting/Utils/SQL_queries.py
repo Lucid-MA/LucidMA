@@ -622,6 +622,7 @@ LEFT JOIN (
 ON ratings_tbl.tradepiece = tradepieces.tradepiece
 WHERE CAST(tradepieces.ENTERDATETIMEID AS DATE) = @valdate
 AND CAST(tradepieces.STARTDATE AS DATE) >= @valdate
+AND tradepieces.statusmain <> 6
 ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC, [Start Date]
 """
 
@@ -713,6 +714,7 @@ LEFT JOIN (
 ON ratings_tbl.tradepiece = tradepieces.tradepiece
 WHERE CAST(tradepieces.ENTERDATETIMEID AS DATE) = @valdate
 AND CAST(tradepieces.STARTDATE AS DATE) < @valdate
+AND tradepieces.statusmain <> 6
 ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contraname ASC, [Start Date]
 """
 
