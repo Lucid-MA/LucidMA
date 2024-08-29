@@ -167,8 +167,8 @@ def send_daily_trade_report(
         failed_trades_message = (
             "<b style='color: red;'>There are some failed to transmitted trades.</b>"
         )
-    df_helix_trade['Trade ID'] = df_helix_trade['Trade ID'].astype(int)
-    df_helix_as_of_trade['Trade ID'] = df_helix_as_of_trade['Trade ID'].astype(int)
+    df_helix_trade["Trade ID"] = df_helix_trade["Trade ID"].astype(int)
+    df_helix_as_of_trade["Trade ID"] = df_helix_as_of_trade["Trade ID"].astype(int)
 
     if type == "Prime/USG":
         df_helix_trade = df_helix_trade[~df_helix_trade["Fund"].isin(["LMCP", "MMT"])]
@@ -210,7 +210,9 @@ def send_daily_trade_report(
             by="Series", key=lambda x: x != "Master"
         )
         # Convert 'Money' column to float
-        df_helix_trade_prime['Money'] = df_helix_trade_prime['Money'].str.replace(',', '').astype(float)
+        df_helix_trade_prime["Money"] = (
+            df_helix_trade_prime["Money"].str.replace(",", "").astype(float)
+        )
 
         # Calculate the sum of "Money" for each series in df_helix_trade_prime
         # Calculate the sum of "Money" for each series in df_helix_trade_prime
@@ -220,12 +222,18 @@ def send_daily_trade_report(
         total_prime_trades = df_helix_trade_prime["Money"].sum()
 
         series_totals = series_totals.sort_values(ascending=False)
-        series_totals = series_totals.sort_index(key=lambda x: x != 'Master')
+        series_totals = series_totals.sort_index(key=lambda x: x != "Master")
         series_totals_html = "<br>".join(
-            [f"<b>{series}</b>: {total:,.2f}" for series, total in series_totals.items()]
+            [
+                f"<b>{series}</b>: {total:,.2f}"
+                for series, total in series_totals.items()
+            ]
         )
         # Add "Total Prime trades" to the series_totals_html
-        series_totals_html = f"<b>Total Prime trades</b>: {total_prime_trades:,.2f}<br>" + series_totals_html
+        series_totals_html = (
+            f"<b>Total Prime trades</b>: {total_prime_trades:,.2f}<br>"
+            + series_totals_html
+        )
 
         df_helix_trade_usg = df_helix_trade[df_helix_trade["Fund"] == "USG"].copy()
         df_helix_trade_usg.loc[:, "Series"] = df_helix_trade_usg["Series"].str.strip()
@@ -351,9 +359,14 @@ df_helix_current_trade = get_helix_trades(
 df_helix_as_of_trade = get_helix_trades(
     as_of_trade_daily_report_helix_trade_query, (valdate,)
 )
-df_helix_failed_to_transmitted_trade = df_helix_current_trade[
-    df_helix_current_trade["Status"] == 15
-]
+# Combine the data from df_helix_current_trade and df_helix_as_of_trade where status is 15
+df_helix_failed_to_transmitted_trade = pd.concat(
+    [
+        df_helix_current_trade[df_helix_current_trade["Status"] == 15],
+        df_helix_as_of_trade[df_helix_as_of_trade["Status"] == 15],
+    ],
+    ignore_index=True,
+)
 
 # Get cash trades
 df_cash_trade = get_cash_trades(valdate)
