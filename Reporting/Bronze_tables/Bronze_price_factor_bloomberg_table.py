@@ -3,23 +3,31 @@ from sqlalchemy.exc import SQLAlchemyError
 from Utils.database_utils import get_database_engine
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
-engine = get_database_engine('postgres')
+engine = get_database_engine("postgres")
 tb_name = "bronze_bond_price_factor_bloomberg"
+
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
     metadata.bind = engine
-    table = Table(tb_name, metadata,
-                  Column("bond_data_id", String, primary_key=True),
-                  Column("bond_id", String),
-                  Column("factor", String),
-                  Column("source", String),
-                  extend_existing=True)
+    table = Table(
+        tb_name,
+        metadata,
+        Column("bond_data_id", String, primary_key=True),
+        Column("bond_id", String),
+        Column("factor", String),
+        Column("source", String),
+        extend_existing=True,
+    )
     metadata.create_all(engine)
 
     # Create an index on the bond_data_id column
     with engine.connect() as conn:
-        conn.execute(text(f"CREATE INDEX IF NOT EXISTS idx_{tb_name}_bond_data_id ON {tb_name} (bond_data_id)"))
+        conn.execute(
+            text(
+                f"CREATE INDEX IF NOT EXISTS idx_{tb_name}_bond_data_id ON {tb_name} (bond_data_id)"
+            )
+        )
 
     print(f"Table {tb_name} created successfully or already exists.")
 
@@ -34,7 +42,7 @@ def insert_new_rows():
                     f"""
                     INSERT INTO {tb_name} (bond_data_id, bond_id, factor, source)
                     SELECT bond_data_id, bond_id, factor, source
-                    FROM public.bronze_bond_data_bloomberg
+                    FROM public.bronze_bond_data
                     WHERE is_am = 0
                     ON CONFLICT (bond_data_id) DO NOTHING;
                     """
@@ -46,6 +54,7 @@ def insert_new_rows():
         except SQLAlchemyError as e:
             print(f"An error occurred: {e}")
             raise
+
 
 # Insert new rows into the PM table
 insert_new_rows()

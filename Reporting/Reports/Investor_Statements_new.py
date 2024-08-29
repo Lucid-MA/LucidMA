@@ -212,7 +212,7 @@ for reporting_series_id in reporting_series:
     attributes_table_name = "silver_series_attributes"
     historical_returns_table_name = "historical_returns"
     target_return_table_name = "target_returns"
-    benchmark_table_name = "bronze_benchmark"
+    benchmark_table_name = "bronze_daily_bloomberg_rates"
     oc_rate_table_name = "oc_rates_v2"
     roll_schedule_table_name = "roll_schedule"
     cash_balance_table_name = "bronze_cash_balance"

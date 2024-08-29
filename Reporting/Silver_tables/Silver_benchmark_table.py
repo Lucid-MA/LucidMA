@@ -41,7 +41,7 @@ else:
 
 TABLE_NAME = "silver_benchmark"
 
-bronze_benchmark_table_name = "bronze_benchmark"
+bronze_benchmark_table_name = "bronze_daily_bloomberg_rates"
 bronze_crane_table_name = "bronze_benchmark_crane_data"
 
 crane_columns = [
@@ -76,10 +76,7 @@ bronze_crane_df.rename(
 
 # Perform an outer join on the dataframes
 silver_benchmark_df = bronze_benchmark_df.merge(
-    bronze_crane_df,
-    left_on="benchmark_date",
-    right_on="Date",
-    how='outer'
+    bronze_crane_df, left_on="benchmark_date", right_on="Date", how="outer"
 )
 
 silver_benchmark_df = silver_benchmark_df.drop(columns=["Date", "timestamp"])

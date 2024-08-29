@@ -27,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PUBLISH_TO_PROD = True
-tb_name = "bronze_benchmark"
+tb_name = "bronze_daily_bloomberg_rates"
 
 
 def upsert_data(tb_name, df):

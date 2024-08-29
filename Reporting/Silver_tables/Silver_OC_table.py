@@ -26,15 +26,20 @@ bronze_tracker_path = bronze_repo_path / "File_trackers"
 # Dependent files
 price_python_file_path = bronze_repo_path / "Bronze_daily_used_prices_table.py"
 
-price_status_file_path = bronze_tracker_path / "Bronze Table Processed Daily Used Prices"
+price_status_file_path = (
+    bronze_tracker_path / "Bronze Table Processed Daily Used Prices"
+)
 
 cash_balance_python_file_path = bronze_repo_path / "Bronze_cash_balance_table.py"
 
-cash_balance_status_file_path = bronze_tracker_path / "Bronze Table Processed Cash Balance"
+cash_balance_status_file_path = (
+    bronze_tracker_path / "Bronze Table Processed Cash Balance"
+)
 
-factor_python_file_path = bronze_repo_path / "Bronze_bond_data_bloomberg_table.py"
+factor_python_file_path = bronze_repo_path / "Bronze_bond_data_table.py"
 
 factor_status_file_path = bronze_tracker_path / "Bronze Table Processed Daily Bond Data"
+
 
 def create_table_with_schema(tb_name, engine):
     metadata = MetaData()
@@ -170,7 +175,7 @@ def fetch_and_prepare_data(report_date):
         if result.returncode != 0:
             print(f"Error obtaining corresponding price factor data for {report_date}")
             return None, None, None, None
-    df_factor = read_table_from_db("bronze_bond_data_bloomberg", "postgres")
+    df_factor = read_table_from_db("bronze_bond_data", "postgres")
     df_factor = df_factor[df_factor["is_am"] == 0][
         ["bond_id", "factor", "bond_data_date"]
     ]

@@ -5,6 +5,7 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Integer, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
+from Bronze_tables.Price.bloomberg_utils import bb_fields_selected, bb_cols_selected
 from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string_v2
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
@@ -29,7 +30,8 @@ else:
 # Directory and file pattern
 
 pattern = "Bond_Data_"
-directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
+# directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
+directory = get_file_path(r"S:/Users/THoang/Data/")
 
 
 def extract_date_and_indicator(filename):
@@ -72,24 +74,37 @@ def create_table_with_schema(tb_name):
     table = Table(
         tb_name,
         metadata,
-        Column("bond_data_id", String(255), primary_key=True),
+        Column("data_id", String(255), primary_key=True),
+        Column("bond_data_date", Date),
         Column("bond_id", String),
-        Column("factor", String),
         Column("security_type", String),
         Column("issuer", String),
         Column("collateral_type", String),
         Column("name", String),
+        Column("industry_sector", String),
         Column("issue_date", String),
         Column("maturity", String),
         Column("amt_outstanding", String),
         Column("coupon", String),
+        Column("floater", String),
+        Column("mtg_factor", String),
+        Column("interest_accrued", String),
+        Column("days_accrual", String),
         Column("rtg_sp", String),
         Column("rtg_moody", String),
         Column("rtg_fitch", String),
         Column("rtg_kbra", String),
         Column("rtg_dbrs", String),
         Column("rtg_egan_jones", String),
-        Column("bond_data_date", Date),
+        Column("delivery_type", String),
+        Column("dtc_registered", String),
+        Column("dtc_eligible", String),
+        Column("mtg_dtc_type", String),
+        Column("principal_factor", String),
+        Column("mtg_record_date", String),
+        Column("mtg_factor_pay_date", String),
+        Column("mtg_next_pay_date_set_date", String),
+        Column("idx_ratio", String),
         Column("is_am", Integer),
         Column("source", String),
         extend_existing=True,
@@ -99,7 +114,7 @@ def create_table_with_schema(tb_name):
 
 
 # Create the table if it does not exist
-tb_name = "bronze_bond_data_bloomberg"
+tb_name = "bronze_bond_data"
 inspector = inspect(engine)
 
 if not inspector.has_table(tb_name):
@@ -127,23 +142,66 @@ for filename in os.listdir(directory):
             skiprows=range(5, 7),  # Skip rows 1 to 7 (index 0 to 6)
         )
 
-        # Convert all column names to lowercase
-        df.columns = df.columns.str.lower()
+        bond_data_selected_fields = [
+            "CUSIP",
+            "SECURITY_TYP",
+            "ISSUER",
+            "Collat Typ",
+            "Name",
+            "Industry Sector",
+            "Issue DT",
+            "Maturity",
+            "Amt Outstanding",
+            "Coupon",
+            "Floater",
+            "MTG Factor",
+            "Int Acc",
+            "Days Acc",
+            "RTG_SP",
+            "RTG_MOODY",
+            "RTG_FITCH",
+            "RTG_KBRA",
+            "RTG_DBRS",
+            "RTG_EGAN_JONES",
+            "DELIVERY_TYP",
+            "MTG_RECORD_DT",
+            "MTG_FACTOR_PAY_DT",
+            "MTG_NXT_PAY_DT_SET_DT",
+        ]
 
-        # Rename columns
-        df.rename(
-            columns={
-                "cusip": "bond_id",
-                "mtg factor": "factor",
-                "security_typ": "security_type",
-                "collat typ": "collateral_type",
-                "issue dt": "issue_date",
-                "amt outstanding": "amt_outstanding",
-            },
-            inplace=True,
-        )
-        # Create Price_ID
-        df["bond_data_id"] = df.apply(
+        df = df[bond_data_selected_fields]
+
+        bond_data_selected_columns = [
+            "bond_id",
+            "security_type",
+            "issuer",
+            "collateral_type",
+            "name",
+            "industry_sector",
+            "issue_date",
+            "maturity",
+            "amt_outstanding",
+            "coupon",
+            "floater",
+            "mtg_factor",
+            "interest_accrued",
+            "days_accrual",
+            "rtg_sp",
+            "rtg_moody",
+            "rtg_fitch",
+            "rtg_kbra",
+            "rtg_dbrs",
+            "rtg_egan_jones",
+            "delivery_type",
+            "mtg_record_date",
+            "mtg_factor_pay_date",
+            "mtg_next_pay_date_set_date",
+        ]
+
+        df.columns = bond_data_selected_columns
+
+        # Create data ID
+        df["data_id"] = df.apply(
             lambda row: hash_string_v2(f"{row['bond_id']}{filename}"), axis=1
         )
         df["bond_data_date"] = date
@@ -153,50 +211,15 @@ for filename in os.listdir(directory):
         df["is_am"] = is_am
         df["source"] = filename
 
-        Column("collateral_type", String),
-        Column("name", String),
-        Column("issue_date", String),
-        Column("maturity", String),
-        Column("amt_outstanding", String),
-        Column("coupon", String),
-        Column("rtg_sp", String),
-        Column("rtg_moody", String),
-        Column("rtg_fitch", String),
-        Column("rtg_kbra", String),
-        Column("rtg_dbrs", String),
-        Column("rtg_egan_jones", String),
-        Column("bond_data_date", Date),
-        Column("is_am", Integer),
-        Column("source", String),
-
         df = df[
-            [
-                "bond_data_id",
-                "bond_id",
-                "factor",
-                "security_type",
-                "issuer",
-                "collateral_type",
-                "name",
-                "issue_date",
-                "maturity",
-                "amt_outstanding",
-                "coupon",
-                "rtg_sp",
-                "rtg_moody",
-                "rtg_fitch",
-                "rtg_kbra",
-                "rtg_dbrs",
-                "rtg_egan_jones",
-                "bond_data_date",
-                "is_am",
-                "source",
-            ]
+            ["data_id", "bond_data_date"]
+            + bond_data_selected_columns
+            + ["is_am", "source"]
         ]
 
         try:
             # Insert into PostgreSQL table
-            upsert_data(engine, tb_name, df, "bond_data_id", PUBLISH_TO_PROD)
+            upsert_data(engine, tb_name, df, "data_id", PUBLISH_TO_PROD)
             # Mark file as processed
             mark_file_processed(filename)
         except SQLAlchemyError:

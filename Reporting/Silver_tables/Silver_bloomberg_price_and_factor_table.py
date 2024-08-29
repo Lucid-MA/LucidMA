@@ -28,7 +28,7 @@ else:
     engine = get_database_engine("postgres")
     db_type = staging_db_type
 
-bronze_tb_name = "bronze_daily_bloomberg_data"
+bronze_tb_name = "bronze_daily_bloomberg_collateral_data"
 df_bronze_bloomberg_data = read_table_from_db(bronze_tb_name, db_type)
 
 

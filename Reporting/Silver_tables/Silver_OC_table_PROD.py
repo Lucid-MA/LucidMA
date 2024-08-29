@@ -8,7 +8,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from Silver_OC_processing import generate_silver_oc_rates_prod
 from Utils.Common import get_trading_days, get_repo_root
 from Utils.SQL_queries import OC_query_historical_v2
-from Utils.database_utils import get_database_engine, read_table_from_db
+from Utils.database_utils import (
+    get_database_engine,
+    read_table_from_db,
+    prod_db_type,
+    staging_db_type,
+)
 
 # Constants
 # REPORT_DATE = "2024-04-30"
@@ -27,15 +32,30 @@ bronze_tracker_path = bronze_repo_path / "File_trackers"
 # Dependent files
 cash_balance_python_file_path = bronze_repo_path / "Bronze_cash_balance_table.py"
 
-cash_balance_status_file_path = bronze_tracker_path / "Bronze Table Processed Cash Balance PROD"
+cash_balance_status_file_path = (
+    bronze_tracker_path / "Bronze Table Processed Cash Balance PROD"
+)
 
-price_and_factor_python_file_path = bronze_repo_path / "Bronze_HELIX_price_factor_table.py"
+price_and_factor_python_file_path = (
+    bronze_repo_path / "Bronze_HELIX_price_factor_table.py"
+)
 
-price_and_factor_status_file_path = bronze_tracker_path / "Bronze Table Processed HELIX Price and Factor PROD"
+price_and_factor_status_file_path = (
+    bronze_tracker_path / "Bronze Table Processed HELIX Price and Factor PROD"
+)
+
+factor_and_accrued_interest_python_file_path = (
+    bronze_repo_path / "Bronze_bond_data_table.py"
+)
+
+factor_and_accrued_interest_status_file_path = (
+    bronze_tracker_path / "Bronze Table Processed Daily Bond Data PROD"
+)
 
 # This flag is to see whether subtable needs to be updated
 # Set to True if they already are to save time
 update_sub_table = True
+
 
 def create_table_with_schema(tb_name, engine):
     metadata = MetaData()
@@ -183,14 +203,21 @@ def fetch_and_prepare_data(report_date):
         update_sub_table = True
 
     df_price_and_factor = read_table_from_db(
-        "bronze_helix_price_and_factor", "sql_server_2"
+        "bronze_helix_price_and_factor", prod_db_type
     )
     df_price_and_factor = df_price_and_factor[
         df_price_and_factor["data_date"] == pd.to_datetime(report_date).date()
     ]
 
-    df_cash_balance = read_table_from_db("bronze_cash_balance", "postgres")
+    df_cash_balance = read_table_from_db("bronze_cash_balance", staging_db_type)
     df_cash_balance = df_cash_balance[df_cash_balance["Balance_date"] == report_date]
+
+    df_factor_and_accrued_interest = read_table_from_db(
+        "bronze_bond_data", prod_db_type
+    )
+    df_factor_and_accrued_interest = df_factor_and_accrued_interest[
+        df_factor_and_accrued_interest["Balance_date"] == report_date
+    ]
 
     return df_bronze_oc, df_price_and_factor, df_cash_balance
 

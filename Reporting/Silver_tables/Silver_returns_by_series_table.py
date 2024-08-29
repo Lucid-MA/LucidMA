@@ -186,7 +186,7 @@ def process_series(df, series_id):
 
 db_type = "postgres"
 
-benchmark_df = read_table_from_db("bronze_benchmark", db_type)
+benchmark_df = read_table_from_db("bronze_daily_bloomberg_rates", db_type)
 benchmark_df["benchmark_date"] = pd.to_datetime(benchmark_df["benchmark_date"])
 df = read_table_from_db("historical_returns", db_type)
 

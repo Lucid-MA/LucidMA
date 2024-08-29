@@ -23,7 +23,7 @@ if PUBLISH_TO_PROD:
 else:
     engine = get_database_engine("postgres")
 
-tb_name = "bronze_benchmark"
+tb_name = "bronze_daily_bloomberg_rates"
 
 benchmark_file_path = get_file_path(r"S:/Lucid/Data/Historical Benchmarks.xlsx")
 
