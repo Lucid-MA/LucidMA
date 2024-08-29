@@ -1,4 +1,5 @@
 import logging
+import os
 
 import pandas as pd
 from sqlalchemy import (
@@ -125,8 +126,11 @@ if __name__ == "__main__":
 
     security_attributes_df.rename(columns={"security": "bond_id"}, inplace=True)
 
-    print_df(security_attributes_df)
-    security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
+    output_path = get_file_path(r"S:\Lucid\Data\Bond Data\Daily Bloomberg Data")
+    file_name = f"Bloomberg_data_{get_current_date()}.xlsx"
+    full_path = os.path.join(output_path, file_name)
+
+    security_attributes_df.to_excel(full_path, engine="openpyxl")
 
     ## TABLE UPDATE ##
     if not inspector.has_table(tb_name):
@@ -144,7 +148,3 @@ if __name__ == "__main__":
         primary_key_name="data_id",
         publish_to_prod=PUBLISH_TO_PROD,
     )
-
-    # # Back populating data
-    # df_backfill = read_table_from_db('bronze_helix_price_and_factor', prod_db_type)
-    # df_backfill = df_backfill[df_backfill['data_date']
