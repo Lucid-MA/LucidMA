@@ -5,7 +5,6 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Integer, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
-from Bronze_tables.Price.bloomberg_utils import bb_fields_selected, bb_cols_selected
 from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string_v2
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
@@ -30,8 +29,8 @@ else:
 # Directory and file pattern
 
 pattern = "Bond_Data_"
-# directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
-directory = get_file_path(r"S:/Users/THoang/Data/Bond Data")
+directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
+# directory = get_file_path(r"S:/Users/THoang/Data/Bond Data")
 
 
 def extract_date_and_indicator(filename):
@@ -140,6 +139,7 @@ for filename in os.listdir(directory):
             filepath,
             header=4,  # Row 5 (index 4) is the header
             skiprows=range(5, 7),  # Skip rows 1 to 7 (index 0 to 6)
+            engine="openpyxl",
         )
 
         bond_data_selected_fields = [
