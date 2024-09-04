@@ -4,11 +4,25 @@ import time
 import numpy as np
 import openpyxl
 import pandas as pd
-from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float
+from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 import win32com.client as win32
 
 from Utils.Common import get_file_path, get_current_timestamp
+from Utils.Constants import (
+    CP_1M,
+    SOFR_1Y,
+    SOFR_6M,
+    SOFR_3M,
+    CP_3M,
+    CP_6M,
+    CP_9M,
+    SOFR_1M,
+    LIBOR_1M,
+    LIBOR_3M,
+    TBILL_1M,
+    TBILL_3M,
+)
 from Utils.database_utils import get_database_engine
 
 # Flag to enable publish to prod
@@ -66,16 +80,20 @@ def create_table_with_schema(tb_name):
         tb_name,
         metadata,
         Column("benchmark_date", String(255), primary_key=True),
-        Column("1m A1/P1 CP", Float, nullable=True),
-        Column("3m A1/P1 CP", Float, nullable=True),
-        Column("6m A1/P1 CP", Float, nullable=True),
-        Column("9m A1/P1 CP", Float, nullable=True),
-        Column("1m SOFR", Float, nullable=True),
-        Column("3m SOFR", Float, nullable=True),
-        Column("6m SOFR", Float, nullable=True),
-        Column("1y SOFR", Float, nullable=True),
-        Column("1m LIBOR", Float, nullable=True),
-        Column("3m LIBOR", Float, nullable=True),
+        Column(CP_1M, Float, nullable=True),
+        Column(CP_3M, Float, nullable=True),
+        Column(CP_6M, Float, nullable=True),
+        Column(CP_9M, Float, nullable=True),
+        Column(SOFR_1M, Float, nullable=True),
+        Column(SOFR_3M, Float, nullable=True),
+        Column(SOFR_6M, Float, nullable=True),
+        Column(SOFR_1Y, Float, nullable=True),
+        Column(LIBOR_1M, Float, nullable=True),
+        Column(LIBOR_3M, Float, nullable=True),
+        Column(TBILL_1M, Float, nullable=True),
+        Column(TBILL_1M + "_Maturity", Date, nullable=True),
+        Column(TBILL_3M, Float, nullable=True),
+        Column(TBILL_3M + "_Maturity", Date, nullable=True),
         Column("timestamp", DateTime),
         extend_existing=True,
     )
@@ -165,7 +183,7 @@ try:
     # Set the range of cells to read
     start_row = 12  # First row of data (after skipping rows)
     start_col = "D"  # Column letter for the start of the table
-    end_col = "N"  # Column letter for the end of the table
+    end_col = "R"  # Column letter for the end of the table
 
     # Read the Excel file
     benchmark_df = pd.read_excel(
@@ -183,16 +201,20 @@ try:
     # Rename the columns
     new_column_names = [
         "benchmark_date",
-        "1m SOFR",
-        "3m SOFR",
-        "6m SOFR",
-        "1y SOFR",
-        "1m LIBOR",
-        "3m LIBOR",
-        "1m A1/P1 CP",
-        "3m A1/P1 CP",
-        "6m A1/P1 CP",
-        "9m A1/P1 CP",
+        SOFR_1M,
+        SOFR_3M,
+        SOFR_6M,
+        SOFR_1Y,
+        LIBOR_1M,
+        LIBOR_3M,
+        CP_1M,
+        CP_3M,
+        CP_6M,
+        CP_9M,
+        TBILL_1M,
+        TBILL_1M + "_Maturity",
+        TBILL_3M,
+        TBILL_3M + "_Maturity",
     ]
 
     benchmark_df.columns = new_column_names
@@ -212,16 +234,20 @@ try:
 
     new_column_order = [
         "benchmark_date",
-        "1m A1/P1 CP",
-        "3m A1/P1 CP",
-        "6m A1/P1 CP",
-        "9m A1/P1 CP",
-        "1m SOFR",
-        "3m SOFR",
-        "6m SOFR",
-        "1y SOFR",
-        "1m LIBOR",
-        "3m LIBOR",
+        CP_1M,
+        CP_3M,
+        CP_6M,
+        CP_9M,
+        SOFR_1M,
+        SOFR_3M,
+        SOFR_6M,
+        SOFR_1Y,
+        LIBOR_1M,
+        LIBOR_3M,
+        TBILL_1M,
+        TBILL_1M + "_Maturity",
+        TBILL_3M,
+        TBILL_3M + "_Maturity",
         "timestamp",
     ]
 
@@ -231,7 +257,7 @@ try:
     columns_to_convert = [
         col
         for col in benchmark_df.columns
-        if col not in ["benchmark_date", "timestamp"]
+        if col not in ["benchmark_date", "timestamp", TBILL_1M + "_Maturity", TBILL_3M + "_Maturity",]
     ]
     for col in columns_to_convert:
         benchmark_df[col] = pd.to_numeric(benchmark_df[col], errors="coerce")
