@@ -9,15 +9,21 @@ from Utils.Hash import hash_string
 IS_PROD = True
 # Constants
 if IS_PROD:
-    OC_RATES_TRACKER = "Silver OC Rates Tracker PROD v2"
+    OC_RATES_TRACKER = "Silver OC Rates Tracker PROD"
 else:
     OC_RATES_TRACKER = "Silver OC Rates Tracker"
 
 
-def calculate_collateral_mv(row):
+def calculate_clean_collateral_mv(row):
     if row["Factor"] == 0:
         return (row["Par/Quantity"] * row["Price"] * row["Factor"] / 100) + 0.001
     return row["Par/Quantity"] * row["Price"] * row["Factor"] / 100
+
+
+def calculate_collateral_mv(row):
+    if row["Factor"] == 0:
+        return (row["Par/Quantity"] * row["dirty_price"] * row["Factor"] / 100) + 0.001
+    return row["Par/Quantity"] * row["dirty_price"] * row["Factor"] / 100
 
 
 def read_processed_files():
@@ -53,9 +59,19 @@ def update_factor_table(factor_table, report_date):
     ]
 
 
+def calculate_clean_net_margin_mv(row, df_bronze):
+    filtered_df = df_bronze[
+        (df_bronze["TradeType"].isin(["RepoFree", "ReverseFree"]))
+        & (df_bronze["Counterparty"] == row["Counterparty"])
+        & (df_bronze["Series"] == row["Series"])
+        & (df_bronze["fund"] == row["fund"])
+    ]
+    return filtered_df["Clean_collateral_MV"].sum()
+
+
 def calculate_net_margin_mv(row, df_bronze):
     filtered_df = df_bronze[
-        (df_bronze["BondID"] == "CASHUSD01")
+        (df_bronze["TradeType"].isin(["RepoFree", "ReverseFree"]))
         & (df_bronze["Counterparty"] == row["Counterparty"])
         & (df_bronze["Series"] == row["Series"])
         & (df_bronze["fund"] == row["fund"])
@@ -68,6 +84,7 @@ def generate_silver_oc_rates(
 ):
     valdate = pd.to_datetime(report_date)
     df_results = []
+
     df_cash_balance = update_cash_balance_table(cash_balance_table, report_date)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
@@ -109,7 +126,9 @@ def generate_silver_oc_rates(
         ).rename(columns={"factor": "Factor"})
         df_bronze["Factor"] = df_bronze["Factor"].astype(float)
 
-        df_bronze["Collateral_MV"] = df_bronze.apply(calculate_collateral_mv, axis=1)
+        df_bronze["Collateral_MV"] = df_bronze.apply(
+            calculate_clean_collateral_mv, axis=1
+        )
         df_bronze["WAR"] = df_bronze["Orig. Rate"] * df_bronze["Money"] / 100
         df_bronze["WAH"] = df_bronze["HairCut"] * df_bronze["Money"] / 100
         df_bronze["WAS"] = df_bronze["Spread"] * df_bronze["Money"] / 10000
@@ -352,11 +371,19 @@ def generate_silver_oc_rates(
 
 # TODO: Refractor this later to combine with the above
 def generate_silver_oc_rates_prod(
-    bronze_oc_table, price_and_factor_table, cash_balance_table, report_date
+    bronze_oc_table,
+    price_and_factor_table,
+    cash_balance_table,
+    df_factor_and_accrued_interest,
+    report_date,
 ):
     valdate = pd.to_datetime(report_date)
     df_results = []
-    df_cash_balance = update_cash_balance_table(cash_balance_table, report_date)
+
+    # Assuming report_date is a string in the format 'YYYY-MM-DD'
+    report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
+
+    df_cash_balance = update_cash_balance_table(cash_balance_table, report_date_dt)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
     for fund_name, series_name in fund_series_pairs:
@@ -396,23 +423,56 @@ def generate_silver_oc_rates_prod(
         df_bronze["Factor"] = df_bronze["Factor"].astype(float)
         df_bronze["Par/Quantity"] = df_bronze["Par/Quantity"].astype(float)
 
+        df_bronze = df_bronze.merge(
+            df_factor_and_accrued_interest,
+            left_on="BondID",
+            right_on="bond_id",
+            how="left",
+        ).drop(columns="bond_id")
+
+        # Convert to float and fill NaN values with 0
+        df_bronze["interest_accrued"] = (
+            df_bronze["interest_accrued"].astype(float).fillna(0)
+        )
+        # Calculate dirty_price
+        df_bronze["dirty_price"] = df_bronze["Price"] + df_bronze["interest_accrued"]
+
+        df_bronze["Clean_collateral_MV"] = df_bronze.apply(
+            calculate_clean_collateral_mv, axis=1
+        )
         df_bronze["Collateral_MV"] = df_bronze.apply(calculate_collateral_mv, axis=1)
         df_bronze["WAR"] = df_bronze["Orig. Rate"] * df_bronze["Money"] / 100
         df_bronze["WAH"] = df_bronze["HairCut"] * df_bronze["Money"] / 100
         df_bronze["WAS"] = df_bronze["Spread"] * df_bronze["Money"] / 10000
 
+        # Net market value of Allocated margin cash and securities
         df_cash_margin = (
-            df_bronze[df_bronze["BondID"] == "CASHUSD01"]
+            df_bronze[df_bronze["TradeType"].isin(["RepoFree", "ReverseFree"])]
             .groupby(["Counterparty", "fund", "Series"])["Collateral_MV"]
             .sum()
             .reset_index()
-            .rename(columns={"Collateral_MV": "Net_cash_margin_balance"})
+            .rename(columns={"Collateral_MV": "Net_cash_and_securities_margin_balance"})
         )
+
+        df_clean_cash_margin = (
+            df_bronze[df_bronze["TradeType"].isin(["RepoFree", "ReverseFree"])]
+            .groupby(["Counterparty", "fund", "Series"])["Clean_collateral_MV"]
+            .sum()
+            .reset_index()
+            .rename(
+                columns={
+                    "Clean_collateral_MV": "Clean_net_cash_and_securities_margin_balance"
+                }
+            )
+        )
+
+        # TODO: Review this - % of portfolio calculation #
+        # Market value of Repo money by Counterparty
         df_invest = (
             df_bronze.groupby(["Counterparty", "fund", "Series"])["Money"]
             .sum()
             .reset_index()
-            .rename(columns={"Money": "Net_invest"})
+            .rename(columns={"Money": "Repo_money"})
         )
         df_margin = pd.merge(
             df_cash_margin,
@@ -420,12 +480,16 @@ def generate_silver_oc_rates_prod(
             on=["Counterparty", "fund", "Series"],
             how="outer",
         ).fillna(0)
+
         pledged_cash_margin = df_margin.loc[
-            df_margin["Net_cash_margin_balance"] <= 0, "Net_cash_margin_balance"
+            df_margin["Net_cash_and_securities_margin_balance"] <= 0,
+            "Net_cash_and_securities_margin_balance",
         ].sum()
 
         trade_invest = df_bronze["Money"].sum()
         total_invest = projected_total_balance + trade_invest + abs(pledged_cash_margin)
+
+        ## End TODO
 
         df_bronze["Days_Diff"] = (valdate - df_bronze["Start Date"]).dt.days
         df_bronze["Comments"] = df_bronze["Comments"].str.strip().str.upper()
@@ -435,8 +499,23 @@ def generate_silver_oc_rates_prod(
             1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
         )
 
+        df_bronze["Clean_trade_level_exposure"] = (
+            df_bronze["Clean_collateral_MV"] * (100 - df_bronze["HairCut"]) / 100
+        ) - df_bronze["Money"] * (
+            1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
+        )
+
         negative_exposures = df_bronze[df_bronze["Trade_level_exposure"] < 0]
         positive_exposures = df_bronze[df_bronze["Trade_level_exposure"] > 0]
+
+        clean_negative_exposures = df_bronze[
+            df_bronze["Clean_trade_level_exposure"] < 0
+        ]
+        clean_positive_exposures = df_bronze[
+            df_bronze["Clean_trade_level_exposure"] > 0
+        ]
+
+        # Calculate negative and positive exposure by Counterparty per Series
         sum_negative_exposures = (
             negative_exposures.groupby(["Counterparty", "Series", "fund"])[
                 "Trade_level_exposure"
@@ -454,16 +533,59 @@ def generate_silver_oc_rates_prod(
             .rename(columns={"Trade_level_exposure": "CP_total_positive_exposure"})
         )
 
+        sum_clean_negative_exposures = (
+            clean_negative_exposures.groupby(["Counterparty", "Series", "fund"])[
+                "Clean_trade_level_exposure"
+            ]
+            .sum()
+            .reset_index()
+            .rename(
+                columns={
+                    "Clean_trade_level_exposure": "Clean_CP_total_negative_exposure"
+                }
+            )
+        )
+        sum_clean_positive_exposures = (
+            clean_positive_exposures.groupby(["Counterparty", "Series", "fund"])[
+                "Clean_trade_level_exposure"
+            ]
+            .sum()
+            .reset_index()
+            .rename(
+                columns={
+                    "Clean_trade_level_exposure": "Clean_CP_total_positive_exposure"
+                }
+            )
+        )
+
         df_bronze = df_bronze.merge(
             sum_negative_exposures, on=["Counterparty", "Series", "fund"], how="left"
         ).merge(
             sum_positive_exposures, on=["Counterparty", "Series", "fund"], how="left"
         )
+
+        df_bronze = df_bronze.merge(
+            sum_clean_negative_exposures,
+            on=["Counterparty", "Series", "fund"],
+            how="left",
+        ).merge(
+            sum_clean_positive_exposures,
+            on=["Counterparty", "Series", "fund"],
+            how="left",
+        )
+
         df_bronze["CP_total_negative_exposure"] = df_bronze[
             "CP_total_negative_exposure"
         ].fillna(0)
         df_bronze["CP_total_positive_exposure"] = df_bronze[
             "CP_total_positive_exposure"
+        ].fillna(0)
+
+        df_bronze["Clean_CP_total_negative_exposure"] = df_bronze[
+            "Clean_CP_total_negative_exposure"
+        ].fillna(0)
+        df_bronze["Clean_CP_total_positive_exposure"] = df_bronze[
+            "Clean_CP_total_positive_exposure"
         ].fillna(0)
 
         df_bronze["Trade_level_negative_exposure_percentage"] = np.where(
@@ -496,73 +618,151 @@ def generate_silver_oc_rates_prod(
             ),
         )
 
+        df_bronze["Clean_trade_level_negative_exposure_percentage"] = np.where(
+            df_bronze["Clean_trade_level_exposure"].isna(),
+            0,
+            np.where(
+                df_bronze["Clean_trade_level_exposure"] < 0,
+                np.where(
+                    df_bronze["Clean_CP_total_negative_exposure"] != 0,
+                    df_bronze["Clean_trade_level_exposure"]
+                    / df_bronze["Clean_CP_total_negative_exposure"],
+                    0,
+                ),
+                0,
+            ),
+        )
+
+        df_bronze["Clean_trade_level_positive_exposure_percentage"] = np.where(
+            df_bronze["Clean_trade_level_exposure"].isna(),
+            0,
+            np.where(
+                df_bronze["Clean_trade_level_exposure"] > 0,
+                np.where(
+                    df_bronze["Clean_CP_total_positive_exposure"] != 0,
+                    df_bronze["Clean_trade_level_exposure"]
+                    / df_bronze["Clean_CP_total_positive_exposure"],
+                    0,
+                ),
+                0,
+            ),
+        )
+
+        df_bronze["Clean_net_margin_MV"] = df_bronze.apply(
+            lambda row: calculate_clean_net_margin_mv(row, df_bronze), axis=1
+        )
+
         df_bronze["Net_margin_MV"] = df_bronze.apply(
             lambda row: calculate_net_margin_mv(row, df_bronze), axis=1
         )
-        df_bronze["Margin_RCV_allocation"] = np.where(
-            df_bronze["Money"] == 0,
-            -df_bronze["Collateral_MV"],
+
+        # Allocate margin:
+        # - If net margin is positive,
+        #       - If repo has an exposure, allocate the net margin to negative margin trade
+        #       - If repo does not have an exposure (rare), allocate pro-rata to the repo money
+        # - If net margin is negative, allocate the margin away from positive margin trade
+        df_bronze["Clean_margin_RCV_allocation"] = np.where(
+            df_bronze["Clean_net_margin_MV"] > 0,
             np.where(
-                df_bronze["Net_margin_MV"] > 0,
+                df_bronze["Clean_CP_total_negative_exposure"] != 0,
+                df_bronze["Clean_trade_level_negative_exposure_percentage"]
+                * df_bronze["Clean_net_margin_MV"],
+                df_bronze["Clean_net_margin_MV"]
+                * df_bronze["Clean_trade_level_positive_exposure_percentage"],
+            ),
+            df_bronze["Clean_net_margin_MV"]
+            * df_bronze["Clean_trade_level_positive_exposure_percentage"],
+        )
+
+        df_bronze["Margin_RCV_allocation"] = np.where(
+            df_bronze["Net_margin_MV"] > 0,
+            np.where(
+                df_bronze["CP_total_negative_exposure"] != 0,
                 df_bronze["Trade_level_negative_exposure_percentage"]
                 * df_bronze["Net_margin_MV"],
                 df_bronze["Net_margin_MV"]
                 * df_bronze["Trade_level_positive_exposure_percentage"],
             ),
+            df_bronze["Net_margin_MV"]
+            * df_bronze["Trade_level_positive_exposure_percentage"],
         )
 
-        df_bronze["Collateral_value_allocated"] = (
-            df_bronze["Margin_RCV_allocation"] + df_bronze["Collateral_MV"]
+        # Allocated collateral value is calculate as the sum of Market Value of stated security
+        # and market value of allocated margin cash and securties
+
+        df_bronze["Collateral_value_allocated"] = df_bronze[
+            "Margin_RCV_allocation"
+        ] + np.where(
+            df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
+            0,
+            df_bronze["Collateral_MV"],
         )
+
+        df_bronze["Clean_collateral_value_allocated"] = df_bronze[
+            "Clean_margin_RCV_allocation"
+        ] + np.where(
+            df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
+            0,
+            df_bronze["Clean_collateral_MV"],
+        )
+
+        # TODO: Review here
+        if not (df_bronze is None or df_bronze.empty):
+            df_bronze.to_excel(
+                f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx",
+                engine="openpyxl",
+            )
 
         df_result = (
             df_bronze.groupby("Comments")
             .agg(
                 {
                     "Money": "sum",
-                    "Collateral_MV": "sum",
                     "Collateral_value_allocated": "sum",
+                    "Clean_collateral_value_allocated": "sum",
                     "WAR": "sum",
                     "WAS": "sum",
                     "WAH": "sum",
                 }
             )
             .reset_index()
-            .rename(columns={"Money": "Investment_Amount"})
+            .rename(columns={"Money": "Repo_money"})
         )
 
+        # TODO: Continue here
+
         df_result["Wtd_Avg_Rate"] = np.where(
-            df_result["Investment_Amount"] != 0,
-            df_result["WAR"] / df_result["Investment_Amount"],
+            df_result["Repo_money"] != 0,
+            df_result["WAR"] / df_result["Repo_money"],
             None,
         )
         df_result["Wtd_Avg_Spread"] = np.where(
-            df_result["Investment_Amount"] != 0,
-            df_result["WAS"] / df_result["Investment_Amount"],
+            df_result["Repo_money"] != 0,
+            df_result["WAS"] / df_result["Repo_money"],
             None,
         )
         df_result["Wtd_Avg_Haircut"] = np.where(
-            df_result["Investment_Amount"] != 0,
-            df_result["WAH"] / df_result["Investment_Amount"],
+            df_result["Repo_money"] != 0,
+            df_result["WAH"] / df_result["Repo_money"],
             None,
         )
         df_result["Percentage_of_Series_Portfolio"] = (
-            df_result["Investment_Amount"] / total_invest
+            df_result["Repo_money"] / total_invest
         )
         df_result["Current_OC"] = np.where(
-            df_result["Investment_Amount"] != 0,
-            df_result["Collateral_MV"] / df_result["Investment_Amount"],
+            df_result["Repo_money"] != 0,
+            df_result["Collateral_value_allocated"] / df_result["Repo_money"],
             None,
         )
-        df_result["Current_OC_allocated"] = np.where(
-            df_result["Investment_Amount"] != 0,
-            df_result["Collateral_value_allocated"] / df_result["Investment_Amount"],
+        df_result["Clean_current_OC"] = np.where(
+            df_result["Repo_money"] != 0,
+            df_result["Clean_collateral_value_allocated"] / df_result["Repo_money"],
             None,
         )
 
         columns_to_format = [
+            "Clean_current_OC",
             "Current_OC",
-            "Current_OC_allocated",
             "Wtd_Avg_Rate",
             "Wtd_Avg_Spread",
             "Wtd_Avg_Haircut",
@@ -591,8 +791,9 @@ def generate_silver_oc_rates_prod(
             columns={
                 "comments": "rating_buckets",
                 "current_oc": "oc_rate",
-                "current_oc_allocated": "oc_rate_allocated",
-                "collateral_value_allocated": "collateral_mv_allocated",
+                "clean_current_oc": "clean_oc_rate",
+                "collateral_value_allocated": "collateral_mv",
+                "clean_collateral_value_allocated": "clean_collateral_mv",
             }
         )
 
@@ -604,9 +805,9 @@ def generate_silver_oc_rates_prod(
                 "report_date",
                 "rating_buckets",
                 "oc_rate",
-                "oc_rate_allocated",
+                "clean_oc_rate",
                 "collateral_mv",
-                "collateral_mv_allocated",
+                "clean_collateral_mv",
             ]
             + [
                 col
@@ -619,9 +820,9 @@ def generate_silver_oc_rates_prod(
                     "report_date",
                     "rating_buckets",
                     "oc_rate",
-                    "oc_rate_allocated",
+                    "clean_oc_rate",
                     "collateral_mv",
-                    "collateral_mv_allocated",
+                    "clean_collateral_mv",
                 ]
             ]
             + ["timestamp"]

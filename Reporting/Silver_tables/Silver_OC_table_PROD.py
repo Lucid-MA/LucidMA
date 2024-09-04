@@ -134,6 +134,7 @@ def check_file_exists(file_path, report_date):
 
 def fetch_and_prepare_data(report_date):
     global update_sub_table
+
     params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
     df_bronze_oc = pd.read_sql(
         text(OC_query_historical_v2), con=engine_oc_rate, params=params
@@ -202,43 +203,76 @@ def fetch_and_prepare_data(report_date):
         # All the table only need to be update once
         update_sub_table = True
 
+    report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
+
     df_price_and_factor = read_table_from_db(
         "bronze_helix_price_and_factor", prod_db_type
     )
     df_price_and_factor = df_price_and_factor[
-        df_price_and_factor["data_date"] == pd.to_datetime(report_date).date()
+        df_price_and_factor["data_date"] == report_date_dt
     ]
 
-    df_cash_balance = read_table_from_db("bronze_cash_balance", staging_db_type)
-    df_cash_balance = df_cash_balance[df_cash_balance["Balance_date"] == report_date]
+    df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
 
     df_factor_and_accrued_interest = read_table_from_db(
         "bronze_bond_data", prod_db_type
     )
-    df_factor_and_accrued_interest = df_factor_and_accrued_interest[
-        df_factor_and_accrued_interest["Balance_date"] == report_date
+
+    df_factor_and_accrued_interest = df_factor_and_accrued_interest.loc[
+        (df_factor_and_accrued_interest["bond_data_date"] == report_date_dt)
+        & (df_factor_and_accrued_interest["is_am"] == 0),
+        ["bond_id", "mtg_factor", "interest_accrued"],
     ]
 
-    return df_bronze_oc, df_price_and_factor, df_cash_balance
+    return (
+        df_bronze_oc,
+        df_price_and_factor,
+        df_cash_balance,
+        df_factor_and_accrued_interest,
+    )
 
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2024-07-20"
-    end_date = "2024-08-15"
+    start_date = "2024-08-30"
+    end_date = "2024-09-03"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
-        df_bronze_oc, df_price_and_factor, df_cash_balance = fetch_and_prepare_data(
-            REPORT_DATE
-        )
+        (
+            df_bronze_oc,
+            df_price_and_factor,
+            df_cash_balance,
+            df_factor_and_accrued_interest,
+        ) = fetch_and_prepare_data(REPORT_DATE)
         df = generate_silver_oc_rates_prod(
-            df_bronze_oc, df_price_and_factor, df_cash_balance, REPORT_DATE
+            df_bronze_oc,
+            df_price_and_factor,
+            df_cash_balance,
+            df_factor_and_accrued_interest,
+            REPORT_DATE,
         )
 
         if df is None or df.empty:
             print(f"No data to upsert for date {REPORT_DATE}")
         else:
-            upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
+            # TODO: review this
+            # upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
+            # Temporary
+            df = df[
+                [
+                    "oc_rates_id",
+                    "fund",
+                    "series",
+                    "report_date",
+                    "rating_buckets",
+                    "oc_rate",
+                    "clean_oc_rate",
+                    "collateral_mv",
+                    "clean_collateral_mv",
+                    "repo_money",
+                ]
+            ]
+            df.to_excel(f"oc_rates_{REPORT_DATE}.xlsx", engine="openpyxl")
 
     print("Process completed.")
 
