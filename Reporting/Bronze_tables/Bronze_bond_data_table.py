@@ -29,8 +29,8 @@ else:
 # Directory and file pattern
 
 pattern = "Bond_Data_"
-directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
-# directory = get_file_path(r"S:/Users/THoang/Data/Bond Data")
+# directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
+directory = get_file_path(r"S:/Users/THoang/Data/Bond Data")
 
 
 def extract_date_and_indicator(filename):
