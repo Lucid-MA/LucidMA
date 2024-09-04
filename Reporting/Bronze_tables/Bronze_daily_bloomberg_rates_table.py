@@ -1,12 +1,8 @@
-from datetime import datetime
-import time
-
-import numpy as np
 import openpyxl
 import pandas as pd
+import win32com.client as win32
 from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
-import win32com.client as win32
 
 from Utils.Common import get_file_path, get_current_timestamp
 from Utils.Constants import (
@@ -29,7 +25,7 @@ from Utils.database_utils import get_database_engine
 PUBLISH_TO_PROD = True
 
 # Flag to update database via excel file
-MANUAL_REFRESH = True
+MANUAL_REFRESH = False
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if PUBLISH_TO_PROD:
