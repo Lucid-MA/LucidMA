@@ -165,7 +165,7 @@ for filename in os.listdir(directory):
         # Create Price_ID
         df["Price_ID"] = df.apply(
             lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1
-        )
+        ).astype("string")
         df["Price_date"] = date
         df["Price_date"] = pd.to_datetime(df["Price_date"]).dt.strftime("%Y-%m-%d")
         df["Is_AM"] = is_am

@@ -253,7 +253,13 @@ try:
     columns_to_convert = [
         col
         for col in benchmark_df.columns
-        if col not in ["benchmark_date", "timestamp", TBILL_1M + "_Maturity", TBILL_3M + "_Maturity",]
+        if col
+        not in [
+            "benchmark_date",
+            "timestamp",
+            TBILL_1M + "_Maturity",
+            TBILL_3M + "_Maturity",
+        ]
     ]
     for col in columns_to_convert:
         benchmark_df[col] = pd.to_numeric(benchmark_df[col], errors="coerce")

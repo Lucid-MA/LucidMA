@@ -167,8 +167,10 @@ def generate_silver_oc_rates(
             1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
         )
 
+        # Calculate exposures by CP
         negative_exposures = df_bronze[df_bronze["Trade_level_exposure"] < 0]
         positive_exposures = df_bronze[df_bronze["Trade_level_exposure"] > 0]
+
         sum_negative_exposures = (
             negative_exposures.groupby(["Counterparty", "Series", "fund"])[
                 "Trade_level_exposure"
@@ -177,6 +179,7 @@ def generate_silver_oc_rates(
             .reset_index()
             .rename(columns={"Trade_level_exposure": "CP_total_negative_exposure"})
         )
+
         sum_positive_exposures = (
             positive_exposures.groupby(["Counterparty", "Series", "fund"])[
                 "Trade_level_exposure"
@@ -186,17 +189,36 @@ def generate_silver_oc_rates(
             .rename(columns={"Trade_level_exposure": "CP_total_positive_exposure"})
         )
 
-        df_bronze = df_bronze.merge(
-            sum_negative_exposures, on=["Counterparty", "Series", "fund"], how="left"
-        ).merge(
-            sum_positive_exposures, on=["Counterparty", "Series", "fund"], how="left"
+        # Calculate Money amount by CP. Only allocate margin (later) if Money != 0
+        sum_money = (
+            df_bronze.groupby(["Counterparty", "Series", "fund"])["Money"]
+            .sum()
+            .reset_index()
+            .rename(columns={"Money": "CP_total_money"})
         )
+
+        # Merge with main table
+        df_bronze = (
+            df_bronze.merge(
+                sum_negative_exposures,
+                on=["Counterparty", "Series", "fund"],
+                how="left",
+            )
+            .merge(
+                sum_positive_exposures,
+                on=["Counterparty", "Series", "fund"],
+                how="left",
+            )
+            .merge(sum_money, on=["Counterparty", "Series", "fund"], how="left")
+        )
+
         df_bronze["CP_total_negative_exposure"] = df_bronze[
             "CP_total_negative_exposure"
         ].fillna(0)
         df_bronze["CP_total_positive_exposure"] = df_bronze[
             "CP_total_positive_exposure"
         ].fillna(0)
+        df_bronze["CP_total_money"] = df_bronze["CP_total_money"].fillna(0)
 
         df_bronze["Trade_level_negative_exposure_percentage"] = np.where(
             df_bronze["Trade_level_exposure"].isna(),
@@ -558,6 +580,15 @@ def generate_silver_oc_rates_prod(
             )
         )
 
+        # Calculate Money amount by CP. Only allocate margin (later) if Money != 0
+        sum_money = (
+            df_bronze.groupby(["Counterparty", "Series", "fund"])["Money"]
+            .sum()
+            .reset_index()
+            .rename(columns={"Money": "CP_total_money"})
+        )
+
+        # Merge with main table
         df_bronze = df_bronze.merge(
             sum_negative_exposures, on=["Counterparty", "Series", "fund"], how="left"
         ).merge(
@@ -574,6 +605,10 @@ def generate_silver_oc_rates_prod(
             how="left",
         )
 
+        df_bronze = df_bronze.merge(
+            sum_money, on=["Counterparty", "Series", "fund"], how="left"
+        )
+
         df_bronze["CP_total_negative_exposure"] = df_bronze[
             "CP_total_negative_exposure"
         ].fillna(0)
@@ -588,6 +623,9 @@ def generate_silver_oc_rates_prod(
             "Clean_CP_total_positive_exposure"
         ].fillna(0)
 
+        df_bronze["CP_total_money"] = df_bronze["CP_total_money"].fillna(0)
+
+        # Calculate percentage of exposure for each trade
         df_bronze["Trade_level_negative_exposure_percentage"] = np.where(
             df_bronze["Trade_level_exposure"].isna(),
             0,
@@ -656,55 +694,151 @@ def generate_silver_oc_rates_prod(
             lambda row: calculate_net_margin_mv(row, df_bronze), axis=1
         )
 
-        # Allocate margin:
-        # - If net margin is positive,
-        #       - If repo has an exposure, allocate the net margin to negative margin trade
-        #       - If repo does not have an exposure (rare), allocate pro-rata to the repo money
-        # - If net margin is negative, allocate the margin away from positive margin trade
-        df_bronze["Clean_margin_RCV_allocation"] = np.where(
-            df_bronze["Clean_net_margin_MV"] > 0,
-            np.where(
-                df_bronze["Clean_CP_total_negative_exposure"] != 0,
-                df_bronze["Clean_trade_level_negative_exposure_percentage"]
-                * df_bronze["Clean_net_margin_MV"],
-                df_bronze["Clean_net_margin_MV"]
-                * df_bronze["Clean_trade_level_positive_exposure_percentage"],
-            ),
-            df_bronze["Clean_net_margin_MV"]
-            * df_bronze["Clean_trade_level_positive_exposure_percentage"],
-        )
+        # Margin Allocation Process
+        #
+        # This function allocates margin cash and securities according to the following rules:
+        # 1. Allocation is only performed for counterparties with repo investments (CP_total_money != 0).
+        # 2. For positive net margin (counterparty has net posted to Lucid Fund):
+        #    a. If there are repos with negative exposure, allocate pro-rata to their exposures.
+        #    b. If no repos have negative exposure, allocate pro-rata to repo money.
+        # 3. For negative net margin (Lucid Fund has net posted to counterparty):
+        #    a. If there are repos with positive exposure (cushion), allocate pro-rata to their cushions.
+        #    b. If no repos have positive exposure, allocate pro-rata to repo money.
+        # 4. If net margin is zero, no allocation is made.
+        # 5. For trades of type 'ReverseFree' or 'RepoFree', only the allocated margin is considered
+        #    as collateral value. For all other trade types, both allocated margin and the trade's
+        #    own collateral market value are summed to get the total allocated collateral value.
+        def allocate_margin(row):
+            if row["CP_total_money"] == 0:
+                return 0
 
-        df_bronze["Margin_RCV_allocation"] = np.where(
-            df_bronze["Net_margin_MV"] > 0,
-            np.where(
-                df_bronze["CP_total_negative_exposure"] != 0,
-                df_bronze["Trade_level_negative_exposure_percentage"]
-                * df_bronze["Net_margin_MV"],
-                df_bronze["Net_margin_MV"]
-                * df_bronze["Trade_level_positive_exposure_percentage"],
-            ),
-            df_bronze["Net_margin_MV"]
-            * df_bronze["Trade_level_positive_exposure_percentage"],
-        )
+            if row["Net_margin_MV"] > 0:
+                if abs(row["CP_total_negative_exposure"]) > 0:
+                    return (
+                        (
+                            row["Trade_level_exposure"]
+                            / abs(row["CP_total_negative_exposure"])
+                        )
+                        * row["Net_margin_MV"]
+                        if row["Trade_level_exposure"] < 0
+                        else 0
+                    )
+                else:
+                    # Allocate pro-rata to repo money when no repo has an exposure
+                    return (
+                        (row["Money"] / row["CP_total_money"]) * row["Net_margin_MV"]
+                        if row["Money"] != 0
+                        else 0
+                    )
+            elif row["Net_margin_MV"] < 0:
+                if row["CP_total_positive_exposure"] > 0:
+                    return (
+                        (
+                            row["Trade_level_exposure"]
+                            / row["CP_total_positive_exposure"]
+                        )
+                        * row["Net_margin_MV"]
+                        if row["Trade_level_exposure"] > 0
+                        else 0
+                    )
+                else:
+                    # Allocate pro-rata to repo money when no repo has a cushion
+                    return (
+                        (row["Money"] / row["CP_total_money"]) * row["Net_margin_MV"]
+                        if row["Money"] != 0
+                        else 0
+                    )
+            else:
+                return 0
 
-        # Allocated collateral value is calculate as the sum of Market Value of stated security
-        # and market value of allocated margin cash and securties
+        df_bronze["Margin_RCV_allocation"] = df_bronze.apply(allocate_margin, axis=1)
 
-        df_bronze["Collateral_value_allocated"] = df_bronze[
-            "Margin_RCV_allocation"
-        ] + np.where(
+        # Calculate allocated collateral value
+        df_bronze["Collateral_value_allocated"] = np.where(
             df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
-            0,
-            df_bronze["Collateral_MV"],
+            df_bronze["Margin_RCV_allocation"],
+            df_bronze["Margin_RCV_allocation"] + df_bronze["Collateral_MV"],
         )
 
-        df_bronze["Clean_collateral_value_allocated"] = df_bronze[
-            "Clean_margin_RCV_allocation"
-        ] + np.where(
-            df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
-            0,
-            df_bronze["Clean_collateral_MV"],
+        # CLEAN
+        def allocate_clean_margin(row):
+            if row["CP_total_money"] == 0:
+                return 0
+
+            if row["Clean_net_margin_MV"] > 0:
+                if abs(row["Clean_CP_total_negative_exposure"]) > 0:
+                    return (
+                        (
+                            row["Clean_trade_level_exposure"]
+                            / abs(row["Clean_CP_total_negative_exposure"])
+                        )
+                        * row["Clean_net_margin_MV"]
+                        if row["Clean_trade_level_exposure"] < 0
+                        else 0
+                    )
+                else:
+                    # Allocate pro-rata to repo money when no repo has an exposure
+                    return (
+                        (row["Money"] / row["CP_total_money"])
+                        * row["Clean_net_margin_MV"]
+                        if row["Money"] != 0
+                        else 0
+                    )
+            elif row["Clean_net_margin_MV"] < 0:
+                if row["Clean_CP_total_positive_exposure"] > 0:
+                    return (
+                        (
+                            row["Clean_trade_level_exposure"]
+                            / row["Clean_CP_total_positive_exposure"]
+                        )
+                        * row["Clean_net_margin_MV"]
+                        if row["Clean_trade_level_exposure"] > 0
+                        else 0
+                    )
+                else:
+                    # Allocate pro-rata to repo money when no repo has a cushion
+                    return (
+                        (row["Money"] / row["CP_total_money"])
+                        * row["Clean_net_margin_MV"]
+                        if row["Money"] != 0
+                        else 0
+                    )
+            else:
+                return 0
+
+        df_bronze["Clean_margin_RCV_allocation"] = df_bronze.apply(
+            allocate_margin, axis=1
         )
+
+        # Calculate allocated collateral value
+        df_bronze["Clean_collateral_value_allocated"] = np.where(
+            df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
+            df_bronze["Clean_margin_RCV_allocation"],
+            df_bronze["Clean_margin_RCV_allocation"] + df_bronze["Clean_collateral_MV"],
+        )
+
+        # TODO: Remove after current approach is good 9/5/2024
+        # OLD WAY
+        # df_bronze["Clean_margin_RCV_allocation"] = np.where(
+        #     df_bronze["Clean_net_margin_MV"] > 0,
+        #     np.where(
+        #         df_bronze["Clean_CP_total_negative_exposure"] != 0,
+        #         df_bronze["Clean_trade_level_negative_exposure_percentage"]
+        #         * df_bronze["Clean_net_margin_MV"],
+        #         df_bronze["Clean_net_margin_MV"]
+        #         * df_bronze["Clean_trade_level_positive_exposure_percentage"],
+        #     ),
+        #     df_bronze["Clean_net_margin_MV"]
+        #     * df_bronze["Clean_trade_level_positive_exposure_percentage"],
+        # )
+        #
+        # df_bronze["Clean_collateral_value_allocated"] = df_bronze[
+        #     "Clean_margin_RCV_allocation"
+        # ] + np.where(
+        #     df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
+        #     0,
+        #     df_bronze["Clean_collateral_MV"],
+        # )
 
         # TODO: Review here
         if not (df_bronze is None or df_bronze.empty):
