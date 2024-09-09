@@ -1082,7 +1082,7 @@ class BloombergDataFetcher:
         for item in raw_data:
             security = item["security"]
             processed_data[security] = item.get("PX_LAST", self.missing_value)
-            if security in ["1m T-Bill", "3m TBill"]:
+            if security in ["1m TBill", "3m TBill"]:
                 processed_data[f"{security} Maturity"] = item.get(
                     "MATURITY", self.missing_value
                 )
