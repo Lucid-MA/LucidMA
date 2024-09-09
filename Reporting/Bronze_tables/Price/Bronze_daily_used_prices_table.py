@@ -2,7 +2,7 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date
+from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path, get_repo_root
@@ -52,40 +52,6 @@ def create_table_with_schema(tb_name):
     print(f"Table {tb_name} created successfully or already exists.")
 
 
-#
-# def upsert_data(tb_name, df):
-#     with engine.connect() as conn:
-#         try:
-#             with conn.begin():  # Start a transaction
-#                 # Constructing the UPSERT SQL dynamically based on DataFrame columns
-#                 column_names = ", ".join([f'"{col}"' for col in df.columns])
-#                 value_placeholders = ", ".join([f":{col}" for col in df.columns])
-#                 update_clause = ", ".join(
-#                     [
-#                         f'"{col}"=EXCLUDED."{col}"'
-#                         for col in df.columns
-#                         if col != "Price_ID"  # Assuming "Bond_ID" is unique and used for conflict resolution
-#                     ]
-#                 )
-#
-#                 upsert_sql = text(
-#                     f"""
-#                     INSERT INTO {tb_name} ({column_names})
-#                     VALUES ({value_placeholders})
-#                     ON CONFLICT ("Price_ID")
-#                     DO UPDATE SET {update_clause};
-#                     """
-#                 )
-#
-#                 # Execute upsert in a transaction
-#                 conn.execute(upsert_sql, df.to_dict(orient="records"))
-#             print(
-#                 f"Data for {df['Price_date'][0]} {'AM' if df['Is_AM'][0] == 1 else 'PM'} upserted successfully into {tb_name}.")
-#         except SQLAlchemyError as e:
-#             print(f"An error occurred: {e}")
-#             raise
-
-
 def read_processed_files():
     try:
         with open(processed_files_tracker, "r") as file:
@@ -121,7 +87,10 @@ def extract_date_and_indicator(filename):
 
 # Assuming df is your DataFrame after processing an unprocessed file
 tb_name = "bronze_daily_used_price"
-create_table_with_schema(tb_name)
+inspector = inspect(engine)
+
+if not inspector.has_table(tb_name):
+    create_table_with_schema(tb_name)
 
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
