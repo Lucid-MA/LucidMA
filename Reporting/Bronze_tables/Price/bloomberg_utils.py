@@ -1095,13 +1095,13 @@ class BloombergDataFetcher:
         for item in raw_data:
             security = item["security"]
             processed_data[security] = item.get("PX_LAST", self.missing_value)
-            if security in ["1m TBill", "3m TBill"]:
+            if security in [TBILL_1M, TBILL_3M]:
                 processed_data[f"{security} Maturity"] = item.get(
                     "MATURITY", self.missing_value
                 )
-            elif security in ["DGCXX US Equity"]:
+            elif security in [DGCXX]:
                 processed_data[security] = item.get("DVD_SH_LAST", self.missing_value)
-            elif security in ["EUR CURNCY"]:
+            elif security in [EUR_FX]:
                 processed_data[security] = item.get("PX_CLOSE_1D", self.missing_value)
 
         # Create a DataFrame from the processed data
@@ -1121,14 +1121,15 @@ class BloombergDataFetcher:
             LIBOR_1M,
             LIBOR_3M,
             TBILL_1M,
-            TBILL_1M + "_Maturity",
+            TBILL_1M + " Maturity",
             TBILL_3M,
-            TBILL_3M + "_Maturity",
+            TBILL_3M + " Maturity",
             EUR_FX,
             DGCXX,
             "timestamp"
         ]
         df = df.reindex(columns=column_order)
+
         return df
 
     @_session_wrapper

@@ -6,7 +6,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float, D
 from sqlalchemy.exc import SQLAlchemyError
 
 from Bronze_tables.Price.bloomberg_utils import BloombergDataFetcher
-from Utils.Common import get_file_path, get_current_timestamp
+from Utils.Common import get_file_path, get_current_timestamp, get_current_date, print_df
 from Utils.Constants import (
     CP_1M,
     SOFR_1Y,
@@ -96,9 +96,9 @@ def create_table_with_schema(tb_name):
         Column(LIBOR_1M, Float, nullable=True),
         Column(LIBOR_3M, Float, nullable=True),
         Column(TBILL_1M, Float, nullable=True),
-        Column(TBILL_1M + "_Maturity", Date, nullable=True),
+        Column(TBILL_1M + " Maturity", Date, nullable=True),
         Column(TBILL_3M, Float, nullable=True),
-        Column(TBILL_3M + "_Maturity", Date, nullable=True),
+        Column(TBILL_3M + " Maturity", Date, nullable=True),
         Column(EUR_FX, Float, nullable=True),
         Column(DGCXX, Float, nullable=True),
         Column("timestamp", DateTime),
@@ -179,153 +179,151 @@ def upsert_data(tb_name, df):
 
 create_table_with_schema(tb_name)
 
-try:
-    # Open the workbook and select the sheet
-    wb = openpyxl.load_workbook(benchmark_file_path, read_only=True)
-    sheet = wb["bberg historical raw"]
+if MANUAL_REFRESH:
+    try:
+        # Open the workbook and select the sheet
+        wb = openpyxl.load_workbook(benchmark_file_path, read_only=True)
+        sheet = wb["bberg historical raw"]
 
-    # Find the last row with data
-    last_row = sheet.max_row
+        # Find the last row with data
+        last_row = sheet.max_row
 
-    # Set the range of cells to read
-    start_row = 12  # First row of data (after skipping rows)
-    start_col = "D"  # Column letter for the start of the table
-    end_col = "S"  # Column letter for the end of the table
+        # Set the range of cells to read
+        start_row = 12  # First row of data (after skipping rows)
+        start_col = "D"  # Column letter for the start of the table
+        end_col = "S"  # Column letter for the end of the table
 
-    # Read the Excel file
-    benchmark_df = pd.read_excel(
-        benchmark_file_path,
-        sheet_name="bberg historical raw",
-        header=7,  # Header is on row 8 (index 7)
-        usecols=f"{start_col}:{end_col}",
-        skiprows=range(8, 11),  # Skip rows to start data from row 12
-        nrows=last_row - start_row + 1,  # Explicitly specify number of rows to read
-    )
-
-    # Close the workbook
-    wb.close()
-
-    # Rename the columns
-    new_column_names = [
-        "benchmark_date",
-        SOFR_1M,
-        SOFR_3M,
-        SOFR_6M,
-        SOFR_1Y,
-        LIBOR_1M,
-        LIBOR_3M,
-        CP_1M,
-        CP_3M,
-        CP_6M,
-        CP_9M,
-        TBILL_1M,
-        TBILL_1M + "_Maturity",
-        TBILL_3M,
-        TBILL_3M + "_Maturity",
-        EUR_FX,
-    ]
-
-    benchmark_df.columns = new_column_names
-
-    # Convert the 'dates' column to 'YYYY-MM-DD' format
-    benchmark_df["benchmark_date"] = (
-        benchmark_df["benchmark_date"].dt.strftime("%Y-%m-%d").astype(str)
-    )
-
-    # Conver rates column to float
-    for col in benchmark_df.columns[1:-1]:
-        benchmark_df[col] = benchmark_df[col].apply(
-            lambda x: x if pd.notna(x) and isinstance(x, (int, float)) else None
+        # Read the Excel file
+        benchmark_df = pd.read_excel(
+            benchmark_file_path,
+            sheet_name="bberg historical raw",
+            header=7,  # Header is on row 8 (index 7)
+            usecols=f"{start_col}:{end_col}",
+            skiprows=range(8, 11),  # Skip rows to start data from row 12
+            nrows=last_row - start_row + 1,  # Explicitly specify number of rows to read
         )
 
-    new_column_order = [
-        "benchmark_date",
-        CP_1M,
-        CP_3M,
-        CP_6M,
-        CP_9M,
-        SOFR_1M,
-        SOFR_3M,
-        SOFR_6M,
-        SOFR_1Y,
-        LIBOR_1M,
-        LIBOR_3M,
-        TBILL_1M,
-        TBILL_1M + "_Maturity",
-        TBILL_3M,
-        TBILL_3M + "_Maturity",
-        EUR_FX,
-    ]
+        # Close the workbook
+        wb.close()
 
-    benchmark_df = benchmark_df[new_column_order]
-
-    # Convert specific columns to float, handling empty or 'nan' values
-    columns_to_convert = [
-        col
-        for col in benchmark_df.columns
-        if col
-        not in [
+        # Rename the columns
+        new_column_names = [
             "benchmark_date",
-            TBILL_1M + "_Maturity",
-            TBILL_3M + "_Maturity",
+            SOFR_1M,
+            SOFR_3M,
+            SOFR_6M,
+            SOFR_1Y,
+            LIBOR_1M,
+            LIBOR_3M,
+            CP_1M,
+            CP_3M,
+            CP_6M,
+            CP_9M,
+            TBILL_1M,
+            TBILL_1M + " Maturity",
+            TBILL_3M,
+            TBILL_3M + " Maturity",
+            EUR_FX,
         ]
-    ]
-    for col in columns_to_convert:
-        benchmark_df[col] = pd.to_numeric(benchmark_df[col], errors="coerce")
 
-    # DGCXX Index
-    # Open the workbook and select the sheet
-    wb = openpyxl.load_workbook(benchmark_file_path, read_only=True)
-    sheet = wb["dgcxx"]
+        benchmark_df.columns = new_column_names
 
-    # Find the last row with data
-    last_row = sheet.max_row
+        # Convert the 'dates' column to 'YYYY-MM-DD' format
+        benchmark_df["benchmark_date"] = (
+            benchmark_df["benchmark_date"].dt.strftime("%Y-%m-%d").astype(str)
+        )
 
-    # Set the range of cells to read
-    start_row = 11  # First row of data (after skipping rows)
-    start_col = "D"  # Column letter for the start of the table
-    end_col = "R"  # Column letter for the end of the table
+        # Conver rates column to float
+        for col in benchmark_df.columns[1:-1]:
+            benchmark_df[col] = benchmark_df[col].apply(
+                lambda x: x if pd.notna(x) and isinstance(x, (int, float)) else None
+            )
 
-    # Read the Excel file
-    dgcxx_df = pd.read_excel(
-        benchmark_file_path,
-        sheet_name="dgcxx",
-        usecols="G,I,J",
-        skiprows=range(8, 10),  # Skip rows to start data from row 12
-        nrows=last_row - start_row + 1,  # Explicitly specify number of rows to read
-        names=["benchmark_date", "rate", "type"],  # Assign custom column headers
-    )
+        new_column_order = [
+            "benchmark_date",
+            CP_1M,
+            CP_3M,
+            CP_6M,
+            CP_9M,
+            SOFR_1M,
+            SOFR_3M,
+            SOFR_6M,
+            SOFR_1Y,
+            LIBOR_1M,
+            LIBOR_3M,
+            TBILL_1M,
+            TBILL_1M + " Maturity",
+            TBILL_3M,
+            TBILL_3M + " Maturity",
+            EUR_FX,
+        ]
 
-    # Close the workbook
-    wb.close()
+        benchmark_df = benchmark_df[new_column_order]
 
-    # Convert rate to numeric
-    dgcxx_df["rate"] = pd.to_numeric(dgcxx_df["rate"], errors="coerce")
-    dgcxx_df["benchmark_date"] = (
-        dgcxx_df["benchmark_date"].dt.strftime("%Y-%m-%d").astype(str)
-    )
+        # Convert specific columns to float, handling empty or 'nan' values
+        columns_to_convert = [
+            col
+            for col in benchmark_df.columns
+            if col
+            not in [
+                "benchmark_date",
+                TBILL_1M + " Maturity",
+                TBILL_3M + " Maturity",
+            ]
+        ]
+        for col in columns_to_convert:
+            benchmark_df[col] = pd.to_numeric(benchmark_df[col], errors="coerce")
 
-    # Filter rows where benchmark_date is not null and type is 'Daily'
-    filtered_df = dgcxx_df[
-        (dgcxx_df["benchmark_date"].notna()) & (dgcxx_df["type"] == "Daily")
-    ]
+        # DGCXX Index
+        # Open the workbook and select the sheet
+        wb = openpyxl.load_workbook(benchmark_file_path, read_only=True)
+        sheet = wb["dgcxx"]
 
-    # Sort the filtered DataFrame by benchmark_date in ascending order
-    dgcxx_df = filtered_df.sort_values(by="benchmark_date", ascending=True)
-    dgcxx_df = dgcxx_df.drop(columns=["type"]).rename(columns={"rate": DGCXX})
+        # Find the last row with data
+        last_row = sheet.max_row
 
-except Exception as e:
-    print("Failed to read the test file. Error:", e)
+        # Set the range of cells to read
+        start_row = 11  # First row of data (after skipping rows)
+        start_col = "D"  # Column letter for the start of the table
+        end_col = "R"  # Column letter for the end of the table
 
+        # Read the Excel file
+        dgcxx_df = pd.read_excel(
+            benchmark_file_path,
+            sheet_name="dgcxx",
+            usecols="G,I,J",
+            skiprows=range(8, 10),  # Skip rows to start data from row 12
+            nrows=last_row - start_row + 1,  # Explicitly specify number of rows to read
+            names=["benchmark_date", "rate", "type"],  # Assign custom column headers
+        )
 
-benchmark_df = pd.merge(benchmark_df, dgcxx_df, on="benchmark_date", how="left")
+        # Close the workbook
+        wb.close()
 
-# Replace NaN values with None
-benchmark_df = benchmark_df.astype(object).where(pd.notnull(benchmark_df), None)
-benchmark_df["timestamp"] = get_current_timestamp()
+        # Convert rate to numeric
+        dgcxx_df["rate"] = pd.to_numeric(dgcxx_df["rate"], errors="coerce")
+        dgcxx_df["benchmark_date"] = (
+            dgcxx_df["benchmark_date"].dt.strftime("%Y-%m-%d").astype(str)
+        )
 
-if benchmark_df is not None:
-    upsert_data(tb_name, benchmark_df)
+        # Filter rows where benchmark_date is not null and type is 'Daily'
+        filtered_df = dgcxx_df[
+            (dgcxx_df["benchmark_date"].notna()) & (dgcxx_df["type"] == "Daily")
+        ]
+
+        # Sort the filtered DataFrame by benchmark_date in ascending order
+        dgcxx_df = filtered_df.sort_values(by="benchmark_date", ascending=True)
+        dgcxx_df = dgcxx_df.drop(columns=["type"]).rename(columns={"rate": DGCXX})
+        benchmark_df = pd.merge(benchmark_df, dgcxx_df, on="benchmark_date", how="left")
+
+        # Replace NaN values with None
+        benchmark_df = benchmark_df.astype(object).where(pd.notnull(benchmark_df), None)
+        benchmark_df["timestamp"] = get_current_timestamp()
+        if benchmark_df is not None:
+            upsert_data(tb_name, benchmark_df)
+    except Exception as e:
+        print("Failed to update the table manually. Error:", e)
+
 
 securities = [
     "TSFR1M Index",
@@ -348,3 +346,7 @@ fetcher = BloombergDataFetcher()
 security_attributes_df = fetcher.get_benchmark_security_attributes(
     securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_SH_LAST"]
 )
+security_attributes_df["benchmark_date"] = get_current_date()
+security_attributes_df["timestamp"] = get_current_timestamp()
+if security_attributes_df is not None:
+    upsert_data(tb_name, security_attributes_df)
