@@ -19,11 +19,15 @@ PUBLISH_TO_PROD = True
 
 # Get the repository root directory
 repo_path = get_repo_root()
-bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
+
+
 if PUBLISH_TO_PROD:
     engine = engine_prod
+    processed_file_tracker = silver_tracker_dir / "Silver Processed Dirty Price PROD"
 else:
     engine = engine_staging
+    processed_file_tracker = silver_tracker_dir / "Silver Processed Dirty Price"
 
 
 def create_table_with_schema(tb_name):
@@ -100,6 +104,16 @@ df_price = df_price.rename(
     }
 )
 
+# Read processed price_dates from the file tracker
+if os.path.exists(processed_file_tracker):
+    with open(processed_file_tracker, "r") as file:
+        processed_dates = file.read().splitlines()
+else:
+    processed_dates = []
+
+# Filter out already processed price_dates
+df_price = df_price[~df_price["price_date"].isin(processed_dates)]
+
 df_price["price_id"] = df_price.apply(
     lambda row: hash_string_v2(f"{row['price_date']}{row['bond_id']}"), axis=1
 )
@@ -118,4 +132,14 @@ df_price = df_price[
     ]
 ]
 
-upsert_data(engine, tb_name, df_price, "price_id", PUBLISH_TO_PROD)
+# Upsert data and update the file tracker
+if not df_price.empty:
+    upsert_data(engine, tb_name, df_price, "price_id", PUBLISH_TO_PROD)
+
+    # Get the unique price_date values in ascending order
+    sorted_price_dates = sorted(df_price["price_date"].astype(str).unique())
+
+    # Append the processed price_dates to the file tracker
+    with open(processed_file_tracker, "a") as file:
+        file.write("\n".join(sorted_price_dates))
+        file.write("\n")

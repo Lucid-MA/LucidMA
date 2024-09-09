@@ -3,15 +3,19 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from Utils.Common import format_decimal
+from Utils.Common import format_decimal, get_repo_root
 from Utils.Hash import hash_string
 
 IS_PROD = True
 # Constants
+# Get the repository root directory
+repo_path = get_repo_root()
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
+
 if IS_PROD:
-    OC_RATES_TRACKER = "Silver OC Rates Tracker PROD"
+    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker PROD"
 else:
-    OC_RATES_TRACKER = "Silver OC Rates Tracker"
+    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker"
 
 
 def calculate_clean_collateral_mv(row):

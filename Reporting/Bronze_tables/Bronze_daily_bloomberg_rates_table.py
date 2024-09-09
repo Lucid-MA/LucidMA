@@ -271,5 +271,5 @@ except Exception as e:
 # Replace NaN values with None
 benchmark_df = benchmark_df.astype(object).where(pd.notnull(benchmark_df), None)
 
-if benchmark_df is not None:
-    upsert_data(tb_name, benchmark_df)
+# if benchmark_df is not None:
+#     upsert_data(tb_name, benchmark_df)

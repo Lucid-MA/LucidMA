@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import SQLAlchemyError
 
+from Utils.Common import get_repo_root
 from Utils.Hash import hash_string
 from Utils.SQL_queries import (
     AUM_query,
@@ -27,13 +28,17 @@ TABLE_NAME = "bronze_lucid_aum"
 # FLAG to enable update to PROD
 publish_to_PROD =True
 
+# Get the repository root directory
+repo_path = get_repo_root()
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
+
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if publish_to_PROD:
     db_type = "sql_server_2"
-    AUM_TRACKER = "Silver AUM Tracker PROD"
+    AUM_TRACKER = silver_tracker_dir / "Silver AUM Tracker PROD"
 else:
     db_type = "postgres"
-    AUM_TRACKER = "SilverAUM Tracker"
+    AUM_TRACKER = silver_tracker_dir / "SilverAUM Tracker"
 
 engine = get_database_engine(db_type)
 
@@ -221,8 +226,8 @@ def get_trading_days(start_date, end_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine)
-    start_date = "2024-04-15"
-    end_date = "2024-08-15"
+    start_date = "2024-08-15"
+    end_date = "2024-09-06"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():

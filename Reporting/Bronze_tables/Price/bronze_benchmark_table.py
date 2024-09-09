@@ -125,35 +125,35 @@ if __name__ == "__main__":
 
     fetcher = BloombergDataFetcher()
 
-    print("Fetching latest prices...")
-    prices_latest_df = fetcher.get_latest_prices(securities)
-    print_df(prices_latest_df)
-    prices_latest_df.to_excel("df_prices.xlsx", engine="openpyxl")
+    # print("Fetching latest prices...")
+    # prices_latest_df = fetcher.get_latest_prices(securities)
+    # print_df(prices_latest_df)
+    # prices_latest_df.to_excel("df_prices.xlsx", engine="openpyxl")
 
-    print("Fetching historical prices...")
-    prices_historical_df = fetcher.get_benchmark_historical_prices(
-        securities, "20240819", "20240822"
-    )
-    print_df(prices_historical_df)
-    prices_historical_df.to_excel("df_prices_historical.xlsx", engine="openpyxl")
+    # print("Fetching historical prices...")
+    # prices_historical_df = fetcher.get_benchmark_historical_prices(
+    #     securities, "20240819", "20240822"
+    # )
+    # print_df(prices_historical_df)
+    # prices_historical_df.to_excel("df_prices_historical.xlsx", engine="openpyxl")
 
     #
     logging.info("Fetching security attributes...")
     security_attributes_df = fetcher.get_benchmark_security_attributes(
-        securities, ["PX_LAST", "MATURITY"]
+        securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_HIST_ALL"]
     )
     print_df(security_attributes_df)
-    security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
+    # security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
 
-    logging.info("Fetching historical price")
-    security_attributes_historical_df = fetcher.get_historical_benchmark_attributes(
-        securities, "20240819", ["PX_LAST", "MATURITY"], "20240822"
-    )
-    print_df(security_attributes_historical_df)
-
-    security_attributes_historical_df.to_excel(
-        "df_sec_historical_attribute.xlsx", engine="openpyxl"
-    )
+    # logging.info("Fetching historical price")
+    # security_attributes_historical_df = fetcher.get_historical_benchmark_attributes(
+    #     securities, "20240819", ["PX_LAST", "MATURITY"], "20240822"
+    # )
+    # print_df(security_attributes_historical_df)
+    #
+    # security_attributes_historical_df.to_excel(
+    #     "df_sec_historical_attribute.xlsx", engine="openpyxl"
+    # )
 
     # print("Upserting data to table...")
     # upsert_data(tb_name, prices_latest_df)
