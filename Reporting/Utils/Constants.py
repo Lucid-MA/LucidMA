@@ -26,6 +26,8 @@ CRANE_GOVT_IDX_12M_cummulative = "Cum. 12m Crane Govt Inst Index"
 CRANE_PRIME_IDX = "Crane Prime Inst Index"
 EGAN_JONES = "Egan-Jones"
 FHLB_NOTES = "FHLB 1m Discount Notes"
+EUR_FX = "EUR FX"
+DGCXX = "DGCXX"
 
 benchmark_shortern = {
     SOFR_1M: SOFR_1M,
@@ -50,6 +52,8 @@ benchmark_ticker = {
     "DCPA270Y Index": CP_9M,
     "GBM Govt": TBILL_1M,
     "GB3 Govt": TBILL_3M,
+    "EUR CURNCY": EUR_FX,
+    "DGCXX US Equity": DGCXX,
 }
 
 

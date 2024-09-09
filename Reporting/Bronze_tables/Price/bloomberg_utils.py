@@ -7,7 +7,23 @@ import blpapi
 import pandas as pd
 
 from Utils.Common import get_current_date, get_current_timestamp
-from Utils.Constants import benchmark_ticker
+from Utils.Constants import (
+    benchmark_ticker,
+    CP_1M,
+    CP_3M,
+    CP_6M,
+    CP_9M,
+    SOFR_1M,
+    SOFR_3M,
+    SOFR_6M,
+    SOFR_1Y,
+    LIBOR_1M,
+    LIBOR_3M,
+    TBILL_1M,
+    TBILL_3M,
+    EUR_FX,
+    DGCXX,
+)
 
 special_cusips = [
     {
@@ -1067,9 +1083,6 @@ class BloombergDataFetcher:
         request = service.createRequest("ReferenceDataRequest")
 
         for security in securities:
-            # request.getElement("securities").appendValue(
-            #     self._prepare_security(security)
-            # )
             request.getElement("securities").appendValue(security)
 
         for field in fields:
@@ -1091,31 +1104,31 @@ class BloombergDataFetcher:
             elif security in ["EUR CURNCY"]:
                 processed_data[security] = item.get("PX_CLOSE_1D", self.missing_value)
 
-
         # Create a DataFrame from the processed data
         df = pd.DataFrame([processed_data])
 
         # Reorder the columns based on the specified order
         column_order = [
-            "1m SOFR",
-            "3m SOFR",
-            "6m SOFR",
-            "1y SOFR",
-            "1m LIBOR",
-            "3m LIBOR",
-            "1m A1/P1 CP",
-            "3m A1/P1 CP",
-            "6m A1/P1 CP",
-            "9m A1/P1 CP",
-            "1m TBill",
-            "1m TBill Maturity",
-            "3m TBill",
-            "3m TBill Maturity",
-            "EUR CURNCY",
-            "DGCXX US Equity",
+            "benchmark_date",
+            CP_1M,
+            CP_3M,
+            CP_6M,
+            CP_9M,
+            SOFR_1M,
+            SOFR_3M,
+            SOFR_6M,
+            SOFR_1Y,
+            LIBOR_1M,
+            LIBOR_3M,
+            TBILL_1M,
+            TBILL_1M + "_Maturity",
+            TBILL_3M,
+            TBILL_3M + "_Maturity",
+            EUR_FX,
+            DGCXX,
+            "timestamp"
         ]
         df = df.reindex(columns=column_order)
-
         return df
 
     @_session_wrapper

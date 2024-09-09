@@ -12,7 +12,7 @@ from Bronze_tables.Price.bloomberg_utils import (
     diff_cusip_map,
     bb_fields,
 )
-from Utils.Common import get_file_path, print_df
+from Utils.Common import get_file_path, print_df, get_current_timestamp, get_current_date
 from Utils.SQL_queries import daily_price_securities_helix_query
 from Utils.database_utils import (
     get_database_engine,
@@ -144,6 +144,8 @@ if __name__ == "__main__":
     security_attributes_df = fetcher.get_benchmark_security_attributes(
         securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_SH_LAST"]
     )
+    security_attributes_df["benchmark_date"] = get_current_date()
+    security_attributes_df["timestamp"] = get_current_timestamp()
     print_df(security_attributes_df)
     # security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")
 
