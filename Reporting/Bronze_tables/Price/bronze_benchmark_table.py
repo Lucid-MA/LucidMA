@@ -114,6 +114,8 @@ if __name__ == "__main__":
         "DCPA270Y Index",
         "GBM Govt",
         "GB3 Govt",
+        "EUR CURNCY",
+        "DGCXX US Equity",
     ]
     custom_date = "20240820"  # Specify the desired date in YYYYMMDD format
 
@@ -140,7 +142,7 @@ if __name__ == "__main__":
     #
     logging.info("Fetching security attributes...")
     security_attributes_df = fetcher.get_benchmark_security_attributes(
-        securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_HIST_ALL"]
+        securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_SH_LAST"]
     )
     print_df(security_attributes_df)
     # security_attributes_df.to_excel("df_sec_attribute.xlsx", engine="openpyxl")

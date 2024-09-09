@@ -1067,9 +1067,11 @@ class BloombergDataFetcher:
         request = service.createRequest("ReferenceDataRequest")
 
         for security in securities:
-            request.getElement("securities").appendValue(
-                self._prepare_security(security)
-            )
+            # request.getElement("securities").appendValue(
+            #     self._prepare_security(security)
+            # )
+            request.getElement("securities").appendValue(security)
+
         for field in fields:
             request.getElement("fields").appendValue(field)
 
@@ -1080,10 +1082,15 @@ class BloombergDataFetcher:
         for item in raw_data:
             security = item["security"]
             processed_data[security] = item.get("PX_LAST", self.missing_value)
-            if security in ["1m T-Bill", "3m T-Bill"]:
+            if security in ["1m T-Bill", "3m TBill"]:
                 processed_data[f"{security} Maturity"] = item.get(
                     "MATURITY", self.missing_value
                 )
+            elif security in ["DGCXX US Equity"]:
+                processed_data[security] = item.get("DVD_SH_LAST", self.missing_value)
+            elif security in ["EUR CURNCY"]:
+                processed_data[security] = item.get("PX_CLOSE_1D", self.missing_value)
+
 
         # Create a DataFrame from the processed data
         df = pd.DataFrame([processed_data])
@@ -1100,10 +1107,12 @@ class BloombergDataFetcher:
             "3m A1/P1 CP",
             "6m A1/P1 CP",
             "9m A1/P1 CP",
-            "1m T-Bill",
-            "1m T-Bill Maturity",
-            "3m T-Bill",
-            "3m T-Bill Maturity",
+            "1m TBill",
+            "1m TBill Maturity",
+            "3m TBill",
+            "3m TBill Maturity",
+            "EUR CURNCY",
+            "DGCXX US Equity",
         ]
         df = df.reindex(columns=column_order)
 
