@@ -107,10 +107,15 @@ df_price = df_price.rename(
 # Read processed price_dates from the file tracker
 if os.path.exists(processed_file_tracker):
     with open(processed_file_tracker, "r") as file:
-        processed_dates = file.read().splitlines()
+        processed_dates = list(set(file.read().splitlines()))
+        # Assuming processed_dates are strings in the format 'YYYY-MM-DD'
+        # Convert processed_dates to datetime objects
+        processed_dates = pd.to_datetime(processed_dates)
 else:
     processed_dates = []
 
+# Convert df_price["price_date"] to datetime
+df_price["price_date"] = pd.to_datetime(df_price["price_date"])
 # Filter out already processed price_dates
 df_price = df_price[~df_price["price_date"].isin(processed_dates)]
 

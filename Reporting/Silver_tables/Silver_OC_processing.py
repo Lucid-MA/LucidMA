@@ -1,9 +1,10 @@
+import os
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
-from Utils.Common import format_decimal, get_repo_root
+from Utils.Common import format_decimal, get_repo_root, get_file_path
 from Utils.Hash import hash_string
 
 IS_PROD = True
@@ -412,6 +413,8 @@ def generate_silver_oc_rates_prod(
     df_cash_balance = update_cash_balance_table(cash_balance_table, report_date_dt)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
+    oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
+
     for fund_name, series_name in fund_series_pairs:
         oc_rate_id = f"{fund_name}_{series_name}_{report_date}"
         if oc_rate_id in read_processed_files():
@@ -519,10 +522,25 @@ def generate_silver_oc_rates_prod(
 
         df_bronze["Days_Diff"] = (valdate - df_bronze["Start Date"]).dt.days
         df_bronze["Comments"] = df_bronze["Comments"].str.strip().str.upper()
-        df_bronze["Trade_level_exposure"] = (
-            df_bronze["Collateral_MV"] * (100 - df_bronze["HairCut"]) / 100
-        ) - df_bronze["Money"] * (
-            1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
+
+        """
+        Calculates trade-level exposure for each trade in the DataFrame.
+
+        Exposure is calculated only for trades that are not of type 'ReverseFree' or 'RepoFree'.
+        For trades of type 'ReverseFree' or 'RepoFree', the exposure is set to 0.
+
+        Formula:
+        Trade Level Exposure = (Collateral_MV * (1 - HairCut / 100)) 
+                               - (Money * (1 + (Orig. Rate / 100) * (Days_Diff / 360)))
+        """
+        df_bronze["Trade_level_exposure"] = np.where(
+            ~df_bronze["TradeType"].isin(
+                ["ReverseFree", "RepoFree"]
+            ),  # Condition to exclude certain trade types
+            (df_bronze["Collateral_MV"] * (100 - df_bronze["HairCut"]) / 100)
+            - df_bronze["Money"]
+            * (1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360),
+            0,
         )
 
         df_bronze["Clean_trade_level_exposure"] = (
@@ -531,14 +549,22 @@ def generate_silver_oc_rates_prod(
             1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
         )
 
-        negative_exposures = df_bronze[df_bronze["Trade_level_exposure"] < 0]
-        positive_exposures = df_bronze[df_bronze["Trade_level_exposure"] > 0]
+        negative_exposures = df_bronze[
+            (df_bronze["Trade_level_exposure"] < 0)
+            & ~df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"])
+        ]
+        positive_exposures = df_bronze[
+            (df_bronze["Trade_level_exposure"] > 0)
+            & ~df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"])
+        ]
 
         clean_negative_exposures = df_bronze[
-            df_bronze["Clean_trade_level_exposure"] < 0
+            (df_bronze["Clean_trade_level_exposure"] < 0)
+            & ~df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"])
         ]
         clean_positive_exposures = df_bronze[
-            df_bronze["Clean_trade_level_exposure"] > 0
+            (df_bronze["Clean_trade_level_exposure"] > 0)
+            & ~df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"])
         ]
 
         # Calculate negative and positive exposure by Counterparty per Series
@@ -844,10 +870,18 @@ def generate_silver_oc_rates_prod(
         #     df_bronze["Clean_collateral_MV"],
         # )
 
+        # Export_pre_calculation_file
+        pre_calculation_file_name = (
+            f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
+        )
+        pre_calculation_file_path = os.path.join(
+            oc_export_path, pre_calculation_file_name
+        )
+
         # TODO: Review here
         if not (df_bronze is None or df_bronze.empty):
             df_bronze.to_excel(
-                f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx",
+                pre_calculation_file_path,
                 engine="openpyxl",
             )
 
@@ -934,6 +968,10 @@ def generate_silver_oc_rates_prod(
                 "clean_collateral_value_allocated": "clean_collateral_mv",
             }
         )
+
+        df_result = df_result[
+            ~((df_result["repo_money"] == 0) & (df_result["oc_rate"].isna()))
+        ]
 
         new_order = (
             [
