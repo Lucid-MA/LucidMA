@@ -89,64 +89,6 @@ def create_table_with_schema(tb_name):
     print(f"Table {tb_name} created successfully or already exists.")
 
 
-#
-# def upsert_data(tb_name, df):
-#     with engine.connect() as conn:
-#         try:
-#             with conn.begin():  # Start a transaction
-#                 # Prepare a SQL MERGE statement using a subquery
-#                 column_names = [
-#                     "data_id",
-#                     "data_date",
-#                     "bond_id",
-#                     "price",
-#                     "factor",
-#                     "source",
-#                     "timestamp",
-#                 ]
-#                 df = df[column_names]
-#                 target_columns = ", ".join(
-#                     [f'target."{col}" = source."{col}"' for col in column_names]
-#                 )
-#                 source_columns = ", ".join(
-#                     [f':{col} AS "{col}"' for col in column_names]
-#                 )
-#                 insert_columns = ", ".join([f'"{col}"' for col in column_names])
-#                 insert_values = ", ".join([f'source."{col}"' for col in column_names])
-#
-#                 upsert_sql = text(
-#                     f"""
-#                     MERGE INTO {tb_name} AS target
-#                     USING (
-#                         SELECT {source_columns}
-#                     ) AS source
-#                     ON target."data_id" = source."data_id"
-#                     WHEN MATCHED THEN
-#                         UPDATE SET {target_columns}
-#                     WHEN NOT MATCHED THEN
-#                         INSERT ({insert_columns})
-#                         VALUES ({insert_values});
-#                     """
-#                 )
-#                 conn.execute(upsert_sql, df.to_dict(orient="records"))
-#             print(
-#                 f"Data for {df['data_date'][0]} upserted successfully into {tb_name}."
-#             )
-#         # except SQLAlchemyError as e:
-#         #     print(f"An error occurred: {e}")
-#         #     raise
-#         except DBAPIError as e:
-#             print(f"An error occurred: {e}")
-#             print("Printing rows causing the error:")
-#             for index, row in df.iterrows():
-#                 try:
-#                     conn.execute(upsert_sql, row.to_dict())
-#                 except DBAPIError as e:
-#                     print(f"Error row: {row}")
-#                     print(f"Data types: {row.apply(lambda x: type(x).__name__)}")
-#             raise
-
-
 tb_name = "bronze_helix_price_and_factor"
 inspector = inspect(engine)
 if not inspector.has_table("table_name"):
