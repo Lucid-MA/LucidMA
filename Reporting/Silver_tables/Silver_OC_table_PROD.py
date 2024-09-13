@@ -13,7 +13,6 @@ from Utils.database_utils import (
     get_database_engine,
     read_table_from_db,
     prod_db_type,
-    staging_db_type,
 )
 
 # Constants
@@ -235,8 +234,8 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2024-09-09"
-    end_date = "2024-09-10"
+    start_date = "2024-09-03"
+    end_date = "2024-09-12"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         (
