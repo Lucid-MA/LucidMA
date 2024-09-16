@@ -543,10 +543,14 @@ def generate_silver_oc_rates_prod(
             0,
         )
 
-        df_bronze["Clean_trade_level_exposure"] = (
-            df_bronze["Clean_collateral_MV"] * (100 - df_bronze["HairCut"]) / 100
-        ) - df_bronze["Money"] * (
-            1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360
+        df_bronze["Clean_trade_level_exposure"] = np.where(
+            ~df_bronze["TradeType"].isin(
+                ["ReverseFree", "RepoFree"]
+            ),  # Condition to exclude certain trade types
+            (df_bronze["Clean_collateral_MV"] * (100 - df_bronze["HairCut"]) / 100)
+            - df_bronze["Money"]
+            * (1 + df_bronze["Orig. Rate"] / 100 * df_bronze["Days_Diff"] / 360),
+            0,
         )
 
         negative_exposures = df_bronze[
