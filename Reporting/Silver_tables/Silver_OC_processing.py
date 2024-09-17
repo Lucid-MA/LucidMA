@@ -841,7 +841,7 @@ def generate_silver_oc_rates_prod(
                 return 0
 
         df_bronze["Clean_margin_RCV_allocation"] = df_bronze.apply(
-            allocate_margin, axis=1
+            allocate_clean_margin, axis=1
         )
 
         # Calculate allocated collateral value
@@ -850,29 +850,6 @@ def generate_silver_oc_rates_prod(
             df_bronze["Clean_margin_RCV_allocation"],
             df_bronze["Clean_margin_RCV_allocation"] + df_bronze["Clean_collateral_MV"],
         )
-
-        # TODO: Remove after current approach is good 9/5/2024
-        # OLD WAY
-        # df_bronze["Clean_margin_RCV_allocation"] = np.where(
-        #     df_bronze["Clean_net_margin_MV"] > 0,
-        #     np.where(
-        #         df_bronze["Clean_CP_total_negative_exposure"] != 0,
-        #         df_bronze["Clean_trade_level_negative_exposure_percentage"]
-        #         * df_bronze["Clean_net_margin_MV"],
-        #         df_bronze["Clean_net_margin_MV"]
-        #         * df_bronze["Clean_trade_level_positive_exposure_percentage"],
-        #     ),
-        #     df_bronze["Clean_net_margin_MV"]
-        #     * df_bronze["Clean_trade_level_positive_exposure_percentage"],
-        # )
-        #
-        # df_bronze["Clean_collateral_value_allocated"] = df_bronze[
-        #     "Clean_margin_RCV_allocation"
-        # ] + np.where(
-        #     df_bronze["TradeType"].isin(["ReverseFree", "RepoFree"]),
-        #     0,
-        #     df_bronze["Clean_collateral_MV"],
-        # )
 
         # Export_pre_calculation_file
         pre_calculation_file_name = (
