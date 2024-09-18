@@ -170,7 +170,14 @@ df_bronze_bloomberg_data["interest_accrued"] = df_bronze_bloomberg_data[
     "interest_accrued"
 ].apply(lambda x: float(x) if pd.notnull(x) else 0.0)
 
-df_silver_bloomberg_data = df_bronze_bloomberg_data[
+# Only select the latest factor and interest_accrued per day for each bond_id
+df_silver_bloomberg_data = df_bronze_bloomberg_data.sort_values(
+    "timestamp", ascending=False
+)
+df_silver_bloomberg_data = (
+    df_silver_bloomberg_data.groupby(["date", "bond_id"]).first().reset_index()
+)
+df_silver_bloomberg_data = df_silver_bloomberg_data[
     ["data_id", "date", "bond_id", "name", "factor", "interest_accrued", "rating"]
 ]
 

@@ -719,6 +719,74 @@ ORDER BY tradepieces.company ASC, tradepieces.ledgername ASC, tradepieces.contra
 """
 
 
+HELIX_price_and_factor_by_date = """
+DECLARE @CustomDate DATE
+SET @CustomDate = {date_placeholder};
+
+WITH LatestRevisionsPrices AS (
+    -- Get the latest revision from HISTORY_ISSUEPRICES
+    SELECT
+        ISSUE,
+        MAX(REVISIONID) AS MaxRevisionID
+    FROM History_issueprices
+    WHERE CAST(DatetimeID AS DATE) = @CustomDate
+    GROUP BY ISSUE
+),
+LatestRevisionsFactorInfo AS (
+    -- Get the latest revision from HISTORY_ISSUEFACTORINFO
+    SELECT
+        ISSUE,
+        MAX(REVISIONID) AS MaxRevisionID
+    FROM HISTORY_ISSUEFACTORINFO
+    WHERE CAST(DatetimeID AS DATE) = @CustomDate
+    GROUP BY ISSUE
+)
+SELECT
+    h.ISSUE,
+    LTRIM(RTRIM(i.isin)) AS BondID,
+    h.CURRENTREPOPRICE AS Helix_price,
+    f.FACTOR as Helix_factor,
+    CAST(h.DATETIMEID as DATE) AS Data_date
+FROM History_issueprices h
+JOIN LatestRevisionsPrices lr
+    ON h.ISSUE = lr.ISSUE
+    AND h.REVISIONID = lr.MaxRevisionID
+JOIN ISSUES i
+    ON h.ISSUE = i.ISSUE
+JOIN HISTORY_ISSUEFACTORINFO f
+    ON h.ISSUE = f.ISSUE
+    AND CAST(h.DatetimeID AS DATE) = CAST(f.DatetimeID AS DATE)  -- Match ISSUE and DatetimeID
+JOIN LatestRevisionsFactorInfo lf
+    ON f.ISSUE = lf.ISSUE
+    AND f.REVISIONID = lf.MaxRevisionID
+WHERE CAST(h.DatetimeID AS DATE) = @CustomDate
+"""
+
+HELIX_historical_price = """
+WITH LatestRevisionsPrices AS (
+    -- Get the latest revision from HISTORY_ISSUEPRICES for all dates
+    SELECT
+        ISSUE,
+        CAST(DatetimeID AS DATE) AS Data_date,  -- Include the date in the grouping
+        MAX(REVISIONID) AS MaxRevisionID
+    FROM History_issueprices
+    GROUP BY ISSUE, CAST(DatetimeID AS DATE)  -- Group by both ISSUE and date
+)
+SELECT
+    h.ISSUE,
+    LTRIM(RTRIM(i.isin)) AS BondID,
+    h.CURRENTREPOPRICE AS Helix_price,
+    CAST(h.DATETIMEID AS DATE) AS Data_date
+FROM History_issueprices h
+JOIN LatestRevisionsPrices lr
+    ON h.ISSUE = lr.ISSUE
+    AND CAST(h.DatetimeID AS DATE) = lr.Data_date
+    AND h.REVISIONID = lr.MaxRevisionID
+JOIN ISSUES i
+    ON h.ISSUE = i.ISSUE
+"""
+
+# SHOULD USE THIS FOR ALL QUERRY FORMAT
 AUM_query = """
 DECLARE @CustomDate DATE;
 SET @CustomDate = {date_placeholder};

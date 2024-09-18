@@ -667,6 +667,8 @@ diff_cusip_map = {
     "TREATYUS1": "PPG5K9U06",
 }
 
+reverse_diff_cusip_map = {v: k for k, v in diff_cusip_map.items()}
+
 bb_fields = [
     "SECURITY_TYP",
     "ISSUER",
@@ -1126,7 +1128,7 @@ class BloombergDataFetcher:
             TBILL_3M + " Maturity",
             EUR_FX,
             DGCXX,
-            "timestamp"
+            "timestamp",
         ]
         df = df.reindex(columns=column_order)
 

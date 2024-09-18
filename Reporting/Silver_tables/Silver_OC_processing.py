@@ -21,8 +21,8 @@ else:
 
 def calculate_clean_collateral_mv(row):
     if row["Factor"] == 0:
-        return (row["Par/Quantity"] * row["Price"] * row["Factor"] / 100) + 0.001
-    return row["Par/Quantity"] * row["Price"] * row["Factor"] / 100
+        return (row["Par/Quantity"] * row["Clean_price"] * row["Factor"] / 100) + 0.001
+    return row["Par/Quantity"] * row["Clean_price"] * row["Factor"] / 100
 
 
 def calculate_collateral_mv(row):
@@ -52,10 +52,9 @@ def update_cash_balance_table(cash_balance_table, report_date):
 
 
 def update_price_table(price_table, report_date):
-    df_price = price_table[
-        (price_table["Price_date"] == report_date) & (price_table["Is_AM"] == 0)
-    ]
-    return df_price[["Bond_ID", "Final_price"]].rename(columns={"Final_price": "Price"})
+    return price_table[["Bond_ID", "Final_price"]].rename(
+        columns={"Final_price": "Price"}
+    )
 
 
 def update_factor_table(factor_table, report_date):
@@ -398,10 +397,11 @@ def generate_silver_oc_rates(
 
 # TODO: Refractor this later to combine with the above
 def generate_silver_oc_rates_prod(
-    bronze_oc_table,
-    price_and_factor_table,
-    cash_balance_table,
-    df_factor_and_accrued_interest,
+    bronze_oc_data,
+    factor_data,
+    clean_price_data,
+    cash_balance_data,
+    accrued_interest_data,
     report_date,
 ):
     valdate = pd.to_datetime(report_date)
@@ -410,7 +410,7 @@ def generate_silver_oc_rates_prod(
     # Assuming report_date is a string in the format 'YYYY-MM-DD'
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
-    df_cash_balance = update_cash_balance_table(cash_balance_table, report_date_dt)
+    df_cash_balance = update_cash_balance_table(cash_balance_data, report_date_dt)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
     oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
@@ -430,10 +430,10 @@ def generate_silver_oc_rates_prod(
             cash_balance_mask, "Projected_Total_Balance"
         ].values[0]
 
-        mask_bronze_oc = (bronze_oc_table["End Date"] > valdate) | (
-            bronze_oc_table["End Date"].isnull()
+        mask_bronze_oc = (bronze_oc_data["End Date"] > valdate) | (
+            bronze_oc_data["End Date"].isnull()
         )
-        df_bronze = bronze_oc_table[mask_bronze_oc]
+        df_bronze = bronze_oc_data[mask_bronze_oc]
         mask = (
             (df_bronze["fund"].str.upper() == fund_name)
             & (df_bronze["Series"].str.upper() == series_name)
@@ -441,22 +441,27 @@ def generate_silver_oc_rates_prod(
         )
         df_bronze = df_bronze[mask]
 
-        df_price_and_factor = price_and_factor_table[
-            ["bond_id", "price", "factor"]
-        ].rename(columns={"price": "Price", "factor": "Factor"})
-
+        # Adding Factor
+        df_factor = factor_data.rename(
+            columns={"BondID": "bond_id", "Helix_factor": "Factor"}
+        )
         df_bronze = df_bronze.merge(
-            df_price_and_factor, left_on="BondID", right_on="bond_id", how="left"
+            df_factor, left_on="BondID", right_on="bond_id", how="left"
         ).drop(columns="bond_id")
-        df_bronze["Price"] = df_bronze["Price"].astype(float)
-        df_bronze["Factor"] = df_bronze["Factor"].astype(float)
+        # TODO: Assume 1 factor for something we don't have data on Helix - should not be the case
+        df_bronze["Factor"] = df_bronze["Factor"].astype(float).fillna(1)
         df_bronze["Par/Quantity"] = df_bronze["Par/Quantity"].astype(float)
 
+        # Adding Price
         df_bronze = df_bronze.merge(
-            df_factor_and_accrued_interest,
-            left_on="BondID",
-            right_on="bond_id",
-            how="left",
+            clean_price_data, left_on="BondID", right_on="Bond_ID", how="left"
+        ).drop(columns="Bond_ID")
+
+        df_bronze["Clean_price"] = df_bronze["Clean_price"].astype(float)
+
+        # Adding Accrued Interest
+        df_bronze = df_bronze.merge(
+            accrued_interest_data, left_on="BondID", right_on="bond_id", how="left"
         ).drop(columns="bond_id")
 
         # Convert to float and fill NaN values with 0
@@ -464,7 +469,9 @@ def generate_silver_oc_rates_prod(
             df_bronze["interest_accrued"].astype(float).fillna(0)
         )
         # Calculate dirty_price
-        df_bronze["dirty_price"] = df_bronze["Price"] + df_bronze["interest_accrued"]
+        df_bronze["dirty_price"] = (
+            df_bronze["Clean_price"] + df_bronze["interest_accrued"]
+        )
 
         df_bronze["Clean_collateral_MV"] = df_bronze.apply(
             calculate_clean_collateral_mv, axis=1
