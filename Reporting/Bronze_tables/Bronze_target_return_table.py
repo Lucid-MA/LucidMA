@@ -31,7 +31,8 @@ def create_table_with_schema(tb_name):
     table = Table(
         tb_name,
         metadata,
-        Column("date", Date, primary_key=True),
+        Column("start_date", Date, primary_key=True),
+        Column("end_date", Date),
         Column("series", String(255), primary_key=True),
         Column("target", String),
         Column("benchmark", String),
