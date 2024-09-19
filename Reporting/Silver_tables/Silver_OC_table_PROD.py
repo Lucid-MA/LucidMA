@@ -8,11 +8,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates_prod
 from Utils.Common import get_trading_days, get_repo_root, get_file_path
-from Utils.SQL_queries import OC_query_historical_v2
+from Utils.SQL_queries import OC_query_historical_v2, HELIX_price_and_factor_by_date
 from Utils.database_utils import (
     get_database_engine,
     read_table_from_db,
     prod_db_type,
+    helix_db_type,
+    execute_sql_query_v2,
 )
 
 # Constants
@@ -205,30 +207,38 @@ def fetch_and_prepare_data(report_date):
 
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
-    df_price_and_factor = read_table_from_db(
-        "bronze_helix_price_and_factor", prod_db_type
+    # FACTOR
+    df_price_and_factor = execute_sql_query_v2(
+        HELIX_price_and_factor_by_date, db_type=helix_db_type, params=(report_date_dt,)
     )
-    df_price_and_factor = df_price_and_factor[
-        df_price_and_factor["data_date"] == report_date_dt
-    ]
 
+    df_factor = df_price_and_factor[["BondID", "Helix_factor"]]
+
+    # CLEAN PRICE
+    df_clean_price = read_table_from_db("bronze_daily_used_price", prod_db_type)
+    df_clean_price = df_clean_price.loc[
+        (df_clean_price["Is_AM"] == 0)
+        & (df_clean_price["Price_date"] == report_date_dt)
+    ][["Bond_ID", "Clean_price"]]
+
+    # CASH BALANCE
     df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
 
-    df_factor_and_accrued_interest = read_table_from_db(
-        "bronze_bond_data", prod_db_type
+    # ACCRUED INTEREST
+    df_accrued_interest = read_table_from_db(
+        "silver_bloomberg_factor_interest_accrued", prod_db_type
     )
 
-    df_factor_and_accrued_interest = df_factor_and_accrued_interest.loc[
-        (df_factor_and_accrued_interest["bond_data_date"] == report_date_dt)
-        & (df_factor_and_accrued_interest["is_am"] == 0),
-        ["bond_id", "mtg_factor", "interest_accrued"],
-    ]
+    df_accrued_interest = df_accrued_interest.loc[
+        (df_accrued_interest["date"] == report_date_dt)
+    ][["bond_id", "interest_accrued"]]
 
     return (
         df_bronze_oc,
-        df_price_and_factor,
+        df_factor,
+        df_clean_price,
         df_cash_balance,
-        df_factor_and_accrued_interest,
+        df_accrued_interest,
     )
 
 
@@ -240,15 +250,17 @@ def main():
     for REPORT_DATE in trading_days:
         (
             df_bronze_oc,
-            df_price_and_factor,
+            df_factor,
+            df_clean_price,
             df_cash_balance,
-            df_factor_and_accrued_interest,
+            df_accrued_interest,
         ) = fetch_and_prepare_data(REPORT_DATE)
         df = generate_silver_oc_rates_prod(
             df_bronze_oc,
-            df_price_and_factor,
+            df_factor,
+            df_clean_price,
             df_cash_balance,
-            df_factor_and_accrued_interest,
+            df_accrued_interest,
             REPORT_DATE,
         )
 
