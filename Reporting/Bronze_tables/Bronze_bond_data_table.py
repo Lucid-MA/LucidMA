@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -8,6 +9,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string_v2
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
+
+logger = logging.getLogger(__name__)
 
 PUBLISH_TO_PROD = True
 
@@ -29,8 +32,8 @@ else:
 # Directory and file pattern
 
 pattern = "Bond_Data_"
-# directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
-directory = get_file_path(r"S:/Users/THoang/Data/Bond Data")
+directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
+# directory = get_file_path(r"S:/Users/THoang/Data/Bond Data")
 
 
 def extract_date_and_indicator(filename):
@@ -169,7 +172,14 @@ for filename in os.listdir(directory):
             "MTG_NXT_PAY_DT_SET_DT",
         ]
 
-        df = df[bond_data_selected_fields]
+        try:
+            # Try to select the fields
+            df = df[bond_data_selected_fields]
+        except KeyError as e:
+            # Log the error with the logger function
+            logger.error(f"Error processing {filename}: {e}")
+            # Skip to the next file
+            continue
 
         bond_data_selected_columns = [
             "bond_id",
