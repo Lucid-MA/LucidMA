@@ -413,7 +413,8 @@ def generate_silver_oc_rates_prod(
     df_cash_balance = update_cash_balance_table(cash_balance_data, report_date_dt)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
-    oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
+    # # TODO: Whether to export this to pre-calculation silver table
+    # oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
 
     for fund_name, series_name in fund_series_pairs:
         oc_rate_id = f"{fund_name}_{series_name}_{report_date}"
@@ -502,7 +503,7 @@ def generate_silver_oc_rates_prod(
             )
         )
 
-        # TODO: Review this - % of portfolio calculation #
+        #### % of portfolio calculation ####
         # Market value of Repo money by Counterparty
         df_invest = (
             df_bronze.groupby(["Counterparty", "fund", "Series"])["Money"]
@@ -525,7 +526,7 @@ def generate_silver_oc_rates_prod(
         trade_invest = df_bronze["Money"].sum()
         total_invest = projected_total_balance + trade_invest + abs(pledged_cash_margin)
 
-        ## End TODO
+        ######################################
 
         df_bronze["Days_Diff"] = (valdate - df_bronze["Start Date"]).dt.days
         df_bronze["Comments"] = df_bronze["Comments"].str.strip().str.upper()
