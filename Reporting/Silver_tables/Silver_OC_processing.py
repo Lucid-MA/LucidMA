@@ -1,11 +1,10 @@
-import os
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
-from Utils.Common import format_decimal, get_repo_root, get_file_path
-from Utils.Hash import hash_string, hash_string_v2
+from Utils.Common import format_decimal, get_repo_root
+from Utils.Hash import hash_string_v2
 
 IS_PROD = True
 # Constants
@@ -547,20 +546,20 @@ def generate_silver_oc_rates_prod(
             df_bronze["Clean_margin_RCV_allocation"] + df_bronze["Clean_collateral_MV"],
         )
 
-        # Export_pre_calculation_file
-        pre_calculation_file_name = (
-            f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
-        )
-        pre_calculation_file_path = os.path.join(
-            oc_export_path, pre_calculation_file_name
-        )
+        # # Export_pre_calculation_file
+        # pre_calculation_file_name = (
+        #     f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
+        # )
+        # pre_calculation_file_path = os.path.join(
+        #     oc_export_path, pre_calculation_file_name
+        # )
 
         # TODO: Review here
-        if not (df_bronze is None or df_bronze.empty):
-            df_bronze.to_excel(
-                pre_calculation_file_path,
-                engine="openpyxl",
-            )
+        # if not (df_bronze is None or df_bronze.empty):
+        #     df_bronze.to_excel(
+        #         pre_calculation_file_path,
+        #         engine="openpyxl",
+        #     )
 
         df_result = (
             df_bronze.groupby("Comments")

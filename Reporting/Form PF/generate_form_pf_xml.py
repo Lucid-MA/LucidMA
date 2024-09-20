@@ -34,7 +34,7 @@ IS_QUARTERLY_FILING = False
 ONLY_QUARTERLY_DATA = True
 
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
-WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
+WORKBOOK_PATH = prefix_path + "2024/10.15.24/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
 XML_OUTPUT_PATH = (
     prefix_path
     + "2024/10.15.24/lucid_form_pf_"
@@ -138,10 +138,10 @@ if not ONLY_QUARTERLY_DATA:
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
     # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
     Q63_PATHS = [
-        prefix_path + "2024/07.15.24/2024_4_5_6_USG_Monthly.xlsx",
-        prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Monthly.xlsx",
-        prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Custom1.xlsx",
-        prefix_path + "2024/07.15.24/2024_4_5_6_Prime_MonthlyIG.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_USG_Monthly.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Monthly.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Custom1.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_MonthlyIG.xlsx",
     ]
 
     FUND_DATA = [
@@ -175,9 +175,9 @@ else:
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
     # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
     Q63_PATHS = [
-        prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Quarterly1.xlsx",
-        prefix_path + "2024/07.15.24/2024_4_5_6_Prime_Q364.xlsx",
-        prefix_path + "2024/07.15.24/2024_4_5_6_Prime_QuarterlyX.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Quarterly1.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Q364.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_QuarterlyX.xlsx",
     ]
 
     FUND_DATA = [
