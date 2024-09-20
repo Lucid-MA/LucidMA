@@ -19,7 +19,7 @@ from Utils.database_utils import (
 
 # Constants
 # REPORT_DATE = "2024-04-30"
-TABLE_NAME = "oc_rates_v2"
+TABLE_NAME = "oc_rates"
 
 # Database engines
 engine = get_database_engine("postgres")
@@ -71,10 +71,10 @@ def create_table_with_schema(tb_name, engine):
         Column("report_date", Date),
         Column("rating_buckets", String),
         Column("oc_rate", Float),
-        Column("oc_rate_allocated", Float),
+        Column("clean_oc_rate", Float),
         Column("collateral_mv", Float),
-        Column("collateral_mv_allocated", Float),
-        Column("investment_amount", Float),
+        Column("clean_collateral_mv", Float),
+        Column("repo_money", Float),
         Column("wtd_avg_rate", Float),
         Column("wtd_avg_spread", Float),
         Column("wtd_avg_haircut", Float),
