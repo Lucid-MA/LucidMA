@@ -62,7 +62,7 @@ df_helix_price = df_helix_price[
     ["Price_date", "Bond_ID", "Clean_price", "Price_source"]
 ]
 df_accrued_interest = read_table_from_db(
-    "silver_bloomberg_factor_rating_interest_accrued", prod_db_type
+    "silver_bloomberg_factor_interest_accrued", prod_db_type
 )
 
 df_accrued_interest = df_accrued_interest[["date", "bond_id", "interest_accrued"]]

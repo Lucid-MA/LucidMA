@@ -27,7 +27,7 @@ from Utils.Common import get_file_path
 prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working files/")
 
 # PARAMETERS TO INITIALIZE
-FILING_DATE = "2024-06-30"  # quarter-end here as YYYY-MM-DD string
+FILING_DATE = "2024-09-30"  # quarter-end here as YYYY-MM-DD string
 IS_QUARTERLY_FILING = False
 
 # Turn this flag on to get data for quarterly only
@@ -37,11 +37,11 @@ DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 WORKBOOK_PATH = prefix_path + "2024/07.15.24/Lucid Form PF Q2 - Updated for Part 3 Amendments - Final.xlsx"
 XML_OUTPUT_PATH = (
     prefix_path
-    + "2024/07.15.24/lucid_form_pf_"
+    + "2024/10.15.24/lucid_form_pf_"
     + datetime.now().strftime("%Y%m%d_%H_%M_%S")
     + ".xml"
 )
-XSD_PATH = "PFFormFiling_v2.xsd"  # one of the JJV additions - used to validate the xml against the xsd schema
+XSD_PATH = "PFFormFiling_v2.xsd"
 if not ONLY_QUARTERLY_DATA:
     FILING_TYPE = "PF-UPDATING"
 else:
