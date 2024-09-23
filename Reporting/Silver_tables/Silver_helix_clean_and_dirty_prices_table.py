@@ -57,6 +57,7 @@ if not inspector.has_table(tb_name):
     create_table_with_schema(tb_name)
 
 df_helix_price = read_table_from_db("bronze_daily_used_price", prod_db_type)
+df_helix_price = df_helix_price[(df_helix_price["Is_AM"] == 0)]
 
 df_helix_price = df_helix_price[
     ["Price_date", "Bond_ID", "Clean_price", "Price_source"]
