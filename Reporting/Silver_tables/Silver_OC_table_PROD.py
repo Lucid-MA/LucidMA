@@ -1,3 +1,4 @@
+import os
 import subprocess
 from datetime import datetime
 
@@ -6,7 +7,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateT
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates_prod
-from Utils.Common import get_trading_days, get_repo_root
+from Utils.Common import get_trading_days, get_repo_root, get_file_path
 from Utils.SQL_queries import OC_query_historical_v2, HELIX_price_and_factor_by_date
 from Utils.database_utils import (
     get_database_engine,
@@ -244,7 +245,7 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     start_date = "2024-09-14"
-    end_date = "2024-09-19"
+    end_date = "2024-09-23"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
         (
@@ -268,26 +269,26 @@ def main():
         else:
             # TODO: review this
             upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
-            # # Temporary
-            # df = df[
-            #     [
-            #         "oc_rates_id",
-            #         "fund",
-            #         "series",
-            #         "report_date",
-            #         "rating_buckets",
-            #         "oc_rate",
-            #         "clean_oc_rate",
-            #         "collateral_mv",
-            #         "clean_collateral_mv",
-            #         "repo_money",
-            #     ]
-            # ]
-            # # Export_pre_calculation_file
-            # oc_file_name = f"oc_rates_{REPORT_DATE}.xlsx"
-            # oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
-            # oc_file_path = os.path.join(oc_export_path, oc_file_name)
-            # df.to_excel(oc_file_path, engine="openpyxl")
+            # Temporary
+            df = df[
+                [
+                    "oc_rates_id",
+                    "fund",
+                    "series",
+                    "report_date",
+                    "rating_buckets",
+                    "oc_rate",
+                    "clean_oc_rate",
+                    "collateral_mv",
+                    "clean_collateral_mv",
+                    "repo_money",
+                ]
+            ]
+            # Export_pre_calculation_file
+            oc_file_name = f"oc_rates_{REPORT_DATE}.xlsx"
+            oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
+            oc_file_path = os.path.join(oc_export_path, oc_file_name)
+            df.to_excel(oc_file_path, engine="openpyxl")
 
     print("Process completed.")
 
