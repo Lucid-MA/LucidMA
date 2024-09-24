@@ -5,9 +5,9 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path, get_repo_root
-from Utils.Hash import hash_string
-from Utils.database_utils import engine_prod, engine_staging, upsert_data
+from Reporting.Utils.Common import get_file_path, get_repo_root
+from Reporting.Utils.Hash import hash_string
+from Reporting.Utils.database_utils import engine_prod, engine_staging, upsert_data
 
 PUBLISH_TO_PROD = True
 
