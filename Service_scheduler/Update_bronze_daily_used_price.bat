@@ -1,4 +1,3 @@
-@echo off
 cd /d "S:\Users\THoang\Tech\LucidMA"
 git pull
 
