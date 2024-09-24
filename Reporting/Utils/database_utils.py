@@ -3,7 +3,7 @@ import platform
 from contextlib import contextmanager
 
 import pandas as pd
-from sqlalchemy import create_engine, MetaData, String, Column, Table, Date, DateTime
+from sqlalchemy import create_engine, MetaData, String, Column, Table, Date, DateTime, select, func, inspect
 
 import logging
 
@@ -249,3 +249,13 @@ def create_custom_bronze_table(
     except Exception as e:
         print(f"Failed to create table {tb_name}: {e}")
         raise
+
+
+# Check if the table exists and is empty
+def is_table_empty(engine, table_name):
+    if inspect(engine).has_table(table_name):
+        with engine.connect() as conn:
+            result = conn.execute(select(func.count()).select_from(text(table_name)))
+            count = result.scalar()
+            return count == 0
+    return False
