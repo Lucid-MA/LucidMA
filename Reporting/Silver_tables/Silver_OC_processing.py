@@ -101,9 +101,6 @@ def generate_silver_oc_rates_prod(
     df_cash_balance = update_cash_balance_table(cash_balance_data, report_date_dt)
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
-    # # TODO: Whether to export this to pre-calculation silver table
-    # oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
-
     for fund_name, series_name in fund_series_pairs:
         oc_rate_id = f"{fund_name}_{series_name}_{report_date}"
         if oc_rate_id in read_processed_files():
@@ -548,7 +545,7 @@ def generate_silver_oc_rates_prod(
         )
 
         # Export_pre_calculation_file
-        oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
+        oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
         pre_calculation_file_name = (
             f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
         )

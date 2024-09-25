@@ -5,7 +5,12 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Reporting.Utils.Common import get_file_path, get_repo_root
+from Reporting.Utils.Common import (
+    get_file_path,
+    get_repo_root,
+    read_skipped_files,
+    mark_file_skipped,
+)
 from Reporting.Utils.Constants import cash_balance_column_order
 from Reporting.Utils.Hash import hash_string
 from Reporting.Utils.database_utils import (
@@ -24,9 +29,15 @@ if PUBLISH_TO_PROD:
     processed_files_tracker = (
         bronze_tracker_dir / "Bronze Table Processed Cash Balance PROD"
     )
+    skipped_files_tracker = (
+        bronze_tracker_dir / "Bronze Table files to skip Cash Balance PROD"
+    )
 else:
     engine = engine_staging
     processed_files_tracker = bronze_tracker_dir / "Bronze Table Processed Cash Balance"
+    skipped_files_tracker = (
+        bronze_tracker_dir / "Bronze Table files to skip Cash Balance"
+    )
 
 
 # Directory and file pattern
@@ -96,6 +107,7 @@ for filename in os.listdir(directory):
         filename.startswith(pattern)
         and filename.endswith(".xlsx")
         and filename not in read_processed_files()
+        and filename not in read_skipped_files(skipped_files_tracker)
     ):
         filepath = os.path.join(directory, filename)
 
@@ -104,6 +116,7 @@ for filename in os.listdir(directory):
             print(
                 f"Skipping {filename} as it does not contain a correct date format in file name."
             )
+            mark_file_skipped(filename, skipped_files_tracker)
             continue
 
         # Read the Excel file
