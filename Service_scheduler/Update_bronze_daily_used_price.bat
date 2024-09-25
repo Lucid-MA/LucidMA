@@ -23,7 +23,7 @@ echo PYTHONPATH after script: %PYTHONPATH%
 
 
 :: Navigate to the logs directory and append the date to the log file
-cd "S:\Users\THoang\Tech\LucidMA\BatchLogs"
+cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
 echo %date% ; "used_prices_table">>BatchLogs.txt
 
 :: Add the log changes to git, commit, and push them
