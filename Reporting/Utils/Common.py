@@ -9,6 +9,17 @@ import holidays
 import pandas as pd
 
 
+def read_skipped_files(skipped_files_tracker):
+    try:
+        with open(skipped_files_tracker, "r") as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()
+
+def mark_file_skipped(filename, skipped_files_tracker):
+    with open(skipped_files_tracker, "a") as file:
+        file.write(filename + "\n")
+
 def print_df(df):
     with pd.option_context(
         "display.max_columns",

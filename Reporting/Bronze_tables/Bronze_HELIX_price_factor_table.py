@@ -21,7 +21,12 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, DateTime, inspect, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Reporting.Utils.Common import get_file_path, get_repo_root
+from Utils.Common import (
+    get_file_path,
+    get_repo_root,
+    read_skipped_files,
+    mark_file_skipped,
+)
 from Utils.Hash import hash_string
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
@@ -35,10 +40,16 @@ if PUBLISH_TO_PROD:
     processed_files_tracker = (
         bronze_tracker_dir / "Bronze Table Processed HELIX Price and Factor PROD"
     )
+    skipped_files_tracker = (
+        bronze_tracker_dir / "Bronze Table files to skip HELIX Price and Factor PROD"
+    )
 else:
     engine = engine_staging
     processed_files_tracker = (
         bronze_tracker_dir / "Bronze Table Processed HELIX Price and Factor"
+    )
+    skipped_files_tracker = (
+        bronze_tracker_dir / "Bronze Table files to skip HELIX Price and Factor"
     )
 
 
@@ -130,6 +141,7 @@ for directory, pattern in base_directories.items():
             filename.startswith(pattern)
             and filename.endswith(".txt")
             and filename not in read_processed_files()
+            and filename not in read_skipped_files(skipped_files_tracker)
         ):
             filepath = os.path.join(directory, filename)
 
@@ -138,6 +150,7 @@ for directory, pattern in base_directories.items():
                 print(
                     f"Skipping {filename} as it does not contain a correct date format in file name."
                 )
+                mark_file_skipped(filename, skipped_files_tracker)
                 continue
 
             current_time = time.time()
