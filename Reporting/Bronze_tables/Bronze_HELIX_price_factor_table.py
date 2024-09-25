@@ -1,4 +1,18 @@
 import os
+import sys
+
+# Get the absolute path of the current script
+script_path = os.path.abspath(__file__)
+
+# Get the directory of the script
+script_dir = os.path.dirname(script_path)
+
+# Get the parent directory (Reporting)
+reporting_dir = os.path.dirname(script_dir)
+
+# Add the Reporting directory to the Python module search path
+sys.path.append(reporting_dir)
+
 import re
 import time
 from datetime import datetime
@@ -7,7 +21,7 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, DateTime, inspect, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path, get_repo_root
+from Reporting.Utils.Common import get_file_path, get_repo_root
 from Utils.Hash import hash_string
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
