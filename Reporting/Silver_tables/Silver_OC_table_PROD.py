@@ -1,6 +1,6 @@
 import os
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateTime
@@ -208,11 +208,26 @@ def fetch_and_prepare_data(report_date):
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
     # FACTOR
-    df_price_and_factor = execute_sql_query_v2(
-        HELIX_price_and_factor_by_date, db_type=helix_db_type, params=(report_date_dt,)
-    )
+    current_date_dt = datetime.now().date()
 
-    df_factor = df_price_and_factor[["BondID", "Helix_factor"]]
+    if current_date_dt - report_date_dt >= timedelta(days=2):
+        df_factor = execute_sql_query_v2(
+            HELIX_price_and_factor_by_date,
+            db_type=helix_db_type,
+            params=(report_date_dt,),
+        )
+        df_factor = df_factor[["BondID", "Helix_factor"]]
+    else:
+        df_price_and_factor_backup = read_table_from_db(
+            "bronze_helix_price_and_factor", prod_db_type
+        )
+        df_price_and_factor_backup = df_price_and_factor_backup[
+            df_price_and_factor_backup["data_date"] == report_date_dt
+        ][["bond_id", "factor"]]
+
+        df_factor = df_price_and_factor_backup.rename(
+            columns={"bond_id": "BondID", "factor": "Helix_factor"}
+        )
 
     # CLEAN PRICE
     df_clean_price = read_table_from_db("bronze_daily_used_price", prod_db_type)
@@ -244,7 +259,7 @@ def fetch_and_prepare_data(report_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
-    start_date = "2024-09-14"
+    start_date = "2024-09-23"
     end_date = "2024-09-23"
     trading_days = get_trading_days(start_date, end_date)
     for REPORT_DATE in trading_days:
