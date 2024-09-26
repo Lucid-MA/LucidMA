@@ -20,7 +20,7 @@ if __name__ == "__main__":
             print("Invalid date format. Please use YYYY-MM-DD.")
             sys.exit(1)
     else:
-        DATE = date.today() - timedelta(days=1)
+        DATE = date.today() - timedelta(days=0)
 
     N = int(1e5)
     print("Number of paths:", N)
