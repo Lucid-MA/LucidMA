@@ -1,19 +1,6 @@
 import os
 import re
 
-import pandas as pd
-from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
-from sqlalchemy.exc import SQLAlchemyError
-
-from Utils.Common import get_file_path, get_repo_root, print_df, get_current_timestamp
-from Utils.Hash import hash_string, hash_string_v2
-from Utils.database_utils import (
-    engine_prod,
-    engine_staging,
-    upsert_data,
-    read_table_from_db,
-    prod_db_type,
-)
 import os
 import sys
 
@@ -28,6 +15,21 @@ reporting_dir = os.path.dirname(script_dir)
 
 # Add the Reporting directory to the Python module search path
 sys.path.append(reporting_dir)
+
+import pandas as pd
+from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
+from sqlalchemy.exc import SQLAlchemyError
+
+from Utils.Common import get_file_path, get_repo_root, print_df, get_current_timestamp
+from Utils.Hash import hash_string, hash_string_v2
+from Utils.database_utils import (
+    engine_prod,
+    engine_staging,
+    upsert_data,
+    read_table_from_db,
+    prod_db_type,
+)
+
 
 PUBLISH_TO_PROD = True
 
