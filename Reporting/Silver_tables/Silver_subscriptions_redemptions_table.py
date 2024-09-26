@@ -1,7 +1,7 @@
 import logging
+
 import pandas as pd
 from sqlalchemy import (
-    text,
     inspect,
     Column,
     MetaData,
@@ -17,13 +17,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_repo_root, get_file_path, get_current_timestamp, print_df
-from Utils.Hash import hash_string, hash_string_v2
+from Utils.Common import get_repo_root, get_file_path, get_current_timestamp
+from Utils.Hash import hash_string_v2
 from Utils.SQL_queries import (
     current_trade_subscriptions_redemptions_querry,
 )
 from Utils.database_utils import (
-    get_database_engine,
     execute_sql_query_v2,
     helix_db_type,
     read_table_from_db,
@@ -93,12 +92,14 @@ if is_table_empty(engine, tb_name):
 # Update new data
 # 1. Remove new entry where Status Detail = "cancelled"
 # 2. Upsert new entry
+# New Data should be after cut-off date of September 26th
+
 helix_trade_df = execute_sql_query_v2(
     current_trade_subscriptions_redemptions_querry, helix_db_type, params=()
 )
 
 helix_trade_df = helix_trade_df[
-    helix_trade_df["Facility"].isin(["SUBSCRIPTION", "REDEMPTION", "NOTE_INTEREST"])
+    (helix_trade_df["Facility"].isin(["SUBSCRIPTION", "REDEMPTION", "NOTE_INTEREST"])) & (helix_trade_df["Facility"].isin(["SUBSCRIPTION", "REDEMPTION", "NOTE_INTEREST"]))
 ]
 
 columns_to_use = [
