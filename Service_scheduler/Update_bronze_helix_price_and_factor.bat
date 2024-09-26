@@ -11,14 +11,16 @@ if %ERRORLEVEL% neq 0 (
 cd "S:\Users\THoang\Tech\LucidMA\Reporting\Bronze_tables"
 "S:\Users\THoang\Tech\LucidMA\venv\Scripts\python.exe" "Bronze_HELIX_price_factor_table.py"
 if %ERRORLEVEL% neq 0 (
-    echo Python script execution failed. Exiting script.
-    exit /b 1
+    set "status=Failed"
+    echo Python script execution failed.
+) else (
+    set "status=Success"
 )
 
-
-:: Navigate to the logs directory and append the date to the log file
+:: Navigate to the logs directory and append the date, time, and status to the log file
 cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
-echo %date% ; "used_HELIX_prices_factor_table">>BatchLogs.txt
+echo %date% %time% ; "used_HELIX_prices_factor_table - Script execution: %status%">>BatchLogs.txt
+
 
 :: Add the log changes to git, commit, and push them
 cd /d "S:\Users\THoang\Tech\LucidMA"

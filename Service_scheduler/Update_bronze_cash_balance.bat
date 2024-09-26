@@ -15,16 +15,18 @@ echo Modified PYTHONPATH: %PYTHONPATH%
 cd "S:\Users\THoang\Tech\LucidMA\Reporting\Bronze_tables"
 "S:\Users\THoang\Tech\LucidMA\venv\Scripts\python.exe" "Bronze_cash_balance_table.py"
 if %ERRORLEVEL% neq 0 (
-    echo Python script execution failed. Exiting script.
-    exit /b 1
+    set "status=Failed"
+    echo Python script execution failed.
+) else (
+    set "status=Success"
 )
+
+:: Navigate to the logs directory and append the date, time, and status to the log file
+cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
+echo %date% %time% ; "cash_balance_table - Script execution: %status%">>BatchLogs.txt
 
 echo PYTHONPATH after script: %PYTHONPATH%
 
-
-:: Navigate to the logs directory and append the date to the log file
-cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
-echo %date% ; "cash_balance_table">>BatchLogs.txt
 
 :: Add the log changes to git, commit, and push them
 cd /d "S:\Users\THoang\Tech\LucidMA"
