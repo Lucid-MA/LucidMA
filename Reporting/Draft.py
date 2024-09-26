@@ -1,6 +1,9 @@
 from datetime import datetime
 
-from Utils.SQL_queries import HELIX_price_and_factor_by_date
+from Utils.SQL_queries import (
+    HELIX_price_and_factor_by_date,
+    current_trade_subscriptions_redemptions_querry,
+)
 from Utils.database_utils import (
     read_table_from_db,
     prod_db_type,
@@ -23,9 +26,15 @@ df_price_and_factor_backup = df_price_and_factor_backup.rename(
 
 print(df_price_and_factor_backup)
 
-
 df_price_and_factor = execute_sql_query_v2(
     HELIX_price_and_factor_by_date, db_type=helix_db_type, params=(report_date_dt,)
 )
 
 df_factor = df_price_and_factor[["BondID", "Helix_factor"]]
+
+
+helix_trade_df = execute_sql_query_v2(
+    current_trade_subscriptions_redemptions_querry, helix_db_type, params=()
+)
+
+print(helix_trade_df)
