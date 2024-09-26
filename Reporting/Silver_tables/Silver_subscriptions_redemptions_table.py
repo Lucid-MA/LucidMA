@@ -93,101 +93,111 @@ if is_table_empty(engine, tb_name):
 # 1. Remove new entry where Status Detail = "cancelled"
 # 2. Upsert new entry
 # New Data should be after cut-off date of September 26th
+cutoff_date = pd.to_datetime("2024-09-26")
 
 helix_trade_df = execute_sql_query_v2(
     current_trade_subscriptions_redemptions_querry, helix_db_type, params=()
 )
 
+# Ensure that "Enter Date" column is in datetime format
+helix_trade_df["Enter Date"] = pd.to_datetime(helix_trade_df["Enter Date"])
+
 helix_trade_df = helix_trade_df[
-    (helix_trade_df["Facility"].isin(["SUBSCRIPTION", "REDEMPTION", "NOTE_INTEREST"])) & (helix_trade_df["Facility"].isin(["SUBSCRIPTION", "REDEMPTION", "NOTE_INTEREST"]))
+    (helix_trade_df["Facility"].isin(["SUBSCRIPTION", "REDEMPTION", "NOTE_INTEREST"]))
+    & (helix_trade_df["Enter Date"] > cutoff_date)
 ]
 
-columns_to_use = [
-    "Trade ID",
-    "Start Date",
-    "Ledger",
-    "Fund Entity",
-    "BondID",
-    "Money",
-    "Counterparty",
-    "Facility",
-    "Status Detail",
-]
+if helix_trade_df.empty:
+    logging.info("No new transaction to update from Helix")
+else:
 
-# TODO: verify this
-helix_trade_df["data_id"] = helix_trade_df.apply(
-    lambda row: hash_string_v2(
-        f"{row['Start Date']}{row['BondID']}{row['Counterparty']}"
-    ),
-    axis=1,
-)
+    columns_to_use = [
+        "Trade ID",
+        "Start Date",
+        "Ledger",
+        "Fund Entity",
+        "BondID",
+        "Money",
+        "Counterparty",
+        "Facility",
+        "Status Detail",
+    ]
 
-investor_df = read_table_from_db("investors", prod_db_type)
+    investor_df = read_table_from_db("investors", prod_db_type)
 
-# Convert "Counterparty" and "Helix Code" to numeric
-helix_trade_df["Counterparty"] = pd.to_numeric(
-    helix_trade_df["Counterparty"], errors="coerce"
-)
-investor_df["Helix Code"] = pd.to_numeric(investor_df["Helix Code"], errors="coerce")
+    # Convert "Counterparty" and "Helix Code" to numeric
+    helix_trade_df["Counterparty"] = pd.to_numeric(
+        helix_trade_df["Counterparty"], errors="coerce"
+    )
+    investor_df["Helix Code"] = pd.to_numeric(
+        investor_df["Helix Code"], errors="coerce"
+    )
 
-# Convert "Trade ID" to numeric
-helix_trade_df["Trade ID"] = helix_trade_df["Trade ID"].astype(int)
+    # Convert "Trade ID" to numeric
+    helix_trade_df["Trade ID"] = helix_trade_df["Trade ID"].astype(int)
 
-# Convert "Money" to float
-helix_trade_df["Money"] = helix_trade_df["Money"].astype(float)
+    helix_trade_df["data_id"] = helix_trade_df.apply(
+        lambda row: hash_string_v2(f"{row['Trade ID']}{row['BondID']}"),
+        axis=1,
+    )
 
-# Create a mapping from investor_df
-counterparty_mapping = investor_df.set_index("Helix Code")["Legal entity"].to_dict()
+    # Convert "Money" to float
+    helix_trade_df["Money"] = helix_trade_df["Money"].astype(float)
 
-# Map the "Counterparty" in helix_trade_df
-helix_trade_df["Counterparty"] = helix_trade_df["Counterparty"].map(
-    counterparty_mapping
-)
+    # Create a mapping from investor_df
+    counterparty_mapping = investor_df.set_index("Helix Code")["Legal entity"].to_dict()
 
-helix_trade_df = helix_trade_df[["data_id"] + columns_to_use]
+    # Map the "Counterparty" in helix_trade_df
+    helix_trade_df["Counterparty"] = helix_trade_df["Counterparty"].map(
+        counterparty_mapping
+    )
 
-helix_trade_df = helix_trade_df.rename(
-    columns={
-        "Start Date": "Date",
-        "Facility": "Type",
-        "Money": "Amount",
-        "BondID": "Bond ID",
-        "Ledger": "Fund",
-        "Counterparty": "Investor Entity",
-    }
-)
+    helix_trade_df = helix_trade_df[["data_id"] + columns_to_use]
 
-### REMOVE CANCELLED TRADE FROM TABLE ###
-# Get all Trade IDs where "Status Detail" is "Cancelled"
-cancelled_trade_ids = helix_trade_df.loc[
-    helix_trade_df["Status Detail"] == "Cancelled", "Trade ID"
-].tolist()
+    helix_trade_df = helix_trade_df.rename(
+        columns={
+            "Start Date": "Date",
+            "Facility": "Type",
+            "Money": "Amount",
+            "BondID": "Bond ID",
+            "Ledger": "Fund",
+            "Counterparty": "Investor Entity",
+        }
+    )
 
+    ### REMOVE CANCELLED TRADE FROM TABLE ###
+    # Get all Trade IDs where "Status Detail" is "Cancelled"
+    cancelled_trade_ids = helix_trade_df.loc[
+        helix_trade_df["Status Detail"] == "Cancelled", "Trade ID"
+    ].tolist()
 
-# Function to remove rows from the table based on Trade IDs
-def remove_cancelled_trades(engine, table_name, trade_ids):
-    trade_table = table(table_name, column("Trade ID"))
-    with engine.connect() as conn:
-        stmt = delete(trade_table).where(trade_table.c["Trade ID"].in_(trade_ids))
-        conn.execute(stmt)
+    # Function to remove rows from the table based on Trade IDs
+    def remove_cancelled_trades(engine, table_name, trade_ids):
+        trade_table = table(table_name, column("Trade ID"))
+        with engine.connect() as conn:
+            stmt = delete(trade_table).where(trade_table.c["Trade ID"].in_(trade_ids))
+            conn.execute(stmt)
 
+    # Remove the cancelled trades from the table
+    remove_cancelled_trades(engine, tb_name, cancelled_trade_ids)
 
-# Remove the cancelled trades from the table
-remove_cancelled_trades(engine, tb_name, cancelled_trade_ids)
+    ### UPSERT NEW DATA ###
+    # Filter out rows where "Status Detail" is "Cancelled"
+    filtered_helix_trade_df = helix_trade_df[
+        helix_trade_df["Status Detail"] != "Cancelled"
+    ]
 
-### UPSERT NEW DATA ###
-# Filter out rows where "Status Detail" is "Cancelled"
-filtered_helix_trade_df = helix_trade_df[helix_trade_df["Status Detail"] != "Cancelled"]
+    # Drop the "Status Detail" column
+    filtered_helix_trade_df = filtered_helix_trade_df.drop(columns=["Status Detail"])
+    filtered_helix_trade_df["timestamp"] = get_current_timestamp()
 
-# Drop the "Status Detail" column
-filtered_helix_trade_df = filtered_helix_trade_df.drop(columns=["Status Detail"])
-filtered_helix_trade_df["timestamp"] = get_current_timestamp()
-
-# Upsert the filtered data into the table
-try:
-    upsert_data(engine, tb_name, filtered_helix_trade_df, "data_id", PUBLISH_TO_PROD)
-    logging.info("Successfully updated the latest data.")
-except SQLAlchemyError as e:
-    logging.error(f"Failed to update the latest data: {e}")
-except Exception as e:
-    logging.error(f"An unexpected error occurred: {e}")
+    # Upsert the filtered data into the table
+    try:
+        upsert_data(
+            engine, tb_name, filtered_helix_trade_df, "data_id", PUBLISH_TO_PROD
+        )
+        logging.info("Successfully updated the latest data.")
+    except SQLAlchemyError as e:
+        logging.error(f"Failed to update the latest data: {e}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")

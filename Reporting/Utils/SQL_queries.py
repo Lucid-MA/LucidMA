@@ -1167,7 +1167,8 @@ SELECT
        TRADEPIECEXREFS.FRONTOFFICEID AS "Facility",
        Tradepieces.COMMENTS AS "Comments",
        Tradecommissionpieceinfo.commissionvalue AS "Commission",
-       ISNULL(Tradepieces.STRATEGY, '') AS "Fund Entity"
+       ISNULL(Tradepieces.STRATEGY, '') AS "Fund Entity",
+       CAST(tradepieces.ENTERDATETIMEID AS DATE) AS "Enter Date"
        FROM
        tradepieces
        INNER JOIN TRADEPIECEXREFS ON TRADEPIECEXREFS.TRADEPIECE = TRADEPIECES.TRADEPIECE
