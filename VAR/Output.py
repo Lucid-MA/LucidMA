@@ -184,7 +184,9 @@ def Output_SQL(TempDF, N, StressRun, Fund, ledger, TableName, DATE):
         # Write TempDF to Excel
         TempDF.to_excel(full_output_path, index=False)
         # Upsert to table
-
+        # To PostGres
+        TempDF.to_sql(TableName, db, if_exists="append", schema="VAR_Model", index=True)
+        # To SQL
         TempDF.to_sql("VAR_Results", con=engine, if_exists="append", index=False)
     except Exception as e:
         conn.close()
