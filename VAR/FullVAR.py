@@ -1,12 +1,22 @@
 import itertools
+import logging
 import sys
 import time
-from datetime import date, timedelta
+from datetime import date
 from multiprocessing import Pool, Manager
 
 import Output
 import SingleVAR
 from SingleVAR import RunVAR
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
+
 
 if __name__ == "__main__":
     tic = time.time()
@@ -20,70 +30,57 @@ if __name__ == "__main__":
             print("Invalid date format. Please use YYYY-MM-DD.")
             sys.exit(1)
     else:
-        DATE = date.today() - timedelta(days=0)
+        DATE = date.today()
 
     N = int(1e5)
     print("Number of paths:", N)
 
     Data = SingleVAR.ImportRawData(DATE)
-    ledger_list_full = {
-        "Prime": [
-            "Master",
-            "Monthly",
-            "Custom1",
-            "Quarterly1",
-            "MonthlyIG",
-            "QuarterlyX",
-            "Q364",
-            "2YIG",
-        ],
-        "USG": ["Monthly"],
-    }
-    StressRunList = ["N", "S", "C"]
-    max_processes = 9
+
+    # ledger_list_full = {'Prime':['Master','Monthly','Custom1','Quarterly1','MonthlyIG', 'QuarterlyX','Q364','2YIG'],'USG':['Monthly']}
+    # StressRunList = ["N", "S", "C"]
+    # TODO: replace this
+    ledger_list_full = {"Prime": ["Master"]}
+    StressRunList = ["N"]
+    max_processes = 8
 
     manager = Manager()
     Results = manager.dict()
 
     pool = Pool(processes=max_processes)
 
+    results = []  # Store the async result objects
+
     for Fund in ledger_list_full:
         if Fund == "USG":
-            pool.starmap_async(
+            result = pool.starmap_async(
                 RunVAR,
                 [
-                    (
-                        Results,
-                        N,
-                        Data,
-                        Stress,
-                        Fund,
-                        "Monthly",
-                        DATE,
-                    )
+                    (Results, N, Data, Stress, Fund, "Monthly", DATE)
                     for Stress in StressRunList
                 ],
             )
+            results.append(result)
         if Fund == "Prime":
-            pool.starmap_async(
+            result = pool.starmap_async(
                 RunVAR,
                 [
-                    (
-                        Results,
-                        N,
-                        Data,
-                        Stress,
-                        Fund,
-                        ledger,
-                        DATE,
-                    )
+                    (Results, N, Data, Stress, Fund, ledger, DATE)
                     for ledger, Stress in itertools.product(
                         ledger_list_full.get("Prime"), StressRunList
                     )
                 ],
             )  # type: ignore
+            results.append(result)
 
+    # Close the pool to prevent any more tasks from being submitted
     pool.close()
+
+    # Ensure that all async processes complete by calling get() on each
+    for result in results:
+        result.get()  # This will block until all tasks are completed
+
+    # Join the pool to clean up the processes
     pool.join()
 
     print("Uploading Data to SQL...")
@@ -110,6 +107,16 @@ if __name__ == "__main__":
 
     if Exeptions:
         print(Exeptions)
+
+    # outlook = win32.gencache.EnsureDispatch('Outlook.Application') # type: ignore
+    # new_mail = outlook.CreateItem(0)
+    # new_mail.To = 'Yating.Liu@lucidma.com'
+    # today=date.today()
+    # if Exeptions:
+    #     new_mail.Subject = f'! VAR ISSUE ! - {today}'
+    #     body = f"<div><div>{Exeptions}</div></div>"
+    #     new_mail.HTMLBody = (body)
+    #     new_mail.Send()
 
     toc = time.time()
     print(

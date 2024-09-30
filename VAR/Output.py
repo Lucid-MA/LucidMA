@@ -6,6 +6,8 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 from sqlalchemy import create_engine
 
+from Utils.Hash import hash_string_v2
+
 
 def Output_Engine(Results: dict, N, DATE):
 
@@ -105,7 +107,7 @@ conn_string = "postgresql://dbmasteruser:lnRz*(N_7aOf~7Hx6oRo8;,<vYp|~#PC@lucidd
 db = create_engine(conn_string)
 
 
-#### UPLOAD TO MS SQL ####
+############### UPLOAD TO MS SQL ######################
 import platform
 
 # Configuration
@@ -125,7 +127,7 @@ DB_CONFIG = {
         "trusted_connection": "yes",
         "user_mac": "Lucid\\tony.hoang",
         "user_windows": "tony.hoang",
-        "password": os.getenv("MY_PASSWORD"),
+        "password": "",
     },
     "sql_server_2": {
         "driver": "ODBC+Driver+17+for+SQL+Server",
@@ -134,8 +136,8 @@ DB_CONFIG = {
         "database": "Prod1",
         "trusted_connection": "yes",
         "user_mac": "Lucid\\tony.hoang",
-        "user_windows": "tony.hoang",
-        "password": "Ar0undthe$un",
+        "user_windows": "yating.liu",
+        "password": "19960601Lyt+1f",
     },
 }
 
@@ -163,8 +165,9 @@ def get_database_engine(db_type):
 
 engine = get_database_engine("sql_server_2")
 
-
 ###################################################
+
+
 def Output_SQL(TempDF, N, StressRun, Fund, ledger, TableName, DATE):
     conn = db.connect()
     try:
@@ -174,20 +177,31 @@ def Output_SQL(TempDF, N, StressRun, Fund, ledger, TableName, DATE):
         TempDF["N"] = N
         TempDF["Date"] = DATE
         TempDF.loc["Total FUND", "Spd Diff"] = None
-        # TempDF.to_sql(TableName, db, if_exists='append', schema='VAR_Model', index=True)
+
+        # To SQL
+        # TempDF.to_sql(TableName, db, if_exists="append", schema="VAR_Model", index=True)
+        TempDF = TempDF.reset_index()
+        TempDF["ID"] = TempDF.apply(
+            lambda row: int(
+                hash_string_v2(
+                    f"{Fund}{ledger}{DATE}{StressRun}{N}{row['Counterparty']}"
+                )
+            ),
+            axis=1,
+        )
+
+        TempDF.to_sql("VAR_Results", con=engine, if_exists="append", index=False)
+
+        # TODO: temp write to excel
         output_excel_path = (
-            "S:\Lucid\Investment Committee & Risk\VAR Workspace\Tony\Output"
+            r"S:/Lucid/Investment Committee & Risk/VAR Workspace/Tony/Output"
         )
         file_name = f"{Fund}_{ledger}_{StressRun}.xlsx"
         # Combine the output path and file name
         full_output_path = os.path.join(output_excel_path, file_name)
         # Write TempDF to Excel
-        TempDF.to_excel(full_output_path, index=False)
-        # Upsert to table
-        # To PostGres
-        TempDF.to_sql(TableName, db, if_exists="append", schema="VAR_Model", index=True)
-        # To SQL
-        TempDF.to_sql("VAR_Results", con=engine, if_exists="append", index=False)
+        TempDF.to_excel(full_output_path, engine="openpyxl", index=True)
+
     except Exception as e:
         conn.close()
         return e
