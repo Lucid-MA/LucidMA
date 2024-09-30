@@ -496,7 +496,7 @@ def generate_silver_oc_rates_prod(
                 if abs(row["Clean_CP_total_negative_exposure"]) > 0:
                     return (
                         (
-                            row["Clean_trade_level_exposure"]
+                            abs(row["Clean_trade_level_exposure"])
                             / abs(row["Clean_CP_total_negative_exposure"])
                         )
                         * row["Clean_net_margin_MV"]
