@@ -1,11 +1,12 @@
+import logging
 import os
 import platform
 from contextlib import contextmanager
 
 import pandas as pd
-from sqlalchemy import create_engine, MetaData, String, Column, Table, Date, DateTime, select, func, inspect
-
-import logging
+from sqlalchemy import MetaData, String, Column, Table, DateTime, select, func, inspect
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
@@ -118,12 +119,7 @@ engine_prod = get_database_engine(prod_db_type)
 engine_helix = get_database_engine(helix_db_type)
 
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import SQLAlchemyError
-import pandas as pd
-import logging
 
-logger = logging.getLogger(__name__)
 
 
 def upsert_data(
@@ -205,6 +201,93 @@ def upsert_data(
         except SQLAlchemyError as e:
             logger.error(f"An error occurred: {e}")
             raise
+
+    logger.info(f"Data upserted successfully into {table_name}.")
+
+
+def upsert_data_multiple_keys(
+    engine,
+    table_name: str,
+    df: pd.DataFrame,
+    primary_key_names: list,
+    publish_to_prod: bool,
+):
+    with engine.connect() as connection:
+        try:
+            with connection.begin():
+                # Construct the INSERT statement dynamically
+                column_names = ", ".join([f'"{col}"' for col in df.columns])
+                value_placeholders = ", ".join(
+                    [
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", "").replace("?", "").replace(".", "").replace("-", "")}"
+                        for col in df.columns
+                    ]
+                )
+
+                # Convert 'nan' data to None for MS SQL
+                df = df.astype(object).where(pd.notnull(df), None)
+
+                if publish_to_prod:
+                    # Using MERGE statement for MS SQL Server
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}" = SOURCE."{col}"'
+                            for col in df.columns
+                            if col not in primary_key_names
+                        ]
+                    )
+
+                    match_condition = " AND ".join([f'TARGET."{key}" = SOURCE."{key}"' for key in primary_key_names])
+
+                    upsert_sql = text(
+                        f"""
+                                        MERGE INTO {table_name} AS TARGET
+                                        USING (SELECT {','.join(f'SOURCE."{col}"' for col in df.columns)} FROM (VALUES ({value_placeholders})) AS SOURCE ({column_names})) AS SOURCE
+                                        ON {match_condition}
+                                        WHEN MATCHED THEN
+                                            UPDATE SET {update_clause}
+                                        WHEN NOT MATCHED THEN
+                                            INSERT ({column_names}) VALUES ({','.join(f'SOURCE."{col}"' for col in df.columns)});
+                                        """
+                    )
+                else:
+                    update_clause = ", ".join(
+                        [
+                            f'"{col}"=EXCLUDED."{col}"'
+                            for col in df.columns
+                            if col not in primary_key_names
+                        ]
+                    )
+
+                    conflict_targets = ", ".join([f'"{key}"' for key in primary_key_names])
+
+                    upsert_sql = text(
+                        f"""
+                                        INSERT INTO {table_name} ({column_names})
+                                        VALUES ({value_placeholders})
+                                        ON CONFLICT ({conflict_targets})
+                                        DO UPDATE SET {update_clause};
+                                        """
+                    )
+
+                df.columns = [
+                    col.replace(" ", "_")
+                    .replace("/", "_")
+                    .replace("&", "")
+                    .replace("#", "")
+                    .replace("*", "")
+                    .replace("'", "")
+                    .replace("?", "")
+                    .replace(".", "").replace("-", "")
+                    for col in df.columns
+                ]
+
+                # Execute the upsert statement
+                connection.execute(upsert_sql, df.to_dict(orient="records"))
+            logger.info(f"Latest data upserted successfully into {table_name}.")
+        except SQLAlchemyError as e:
+                logger.error(f"An error occurred: {e}")
+                raise
 
     logger.info(f"Data upserted successfully into {table_name}.")
 

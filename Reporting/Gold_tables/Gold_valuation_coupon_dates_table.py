@@ -21,10 +21,10 @@ if PUBLISH_TO_PROD:
 else:
     engine = get_database_engine("postgres")
 
-tb_name = "withdrawal_notice_dates"
+tb_name = "valuation_coupon_dates"
 
 valuation_coupon_file_path = get_file_path(
-    r"S:/Users/THoang/Data/withdrawal_notice_dates.xlsx"
+    r"S:/Users/THoang/Data/valuation_coupon_dates.xlsx"
 )
 
 
@@ -35,8 +35,9 @@ def create_table_with_schema(table_name, engine):
         metadata,
         Column("series_id", String(255), primary_key=True),
         Column("series_name", String, nullable=True),
-        Column("withdrawal_date", Date, primary_key=True),
-        Column("notice_date", Date),
+        Column("start_date", Date, primary_key=True),
+        Column("end_date", Date),
+        Column("coupon_payment_date", Date),
         Column("timestamp", DateTime),
     )
 
@@ -55,8 +56,8 @@ try:
     df.columns = df.columns.str.strip()
 
     # Define critical and date columns
-    critical_columns = ["series_name", "withdrawal_date", "notice_date"]
-    date_columns = ["withdrawal_date", "notice_date"]
+    critical_columns = ["series_name", "start_date", "end_date"]
+    date_columns = ["start_date", "end_date", "coupon_payment_date"]
 
     # Check if all required columns are present
     missing_columns = [
@@ -68,7 +69,7 @@ try:
         )
 
     # Remove rows with null values in critical columns
-    df_clean = df.dropna(subset=critical_columns).copy()
+    df_clean = df.dropna(subset=critical_columns)
     rows_removed = len(df) - len(df_clean)
     print(f"\nRemoved {rows_removed} rows with null values in critical columns.")
 
@@ -89,6 +90,6 @@ if df_clean is not None:
         engine=engine,
         table_name=tb_name,
         df=df_clean,
-        primary_key_names=["series_id", "withdrawal_date"],
+        primary_key_names=["series_id", "start_date"],
         publish_to_prod=PUBLISH_TO_PROD,
     )
