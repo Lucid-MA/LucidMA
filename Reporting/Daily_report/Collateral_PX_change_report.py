@@ -6,6 +6,7 @@ import msal
 import numpy as np
 import pandas as pd
 import requests
+import win32com.client as win32
 
 from Utils.Common import get_file_path
 
@@ -53,12 +54,11 @@ def authenticate_and_get_token():
     return result["access_token"]
 
 
-def send_email(subject, body, recipients, attachment_path, attachment_name):
+def send_email(
+    subject, body, recipients, cc_recipients, attachment_path=None, attachment_name=None
+):
     token = authenticate_and_get_token()
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-    with open(attachment_path, "rb") as attachment:
-        content_bytes = base64.b64encode(attachment.read()).decode("utf-8")
 
     email_data = {
         "message": {
@@ -68,15 +68,24 @@ def send_email(subject, body, recipients, attachment_path, attachment_name):
             "toRecipients": [
                 {"emailAddress": {"address": recipient}} for recipient in recipients
             ],
-            "attachments": [
-                {
-                    "@odata.type": "#microsoft.graph.fileAttachment",
-                    "name": attachment_name,
-                    "contentBytes": content_bytes,
-                }
+            "ccRecipients": [
+                {"emailAddress": {"address": cc_recipient}}
+                for cc_recipient in cc_recipients
             ],
         }
     }
+
+    if attachment_path and attachment_name:
+        with open(attachment_path, "rb") as attachment:
+            content_bytes = base64.b64encode(attachment.read()).decode("utf-8")
+
+        email_data["message"]["attachments"] = [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": attachment_name,
+                "contentBytes": content_bytes,
+            }
+        ]
 
     response = requests.post(
         "https://graph.microsoft.com/v1.0/me/sendMail", headers=headers, json=email_data
@@ -92,16 +101,30 @@ def refresh_data_and_send_email():
         r"S:/Lucid/Trading & Markets/Trading and Settlement Tools/Collateral PX Change Report.xlsm"
     )
     sheet_name = "Biggest Movers"
-    header_row = 6
-    data_start_row = 7
 
-    # # Open the Excel file and refresh the data connection
-    # excel = win32.gencache.EnsureDispatch("Excel.Application")
-    # workbook = excel.Workbooks.Open(file_path, ReadOnly=False)
-    # workbook.RefreshAll()
-    # excel.CalculateUntilAsyncQueriesDone()
-    # workbook.Save()
-    # workbook.Close(SaveChanges=True)
+    # Open the Excel file and refresh the data connection
+    excel = win32.gencache.EnsureDispatch("Excel.Application")
+    excel.DisplayAlerts = False  # Disable alerts
+    excel.Visible = False  # Make Excel invisible
+    try:
+        workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
+        workbook.RefreshAll()
+        excel.CalculateUntilAsyncQueriesDone()
+        workbook.Save()
+        workbook.Close(SaveChanges=True)
+        excel.Quit()
+        excel.DisplayAlerts = True  # Re-enable alerts
+    except Exception as e:
+        subject = "Error opening or refreshing file"
+        body = f"Problem opening file {file_path}. Please review the file."
+        recipients = [
+            "tony.hoang@lucidma.com",
+            "amelia.thompson@lucidma.com",
+            "stephen.ng@lucidma.com",
+        ]
+        cc_recipients = ["operations@lucidma.com"]
+        send_email(subject, body, recipients, cc_recipients)
+        raise Exception(f"Error opening or refreshing file: {str(e)}")
 
     # Read the data from the specified sheet, starting from row 13
     data = pd.read_excel(
@@ -111,14 +134,6 @@ def refresh_data_and_send_email():
         skiprows=5,  # Skip the first 5 rows (header will be row 6)
         header=0,  # Now row 6 is the header
     )
-
-    # Filter out rows where Bond ID equals "Biggest Movers" or Quantity is NaN
-    filtered_data = data[
-        ~((data["Bond ID"] == "Biggest Movers") | (data["Quantity"].isna()))
-    ]
-
-    # Replace NaN with empty strings
-    filtered_data = filtered_data.fillna("")
 
     # List of columns to convert
     cols_to_convert = [
@@ -130,29 +145,26 @@ def refresh_data_and_send_email():
         "MV Change",
     ]
 
-    # Step 1: Convert columns to float, forcing invalid data to NaN
+    # Convert columns to float, forcing invalid data to NaN
     for col in cols_to_convert:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Step 2: Round up 'Quantity' and 'MV Change' and convert to integers
-    data["Quantity"] = np.ceil(data["Quantity"]).astype(
-        "Int64"
-    )  # Use 'Int64' to allow NaN values
+    # Round up 'Quantity' and 'MV Change' and convert to integers
+    # Use 'Int64' to allow NaN values
+    data["Quantity"] = np.ceil(data["Quantity"]).astype("Int64")
     data["MV Change"] = np.ceil(data["MV Change"]).astype("Int64")
 
-    # Step 3: Remove rows where Bond ID is 'Biggest Movers' or Quantity is NaN
+    # Remove rows where Bond ID is 'Biggest Movers' or Quantity is NaN
     filtered_data = data[
         (~(data["Bond ID"] == "Biggest Movers")) & (data["Quantity"].notna())
     ]
 
-    # Step 3: Filter for PX Change % DoD < -1 after conversion to float
+    # Filter for PX Change % DoD < -1 after conversion to float
     filtered_data = filtered_data[filtered_data["PX Change % DoD"] < -0.01]
 
-    # Step 4: Sort the filtered data by PX Change % DoD in ascending order
+    # Sort the filtered data by PX Change % DoD in ascending order
     filtered_data = filtered_data.sort_values(by="PX Change % DoD", ascending=True)
 
-    # Define the columns with light green background
-    green_columns = ["Total Cash Out", "Prime Current Usage", "USG Current Usage"]
     # Keep number columns with maximum 4 digit after decimal
     number_columns = [
         "T-1 PX",
@@ -173,7 +185,6 @@ def refresh_data_and_send_email():
                 .fillna("")
             )
 
-    # Define styling functions
     # Define styling functions
     def style_percentage(val):
         if pd.isna(val) or val == "":
@@ -242,11 +253,23 @@ def refresh_data_and_send_email():
                         """
 
     subject = f"LRX - PX change report -{valdate}"
-    recipients = ["tony.hoang@lucidma.com", "thomas.durante@lucidma.com"]
+    recipients = [
+        "tony.hoang@lucidma.com",
+        "amelia.thompson@lucidma.com",
+        "stephen.ng@lucidma.com",
+    ]
+    cc_recipients = ["operations@lucidma.com"]
     attachment_path = file_path
     attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"
 
-    send_email(subject, html_content, recipients, attachment_path, attachment_name)
+    send_email(
+        subject,
+        html_content,
+        recipients,
+        cc_recipients,
+        attachment_path,
+        attachment_name,
+    )
 
 
 # Run the script
