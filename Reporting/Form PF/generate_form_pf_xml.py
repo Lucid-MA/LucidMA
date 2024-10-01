@@ -28,20 +28,32 @@ prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working fi
 
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2024-09-30"  # quarter-end here as YYYY-MM-DD string
-IS_QUARTERLY_FILING = False
+IS_QUARTERLY_FILING = True
 
 # Turn this flag on to get data for quarterly only
-ONLY_QUARTERLY_DATA = False
+ONLY_QUARTERLY_DATA = True
 
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 # WORKBOOK_PATH = prefix_path + "2024/10.15.24/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
 WORKBOOK_PATH = prefix_path + "2024/10.15.24/Test/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
-XML_OUTPUT_PATH = (
-    prefix_path
-    + "2024/10.15.24/lucid_form_pf_"
-    + datetime.now().strftime("%Y%m%d_%H_%M_%S")
-    + ".xml"
-)
+
+if ONLY_QUARTERLY_DATA:
+    XML_OUTPUT_PATH = (
+        prefix_path
+        + "2024/10.15.24/lucid_form_pf_"
+        + datetime.now().strftime("%Y%m%d_%H_%M_%S")
+        + "_quarterly"
+        + ".xml"
+    )
+else:
+    XML_OUTPUT_PATH = (
+            prefix_path
+            + "2024/10.15.24/lucid_form_pf_"
+            + datetime.now().strftime("%Y%m%d_%H_%M_%S")
+            + "_monthly"
+            + ".xml"
+    )
+
 XSD_PATH = "PFFormFiling_v2.xsd"
 if not ONLY_QUARTERLY_DATA:
     FILING_TYPE = "PF-UPDATING"
@@ -139,14 +151,14 @@ if not ONLY_QUARTERLY_DATA:
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
     # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
     Q63_PATHS = [
-        # prefix_path + "2024/10.15.24/q62/2024_7_8_9_USG_Monthly.xlsx",
-        # prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Monthly.xlsx",
-        # prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Custom1.xlsx",
-        # prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_MonthlyIG.xlsx",
-        prefix_path + "2024/10.15.24/Test/2024_7_8_9_USG_Monthly.xlsx",
-        prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Monthly.xlsx",
-        prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Custom1.xlsx",
-        prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_MonthlyIG.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_USG_Monthly.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Monthly.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Custom1.xlsx",
+        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_MonthlyIG.xlsx",
+        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_USG_Monthly.xlsx",
+        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Monthly.xlsx",
+        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Custom1.xlsx",
+        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_MonthlyIG.xlsx",
     ]
 
     FUND_DATA = [
