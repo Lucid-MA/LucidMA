@@ -1,3 +1,18 @@
+import os
+import sys
+
+# Get the absolute path of the current script
+script_path = os.path.abspath(__file__)
+
+# Get the directory of the script
+script_dir = os.path.dirname(script_path)
+
+# Get the parent directory (Reporting)
+reporting_dir = os.path.dirname(script_dir)
+
+# Add the Reporting directory to the Python module search path
+sys.path.append(reporting_dir)
+
 import openpyxl
 import pandas as pd
 
