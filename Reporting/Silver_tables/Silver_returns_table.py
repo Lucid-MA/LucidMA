@@ -4,14 +4,30 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import inspect, text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import (
+    inspect,
+    MetaData,
+    String,
+    Column,
+    DateTime,
+    Table,
+    Date,
+    Float,
+    Integer,
+    Engine,
+)
 
-from Utils.Common import get_repo_root
+from Utils.Common import get_repo_root, get_current_timestamp_datetime
 from Utils.Constants import cusip_mapping
 from Utils.Hash import hash_string
-from Utils.database_utils import read_table_from_db, engine_prod, prod_db_type, engine_staging, \
-    staging_db_type
+from Utils.database_utils import (
+    read_table_from_db,
+    engine_prod,
+    prod_db_type,
+    engine_staging,
+    staging_db_type,
+    upsert_data,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -27,11 +43,11 @@ silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
 if PUBLISH_TO_PROD:
     engine = engine_prod
     db_type = prod_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver Return Data PROD"
 else:
     engine = engine_staging
     db_type = staging_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver Return Data"
 
 # Specify your table name and schema
 ssc_table_name = "silver_ssc_data"
@@ -90,14 +106,16 @@ data_to_append = []
 # Convert dates in data to datetime objects for comparison
 df["start_date"] = pd.to_datetime(df["start_date"])
 
-roll_schedule_table_name = "roll_schedule"
-df_roll_schedule = read_table_from_db(roll_schedule_table_name, db_type)
+valuation_dates_table_name = "valuation_coupon_dates"
+df_valuation_dates = read_table_from_db(valuation_dates_table_name, db_type)
 
 # Iterate through each unique pool description
 for pool in df["pool_description"].unique():
     pool_data = df[df["pool_description"] == pool]
     series_id = cusip_mapping[pool]
-    df_roll_schedule_temp = df_roll_schedule[df_roll_schedule["series_id"] == series_id]
+    df_roll_schedule_temp = df_valuation_dates[
+        df_valuation_dates["series_id"] == series_id
+    ]
     df_roll_schedule_temp = df_roll_schedule_temp.sort_values(
         by=["start_date", "end_date"]
     ).reset_index(drop=True)
@@ -229,29 +247,60 @@ df_grouped = (
 df_grouped["start_date"] = df_grouped["start_date"].dt.strftime("%Y-%m-%d")
 df_grouped["end_date"] = df_grouped["end_date"].dt.strftime("%Y-%m-%d")
 
-df_grouped["period_return"] = (
-    df_grouped["calculated_ending_balance"] - df_grouped["calculated_starting_balance"]
-) / df_grouped["calculated_starting_balance"]
-
-df_grouped["annualized_returns_360"] = (
+# Calculate period return, handle division by zero
+df_grouped["period_return"] = np.where(
+    df_grouped["calculated_starting_balance"] != 0,
     (
         df_grouped["calculated_ending_balance"]
         - df_grouped["calculated_starting_balance"]
     )
-    / df_grouped["calculated_starting_balance"]
-    * 360
-    / df_grouped["day_count"]
-).round(4)
+    / df_grouped["calculated_starting_balance"],
+    0,  # Set period return to 0 when calculated_starting_balance is 0
+)
 
-df_grouped["annualized_returns_365"] = (
-    (
-        df_grouped["calculated_ending_balance"]
-        - df_grouped["calculated_starting_balance"]
-    )
-    / df_grouped["calculated_starting_balance"]
-    * 365
-    / df_grouped["day_count"]
-).round(4)
+# Calculate annualized returns (360 days), handle division by zero and round to 4 decimal places
+df_grouped["annualized_returns_360"] = np.where(
+    (df_grouped["calculated_starting_balance"] != 0) & (df_grouped["day_count"] != 0),
+    np.round(
+        (
+            df_grouped["calculated_ending_balance"]
+            - df_grouped["calculated_starting_balance"]
+        )
+        / df_grouped["calculated_starting_balance"]
+        * 360
+        / df_grouped["day_count"],
+        4,
+    ),
+    0,  # Set annualized returns (360 days) to 0 when calculated_starting_balance or day_count is 0
+)
+
+# Calculate annualized returns (365 days), handle division by zero and round to 4 decimal places
+df_grouped["annualized_returns_365"] = np.where(
+    (df_grouped["calculated_starting_balance"] != 0) & (df_grouped["day_count"] != 0),
+    np.round(
+        (
+            df_grouped["calculated_ending_balance"]
+            - df_grouped["calculated_starting_balance"]
+        )
+        / df_grouped["calculated_starting_balance"]
+        * 365
+        / df_grouped["day_count"],
+        4,
+    ),
+    0,  # Set annualized returns (365 days) to 0 when calculated_starting_balance or day_count is 0
+)
+
+# Replace any inf or -inf with 0 for period return and annualized returns
+df_grouped.loc[:, "period_return"] = df_grouped["period_return"].replace(
+    [np.inf, -np.inf], 0
+)
+df_grouped.loc[:, "annualized_returns_360"] = df_grouped[
+    "annualized_returns_360"
+].replace([np.inf, -np.inf], 0)
+df_grouped.loc[:, "annualized_returns_365"] = df_grouped[
+    "annualized_returns_365"
+].replace([np.inf, -np.inf], 0)
+
 
 # file_path = get_file_path(
 #     "S:/Users/THoang/Data/all_funds_master_returns_comparison.xlsx"
@@ -274,26 +323,20 @@ begin_time = time.time()
 table_name = "historical_returns"
 
 
-# Context manager for database connection
-class DatabaseConnection:
-    def __enter__(self):
-        self.conn = engine.connect()
-        return self.conn
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.close()
-
-
 # Define the type for each column of silver_ssc_data
 column_types = {
-    "return_id": "BIGINT",
-    "start_date": "DATE",
-    "end_date": "DATE",
-    "calculated_starting_balance": "FLOAT",
-    "calculated_ending_balance": "FLOAT",
-    "day_count": "INTEGER",
-    "annualized_returns_360": "FLOAT",
-    "annualized_returns_365": "FLOAT",
+    "return_id": String(255),
+    "series_id": String,
+    "pool_name": String,
+    "start_date": Date,
+    "end_date": Date,
+    "calculated_starting_balance": Float,
+    "calculated_ending_balance": Float,
+    "day_count": Integer,
+    "period_return": Float,
+    "annualized_returns_360": Float,
+    "annualized_returns_365": Float,
+    "timestamp": DateTime,
 }
 
 column_order = [
@@ -311,82 +354,58 @@ column_order = [
 ]
 
 # Default type for columns not specified in column_types
-default_type = "TEXT"
+default_type = String
 
 
 # Function to create transactions table if not exists
-def create_table_with_schema(tb_name):
+def create_table_with_schema(
+    tb_name: str, engine: Engine, column_types: dict, default_type: type = String
+):
     """
     Creates a new database table based on predefined list of columns.
     Also adds an index on the 'TransactionID' column for efficient updates.
 
     Args:
         tb_name (str): The name of the table to create.
+        engine (Engine): SQLAlchemy engine object representing the database connection.
+        column_types (dict): Dictionary mapping column names to their SQLAlchemy data types.
+        default_type (type): Default data type for columns not specified in column_types.
     """
-    # Generate the SQL column definitions
-    try:
-        columns_sql = ", ".join(
-            [
-                f'"{col}" {column_types.get(col, default_type)}'
-                for col in df_grouped[column_order].columns
-            ]
-            + ['"timestamp" TIMESTAMP']
+    metadata = MetaData()
+
+    columns = []
+    for col_name in column_order:
+        sqlalchemy_type = column_types.get(col_name, default_type)
+        columns.append(
+            Column(col_name, sqlalchemy_type, primary_key=(col_name == "return_id"))
         )
 
-        # Create the table with IF NOT EXISTS
-        create_table_sql = f"""
-                    CREATE TABLE IF NOT EXISTS {tb_name} ({columns_sql}, PRIMARY KEY ("return_id"))
-                """
+    columns.append(Column("timestamp", DateTime))
 
-        with DatabaseConnection() as conn:
-            with conn.begin():
-                conn.execute(text(create_table_sql))
-                print(f"Table {tb_name} created successfully or already exists.")
+    silver_ssc_data_table = Table(tb_name, metadata, *columns)
 
-    except Exception as e:
-        print(f"Failed to create table {tb_name}: {e}")
-        raise
-
-
-def upsert_data(tb_name, df):
-    with engine.connect() as conn:
-        try:
-            with conn.begin():  # Start a transaction
-                # Constructing the UPSERT SQL dynamically based on DataFrame columns
-                column_names = ", ".join([f'"{col}"' for col in df.columns])
-                value_placeholders = ", ".join([f":{col}" for col in df.columns])
-                update_clause = ", ".join(
-                    [
-                        f'"{col}"=EXCLUDED."{col}"'
-                        for col in df.columns
-                        if col != "return_id"
-                    ]
-                )
-
-                upsert_sql = text(
-                    f"""
-                        INSERT INTO {tb_name} ({column_names})
-                        VALUES ({value_placeholders})
-                        ON CONFLICT ("return_id")
-                        DO UPDATE SET {update_clause}; 
-                    """
-                )
-                # Execute upsert in a transaction
-                conn.execute(upsert_sql, df.to_dict(orient="records"))
-            print(f"Latest data upserted successfully into {tb_name}.")
-        except SQLAlchemyError as e:
-            print(f"An error occurred: {e}")
-            raise
+    # Create the table if it doesn't exist
+    if not inspect(engine).has_table(tb_name):
+        metadata.create_all(engine)
+        print(f"Table '{tb_name}' created successfully.")
+    else:
+        print(f"Table '{tb_name}' already exists.")
 
 
 inspector = inspect(engine)
 
 if not inspector.has_table(table_name):
-    create_table_with_schema(table_name)
+    create_table_with_schema(table_name, engine, column_types)
 
-df_grouped["timestamp"] = datetime.now().strftime("%B-%d-%y %H:%M:%S")
+df_grouped["timestamp"] = get_current_timestamp_datetime()
 
-upsert_data(table_name, df_grouped)
+upsert_data(
+    engine,
+    table_name,
+    df_grouped,
+    "return_id",
+    PUBLISH_TO_PROD,
+)
 
 end_time = time.time()
 process_time = end_time - begin_time

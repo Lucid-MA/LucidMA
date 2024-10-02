@@ -111,36 +111,6 @@ class DatabaseConnection:
         self.conn.close()
 
 
-# Function to create transactions table if not exists
-# TODO: Remove this
-# def create_transactions_table(tb_name):
-#     """
-#     Creates a new database table based on predefined list of columns.
-#     Also adds an index on the 'TransactionID' column for efficient updates.
-#
-#     Args:
-#         tb_name (str): The name of the table to create.
-#     """
-#     # Construct column definitions
-#     try:
-#         columns_sql = ", ".join(
-#             [f'"{col}" STRING' for col in bronze_ssc_table_needed_columns]
-#             + ['"FileDate" DATE', '"TransactionID" STRING(255)', '"FileName" STRING']
-#         )
-#
-#         # Create the table with IF NOT EXISTS
-#         create_table_sql = f"""
-#                     CREATE TABLE IF NOT EXISTS {tb_name} ({columns_sql}, PRIMARY KEY ("TransactionID"))
-#                 """
-#
-#         with DatabaseConnection() as conn:
-#             with conn.begin():
-#                 conn.execute(text(create_table_sql))
-#                 print(f"Table {tb_name} created successfully or already exists.")
-#
-#     except Exception as e:
-#         print(f"Failed to create table {tb_name}: {e}")
-#         raise
 def create_transactions_table(tb_name):
     """
     Creates a new database table based on predefined list of columns.
