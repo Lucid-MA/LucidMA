@@ -10,9 +10,9 @@ script_dir = os.path.dirname(script_path)
 # Get the Reporting directory (parent of Price)
 reporting_dir = os.path.dirname(script_dir)
 
-# Add the Reporting and Reporting/Utils directories to the Python module search path
-sys.path.append(reporting_dir)  # Adds Reporting to sys.path
-sys.path.append(os.path.join(reporting_dir, 'Utils'))  # Adds Reporting/Utils to sys.path
+# Add the Reporting/Utils directory to the Python module search path
+utils_dir = os.path.join(reporting_dir, 'Utils')
+sys.path.append(utils_dir)
 
 
 import logging
