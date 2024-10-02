@@ -1,7 +1,4 @@
 import os
-import re
-
-import os
 import sys
 
 # Get the absolute path of the current script
@@ -17,11 +14,10 @@ reporting_dir = os.path.dirname(script_dir)
 sys.path.append(reporting_dir)
 
 import pandas as pd
-from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import Table, MetaData, Column, String, Float, Date, inspect
 
-from Utils.Common import get_file_path, get_repo_root, print_df, get_current_timestamp
-from Utils.Hash import hash_string, hash_string_v2
+from Utils.Common import get_repo_root, get_current_timestamp
+from Utils.Hash import hash_string_v2
 from Utils.database_utils import (
     engine_prod,
     engine_staging,
@@ -66,7 +62,7 @@ def create_table_with_schema(tb_name):
     print(f"Table {tb_name} created successfully or already exists.")
 
 
-tb_name = "silver_helix_clean_and_dirty_prices"
+tb_name = "silver_clean_and_dirty_prices"
 inspector = inspect(engine)
 
 if not inspector.has_table(tb_name):

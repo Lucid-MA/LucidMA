@@ -147,8 +147,10 @@ inspector = inspect(engine)
 if not inspector.has_table(tb_name):
     create_table_with_schema(tb_name)
 
-upsert_data(engine, tb_name, df_silver_bloomberg_data, "data_id", PUBLISH_TO_PROD)
-
-# Mark the processed dates in the tracker file
-for date in df_silver_bloomberg_data["date"].unique():
-    mark_file_processed(str(date), BB_factor_interest_TRACKER)
+if not df_silver_bloomberg_data.empty:
+    upsert_data(engine, tb_name, df_silver_bloomberg_data, "data_id", PUBLISH_TO_PROD)
+    # Mark the processed dates in the tracker file
+    for date in df_silver_bloomberg_data["date"].unique():
+        mark_file_processed(str(date), BB_factor_interest_TRACKER)
+else:
+    logger.info("Nothing to update - data has already been processed for latest day")
