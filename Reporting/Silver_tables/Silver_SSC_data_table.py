@@ -1,13 +1,35 @@
+import logging
 import time
-from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import text, inspect
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import (
+    inspect,
+    MetaData,
+    Engine,
+    Integer,
+    Float,
+    DateTime,
+    Column,
+    Table,
+    String,
+    Date,
+    DECIMAL,
+)
 
+from Utils.Common import (
+    get_repo_root,
+    read_processed_files,
+    get_current_timestamp_datetime,
+)
 from Utils.Constants import transaction_map, pool_mapping, investor_mapping
-from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine
+from Utils.Hash import hash_string_v2
+from Utils.database_utils import (
+    engine_prod,
+    engine_staging,
+    prod_db_type,
+    staging_db_type,
+    upsert_data,
+)
 from Utils.database_utils import read_table_from_db
 
 """
@@ -26,13 +48,28 @@ The script performs the following steps:
 
 The script is part of a larger data processing pipeline and is used for generating a report on series returns for the period 2021-2024.
 """
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-# Specify your table name and schema
-db_type = "postgres"
+PUBLISH_TO_PROD = True
+
+# Get the repository root directory
+repo_path = get_repo_root()
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
+
+if PUBLISH_TO_PROD:
+    engine = engine_prod
+    db_type = prod_db_type
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD"
+else:
+    engine = engine_staging
+    db_type = staging_db_type
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
+
 table_name = "bronze_ssc_data"
 
-# Connect to the PostgreSQL database
-engine = get_database_engine("postgres")
 start_time = time.time()
 
 # Read the table into a pandas DataFrame
@@ -110,7 +147,7 @@ pivot_df["ID"] = (
     + pivot_df["InvestorDescription"].astype(str)
     + pivot_df["Start_date"].astype(str)
     + pivot_df["End_date"].astype(str)
-).apply(hash_string)
+).apply(hash_string_v2)
 
 pivot_df["Day Count"] = (pivot_df["End_date"] - pivot_df["Start_date"]).dt.days
 
@@ -135,19 +172,26 @@ Returns = (Revised Ending Cap Acct Balance - Revised Beginning Cap Balance) / Re
 Annualized Returns = Returns * 360 / Day Count
 """
 
-pivot_df["Returns"] = (
-    pivot_df["Revised Ending Cap Acct Balance"]
-    - pivot_df["Revised Beginning Cap Balance"]
-) / pivot_df["Revised Beginning Cap Balance"]
+import numpy as np
 
-# Calculate Annualized Returns
-pivot_df["Annualized Returns"] = (
-    (pivot_df["Returns"])
-    * 360
-    / pivot_df.apply(
-        lambda row: row["Day Count"] if row["Day Count"] > 0 else 1, axis=1
-    )
+# Calculate Returns, handle division by zero
+pivot_df["Returns"] = np.where(
+    pivot_df["Revised Beginning Cap Balance"] != 0,
+    (pivot_df["Revised Ending Cap Acct Balance"] - pivot_df["Revised Beginning Cap Balance"])
+    / pivot_df["Revised Beginning Cap Balance"],
+    0  # Set Returns to 0 when Revised Beginning Cap Balance is 0
 )
+
+# Calculate Annualized Returns, handle day count > 0
+pivot_df["Annualized Returns"] = np.where(
+    pivot_df["Day Count"] > 0,
+    pivot_df["Returns"] * 360 / pivot_df["Day Count"],
+    0  # Set Annualized Returns to 0 when Day Count is 0
+)
+
+# Replace any inf or -inf with 0 for Returns and Annualized Returns
+pivot_df.loc[:, "Returns"] = pivot_df["Returns"].replace([np.inf, -np.inf], 0)
+pivot_df.loc[:, "Annualized Returns"] = pivot_df["Annualized Returns"].replace([np.inf, -np.inf], 0)
 
 # Drop 'Unmapped / Others'
 pivot_df = pivot_df.drop("Unmapped / Others", axis=1)
@@ -215,14 +259,6 @@ end_time = time.time()  # Capture end time
 process_time = end_time - start_time
 print(f"Data processing time: {process_time:.2f} seconds")
 
-## CLEAN UP DATAFRAME FOR TABLE UPLOAD ##
-pivot_df["ID"] = pivot_df.apply(
-    lambda row: hash_string(
-        f"{row['PoolDescription']}{row['InvestorDescription']}{row['PoolDescription']}{row['Start_date']}{row['End_date']}"
-    ),
-    axis=1,
-)
-
 current_columns = [
     "ID",
     "PeriodDescription",
@@ -283,112 +319,114 @@ pivot_df.rename(columns=rename_dict, inplace=True)
 ## TABLE UPLOAD ##
 table_name = "silver_ssc_data"
 
+# Columns with float data type
+float_columns = [
+    "beginning_cap_acct_bal",
+    "withdrawal_bop",
+    "contribution",
+    "revised_beginning_cap_balance",
+    "income",
+    "expense",
+    "mgmt_fee",
+    "mgmt_fee_waiver",
+    "mark_to_market",
+    "ending_cap_acct_bal",
+    "withdrawal_eop",
+    "revised_ending_cap_acct_balance",
+]
 
-# Context manager for database connection
-class DatabaseConnection:
-    def __enter__(self):
-        self.conn = engine.connect()
-        return self.conn
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.close()
-
-
-# Define the type for each column of silver_ssc_data
 column_types = {
-    "ID": "BIGINT",
-    "start_date": "DATE",
-    "end_date": "DATE",
-    "day_count": "INTEGER",
-    "returns": "FLOAT",
-    "annualized_returns": "FLOAT",
-    "beginning_cap_acct_bal": "FLOAT",
-    "withdrawal_bop": "FLOAT",
-    "contribution": "FLOAT",
-    "revised_beginning_cap_balance": "FLOAT",
-    "income": "FLOAT",
-    "expense": "FLOAT",
-    "mgmt_fee": "FLOAT",
-    "mgmt_fee_waiver": "FLOAT",
-    "mark_to_market": "FLOAT",
-    "ending_cap_acct_bal": "FLOAT",
-    "withdrawal_eop": "FLOAT",
-    "revised_ending_cap_acct_balance": "FLOAT",
+    "ID": String(255),
+    "start_date": Date,
+    "end_date": Date,
+    "day_count": Integer,
+    "returns": DECIMAL(38, 18),
+    "annualized_returns": DECIMAL(38, 18),
+    "beginning_cap_acct_bal": Float,
+    "withdrawal_bop": Float,
+    "contribution": Float,
+    "revised_beginning_cap_balance": Float,
+    "income": Float,
+    "expense": Float,
+    "mgmt_fee": Float,
+    "mgmt_fee_waiver": Float,
+    "mark_to_market": Float,
+    "ending_cap_acct_bal": Float,
+    "withdrawal_eop": Float,
+    "revised_ending_cap_acct_balance": Float,
+    "timestamp": DateTime,
 }
 
-# Default type for columns not specified in column_types
-default_type = "TEXT"
 
+def create_table_with_schema(
+    table_name: str, engine: Engine, column_types: dict, default_type: type = String
+):
+    metadata = MetaData()
 
-# Function to create transactions table if not exists
-def create_table_with_schema(tb_name):
-    """
-    Creates a new database table based on predefined list of columns.
-    Also adds an index on the 'TransactionID' column for efficient updates.
+    columns = []
+    for col_name in pivot_df[new_columns].columns:
+        sqlalchemy_type = column_types.get(col_name, default_type)
+        columns.append(Column(col_name, sqlalchemy_type))
 
-    Args:
-        tb_name (str): The name of the table to create.
-    """
-    # Generate the SQL column definitions
-    try:
-        columns_sql = ", ".join(
-            [
-                f'"{col}" {column_types.get(col, default_type)}'
-                for col in pivot_df[new_columns].columns
-            ]
-            + ['"timestamp" TIMESTAMP']
-        )
+    columns.append(Column("timestamp", DateTime))
 
-        # Create the table with IF NOT EXISTS
-        create_table_sql = f"""
-                    CREATE TABLE IF NOT EXISTS {tb_name} ({columns_sql}, PRIMARY KEY ("ID"))
-                """
+    silver_ssc_data_table = Table(table_name, metadata, *columns)
 
-        with DatabaseConnection() as conn:
-            with conn.begin():
-                conn.execute(text(create_table_sql))
-                print(f"Table {tb_name} created successfully or already exists.")
-
-    except Exception as e:
-        print(f"Failed to create table {tb_name}: {e}")
-        raise
-
-
-def upsert_data(tb_name, df):
-    with engine.connect() as conn:
-        try:
-            with conn.begin():  # Start a transaction
-                # Constructing the UPSERT SQL dynamically based on DataFrame columns
-                column_names = ", ".join([f'"{col}"' for col in df.columns])
-                value_placeholders = ", ".join([f":{col}" for col in df.columns])
-                update_clause = ", ".join(
-                    [f'"{col}"=EXCLUDED."{col}"' for col in df.columns if col != "ID"]
-                )
-
-                upsert_sql = text(
-                    f"""
-                        INSERT INTO {tb_name} ({column_names})
-                        VALUES ({value_placeholders})
-                        ON CONFLICT ("ID")
-                        DO UPDATE SET {update_clause}; 
-                    """
-                )
-                # Execute upsert in a transaction
-                conn.execute(upsert_sql, df.to_dict(orient="records"))
-            print(f"Latest data upserted successfully into {tb_name}.")
-        except SQLAlchemyError as e:
-            print(f"An error occurred: {e}")
-            raise
+    # Create the table if it doesn't exist
+    if not inspect(engine).has_table(table_name):
+        metadata.create_all(engine)
+        print(f"Table '{table_name}' created successfully.")
+    else:
+        print(f"Table '{table_name}' already exists.")
 
 
 inspector = inspect(engine)
 
 if not inspector.has_table(table_name):
-    create_table_with_schema(table_name)
+    create_table_with_schema(table_name, engine, column_types)
 
-pivot_df["timestamp"] = datetime.now().strftime("%B-%d-%y %H:%M:%S")
+# Create the "processed_entries" column
+pivot_df["processed_entries"] = (
+    pivot_df["pool_description"].astype(str)
+    + "_"
+    + pivot_df["investor_description"].astype(str)
+    + "_"
+    + pivot_df["start_date"].astype(str)
+    + "_"
+    + pivot_df["end_date"].astype(str)
+)
 
-upsert_data(table_name, pivot_df[new_columns + ["timestamp"]])
+# Convert null/missing values to 0 for float columns
+pivot_df[float_columns] = pivot_df[float_columns].fillna(0)
+pivot_df[float_columns] = pivot_df[float_columns].astype(float)
+pivot_df[float_columns] = pivot_df[float_columns].round(5)
+
+# Read the processed dates from the tracker file
+processed_entries = set(read_processed_files(Silver_SSC_TRACKER))
+
+# Filter out the already processed dates
+mask = ~pivot_df["processed_entries"].isin(processed_entries)
+new_entries = pivot_df[mask]
+
+
+if not new_entries.empty:
+    # Update the tracker file with new processed entries
+    new_processed_entries = new_entries["processed_entries"].unique()
+    with open(Silver_SSC_TRACKER, "a") as f:
+        f.write("\n".join(new_processed_entries) + "\n")
+    # Add the timestamp column
+    new_entries["timestamp"] = get_current_timestamp_datetime()
+    new_entries = new_entries[new_columns + ["timestamp"]]
+    #
+    # Upsert the new data
+    upsert_data(
+        engine,
+        table_name,
+        new_entries,
+        "ID",
+        PUBLISH_TO_PROD,
+    )
 
 end_time_2 = time.time()
 process_time = end_time_2 - end_time

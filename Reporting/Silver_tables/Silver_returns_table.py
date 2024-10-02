@@ -1,3 +1,4 @@
+import logging
 import time
 from functools import reduce
 
@@ -6,16 +7,35 @@ import pandas as pd
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from Utils.Common import get_repo_root
 from Utils.Constants import cusip_mapping
 from Utils.Hash import hash_string
-from Utils.database_utils import get_database_engine, read_table_from_db
+from Utils.database_utils import read_table_from_db, engine_prod, prod_db_type, engine_staging, \
+    staging_db_type
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+PUBLISH_TO_PROD = True
+
+# Get the repository root directory
+repo_path = get_repo_root()
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
+
+if PUBLISH_TO_PROD:
+    engine = engine_prod
+    db_type = prod_db_type
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD"
+else:
+    engine = engine_staging
+    db_type = staging_db_type
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
 
 # Specify your table name and schema
-db_type = "postgres"
 ssc_table_name = "silver_ssc_data"
 
-# Connect to the PostgreSQL database
-engine = get_database_engine("postgres")
 start_time = time.time()
 
 # Read the table into a pandas DataFrame

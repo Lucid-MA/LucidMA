@@ -101,6 +101,10 @@ def get_current_timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def get_current_timestamp_datetime() -> datetime:
+    return datetime.now()
+
+
 def format_date_mm_dd_yyyy(date: datetime) -> str:
     return date.strftime("%m/%d/%y")
 
