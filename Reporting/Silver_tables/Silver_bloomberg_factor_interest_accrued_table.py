@@ -1,8 +1,6 @@
 import os
 import sys
 
-from Utils.Hash import hash_string_v2
-
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
 
@@ -35,6 +33,7 @@ from Utils.database_utils import (
     upsert_data,
 )
 
+from Utils.Hash import hash_string_v2
 
 # Get the repository root directory
 repo_path = get_repo_root()
