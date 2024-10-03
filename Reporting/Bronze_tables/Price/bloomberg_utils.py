@@ -7,12 +7,15 @@ script_path = os.path.abspath(__file__)
 # Get the directory of the script (Price directory)
 script_dir = os.path.dirname(script_path)
 
-# Get the Reporting directory (parent of Price)
+# Get the parent directory (Reporting)
 reporting_dir = os.path.dirname(script_dir)
 
-# Add the Reporting/Utils directory to the Python module search path
-utils_dir = os.path.join(reporting_dir, 'Utils')
-sys.path.append(utils_dir)
+# Add the Reporting directory to sys.path
+sys.path.append(reporting_dir)
+
+print("Updated sys.path in bloomberg_utils.py:")
+for path in sys.path:
+    print(path)
 
 import logging
 from functools import wraps
@@ -21,8 +24,8 @@ from typing import Dict, List, Any, Optional
 import blpapi
 import pandas as pd
 
-from Utils.Common import get_current_date, get_current_timestamp
-from Utils.Constants import (
+from Reporting.Utils.Common import get_current_date, get_current_timestamp
+from Reporting.Utils.Constants import (
     benchmark_ticker,
     CP_1M,
     CP_3M,

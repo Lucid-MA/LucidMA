@@ -12,7 +12,6 @@ if %ERRORLEVEL% neq 0 (
 cd /d "C:\LucidMA\Service_scheduler\BatchLogs"
 echo %date% %time% ; "bb_collateral_data_fetch - Script execution: %status%">>BatchLogs.txt
 
-
 :: Second Python script execution
 cd /d "C:\LucidMA\Reporting\Bronze_tables"
 "C:\LucidMA\venv\Scripts\python.exe" "Bronze_daily_bloomberg_rates_table.py"
