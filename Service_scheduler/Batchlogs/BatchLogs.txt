@@ -67,3 +67,5 @@ Wed 10/02/2024 17:37:07.72 ; "bb_collateral_data_fetch - Script execution: Faile
 Wed 10/02/2024 17:37:09.41 ; "bb_rates_data_fetch - Script execution: Failed"
 Wed 10/02/2024 17:37:47.32 ; "bb_collateral_data_fetch - Script execution: Failed"
 Wed 10/02/2024 17:37:49.29 ; "bb_rates_data_fetch - Script execution: Failed"
+Wed 10/02/2024 17:38:48.91 ; "bb_collateral_data_fetch - Script execution: Failed"
+Wed 10/02/2024 17:38:50.43 ; "bb_rates_data_fetch - Script execution: Failed"
