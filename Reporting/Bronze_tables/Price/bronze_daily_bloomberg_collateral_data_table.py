@@ -1,21 +1,18 @@
 import os
 import sys
 
-# Get the absolute path of the current script (Price directory)
+# Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
 
 # Get the directory of the script (Price directory)
 script_dir = os.path.dirname(script_path)
 
-# Get the Reporting directory (parent of Bronze_tables)
-reporting_dir = os.path.dirname(os.path.dirname(script_dir))  # Go two levels up to get to Reporting
+# Get the Reporting directory (parent of Price)
+reporting_dir = os.path.dirname(script_dir)
 
 # Add the Reporting/Utils directory to the Python module search path
 utils_dir = os.path.join(reporting_dir, 'Utils')
 sys.path.append(utils_dir)
-print("Corrected sys.path after appending Utils:")
-for path in sys.path:
-    print(path)
 
 
 import logging
@@ -36,17 +33,17 @@ from bloomberg_utils import (
     bb_cols_selected,
     excluded_cusips,
 )
-from Reporting.Utils.Common import (
+from Utils.Common import (
     get_file_path,
     print_df,
     get_current_date,
     get_current_timestamp,
 )
-from Reporting.Utils.Hash import hash_string
-from Reporting.Utils.SQL_queries import (
+from Utils.Hash import hash_string
+from Utils.SQL_queries import (
     bloomberg_bond_id_query,
 )
-from Reporting.Utils.database_utils import (
+from Utils.database_utils import (
     get_database_engine,
     execute_sql_query,
     helix_db_type,

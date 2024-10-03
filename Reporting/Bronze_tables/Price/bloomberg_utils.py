@@ -1,5 +1,20 @@
+import os
+import sys
+
+# Get the absolute path of the current script
+script_path = os.path.abspath(__file__)
+
+# Get the directory of the script (Price directory)
+script_dir = os.path.dirname(script_path)
+
+# Get the Reporting directory (parent of Price)
+reporting_dir = os.path.dirname(script_dir)
+
+# Add the Reporting/Utils directory to the Python module search path
+utils_dir = os.path.join(reporting_dir, 'Utils')
+sys.path.append(utils_dir)
+
 import logging
-from datetime import datetime
 from functools import wraps
 from typing import Dict, List, Any, Optional
 

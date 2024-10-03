@@ -400,18 +400,33 @@ notice_date_rule = {
     "Lucid Prime - Series Q1": 10,
 }
 
+# TODO: Keep this, just in case it breaks with the new convention
+# cusip_mapping = {
+#     "Lucid Prime Fund LLC_A1": "PRIME-A10",
+#     "Lucid Cash Fund USG LLC": "USGFD-M00",
+#     "Lucid Prime Fund LLC_2YIG": "PRIME-2YI",
+#     "Lucid Prime Fund LLC_C1": "PRIME-C10",
+#     "Lucid Prime Fund LLC": "PRIME-M00",
+#     "Lucid Prime Fund LLC_MIG": "PRIME-MIG",
+#     "Lucid Prime Fund LLC_Q364": "PRIME-Q36",
+#     "Lucid Prime Fund LLC_QX": "PRIME-QX0",
+#     "Lucid Prime Fund LLC_Q1": "PRIME-Q10",
+#     "Lucid Prime Fund LLC_M1": "PRIME-M10",
+#     "Lucid Prime Fund LLC_S1": "PRIME-S10",
+# }
+
 cusip_mapping = {
-    "Lucid Prime Fund LLC_A1": "PRIME-A10",
-    "Lucid Cash Fund USG LLC": "USGFD-M00",
-    "Lucid Prime Fund LLC_2YIG": "PRIME-2YI",
-    "Lucid Prime Fund LLC_C1": "PRIME-C10",
-    "Lucid Prime Fund LLC": "PRIME-M00",
-    "Lucid Prime Fund LLC_MIG": "PRIME-MIG",
-    "Lucid Prime Fund LLC_Q364": "PRIME-Q36",
-    "Lucid Prime Fund LLC_QX": "PRIME-QX0",
-    "Lucid Prime Fund LLC_Q1": "PRIME-Q10",
-    "Lucid Prime Fund LLC_M1": "PRIME-M10",
-    "Lucid Prime Fund LLC_S1": "PRIME-S10",
+    "Lucid Prime Fund LLC_A1": "PRIME-A100",
+    "Lucid Cash Fund USG LLC": "USGFD-M000",
+    "Lucid Prime Fund LLC_2YIG": "PRIME-2YI0",
+    "Lucid Prime Fund LLC_C1": "PRIME-C100",
+    "Lucid Prime Fund LLC": "PRIME-M000",
+    "Lucid Prime Fund LLC_MIG": "PRIME-MIG0",
+    "Lucid Prime Fund LLC_Q364": "PRIME-Q364",
+    "Lucid Prime Fund LLC_QX": "PRIME-QX00",
+    "Lucid Prime Fund LLC_Q1": "PRIME-Q100",
+    "Lucid Prime Fund LLC_M1": "PRIME-M100",
+    "Lucid Prime Fund LLC_S1": "PRIME-S100",
 }
 
 reverse_cusip_mapping = {

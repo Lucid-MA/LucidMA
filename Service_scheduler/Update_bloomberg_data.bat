@@ -8,8 +8,6 @@ if %ERRORLEVEL% neq 0 (
     set "status=Success"
 )
 
-pause
-
 :: Log the result of the first script
 cd /d "C:\LucidMA\Service_scheduler\BatchLogs"
 echo %date% %time% ; "bb_collateral_data_fetch - Script execution: %status%">>BatchLogs.txt

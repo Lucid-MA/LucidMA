@@ -17,12 +17,12 @@ sys.path.append(utils_dir)
 import openpyxl
 import pandas as pd
 
-# import win32com.client as win32
+
 from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
 from Bronze_tables.Price.bloomberg_utils import BloombergDataFetcher
-from Utils.Common import get_file_path, get_current_timestamp, get_current_date, print_df
+from Utils.Common import get_file_path, get_current_timestamp, get_current_date
 from Utils.Constants import (
     CP_1M,
     SOFR_1Y,
@@ -58,6 +58,7 @@ tb_name = "bronze_daily_bloomberg_rates"
 benchmark_file_path = get_file_path(r"S:/Lucid/Data/Historical Benchmarks.xlsx")
 
 if MANUAL_REFRESH:
+    import win32com.client as win32
     # Open the Excel file and refresh the data connection
     excel = win32.gencache.EnsureDispatch("Excel.Application")
     excel.Visible = False  # Make Excel visible

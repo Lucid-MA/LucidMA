@@ -96,44 +96,22 @@ def send_email(
         print(f"Email '{subject}' sent successfully")
 
 
-def refresh_data_and_send_email():
-    file_path = get_file_path(
-        r"S:/Lucid/Trading & Markets/Trading and Settlement Tools/Collateral PX Change Report.xlsm"
-    )
-    sheet_name = "Biggest Movers"
+def process_data(data, threshold, threshold_style, subheader):
+    column_names = [
+        "Bond ID",
+        "Quantity",
+        "Investment Amount",
+        "MV",
+        "T-1 PX",
+        "Current PX",
+        "PX Change DoD",
+        "PX Change % DoD",
+        "MV Change",
+        "Rating",
+        "Collateral Type",
+    ]
 
-    # Open the Excel file and refresh the data connection
-    excel = win32.gencache.EnsureDispatch("Excel.Application")
-    excel.DisplayAlerts = False  # Disable alerts
-    excel.Visible = False  # Make Excel invisible
-    try:
-        workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
-        workbook.RefreshAll()
-        excel.CalculateUntilAsyncQueriesDone()
-        workbook.Save()
-        workbook.Close(SaveChanges=True)
-        excel.Quit()
-        excel.DisplayAlerts = True  # Re-enable alerts
-    except Exception as e:
-        subject = "Error opening or refreshing file"
-        body = f"Problem opening file {file_path}. Please review the file."
-        recipients = [
-            "tony.hoang@lucidma.com",
-            "amelia.thompson@lucidma.com",
-            "stephen.ng@lucidma.com",
-        ]
-        cc_recipients = ["operations@lucidma.com"]
-        send_email(subject, body, recipients, cc_recipients)
-        raise Exception(f"Error opening or refreshing file: {str(e)}")
-
-    # Read the data from the specified sheet, starting from row 13
-    data = pd.read_excel(
-        file_path,
-        sheet_name=sheet_name,
-        usecols="B:J",  # Columns B to J
-        skiprows=5,  # Skip the first 5 rows (header will be row 6)
-        header=0,  # Now row 6 is the header
-    )
+    data.columns = column_names
 
     # List of columns to convert
     cols_to_convert = [
@@ -149,9 +127,11 @@ def refresh_data_and_send_email():
     for col in cols_to_convert:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Round up 'Quantity' and 'MV Change' and convert to integers
+    # Round up 'Quantity', 'Investment Amount', 'MV', and 'MV Change' and convert to integers
     # Use 'Int64' to allow NaN values
     data["Quantity"] = np.ceil(data["Quantity"]).astype("Int64")
+    data["Investment Amount"] = np.ceil(data["Investment Amount"]).astype("Int64")
+    data["MV"] = np.ceil(data["MV"]).astype("Int64")
     data["MV Change"] = np.ceil(data["MV Change"]).astype("Int64")
 
     # Remove rows where Bond ID is 'Biggest Movers' or Quantity is NaN
@@ -159,8 +139,8 @@ def refresh_data_and_send_email():
         (~(data["Bond ID"] == "Biggest Movers")) & (data["Quantity"].notna())
     ]
 
-    # Filter for PX Change % DoD < -1 after conversion to float
-    filtered_data = filtered_data[filtered_data["PX Change % DoD"] < -0.01]
+    # Filter for PX Change % DoD < threshold after conversion to float
+    filtered_data = filtered_data[filtered_data["PX Change % DoD"] < threshold]
 
     # Sort the filtered data by PX Change % DoD in ascending order
     filtered_data = filtered_data.sort_values(by="PX Change % DoD", ascending=True)
@@ -189,23 +169,37 @@ def refresh_data_and_send_email():
     def style_percentage(val):
         if pd.isna(val) or val == "":
             return "background-color: #dff0d8"
-        val = abs(float(val))
-        if val >= 3 and val <= 5:
+        val = abs(float(val.strip("%")))
+        if val >= threshold_style[0] and val <= threshold_style[1]:
             return "background-color: #FFD700"  # Dark yellow
-        elif val > 5:
+        elif val > threshold_style[1]:
             return "background-color: #FF0000"  # Red
         return "background-color: #dff0d8"  # Dark green
 
-    def style_number(val):
-        return "background-color: #dff0d8"
+    # Format 'Quantity', 'Investment Amount', and 'MV' columns with comma and no decimal
+    filtered_data["Quantity"] = filtered_data["Quantity"].apply("{:,.0f}".format)
+    filtered_data["Investment Amount"] = filtered_data["Investment Amount"].apply(
+        "{:,.0f}".format
+    )
+    filtered_data["MV"] = filtered_data["MV"].apply("{:,.0f}".format)
 
-    # Apply styling to the DataFrame
-    styled_data = filtered_data.style.map(style_percentage, subset=percent_columns).map(
-        style_number, subset=number_columns
+    # Format 'MV Change' column with comma, parentheses for negative values, and no decimal
+    filtered_data["MV Change"] = filtered_data["MV Change"].apply(
+        lambda x: "({:,.0f})".format(abs(x)) if x < 0 else "{:,.0f}".format(x)
     )
 
+    # Convert percentage columns to whole percentages
+    for col in percent_columns:
+        if col in filtered_data.columns:
+            filtered_data[col] = filtered_data[col].apply(
+                lambda x: "{:.2f}%".format(x * 1)
+            )
+
+    # Apply styling to the DataFrame
+    styled_data = filtered_data.style.map(style_percentage, subset=percent_columns)
+
     # Format the styled DataFrame as an HTML table
-    html_table = styled_data.format(precision=4).to_html(index=False, border=1)
+    html_table = styled_data.to_html(index=False, border=1, escape=False)
 
     html_content = f"""
                         <!DOCTYPE html>
@@ -244,27 +238,102 @@ def refresh_data_and_send_email():
                                     <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
                                 </tr>
                                 <tr class="subheader">
-                                    <td colspan="{len(filtered_data.columns)}">PX Change Report</td>
+                                    <td colspan="{len(filtered_data.columns)}">{subheader}</td>
                                 </tr>
+                                
+                            </table>
+                            <table>
                                 {html_table}
                             </table>
                         </body>
                         </html>
                         """
 
-    subject = f"LRX - PX change report -{valdate}"
+    return html_content
+
+
+def refresh_data_and_send_email():
+    file_path = get_file_path(
+        r"S:/Lucid/Trading & Markets/Trading and Settlement Tools/Collateral PX Change Report.xlsm"
+    )
+    sheet_name = "Biggest Movers"
+
+    # Open the Excel file and refresh the data connection
+    excel = win32.gencache.EnsureDispatch("Excel.Application")
+    excel.DisplayAlerts = False  # Disable alerts
+    excel.Visible = False  # Make Excel invisible
+    try:
+        workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
+        workbook.RefreshAll()
+        excel.CalculateUntilAsyncQueriesDone()
+        workbook.Save()
+        workbook.Close(SaveChanges=True)
+        excel.Quit()
+        excel.DisplayAlerts = True  # Re-enable alerts
+    except Exception as e:
+        subject = "Error opening or refreshing file"
+        body = f"Problem opening file {file_path}. Please review the file."
+        recipients = [
+            "tony.hoang@lucidma.com",
+            "amelia.thompson@lucidma.com",
+            "stephen.ng@lucidma.com",
+        ]
+        cc_recipients = ["operations@lucidma.com"]
+        send_email(subject, body, recipients, cc_recipients)
+        raise Exception(f"Error opening or refreshing file: {str(e)}")
+
+    data = pd.read_excel(
+        file_path,
+        sheet_name=sheet_name,
+        usecols="B:L",  # Columns B to J
+        skiprows=5,  # Skip the first 5 rows (header will be row 6)
+        header=0,  # Now row 6 is the header
+    )
+
+    thresshold_style_1 = [0.25, 0.5]
+    html_content = process_data(
+        data, -0.001, thresshold_style_1, "PX Change Report - P & I Products"
+    )
+
+    data_2 = pd.read_excel(
+        file_path,
+        sheet_name=sheet_name,
+        usecols="N:X",  # Columns B to J
+        skiprows=5,  # Skip the first 5 rows (header will be row 6)
+        header=0,  # Now row 6 is the header
+    )
+
+    thresshold_style_2 = [3, 5]
+    html_content_2 = process_data(
+        data_2, -0.01, thresshold_style_2, "PX Change Report - IO Products"
+    )
+
+    subject = f"LRX - PX change report P&I Products - {valdate}"
+
+    subject_2 = f"LRX - PX change report IO Products - {valdate}"
+
     recipients = [
         "tony.hoang@lucidma.com",
         "amelia.thompson@lucidma.com",
         "stephen.ng@lucidma.com",
     ]
     cc_recipients = ["operations@lucidma.com"]
+
     attachment_path = file_path
     attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"
 
     send_email(
         subject,
         html_content,
+        recipients,
+        cc_recipients,
+        attachment_path,
+        attachment_name,
+    )
+
+    send_email(
+        subject_2,
+        html_content_2,
         recipients,
         cc_recipients,
         attachment_path,
