@@ -53,23 +53,30 @@ date_pattern = r"(\d{8})"
 
 # Define the file patterns
 file_patterns = {
-    "df_cash_security": r"Cash_and_Security_Transactions_(\d{8})\.xls",
-    "df_custody_holdings": r"Custody_Holdings_(\d{8})\.xls",
-    "df_unsettled_trades": r"Unsettled_Trades_(\d{8})\.xls",
+    # "df_cash_security": r"Cash_and_Security_Transactions_(\d{8})\.xls",
+    "df_custody_holdings": r"Custody_Holdings_(\d{2})(\d{2})(\d{4})\.xls",
+    # "df_unsettled_trades": r"Unsettled_Trades_(\d{8})\.xls",
 }
 
 # Create a dictionary to store the DataFrames
 dataframes = {}
 
 # Search for the files in the directory
+# Search for the files in the directory
 for df_name, file_pattern in file_patterns.items():
     file_path = None
     for root, dirs, files in os.walk(directory):
+        # Skip the Archive directory
+        if "Archive" in dirs:
+            dirs.remove("Archive")
         for file in files:
             match = re.match(file_pattern, file)
             if match:
                 file_path = os.path.join(root, file)
+                print(f"Found file: {file_path}")
                 break
+        if file_path:
+            break  # Stop searching if we've found a file
 
     # Check if the file is found
     if file_path:
@@ -78,12 +85,18 @@ for df_name, file_pattern in file_patterns.items():
         print(f"{df_name} loaded successfully.")
 
         # Extract the date from the file name using regex
-        date_match = re.search(date_pattern, file_path)
+        filename = os.path.basename(file_path)
+        date_match = re.match(file_pattern, filename)
         if date_match:
-            file_date = datetime.strptime(date_match.group(1), "%d%m%Y")
+            day, month, year = date_match.groups()
+            print(f"Extracted date components: day={day}, month={month}, year={year}")
+            file_date = datetime(int(year), int(month), int(day))
+            print(f"Constructed date: {file_date}")
             dataframes[df_name]["file_date"] = pd.Series(
                 [file_date] * len(dataframes[df_name]), index=dataframes[df_name].index
             )
+        else:
+            print(f"Could not extract date from filename: {filename}")
 
         # Add the 'timestamp' column with the current timestamp
         current_timestamp = datetime.now()
@@ -95,9 +108,9 @@ for df_name, file_pattern in file_patterns.items():
         print(f"File not found for {df_name}.")
 
 # Access the DataFrames
-df_cash_security = dataframes.get("df_cash_security")
+# df_cash_security = dataframes.get("df_cash_security")
 df_custody_holdings = dataframes.get("df_custody_holdings")
-df_unsettled_trades = dataframes.get("df_unsettled_trades")
+# df_unsettled_trades = dataframes.get("df_unsettled_trades")
 
 
 def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
@@ -179,9 +192,9 @@ def process_dataframe(engine, tb_name, df):
 
 # Process each DataFrame
 table_data = [
-    (tb_name_cash_security, df_cash_security),
+    # (tb_name_cash_security, df_cash_security),
     (tb_name_custody_holdings, df_custody_holdings),
-    (tb_name_unsettle_trades, df_unsettled_trades),
+    # (tb_name_unsettle_trades, df_unsettled_trades),
 ]
 
 for tb_name, df in table_data:
