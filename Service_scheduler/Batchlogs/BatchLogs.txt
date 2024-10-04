@@ -52,3 +52,8 @@ Wed 10/02/2024 18:46:18.46 ; "silver_bloomberg_factor_interest_accrued_table - S
 Wed 10/02/2024 18:46:52.19 ; "silver_clean_and_dirty_price - Script execution: Success"
 Wed 10/02/2024 20:16:46.87 ; "cash_balance_table - Script execution: Success"
 Wed 10/02/2024 23:39:05.70 ; "used_HELIX_prices_factor_table - Script execution: Success"
+Thu 10/03/2024 18:36:35.68 ; "used_prices_table - Script execution: Success"
+Thu 10/03/2024 18:46:18.94 ; "silver_bloomberg_factor_interest_accrued_table - Script execution: Success"
+Thu 10/03/2024 18:46:54.20 ; "silver_clean_and_dirty_price - Script execution: Success"
+Thu 10/03/2024 20:16:46.40 ; "cash_balance_table - Script execution: Success"
+Thu 10/03/2024 23:39:34.85 ; "used_HELIX_prices_factor_table - Script execution: Success"
