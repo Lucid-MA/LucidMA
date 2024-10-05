@@ -60,3 +60,5 @@ Thu 10/03/2024 23:39:34.85 ; "used_HELIX_prices_factor_table - Script execution:
 Fri 10/04/2024 18:36:40.98 ; "used_prices_table - Script execution: Success"
 Fri 10/04/2024 18:46:20.26 ; "silver_bloomberg_factor_interest_accrued_table - Script execution: Success"
 Fri 10/04/2024 18:46:52.23 ; "silver_clean_and_dirty_price - Script execution: Success"
+Fri 10/04/2024 20:16:47.03 ; "cash_balance_table - Script execution: Success"
+Fri 10/04/2024 23:39:04.47 ; "used_HELIX_prices_factor_table - Script execution: Success"
