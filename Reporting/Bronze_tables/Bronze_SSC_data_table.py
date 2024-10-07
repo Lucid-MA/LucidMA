@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_file_path, get_repo_root
 from Utils.Constants import bronze_ssc_table_needed_columns
-from Utils.Hash import hash_string
+from Utils.Hash import hash_string_v2
 from Utils.database_utils import engine_prod, engine_staging, upsert_data
 
 """
@@ -145,38 +145,7 @@ def create_transactions_table(tb_name):
 def generate_transaction_id(row):
     # Create a unique string from the specified fields
     unique_string = f"{row['SK']}-{row['VehicleCode']}-{row['PoolCode']}-{row['Period']}-{row['InvestorCode']}-{row['Head1']}"
-    return hash_string(unique_string)
-
-
-# def upsert_data(tb_name, df):
-#     with engine.connect() as conn:
-#         try:
-#             with conn.begin():  # Start a transaction
-#                 # Constructing the UPSERT SQL dynamically based on DataFrame columns
-#                 column_names = ", ".join([f'"{col}"' for col in df.columns])
-#                 value_placeholders = ", ".join([f":{col}" for col in df.columns])
-#                 update_clause = ", ".join(
-#                     [
-#                         f'"{col}"=EXCLUDED."{col}"'
-#                         for col in df.columns
-#                         if col != "TransactionID"
-#                     ]
-#                 )
-#
-#                 upsert_sql = text(
-#                     f"""
-#                         INSERT INTO {tb_name} ({column_names})
-#                         VALUES ({value_placeholders})
-#                         ON CONFLICT ("TransactionID")
-#                         DO UPDATE SET {update_clause};
-#                     """
-#                 )
-#                 # Execute upsert in a transaction
-#                 conn.execute(upsert_sql, df.to_dict(orient="records"))
-#             print(f"Data for {df['FileDate'][0]} upserted successfully into {tb_name}.")
-#         except SQLAlchemyError as e:
-#             print(f"An error occurred: {e}")
-#             raise
+    return hash_string_v2(unique_string)
 
 
 # Function to validate schema consistency and update database
