@@ -99,25 +99,16 @@ def send_email(
 
 def process_data(data, subheader):
     column_names = [
-        "Trade ID",
-        "BNY Ref",
-        "Settled",
-        "Counterparty",
-        "Start Date",
-        "End Date",
         "CUSIP",
-        "Money",
-        "Shares",
+        "BNYM Position",
+        "Helix Position",
+        "Break",
     ]
 
     data.columns = column_names
 
     # List of columns to convert
-    cols_to_convert = [
-        "Trade ID",
-        "Money",
-        "Shares",
-    ]
+    cols_to_convert = ["BNYM Position", "Helix Position", "Break"]
 
     # Convert columns to float, forcing invalid data to NaN
     for col in cols_to_convert:
@@ -125,23 +116,28 @@ def process_data(data, subheader):
 
     # Round up 'Quantity', 'Investment Amount', 'MV', and 'MV Change' and convert to integers
     # Use 'Int64' to allow NaN values
-    data["Trade ID"] = np.ceil(data["Trade ID"]).astype("Int32")
-    data["Money"] = np.ceil(data["Money"]).astype("Int64")
-    data["Shares"] = np.ceil(data["Shares"]).astype("Int64")
-    data["BNY Ref"] = data["BNY Ref"].astype("string")
+    data["BNYM Position"] = np.ceil(data["BNYM Position"]).astype("Int64")
+    data["Helix Position"] = np.ceil(data["Helix Position"]).astype("Int64")
+    data["Break"] = np.ceil(data["Break"]).astype("Int64")
+    data["CUSIP"] = data["CUSIP"].astype("string")
 
     # Remove rows where Trade ID is '0' or NaN
     data = data[
-        (~(data["Trade ID"] == 0))
-        & (data["Trade ID"].notna())
-        & (~(data["Trade ID"] == "0.0"))
+        (~(data["CUSIP"] == 0)) & (data["CUSIP"].notna()) & (~(data["CUSIP"] == "0.0"))
     ]
 
-    # Format "Money" with comma and no decimal
-    data["Money"] = data["Money"].apply("{:,.0f}".format)
+    # Format 'BNYM Position' column with comma, parentheses for negative values, and no decimal
+    data["BNYM Position"] = data["BNYM Position"].apply(
+        lambda x: "({:,.0f})".format(abs(x)) if x < 0 else "{:,.0f}".format(x)
+    )
 
-    # Format 'Shares' column with comma, parentheses for negative values, and no decimal
-    data["Shares"] = data["Shares"].apply(
+    # Format 'Helix Position' column with comma, parentheses for negative values, and no decimal
+    data["Helix Position"] = data["Helix Position"].apply(
+        lambda x: "({:,.0f})".format(abs(x)) if x < 0 else "{:,.0f}".format(x)
+    )
+
+    # Format 'Helix Position' column with comma, parentheses for negative values, and no decimal
+    data["Break"] = data["Break"].apply(
         lambda x: "({:,.0f})".format(abs(x)) if x < 0 else "{:,.0f}".format(x)
     )
 
@@ -155,7 +151,7 @@ def process_data(data, subheader):
 
 
 def refresh_data_and_send_email():
-    file_path = get_file_path(r"S:/Mandates/Operations/Transaction Rec V2.xlsm")
+    file_path = get_file_path(r"S:/Mandates/Operations/Collateral Rec V2.xlsm")
     sheet_name = "Reconciliation"
 
     # Open the Excel file and refresh the data connection
@@ -195,22 +191,22 @@ def refresh_data_and_send_email():
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="C:K",
+        usecols="C:F",
         skiprows=7,  # Skip the first 7 rows (header will be row 8)
-        header=0,  # Now row 8 is the header
+        header=0,  # Now row 6 is the header
     )
 
-    html_table = process_data(data, "Unsettled Trades - PRIME Fund")
+    html_table = process_data(data, "Collateral Reconciliation - PRIME Fund")
 
     data_2 = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="N:V",
-        skiprows=7,
-        header=0,
+        usecols="I:L",
+        skiprows=7,  # Skip the first 7 rows (header will be row 8)
+        header=0,  # Now row 6 is the header
     )
 
-    html_table_2 = process_data(data_2, "Unsettled Trades - USG Fund")
+    html_table_2 = process_data(data_2, "Collateral Reconciliation - USG Fund")
 
     html_content = f"""
                             <!DOCTYPE html>
@@ -249,13 +245,13 @@ def refresh_data_and_send_email():
                                 </style>
                             </head>
                             <body>
-                                <div class="bold-text">Unsettled Trade - PRIME Fund:</div>
+                                <div class="bold-text">Collateral Recon - PRIME Fund:</div>
                                 <table>
                                     <tr class="header">
                                         <td colspan="{len(data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
                                     </tr>
                                     <tr class="subheader">
-                                        <td colspan="{len(data.columns)}">Unsettled Trade - PRIME Fund</td>
+                                        <td colspan="{len(data.columns)}">Collateral Reconciliation - PRIME Fund</td>
                                     </tr>
                                 </table>
                                 <table>
@@ -264,13 +260,13 @@ def refresh_data_and_send_email():
 
                                 {'<br>' if html_table_2 is not None else ''}
 
-                                {'<div class="bold-text">Unsettled Trade - USG Fund:</div>' if html_table_2 is not None else ''}
+                                {'<div class="bold-text">Collateral Recon - USG Fund:</div>' if html_table_2 is not None else ''}
                                 {'<table>' if html_table_2 is not None else ''}
                                     {'<tr class="header">' if html_table_2 is not None else ''}
                                         {'<td colspan="' + str(len(data_2.columns)) + '"><span>Lucid Management and Capital Partners LP</span></td>' if html_table_2 is not None else ''}
                                     {'</tr>' if html_table_2 is not None else ''}
                                     {'<tr class="subheader">' if html_table_2 is not None else ''}
-                                        {'<td colspan="' + str(len(data_2.columns)) + '">Unsettled Trade - USG Fund</td>' if html_table_2 is not None else ''}
+                                        {'<td colspan="' + str(len(data_2.columns)) + '">Collateral Reconciliation - USG Fund</td>' if html_table_2 is not None else ''}
                                     {'</tr>' if html_table_2 is not None else ''}
                                 {'</table>' if html_table_2 is not None else ''}
                                 {'<table>' if html_table_2 is not None else ''}
@@ -280,7 +276,7 @@ def refresh_data_and_send_email():
                             </html>
                             """
 
-    subject = f"LRX – Transaction Settlement Recon – Prime/USG - {valdate}"
+    subject = f"LRX – Collateral Recon – Prime/USG - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
@@ -290,7 +286,7 @@ def refresh_data_and_send_email():
     cc_recipients = ["operations@lucidma.com"]
 
     attachment_path = file_path
-    attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
+    attachment_name = f"Collateral Reconciliation Report_{valdate}.xlsm"
 
     send_email(
         subject,
