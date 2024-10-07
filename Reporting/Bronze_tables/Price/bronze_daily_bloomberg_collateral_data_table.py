@@ -1,18 +1,17 @@
 import os
 import sys
 
-# Get the absolute path of the current script
+# Get the absolute path of the current script (Price directory)
 script_path = os.path.abspath(__file__)
 
 # Get the directory of the script (Price directory)
 script_dir = os.path.dirname(script_path)
 
-# Get the Reporting directory (parent of Price)
-reporting_dir = os.path.dirname(script_dir)
+# Go two levels up to the 'Reporting' directory
+reporting_dir = os.path.dirname(os.path.dirname(script_dir))
 
-# Add the Reporting/Utils directory to the Python module search path
-utils_dir = os.path.join(reporting_dir, 'Utils')
-sys.path.append(utils_dir)
+# Add the Reporting directory to sys.path so Python can find both 'bloomberg_utils' and 'Utils'
+sys.path.insert(0, reporting_dir)
 
 
 import logging

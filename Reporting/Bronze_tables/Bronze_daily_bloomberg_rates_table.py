@@ -4,24 +4,24 @@ import sys
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
 
-# Get the directory of the script (Price directory)
+# Get the directory of the script (Bronze_tables directory)
 script_dir = os.path.dirname(script_path)
 
-# Get the Reporting directory (parent of Price)
+# Get the Reporting directory (parent of Bronze_tables)
 reporting_dir = os.path.dirname(script_dir)
 
-# Add the Reporting/Utils directory to the Python module search path
-utils_dir = os.path.join(reporting_dir, 'Utils')
-sys.path.append(utils_dir)
+# Add the Reporting directory to sys.path so Python can find 'Utils' and 'Price'
+sys.path.insert(0, reporting_dir)
 
 import openpyxl
 import pandas as pd
-
-
 from sqlalchemy import text, Table, MetaData, Column, String, DateTime, Float, Date
 from sqlalchemy.exc import SQLAlchemyError
 
-from Bronze_tables.Price.bloomberg_utils import BloombergDataFetcher
+# Import from Price.bloomberg_utils
+from Price.bloomberg_utils import BloombergDataFetcher
+
+# Import from Utils
 from Utils.Common import get_file_path, get_current_timestamp, get_current_date
 from Utils.Constants import (
     CP_1M,
