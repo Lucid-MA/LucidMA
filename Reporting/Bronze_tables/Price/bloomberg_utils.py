@@ -1,17 +1,15 @@
 import os
 import sys
 
-# Get the absolute path of the current script
-script_path = os.path.abspath(__file__)
+import os
+import sys
 
-# Get the directory of the script (Price directory)
-script_dir = os.path.dirname(script_path)
+# Get the directory path two levels up to 'Reporting'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+reporting_dir = os.path.dirname(os.path.dirname(script_dir))
 
-# Get the parent directory (Reporting)
-reporting_dir = os.path.dirname(script_dir)
-
-# Add the Reporting directory to sys.path
-sys.path.append(reporting_dir)
+# Add 'Reporting' to sys.path
+sys.path.insert(0, reporting_dir)
 
 print("Updated sys.path in bloomberg_utils.py:")
 for path in sys.path:
@@ -24,8 +22,8 @@ from typing import Dict, List, Any, Optional
 import blpapi
 import pandas as pd
 
-from Reporting.Utils.Common import get_current_date, get_current_timestamp
-from Reporting.Utils.Constants import (
+from Utils.Common import get_current_date, get_current_timestamp
+from Utils.Constants import (
     benchmark_ticker,
     CP_1M,
     CP_3M,
