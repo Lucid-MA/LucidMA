@@ -24,7 +24,7 @@ from Utils.database_utils import (
     execute_sql_query_v2,
 )
 
-TABLE_NAME = "bronze_lucid_aum"
+TABLE_NAME = "lucid_aum"
 # FLAG to enable update to PROD
 publish_to_PROD =True
 
@@ -226,13 +226,13 @@ def get_trading_days(start_date, end_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine)
-    start_date = "2024-09-06"
+    start_date = "2024-04-15"
     end_date = "2024-09-12"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():
             print(
-                f"Skipping OC rates for {report_date} as it has already been processed."
+                f"Skipping AUM for {report_date} as it has already been processed."
             )
             continue
         df_aum = fetch_and_prepare_data(report_date)

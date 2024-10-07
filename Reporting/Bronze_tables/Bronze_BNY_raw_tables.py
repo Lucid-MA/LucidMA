@@ -9,15 +9,12 @@ from sqlalchemy import inspect, MetaData, Column, Date, String, DateTime, Table,
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
 
-# Get the directory of the script (Price directory)
+# Get the directory of the script (Bronze_tables directory)
 script_dir = os.path.dirname(script_path)
 
-# Get the Reporting directory (parent of Price)
-reporting_dir = os.path.dirname(script_dir)
+# Add the parent directory of the script to the Python module search path
+sys.path.insert(0, os.path.dirname(script_dir))
 
-# Add the Reporting/Utils directory to the Python module search path
-utils_dir = os.path.join(reporting_dir, "Utils")
-sys.path.append(utils_dir)
 
 from Utils.database_utils import (
     get_database_engine,
@@ -53,23 +50,30 @@ date_pattern = r"(\d{8})"
 
 # Define the file patterns
 file_patterns = {
-    "df_cash_security": r"Cash_and_Security_Transactions_(\d{8})\.xls",
-    "df_custody_holdings": r"Custody_Holdings_(\d{8})\.xls",
-    "df_unsettled_trades": r"Unsettled_Trades_(\d{8})\.xls",
+    "df_cash_security": r"Cash_and_Security_Transactions_(\d{2})(\d{2})(\d{4})\.xls",
+    "df_custody_holdings": r"Custody_Holdings_(\d{2})(\d{2})(\d{4})\.xls",
+    "df_unsettled_trades": r"Unsettled_Trades_(\d{2})(\d{2})(\d{4})\.xls",
 }
 
 # Create a dictionary to store the DataFrames
 dataframes = {}
 
 # Search for the files in the directory
+# Search for the files in the directory
 for df_name, file_pattern in file_patterns.items():
     file_path = None
     for root, dirs, files in os.walk(directory):
+        # Skip the Archive directory
+        if "Archive" in dirs:
+            dirs.remove("Archive")
         for file in files:
             match = re.match(file_pattern, file)
             if match:
                 file_path = os.path.join(root, file)
+                print(f"Found file: {file_path}")
                 break
+        if file_path:
+            break  # Stop searching if we've found a file
 
     # Check if the file is found
     if file_path:
@@ -78,12 +82,18 @@ for df_name, file_pattern in file_patterns.items():
         print(f"{df_name} loaded successfully.")
 
         # Extract the date from the file name using regex
-        date_match = re.search(date_pattern, file_path)
+        filename = os.path.basename(file_path)
+        date_match = re.match(file_pattern, filename)
         if date_match:
-            file_date = datetime.strptime(date_match.group(1), "%d%m%Y")
+            day, month, year = date_match.groups()
+            print(f"Extracted date components: day={day}, month={month}, year={year}")
+            file_date = datetime(int(year), int(month), int(day))
+            print(f"Constructed date: {file_date}")
             dataframes[df_name]["file_date"] = pd.Series(
                 [file_date] * len(dataframes[df_name]), index=dataframes[df_name].index
             )
+        else:
+            print(f"Could not extract date from filename: {filename}")
 
         # Add the 'timestamp' column with the current timestamp
         current_timestamp = datetime.now()

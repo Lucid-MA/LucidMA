@@ -291,6 +291,83 @@ def upsert_data_multiple_keys(
 
     logger.info(f"Data upserted successfully into {table_name}.")
 
+
+def upsert_data_multiple_keys_v2(
+        engine,
+        table_name: str,
+        df: pd.DataFrame,
+        primary_key_names: list,
+        publish_to_prod: bool,
+):
+    # Remove duplicates based on primary key columns
+    df = df.drop_duplicates(subset=primary_key_names, keep='last')
+
+    # Normalize column names
+    df.columns = [
+        col.replace(" ", "_").replace("/", "_").replace("&", "").replace("#", "")
+        .replace("*", "").replace("'", "").replace("?", "").replace(".", "").replace("-", "")
+        for col in df.columns
+    ]
+
+    with engine.connect() as connection:
+        try:
+            with connection.begin():
+                column_names = ", ".join([f'"{col}"' for col in df.columns])
+                value_placeholders = ", ".join([f":{col}" for col in df.columns])
+
+                # Convert 'nan' data to None for MS SQL
+                df = df.astype(object).where(pd.notnull(df), None)
+
+                if publish_to_prod:
+                    update_clause = ", ".join(
+                        [f'"{col}" = SOURCE."{col}"' for col in df.columns if col not in primary_key_names]
+                    )
+                    match_condition = " AND ".join([f'TARGET."{key}" = SOURCE."{key}"' for key in primary_key_names])
+
+                    change_condition = ' OR '.join([
+                        f'SOURCE."{col}" <> TARGET."{col}" OR (SOURCE."{col}" IS NULL AND TARGET."{col}" IS NOT NULL) OR (SOURCE."{col}" IS NOT NULL AND TARGET."{col}" IS NULL)'
+                        for col in df.columns if col not in primary_key_names
+                    ])
+
+                    upsert_sql = text(f"""
+                        MERGE INTO {table_name} AS TARGET
+                        USING (SELECT {column_names} FROM (VALUES ({value_placeholders})) AS SOURCE ({column_names})) AS SOURCE
+                        ON {match_condition}
+                        WHEN MATCHED AND ({change_condition}) THEN
+                            UPDATE SET {update_clause}
+                        WHEN NOT MATCHED BY TARGET THEN
+                            INSERT ({column_names}) 
+                            VALUES ({','.join(f'SOURCE."{col}"' for col in df.columns)})
+                        WHEN NOT MATCHED BY SOURCE AND ({match_condition}) THEN
+                            DELETE;
+                    """)
+                else:
+                    update_clause = ", ".join(
+                        [f'"{col}"=EXCLUDED."{col}"' for col in df.columns if col not in primary_key_names]
+                    )
+                    conflict_targets = ", ".join([f'"{key}"' for key in primary_key_names])
+
+                    upsert_sql = text(f"""
+                        INSERT INTO {table_name} ({column_names})
+                        VALUES ({value_placeholders})
+                        ON CONFLICT ({conflict_targets})
+                        DO UPDATE SET {update_clause};
+                    """)
+
+                # Execute the upsert statement
+                connection.execute(upsert_sql, df.to_dict(orient="records"))
+
+            logger.info(f"Latest data upserted successfully into {table_name}.")
+        except IntegrityError as ie:
+            logger.error(f"IntegrityError occurred: {ie}")
+            logger.error("This might be due to unexpected duplicate keys in the target table.")
+            raise
+        except SQLAlchemyError as e:
+            logger.error(f"An error occurred: {e}")
+            raise
+
+    logger.info(f"Data upsert operation completed for {table_name}.")
+
 def create_custom_bronze_table(
     engine,
     tb_name,
