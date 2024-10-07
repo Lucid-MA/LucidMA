@@ -40,7 +40,7 @@ The specific steps are:
 6. Log the processing time for each file.
 """
 
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 
 # Get the repository root directory
 repo_path = get_repo_root()
