@@ -9,15 +9,12 @@ from sqlalchemy import inspect, MetaData, Column, Date, String, DateTime, Table,
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
 
-# Get the directory of the script (Price directory)
+# Get the directory of the script (Bronze_tables directory)
 script_dir = os.path.dirname(script_path)
 
-# Get the Reporting directory (parent of Price)
-reporting_dir = os.path.dirname(script_dir)
+# Add the parent directory of the script to the Python module search path
+sys.path.insert(0, os.path.dirname(script_dir))
 
-# Add the Reporting/Utils directory to the Python module search path
-utils_dir = os.path.join(reporting_dir, "Utils")
-sys.path.append(utils_dir)
 
 from Utils.database_utils import (
     get_database_engine,
@@ -53,9 +50,9 @@ date_pattern = r"(\d{8})"
 
 # Define the file patterns
 file_patterns = {
-    # "df_cash_security": r"Cash_and_Security_Transactions_(\d{8})\.xls",
+    "df_cash_security": r"Cash_and_Security_Transactions_(\d{2})(\d{2})(\d{4})\.xls",
     "df_custody_holdings": r"Custody_Holdings_(\d{2})(\d{2})(\d{4})\.xls",
-    # "df_unsettled_trades": r"Unsettled_Trades_(\d{8})\.xls",
+    "df_unsettled_trades": r"Unsettled_Trades_(\d{2})(\d{2})(\d{4})\.xls",
 }
 
 # Create a dictionary to store the DataFrames
@@ -108,9 +105,9 @@ for df_name, file_pattern in file_patterns.items():
         print(f"File not found for {df_name}.")
 
 # Access the DataFrames
-# df_cash_security = dataframes.get("df_cash_security")
+df_cash_security = dataframes.get("df_cash_security")
 df_custody_holdings = dataframes.get("df_custody_holdings")
-# df_unsettled_trades = dataframes.get("df_unsettled_trades")
+df_unsettled_trades = dataframes.get("df_unsettled_trades")
 
 
 def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
@@ -192,9 +189,9 @@ def process_dataframe(engine, tb_name, df):
 
 # Process each DataFrame
 table_data = [
-    # (tb_name_cash_security, df_cash_security),
+    (tb_name_cash_security, df_cash_security),
     (tb_name_custody_holdings, df_custody_holdings),
-    # (tb_name_unsettle_trades, df_unsettled_trades),
+    (tb_name_unsettle_trades, df_unsettled_trades),
 ]
 
 for tb_name, df in table_data:
