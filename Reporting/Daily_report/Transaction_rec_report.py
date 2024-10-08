@@ -39,12 +39,14 @@ def authenticate_and_get_token():
     accounts = client.get_accounts()
     if accounts:
         result = client.acquire_token_silent(config["scope"], account=accounts[0])
-        if not result:
-            print("No cached token found. Authenticating interactively...")
-            result = client.acquire_token_interactive(scopes=config["scope"])
+        if result:
+            return result["access_token"]
+        else:
+            print("Cached token expired or invalid. Authenticating interactively...")
     else:
         print("No cached accounts found. Authenticating interactively...")
-        result = client.acquire_token_interactive(scopes=config["scope"])
+
+    result = client.acquire_token_interactive(scopes=config["scope"])
 
     if "error" in result:
         raise Exception(f"Error acquiring token: {result['error_description']}")
@@ -137,6 +139,18 @@ def process_data(data, subheader):
         & (~(data["Trade ID"] == "0.0"))
     ]
 
+    # Convert "Start Date" and "End Date" columns to datetime
+    data["Start Date"] = pd.to_datetime(data["Start Date"], errors="coerce")
+    data["End Date"] = pd.to_datetime(data["End Date"], errors="coerce")
+
+    # Format "Start Date" and "End Date" columns as YYYY-MM-DD
+    data["Start Date"] = data["Start Date"].dt.strftime("%Y-%m-%d")
+    data["End Date"] = data["End Date"].dt.strftime("%Y-%m-%d")
+
+    # Replace NaT values in "Start Date" and "End Date" columns with an empty string
+    data["Start Date"] = data["Start Date"].fillna("")
+    data["End Date"] = data["End Date"].fillna("")
+
     # Format "Money" with comma and no decimal
     data["Money"] = data["Money"].apply("{:,.0f}".format)
 
@@ -147,6 +161,18 @@ def process_data(data, subheader):
 
     if data.empty:
         return None
+
+    # Replace NaN values with an empty string
+    data = data.fillna("")
+
+    # Apply conditional styling to the "Settled" column
+    def highlight_settled(val):
+        if val == "Settled":
+            return "background-color: lightgreen"
+        else:
+            return ""
+
+    data = data.style.applymap(highlight_settled, subset=["Settled"])
 
     # Format the styled DataFrame as an HTML table
     html_table = data.to_html(index=False, border=1, escape=False)
@@ -180,10 +206,12 @@ def refresh_data_and_send_email():
         body = f"Problem opening file {file_path}. Please review the file."
         recipients = [
             "tony.hoang@lucidma.com",
-            "amelia.thompson@lucidma.com",
-            "stephen.ng@lucidma.com",
+            # "amelia.thompson@lucidma.com",
+            # "stephen.ng@lucidma.com",
         ]
-        cc_recipients = ["operations@lucidma.com"]
+        cc_recipients = [
+            # "operations@lucidma.com"
+        ]
         send_email(subject, body, recipients, cc_recipients)
         raise Exception(f"Error opening or refreshing file: {str(e)}")
 
@@ -284,10 +312,12 @@ def refresh_data_and_send_email():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        "amelia.thompson@lucidma.com",
-        "stephen.ng@lucidma.com",
+        # "amelia.thompson@lucidma.com",
+        # "stephen.ng@lucidma.com",
     ]
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        # "operations@lucidma.com"
+    ]
 
     attachment_path = file_path
     attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"

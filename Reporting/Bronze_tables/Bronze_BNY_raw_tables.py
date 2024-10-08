@@ -4,7 +4,17 @@ import sys
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import inspect, MetaData, Column, Date, String, DateTime, Table, text
+from sqlalchemy import (
+    inspect,
+    MetaData,
+    Column,
+    Date,
+    String,
+    DateTime,
+    Table,
+    text,
+    NVARCHAR,
+)
 
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
@@ -130,6 +140,8 @@ def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
     for col in df.columns:
         if col == "file_date":
             columns.append(Column(col, Date))
+        elif col == "Settled Shares/Par":
+            columns.append(Column(col, NVARCHAR(50)))  # Specify maximum length
         else:
             columns.append(Column(col, String))
 
@@ -174,6 +186,10 @@ def process_dataframe(engine, tb_name, df):
         df (pd.DataFrame): The DataFrame containing the data to insert.
     """
     create_custom_bronze_table(engine, tb_name, df)
+
+    # Convert the "Settled Shares/Par" column to a string
+    if "Settled Shares/Par" in df.columns:
+        df["Settled Shares/Par"] = df["Settled Shares/Par"].astype(str)
 
     # Check if table is empty
     with engine.connect() as connection:

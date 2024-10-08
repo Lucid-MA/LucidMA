@@ -110,3 +110,10 @@ Mon 10/07/2024 18:46:26.19 ; "silver_bloomberg_factor_interest_accrued_table - S
 Mon 10/07/2024 18:47:05.40 ; "silver_clean_and_dirty_price - Script execution: Success"
 Mon 10/07/2024 20:16:47.18 ; "cash_balance_table - Script execution: Success"
 Mon 10/07/2024 23:42:21.39 ; "used_HELIX_prices_factor_table - Script execution: Success"
+[Mon 10/07/2024 23:55:07.64] Git commit and push started 
+Tue 10/08/2024  8:31:24.32 ; "Bronze_BNY_raw_tables - Script execution: Success"
+Tue 10/08/2024  8:32:57.36 ; "Silver_BNY_tables - Script execution: Success"
+Tue 10/08/2024  9:31:17.21 ; "Bronze_BNY_raw_tables - Script execution: Success"
+Tue 10/08/2024  9:32:45.46 ; "Silver_BNY_tables - Script execution: Success"
+Tue 10/08/2024 10:31:17.12 ; "Bronze_BNY_raw_tables - Script execution: Success"
+Tue 10/08/2024 10:32:47.12 ; "Silver_BNY_tables - Script execution: Success"

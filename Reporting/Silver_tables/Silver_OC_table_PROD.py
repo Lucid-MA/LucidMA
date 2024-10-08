@@ -260,7 +260,7 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2024-09-16"
+    start_date = "2024-10-07"
     end_date = "2024-10-07"
     trading_days = get_trading_days(start_date, end_date)
 
