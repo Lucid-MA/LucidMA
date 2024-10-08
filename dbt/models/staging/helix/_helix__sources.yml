@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: helix
+    database: Prod1
+    schema: helix
+    tables:
+      - name: tradepieces
+      - name: tradecommissionpieceinfo
+      - name: tradepiecexrefs
+      - name: tradepiececalcdatas
