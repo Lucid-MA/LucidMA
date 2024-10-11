@@ -15,7 +15,6 @@ from sqlalchemy import (
     text,
     NVARCHAR,
 )
-
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_repo_root, get_file_path, get_current_timestamp
@@ -32,7 +31,6 @@ sys.path.insert(0, os.path.dirname(script_dir))
 
 from Utils.database_utils import (
     get_database_engine,
-    upsert_data,
     upsert_data_multiple_keys,
 )
 
@@ -280,7 +278,6 @@ def create_table_with_schema(tb_name):
         Column("Settled Shares/Par", String),
         Column("Security Status Name", String),
         Column("Security Short Description", String),
-        Column("Source", String),
         Column("timestamp", DateTime),
         extend_existing=True,
     )
