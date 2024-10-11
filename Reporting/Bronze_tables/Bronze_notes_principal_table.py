@@ -100,7 +100,7 @@ notes_admin_df.columns = (
 )
 
 # Create a table schema
-table_name = "bronze_notes_principal"
+table_name = "bronze_notes_coupon"
 metadata = MetaData()
 notes_admin_table = Table(
     table_name,

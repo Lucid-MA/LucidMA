@@ -223,7 +223,7 @@ for reporting_series_id in reporting_series:
     benchmark_prime_table_name_v2 = "silver_benchmark_prime"
     benchmark_prime_quarterly_table_name_v2 = "silver_benchmark_prime_quarterly"
 
-    note_principal_table_name = "bronze_notes_principal"
+    note_principal_table_name = "bronze_notes_coupon"
     aum_table_name = "bronze_lucid_aum"
 
     # Connect to the PostgreSQL database
