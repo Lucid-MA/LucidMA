@@ -9,7 +9,7 @@ from Utils.database_utils import (
     get_database_engine,
     prod_db_type,
     staging_db_type,
-    upsert_data,
+    upsert_data, upsert_data_multiple_keys,
 )
 
 # Configure logging
@@ -189,4 +189,5 @@ inspector = inspect(engine)
 if not inspector.has_table(tb_name):
     create_table_with_schema(tb_name)
 
-upsert_data(engine, tb_name, df_silver_bloomberg_data, "data_id", PUBLISH_TO_PROD)
+# upsert_data(engine, tb_name, df_silver_bloomberg_data, "data_id", PUBLISH_TO_PROD)
+upsert_data_multiple_keys(engine, tb_name, df_silver_bloomberg_data, ["date", "bond_id"], PUBLISH_TO_PROD)
