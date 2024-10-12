@@ -14,6 +14,11 @@ margin AS (
     *
   FROM {{ ref('cash_tracker__margin_flows') }}
 ),
+manual_movements AS (
+  SELECT
+    *
+  FROM {{ ref('cash_tracker__manual_movements') }}
+),
 cashpairoffs AS (
   SELECT
     'PO ' + counterparty2 AS transaction_action_id,
@@ -117,6 +122,21 @@ final AS (
     trade_id,
     used_alloc
   FROM margin
+  UNION
+  SELECT 
+    report_date,
+    fund,
+    '' AS series,
+    [route],
+    transaction_action_id,
+    transaction_desc,
+    flow_account, 
+    flow_security,
+    flow_status,
+    flow_amount,
+    trade_id,
+    0 AS used_alloc
+  FROM manual_movements
 )
 
 SELECT * FROM final

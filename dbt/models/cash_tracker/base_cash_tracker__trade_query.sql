@@ -1,3 +1,15 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_nonclustered_index(columns = ['report_date']) }}",
+            "{{ create_nonclustered_index(columns = ['trade_id']) }}",
+        ]
+    })
+
+}}
+
 WITH tradepieces AS (
   SELECT
     *
@@ -35,7 +47,7 @@ trade_query_part1 AS (
     tradepieces.company,
     LTRIM(RTRIM(tradepieces.ledgername)) AS ledgername,
     tradecommissionpieceinfo.commissionvalue2,
-    tradepiecexrefs.frontofficeid,
+    COALESCE(TRY_CAST(tradepiecexrefs.frontofficeid AS FLOAT), NULL) AS frontofficeid,
     CASE
       WHEN tradepieces.company = 44 THEN 'USG'
       WHEN tradepieces.company = 45 THEN 'PRIME'
@@ -72,7 +84,7 @@ trade_query_part1 AS (
           WHEN tradecommissionpieceinfo.commissionvalue2 = 0 THEN NULL
           ELSE tradecommissionpieceinfo.commissionvalue2
         END,
-        tradepiecexrefs.frontofficeid
+        COALESCE(TRY_CAST(tradepiecexrefs.frontofficeid AS FLOAT), '')
       )
       ELSE ''
     END roll_of,
@@ -124,7 +136,7 @@ trade_query_final AS (
         END
       ),
       ''
-    ) action_id_prefix,
+    ) trade_id,
     masterpiece,
     masterpar,
     trade_query_part1.*,
@@ -139,8 +151,22 @@ trade_query_final AS (
     ON (
       trade_query_part1.master_refid = masterpieces.masterpiece
     )
+),
+final AS (
+  SELECT
+    startdate AS report_date,
+    CONCAT(trade_id,' TRANSMITTED') AS action_id,
+    *
+  FROM
+    trade_query_final
+  UNION ALL
+  SELECT
+    COALESCE(closedate, enddate) AS report_date,
+    CONCAT(trade_id,' CLOSED') AS action_id,
+    *
+  FROM
+    trade_query_final
+  WHERE closedate IS NOT NULL OR enddate IS NOT NULL
 )
-SELECT
-  *
-FROM
-  trade_query_final;
+
+SELECT * FROM final
