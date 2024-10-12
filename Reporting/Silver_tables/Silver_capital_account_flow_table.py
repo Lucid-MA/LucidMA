@@ -48,7 +48,7 @@ if PUBLISH_TO_PROD:
 else:
     engine = engine_staging
 
-tb_name = "silver_subscriptions_redemptions"
+tb_name = "capital_account_flows_v2"
 
 
 def create_table_with_schema(table_name, engine):
@@ -68,20 +68,47 @@ def create_table_with_schema(table_name, engine):
         Column("timestamp", DateTime),
     )
 
-    # Create the table if it doesn't exist
     if not inspect(engine).has_table(table_name):
         metadata.create_all(engine)
+        print(f"Table '{table_name}' created successfully.")
+    else:
+        print(f"Table '{table_name}' already exists.")
 
 
 create_table_with_schema(tb_name, engine)
 
+final_column_order = [
+    "data_id",
+    "Trade ID",
+    "Date",
+    "Fund",
+    "Fund Entity",
+    "Bond ID",
+    "Amount",
+    "Investor Entity",
+    "Type",
+    "timestamp",
+]
+
 # Back fill historical data only if the table exists and is empty
 if is_table_empty(engine, tb_name):
     historical_file_path = get_file_path(
-        "S:/Users/THoang/Data/Historical_subscriptions_redemptions_table.xlsx"
+        "S:/Mandates/Operations/Ops Transformation Project/Supporting Documents/Helix Cap Acct Flows.xlsx"
     )
-    historical_df = pd.read_excel(historical_file_path)
+    historical_df = pd.read_excel(
+        historical_file_path, sheet_name="Orig Remapped", usecols="A:H"
+    )
+    historical_df = historical_df[historical_df["ID"].notna()]
+    # Convert "Trade ID" to numeric
+    historical_df["ID"] = historical_df["ID"].astype(int)
+    historical_df.rename(columns={"ID": "Trade ID"}, inplace=True)
+
+    historical_df["data_id"] = historical_df.apply(
+        lambda row: hash_string_v2(f"{row['Trade ID']}{row['Bond ID']}"),
+        axis=1,
+    )
     historical_df["timestamp"] = get_current_timestamp()
+    historical_df = historical_df[final_column_order]
     try:
         upsert_data(engine, tb_name, historical_df, "data_id", PUBLISH_TO_PROD)
         logging.info("Successfully initialize table with historical data")
@@ -93,7 +120,7 @@ if is_table_empty(engine, tb_name):
 # 1. Remove new entry where Status Detail = "cancelled"
 # 2. Upsert new entry
 # New Data should be after cut-off date of September 26th
-cutoff_date = pd.to_datetime("2024-09-26")
+cutoff_date = pd.to_datetime("2024-10-08")
 
 helix_trade_df = execute_sql_query_v2(
     current_trade_subscriptions_redemptions_querry, helix_db_type, params=()
@@ -189,8 +216,10 @@ else:
 
     # Drop the "Status Detail" column
     filtered_helix_trade_df = filtered_helix_trade_df.drop(columns=["Status Detail"])
+    filtered_helix_trade_df["Amount"] = filtered_helix_trade_df["Amount"] * -1
     filtered_helix_trade_df["timestamp"] = get_current_timestamp()
-
+    filtered_helix_trade_df = filtered_helix_trade_df[final_column_order]
+    print(filtered_helix_trade_df)
     # Upsert the filtered data into the table
     try:
         upsert_data(

@@ -14,5 +14,5 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Navigate to the logs directory and append the date, time, and status to the log file
-cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
+cd "S:\Users\THoang\Tech\BatchLogs"
 echo %date% %time% ; "used_prices_table - Script execution: %status%">>BatchLogs.txt

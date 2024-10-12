@@ -13,7 +13,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Navigate to the logs directory and append the date, time, and status to the log file
-cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
+cd "S:\Users\THoang\Tech\BatchLogs"
 echo %date% %time% ; "Bronze_BNY_raw_tables - Script execution: %status%">>BatchLogs.txt
 
 cd "S:\Users\THoang\Tech\LucidMA\Reporting\Silver_tables"
@@ -26,7 +26,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Navigate to the logs directory and append the date, time, and status to the log file
-cd "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs"
+cd "S:\Users\THoang\Tech\BatchLogs"
 echo %date% %time% ; "Silver_BNY_tables - Script execution: %status%">>BatchLogs.txt
 
 :: Deactivate the virtual environment

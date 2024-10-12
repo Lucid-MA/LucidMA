@@ -39,12 +39,14 @@ def authenticate_and_get_token():
     accounts = client.get_accounts()
     if accounts:
         result = client.acquire_token_silent(config["scope"], account=accounts[0])
-        if not result:
-            print("No cached token found. Authenticating interactively...")
-            result = client.acquire_token_interactive(scopes=config["scope"])
+        if result:
+            return result["access_token"]
+        else:
+            print("Cached token expired or invalid. Authenticating interactively...")
     else:
         print("No cached accounts found. Authenticating interactively...")
-        result = client.acquire_token_interactive(scopes=config["scope"])
+
+    result = client.acquire_token_interactive(scopes=config["scope"])
 
     if "error" in result:
         raise Exception(f"Error acquiring token: {result['error_description']}")
@@ -191,7 +193,7 @@ def refresh_data_and_send_email():
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="C:F",
+        usecols="Q:T",
         skiprows=7,  # Skip the first 7 rows (header will be row 8)
         header=0,  # Now row 6 is the header
     )
@@ -201,7 +203,7 @@ def refresh_data_and_send_email():
     data_2 = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="I:L",
+        usecols="W:Z",
         skiprows=7,  # Skip the first 7 rows (header will be row 8)
         header=0,  # Now row 6 is the header
     )
