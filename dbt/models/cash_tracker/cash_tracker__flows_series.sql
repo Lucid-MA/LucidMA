@@ -63,6 +63,7 @@ not_roll AS (
 ),
 final AS (
   SELECT
+    NULL AS flow_settled,
     *
   FROM not_roll
 )

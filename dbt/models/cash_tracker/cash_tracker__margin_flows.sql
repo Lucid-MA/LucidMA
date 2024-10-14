@@ -234,7 +234,7 @@ series AS (
   )
   WHERE tf.series != 'MASTER'
 ),
-final AS (
+combined AS (
   SELECT
     report_date,
     fund,
@@ -264,6 +264,12 @@ final AS (
     trade_id,
     used_alloc 
   FROM series
+),
+final AS (
+  SELECT
+    NULL AS flow_settled,
+    *
+  FROM combined
 )
 
 SELECT * FROM final

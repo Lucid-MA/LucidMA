@@ -81,33 +81,70 @@ combined AS (
         *
     FROM pairoff_margin
 ),
-final AS (
+combined2 AS (
+     SELECT
+        'cash-blotter-series' AS route,
+        action_id AS transaction_action_id,
+        action_id AS transaction_desc,
+        from_acct_name AS flow_account, 
+        '{{var('CASH')}}' AS flow_security,
+        '{{var('AVAILABLE')}}' AS flow_status,
+        CASE
+            WHEN from_acct_name = 'EXPENSE' THEN 0.0
+            ELSE (-amount * ua.used_alloc) 
+        END AS flow_amount,
+        from_fund AS fund,
+        ua.series,
+        c.*
+    FROM combined AS c
+    JOIN {{ ref('cash_tracker__used_allocs') }} AS ua
+        ON (
+            c.related_helix_id IS NOT NULL
+            AND c.from_fund = ua.fund
+            AND c.related_helix_id = ua.trade_id
+        )
+    WHERE is_outgoing = 1 AND SUBSTRING(action_id, 1, 7) != 'HXSWING'
+    UNION
     SELECT
-    'cash-blotter-outgoing' AS route,
-    action_id AS transaction_action_id,
-    action_id AS transaction_desc,
-    from_acct_name AS flow_account, 
-    '{{var('CASH')}}' AS flow_security,
-    '{{var('AVAILABLE')}}' AS flow_status,
-    -amount AS flow_amount,
-    from_fund AS fund,
-    combined.*
+        'cash-blotter-outgoing' AS route,
+        action_id AS transaction_action_id,
+        action_id AS transaction_desc,
+        from_acct_name AS flow_account, 
+        '{{var('CASH')}}' AS flow_security,
+        '{{var('AVAILABLE')}}' AS flow_status,
+        -amount AS flow_amount,
+        from_fund AS fund,
+        '' AS series,
+        combined.*
     FROM combined
     WHERE is_outgoing = 1
     UNION
     SELECT
-    'cash-blotter-incoming' AS route,
-    action_id AS transaction_action_id,
-    action_id AS transaction_desc,
-    to_acct_name AS flow_account, 
-    '{{var('CASH')}}' AS flow_security,
-    '{{var('AVAILABLE')}}' AS flow_status,
-    amount AS flow_amount,
-    to_fund AS fund,
-    combined.*
+        'cash-blotter-incoming' AS route,
+        action_id AS transaction_action_id,
+        action_id AS transaction_desc,
+        to_acct_name AS flow_account, 
+        '{{var('CASH')}}' AS flow_security,
+        '{{var('AVAILABLE')}}' AS flow_status,
+        amount AS flow_amount,
+        to_fund AS fund,
+        '' AS series,
+        combined.*
     FROM combined
     WHERE is_incoming = 1
+),
+final AS (
+    SELECT
+        CASE -- 0 is afterSweep false, 1 is afterSweep true, NULL not unsettled
+            WHEN action_id LIKE 'ADJ_%' THEN 0
+            WHEN action_id LIKE 'MNF_%' THEN 0
+            WHEN action_id LIKE 'REALLOC_%' THEN 0
+            ELSE NULL
+        END AS flow_settled,
+        *
+    FROM combined2
 )
+
 SELECT
     settle_date AS report_date,
     *

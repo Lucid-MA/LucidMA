@@ -31,6 +31,7 @@ trade_query AS (
 trade_query_on_date AS (
     SELECT
         report_date,
+        company,
         action_id,
         trade_id,
         fund,
