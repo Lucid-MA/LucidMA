@@ -765,6 +765,27 @@ bb_fields_selected = [
     "IDX_RATIO",
 ]
 
+bb_historical_fields_selected = [
+    "SECURITY_TYP",
+    "ISSUER",
+    "COLLAT_TYP",
+    "NAME",
+    "ISSUE_DT",
+    "MATURITY",
+    "AMT_OUTSTANDING",
+    "COUPON",
+    "MTG_FACTOR",
+    "INT_ACC",
+    "DAYS_ACC",
+    "RTG_SP",
+    "RTG_MOODY",
+    "RTG_FITCH",
+    "RTG_KBRA",
+    "RTG_DBRS",
+    "RTG_EGAN_JONES",
+    "PRINCIPAL_FACTOR",
+]
+
 bb_cols_selected = [
     "security_type",
     "issuer",
