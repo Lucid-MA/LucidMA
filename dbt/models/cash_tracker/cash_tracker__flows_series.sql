@@ -1,3 +1,14 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_nonclustered_index(columns = ['report_date']) }}",
+        ]
+    })
+
+}}
+
 WITH
 trades AS (
   SELECT
@@ -52,6 +63,7 @@ not_roll AS (
 ),
 final AS (
   SELECT
+    NULL AS flow_settled,
     *
   FROM not_roll
 )

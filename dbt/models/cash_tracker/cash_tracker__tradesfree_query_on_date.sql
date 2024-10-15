@@ -1,23 +1,4 @@
-{{
-    config({
-        "as_columnstore": false,
-        "materialized": 'table',
-        "post-hook": [
-            "{{ create_nonclustered_index(columns = ['report_date']) }}",
-        ]
-    })
-
-}}
-
-WITH dates AS (
-    SELECT
-        d
-    FROM
-        {{ ref("util_date__window") }}
-    WHERE
-        d > '2024-09-01'
-        AND d < '2024-09-30'
-),
+WITH 
 tradesfree_query AS (
     SELECT
         *
@@ -31,18 +12,10 @@ tradesfree_query AS (
 ),
 tradesfree_query_on_date AS (
     SELECT
-        dates.d AS report_date,
-        CONCAT(
-            action_id_prefix,
-            ' ',
-            (
-                CASE
-                    WHEN startdate = d THEN 'TRANSMITTED'
-                    ELSE 'CLOSED'
-                END
-            )
-        ) AS action_id,
-        action_id_prefix AS trade_id,
+        report_date,
+        company,
+        action_id,
+        trade_id,
         fund,
         series,
         used_alloc,
@@ -53,24 +26,24 @@ tradesfree_query_on_date AS (
         quantity * CASE
             WHEN (
                 trade_type = 23
-                AND startdate = d
+                AND startdate = report_date
             )
             OR (
                 trade_type = 22
                 AND (
-                    closedate = d
-                    OR enddate = d
+                    closedate = report_date
+                    OR enddate = report_date
                 )
             ) THEN 1
             WHEN (
                 trade_type = 22
-                AND startdate = d
+                AND startdate = report_date
             )
             OR (
                 trade_type = 23
                 AND (
-                    closedate = d
-                    OR enddate = d
+                    closedate = report_date
+                    OR enddate = report_date
                 )
             ) THEN -1
             ELSE 0
@@ -82,24 +55,24 @@ tradesfree_query_on_date AS (
             CASE
                 WHEN (
                     trade_type = 23
-                    AND startdate = d
+                    AND startdate = report_date
                 ) THEN 'Receive '
                 WHEN (
                     trade_type = 22
-                    AND startdate = d
+                    AND startdate = report_date
                 ) THEN 'Pay '
                 WHEN (
                     trade_type = 23
                     AND (
-                        closedate = d
-                        OR enddate = d
+                        closedate = report_date
+                        OR enddate = report_date
                     )
                 ) THEN 'Return '
                 WHEN (
                     trade_type = 22
                     AND (
-                        closedate = d
-                        OR enddate = d
+                        closedate = report_date
+                        OR enddate = report_date
                     )
                 ) THEN 'Receive returned '
             END,
@@ -108,16 +81,6 @@ tradesfree_query_on_date AS (
         ) AS [description]
     FROM
         tradesfree_query
-        JOIN dates
-        ON 1 = 1
-    WHERE
-        (
-            startdate = d
-            OR CASE
-                WHEN closedate IS NULL THEN enddate
-                ELSE closedate
-            END = dates.d
-        )
 )
 SELECT
     *

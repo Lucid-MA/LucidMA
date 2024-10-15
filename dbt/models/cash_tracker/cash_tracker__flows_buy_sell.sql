@@ -1,3 +1,14 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_nonclustered_index(columns = ['report_date']) }}",
+        ]
+    })
+
+}}
+
 WITH
 trades AS (
   SELECT
@@ -226,7 +237,7 @@ sell_back AS (
   FROM buy_sell
   WHERE trade_type = 1 AND is_same_date = 0
 ),
-final AS (
+combined AS (
   SELECT * FROM sell
   UNION
   SELECT * FROM buy_back
@@ -242,6 +253,12 @@ final AS (
   SELECT * FROM reverse_repo_open
   UNION
   SELECT * FROM reverse_repo_term
+),
+final AS (
+  SELECT
+    NULL AS flow_settled,
+    *
+  FROM combined
 )
 
 SELECT * FROM final

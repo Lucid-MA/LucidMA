@@ -12,6 +12,7 @@ vars:
   CASH: 'CASHUSD01'
   AVAILABLE: 'AVAILABLE'
   REPO_COLLATERAL: 'REPO_COLLATERAL'
+  PAIROFF_DIFF_THRESHOLD: 5
 
 # These configurations specify where dbt should look for different types of files.
 # The `model-paths` config, for example, states that models in this project can be
