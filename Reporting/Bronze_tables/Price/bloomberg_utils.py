@@ -775,14 +775,7 @@ bb_historical_fields_selected = [
     "AMT_OUTSTANDING",
     "COUPON",
     "MTG_FACTOR",
-    "INT_ACC",
-    "DAYS_ACC",
-    "RTG_SP",
-    "RTG_MOODY",
-    "RTG_FITCH",
-    "RTG_KBRA",
-    "RTG_DBRS",
-    "RTG_EGAN_JONES",
+    "ACCRUED_INTEREST_ADJUSTED",
     "PRINCIPAL_FACTOR",
 ]
 
