@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: lucid
+    database: Prod1
+    schema: dbt
+    tables:
+      - name: cash_blotter
+      - name: cash_recon
+      - name: manual_allocations

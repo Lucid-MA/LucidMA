@@ -76,7 +76,7 @@ def format_decimal(value):
         return value.apply(format_decimal)
     else:
         if pd.notnull(value):
-            return f"{value:.4f}"
+            return f"{value:.6f}"
         else:
             return None
 

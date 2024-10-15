@@ -16,7 +16,7 @@ if %ERRORLEVEL% neq 0 (
 
 
 :: Log the result of the first script
-cd /d "C:\LucidMA\Service_scheduler\BatchLogs"
+cd /d "S:\Users\THoang\Tech\BatchLogs"
 echo %date% %time% ; "bb_collateral_data_fetch - Script execution: %status%">>BatchLogs.txt
 
 :: Second Python script execution
@@ -30,5 +30,5 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Log the result of the second script
-cd /d "C:\LucidMA\Service_scheduler\BatchLogs"
+cd /d "S:\Users\THoang\Tech\BatchLogs"
 echo %date% %time% ; "bb_rates_data_fetch - Script execution: %status%">>BatchLogs.txt

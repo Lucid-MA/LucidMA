@@ -225,6 +225,12 @@ investor_mapping = {
     "153896001": "Mozilla Corporation",
     "172035001": "TRIPARTNERS LLC",
     "172035002": "TRIPARTNERS LLC",
+    "176476001": "PRIME NOTES LLC SERIES A2Y-1",
+    "00176476001": "PRIME NOTES LLC SERIES A2Y-1",
+    "176676001": "Prime Notes Series M-4",
+    "6800001": "University Of Minnesota Foundation",
+    "00006800001": "University Of Minnesota Foundation",
+    "176399001": "GuideStone Financial Resources of the Southern Baptist Convention - Restricted Insurance Reserves",
 }
 
 period_mapping = {
@@ -381,6 +387,7 @@ pool_mapping = {
     "GEN-LUCIDII_2YI": "Lucid Prime Fund LLC_2YIG",
     "GEN-LUCIDII_A1": "Lucid Prime Fund LLC_A1",
     "GEN-LUCID": "Lucid Cash Fund USG LLC",
+    "GEN-LUCIDII_A2Y": "Lucid Prime Fund LLC_A2Y",
 }
 
 vehicle_mapping = {
@@ -415,6 +422,8 @@ notice_date_rule = {
 #     "Lucid Prime Fund LLC_S1": "PRIME-S10",
 # }
 
+lucid_cusip_mapping = {"PRIME-A10": "PRIME-A100"}
+
 cusip_mapping = {
     "Lucid Prime Fund LLC_A1": "PRIME-A100",
     "Lucid Cash Fund USG LLC": "USGFD-M000",
@@ -427,6 +436,7 @@ cusip_mapping = {
     "Lucid Prime Fund LLC_Q1": "PRIME-Q100",
     "Lucid Prime Fund LLC_M1": "PRIME-M100",
     "Lucid Prime Fund LLC_S1": "PRIME-S100",
+    "Lucid Prime Fund LLC_A2Y": "PRIME-A2Y0",
 }
 
 reverse_cusip_mapping = {

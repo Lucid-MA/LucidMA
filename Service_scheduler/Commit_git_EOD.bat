@@ -12,12 +12,12 @@ for /f "tokens=2-4 delims=/ " %%a in ("%date%") do (
 )
 
 :: Log the status before committing and pushing
-echo [%date% %time%] Git commit and push started >> "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs\BatchLogs.txt"
+echo [%date% %time%] Git commit and push started >> "S:\Users\THoang\Tech\BatchLogs\BatchLogs.txt"
 
 :: Commit the changes with the date in the message
 git commit -m "Update git EOD %formattedDate%"
 if %ERRORLEVEL% neq 0 (
-    echo [%date% %time%] Git commit failed >> "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs\BatchLogs.txt"
+    echo [%date% %time%] Git commit failed >> "S:\Users\THoang\Tech\BatchLogs\BatchLogs.txt"
     echo Git commit failed. Exiting script.
     exit /b 1
 )
@@ -25,7 +25,7 @@ if %ERRORLEVEL% neq 0 (
 :: Push the changes to the remote repository
 git push
 if %ERRORLEVEL% neq 0 (
-    echo [%date% %time%] Git push failed >> "S:\Users\THoang\Tech\LucidMA\Service_scheduler\BatchLogs\BatchLogs.txt"
+    echo [%date% %time%] Git push failed >> "S:\Users\THoang\Tech\BatchLogs\BatchLogs.txt"
     echo Git push failed. Exiting script.
     exit /b 1
 )
