@@ -15,9 +15,8 @@ from sqlalchemy import (
     text,
     NVARCHAR,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_repo_root, get_file_path, get_current_timestamp
+from Utils.Common import get_file_path
 
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
@@ -31,7 +30,6 @@ sys.path.insert(0, os.path.dirname(script_dir))
 
 from Utils.database_utils import (
     get_database_engine,
-    upsert_data_multiple_keys,
 )
 
 import logging
@@ -53,7 +51,7 @@ inspector = inspect(engine)
 
 tb_name_cash_security = "bronze_nexen_cash_and_security_transactions"
 tb_name_unsettle_trades = "bronze_nexen_unsettle_trades"
-
+tb_name_cash_recon = "bronze_nexen_cash_recon"
 # Specify the directory path
 directory = get_file_path(r"S:\Mandates\Funds\Fund Reporting\NEXEN Reports")
 
@@ -62,6 +60,7 @@ directory = get_file_path(r"S:\Mandates\Funds\Fund Reporting\NEXEN Reports")
 file_patterns = {
     "df_cash_security": r"Cash_and_Security_Transactions_(\d{2})(\d{2})(\d{4})\.xls",
     "df_unsettled_trades": r"Unsettled_Trades_(\d{2})(\d{2})(\d{4})\.xls",
+    "df_cash_recon": r"CashRecon_(\d{2})(\d{2})(\d{4})\.xls",
 }
 
 # Create a dictionary to store the DataFrames
@@ -74,6 +73,8 @@ for df_name, file_pattern in file_patterns.items():
         # Skip the Archive directory
         if "Archive" in dirs:
             dirs.remove("Archive")
+        if "Test" in dirs:
+            dirs.remove("Test")
         for file in files:
             match = re.match(file_pattern, file)
             if match:
@@ -86,22 +87,21 @@ for df_name, file_pattern in file_patterns.items():
     # Check if the file is found
     if file_path:
         # Read the Excel file into a DataFrame
-        dataframes[df_name] = pd.read_excel(file_path)
-        print(f"{df_name} loaded successfully.")
+        dataframes[df_name] = pd.read_excel(file_path, dtype=str)
+        logger.info(f"{df_name} loaded successfully.")
 
         # Extract the date from the file name using regex
         filename = os.path.basename(file_path)
         date_match = re.match(file_pattern, filename)
         if date_match:
             day, month, year = date_match.groups()
-            print(f"Extracted date components: day={day}, month={month}, year={year}")
             file_date = datetime(int(year), int(month), int(day))
-            print(f"Constructed date: {file_date}")
+            logger.info(f"Processing date: {file_date}")
             dataframes[df_name]["file_date"] = pd.Series(
                 [file_date] * len(dataframes[df_name]), index=dataframes[df_name].index
             )
         else:
-            print(f"Could not extract date from filename: {filename}")
+            logger.warning(f"Could not extract date from filename: {filename}")
 
         # Add the 'timestamp' column with the current timestamp
         current_timestamp = datetime.now()
@@ -116,6 +116,7 @@ for df_name, file_pattern in file_patterns.items():
 # Access the DataFrames
 df_cash_security = dataframes.get("df_cash_security")
 df_unsettled_trades = dataframes.get("df_unsettled_trades")
+df_cash_recon = dataframes.get("df_cash_recon")
 
 
 def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
@@ -138,7 +139,7 @@ def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
     for col in df.columns:
         if col == "file_date":
             columns.append(Column(col, Date))
-        elif col == "Settled Shares/Par":
+        elif col in ["Settled Shares/Par", "Shares / Par", "Local Amount"]:
             columns.append(Column(col, NVARCHAR(50)))  # Specify maximum length
         else:
             columns.append(Column(col, String))
@@ -185,9 +186,10 @@ def process_dataframe(engine, tb_name, df):
     """
     create_custom_bronze_table(engine, tb_name, df)
 
-    # Convert the "Settled Shares/Par" column to a string
-    if "Settled Shares/Par" in df.columns:
-        df["Settled Shares/Par"] = df["Settled Shares/Par"].astype(str)
+    # Convert the number column to string
+    for col_name in ["Settled Shares/Par", "Shares / Par", "Local Amount"]:
+        if col_name in df.columns:
+            df[col_name] = df[col_name].astype(str)
 
     # Check if table is empty
     with engine.connect() as connection:
@@ -197,7 +199,13 @@ def process_dataframe(engine, tb_name, df):
     if count > 0:
         clear_table_content(engine, tb_name)
 
-    df.to_sql(tb_name, engine, if_exists="append", index=False)
+    # df.to_sql(tb_name, engine, if_exists="append", index=False)
+    df.to_sql(
+        tb_name,
+        engine,
+        if_exists="append",
+        index=False,
+    )
     logger.info(f"Data inserted into table {tb_name} successfully.")
 
 
@@ -205,6 +213,7 @@ def process_dataframe(engine, tb_name, df):
 table_data = [
     (tb_name_cash_security, df_cash_security),
     (tb_name_unsettle_trades, df_unsettled_trades),
+    (tb_name_cash_recon, df_cash_recon),
 ]
 
 for tb_name, df in table_data:
@@ -213,120 +222,5 @@ for tb_name, df in table_data:
     else:
         logger.warning(f"DataFrame for table {tb_name} is None. Skipping processing.")
 
-
-# SEC HOLDINGS PROCESSING
-
-tb_name_security_holdings = "bronze_nexen_security_holdings"
-# Get the repository root directory
-repo_path = get_repo_root()
-bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
-sec_holdings_processed_files_tracker = (
-    bronze_tracker_dir / "Bronze Table Processed Sec Holdings PROD"
-)
-
-# SecHldgs_08102024.csv
-pattern = "SecHldgs_"
-archive_directory = get_file_path(
-    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/"
-)
-date_pattern = re.compile(r"(\d{2})(\d{2})(\d{4})")
-
-
-def read_processed_files(processed_files_tracker):
-    try:
-        with open(processed_files_tracker, "r") as file:
-            return set(file.read().splitlines())
-    except FileNotFoundError:
-        return set()
-
-
-def mark_file_processed(filename, processed_files_tracker):
-    with open(processed_files_tracker, "a") as file:
-        file.write(filename + "\n")
-
-
-def extract_date(filename):
-    """
-    This function extracts the date from a filename in DDMMYYYY format
-    and returns it as MM-DD-YYYY.
-
-    Args:
-        filename (str): The filename to extract the date from.
-
-    Returns:
-        str or None: The formatted date (MM-DD-YYYY) if found, or None if not found.
-    """
-    # Use regex to match the date
-    match = date_pattern.search(filename)
-
-    if match:
-        day, month, year = match.groups()
-        return f"{month}-{day}-{year}"  # Format as MM-DD-YYYY
-    return None
-
-
-def create_table_with_schema(tb_name):
-    metadata = MetaData()
-    metadata.bind = engine
-    table = Table(
-        tb_name,
-        metadata,
-        Column("As Of Date", String(50), primary_key=True),
-        Column("CUSIP/CINS", String(50), primary_key=True),
-        Column("Account Number", String(50), primary_key=True),
-        Column("Traded Shares/Par", String),
-        Column("Settled Shares/Par", String),
-        Column("Security Status Name", String),
-        Column("Security Short Description", String),
-        Column("timestamp", DateTime),
-        extend_existing=True,
-    )
-    try:
-        metadata.create_all(engine)
-        print(f"Table {tb_name} created successfully or already exists.")
-    except Exception as e:
-        print(f"Failed to create table {tb_name}: {e}")
-        raise
-
-
-create_table_with_schema(tb_name_security_holdings)
-
-# Iterate over files in the specified directory
-for filename in os.listdir(archive_directory):
-    if (
-        filename.startswith(pattern)
-        and filename.endswith(".csv")
-        and filename not in read_processed_files(sec_holdings_processed_files_tracker)
-    ):
-        filepath = os.path.join(archive_directory, filename)
-
-        date = extract_date(filename)
-        if not date:
-            print(
-                f"Skipping {filename} as it does not contain a correct date format in file name."
-            )
-            continue
-
-        # Read the Excel file
-        df = pd.read_csv(filepath)
-
-        # Convert number columns to string
-        df["Traded Shares/Par"] = df["Settled Shares/Par"].astype(str)
-        df["Settled Shares/Par"] = df["Settled Shares/Par"].astype(str)
-        df["timestamp"] = get_current_timestamp()
-        try:
-            # Insert into PostgreSQL table
-            # upsert_data(tb_name, df)
-            # Mark file as processed
-            upsert_data_multiple_keys(
-                engine,
-                tb_name_security_holdings,
-                df,
-                ["As Of Date", "CUSIP/CINS", "Account Number"],
-                PUBLISH_TO_PROD,
-            )
-            mark_file_processed(filename, sec_holdings_processed_files_tracker)
-        except SQLAlchemyError:
-            print(f"Skipping {filename} due to an error")
 
 logger.info("All data processing completed successfully.")
