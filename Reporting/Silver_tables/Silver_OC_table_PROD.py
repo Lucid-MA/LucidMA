@@ -1,5 +1,4 @@
 import os
-import subprocess
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -211,7 +210,7 @@ def fetch_and_prepare_data(report_date):
         df_accrued_interest = bronze_data_df[
             ["bond_data_date", "bond_id", "interest_accrued"]
         ]
-        df_accrued_interest.rename(columns={"bond_data_date": "date"})
+        df_accrued_interest.rename(columns={"bond_data_date": "date"}, inplace=True)
     else:
         df_accrued_interest = read_table_from_db(
             "silver_bloomberg_factor_interest_accrued", prod_db_type
@@ -233,8 +232,8 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2024-10-07"
-    end_date = "2024-10-07"
+    start_date = "2024-01-01"
+    end_date = "2024-10-01"
     trading_days = get_trading_days(start_date, end_date)
 
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
