@@ -219,7 +219,6 @@ else:
     filtered_helix_trade_df["Amount"] = filtered_helix_trade_df["Amount"] * -1
     filtered_helix_trade_df["timestamp"] = get_current_timestamp()
     filtered_helix_trade_df = filtered_helix_trade_df[final_column_order]
-    print(filtered_helix_trade_df)
     # Upsert the filtered data into the table
     try:
         upsert_data(
