@@ -54,10 +54,6 @@ factor_and_accrued_interest_status_file_path = (
     bronze_tracker_path / "Bronze Table Processed Daily Bond Data PROD"
 )
 
-# This flag is to see whether subtable needs to be updated
-# Set to True if they already are to save time
-update_sub_table = True
-
 
 def create_table_with_schema(tb_name, engine):
     metadata = MetaData()
@@ -135,7 +131,6 @@ def check_file_exists(file_path, report_date):
 
 
 def fetch_and_prepare_data(report_date):
-    global update_sub_table
 
     params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
     df_bronze_oc = pd.read_sql(
@@ -172,39 +167,6 @@ def fetch_and_prepare_data(report_date):
     }
     df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
-    # Check for df_price_and_factor
-    price_and_factor_date = datetime.strptime(report_date, "%Y-%m-%d").strftime(
-        "%m_%d_%Y"
-    )
-
-    if (
-        not check_file_exists(price_and_factor_status_file_path, price_and_factor_date)
-        and not update_sub_table
-    ):
-        result_price = subprocess.run(
-            [
-                "python",
-                price_and_factor_python_file_path,
-            ]
-        )
-        if result_price.returncode != 0:
-            print(
-                f"Error obtaining corresponding price and factor data for {report_date}"
-            )
-            return None, None, None, None
-
-        result_cash_bal = subprocess.run(
-            [
-                "python",
-                cash_balance_python_file_path,
-            ]
-        )
-        if result_cash_bal.returncode != 0:
-            print(f"Error obtaining corresponding cash balance data for {report_date}")
-            return None, None, None, None
-        # All the table only need to be update once
-        update_sub_table = True
-
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
     # FACTOR
@@ -240,9 +202,20 @@ def fetch_and_prepare_data(report_date):
     df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
 
     # ACCRUED INTEREST
-    df_accrued_interest = read_table_from_db(
-        "silver_bloomberg_factor_interest_accrued", prod_db_type
-    )
+    """
+    Since bloomberg data is only available from 10/10/2024, this will allow us to calculate 
+    OC rates historically
+    """
+    if current_date_dt - report_date_dt >= timedelta(days=2):
+        bronze_data_df = read_table_from_db("bronze_bond_data", prod_db_type)
+        df_accrued_interest = bronze_data_df[
+            ["bond_data_date", "bond_id", "interest_accrued"]
+        ]
+        df_accrued_interest.rename(columns={"bond_data_date": "date"})
+    else:
+        df_accrued_interest = read_table_from_db(
+            "silver_bloomberg_factor_interest_accrued", prod_db_type
+        )
 
     df_accrued_interest = df_accrued_interest.loc[
         (df_accrued_interest["date"] == report_date_dt)
