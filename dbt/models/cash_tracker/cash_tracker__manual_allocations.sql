@@ -110,7 +110,8 @@ final AS (
 
 SELECT
     settle_date AS report_date,
-    NULL as flow_settled,
+    NULL as flow_is_settled,
+    NULL as flow_after_sweep,
     *
 FROM
     final

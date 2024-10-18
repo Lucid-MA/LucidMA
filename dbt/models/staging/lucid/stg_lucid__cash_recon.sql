@@ -12,6 +12,17 @@ renamed AS (
     cash_account_number,
     cash_account_name,
     client_reference_number,
+    CASE
+      WHEN PATINDEX('%[^0-9]%', client_reference_number) = 0 THEN TRY_CAST(client_reference_number AS INT)
+      WHEN PATINDEX('%[0-9]%', client_reference_number) > 0 THEN
+        TRY_CAST(
+          LEFT(
+            SUBSTRING(client_reference_number, PATINDEX('%[0-9]%', client_reference_number), LEN(client_reference_number)),
+            PATINDEX('%[^0-9]%', SUBSTRING(client_reference_number, PATINDEX('%[0-9]%', client_reference_number), LEN(client_reference_number)) + 'X') - 1
+          ) AS INT
+        )
+      ELSE NULL
+    END AS helix_id,
     status,
     detailed_transaction_status,
     transaction_type_name,
