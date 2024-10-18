@@ -19,7 +19,7 @@ from sqlalchemy import (
 
 from Utils.Common import get_repo_root, get_current_timestamp_datetime
 from Utils.Constants import cusip_mapping
-from Utils.Hash import hash_string
+from Utils.Hash import hash_string, hash_string_v2
 from Utils.database_utils import (
     read_table_from_db,
     engine_prod,
@@ -163,9 +163,7 @@ for pool in df["pool_description"].unique():
                 product_of_returns = reduce((lambda x, y: x * y), relevant_returns) - 1
                 day_count = (end_period_dt - start_period_dt).days
                 calculated_returns = (product_of_returns * 360) / day_count
-                return_id = hash_string(
-                    f"{pool}{start_period}{end_period}{time.time()}"
-                )
+                return_id = hash_string_v2(f"{pool}{start_period}{end_period}")
                 # Prepare the data to be appended
                 data_to_append.append(
                     {
@@ -311,7 +309,7 @@ df_grouped["return_id"] = (
     df_grouped["pool_name"].astype(str)
     + df_grouped["start_date"].astype(str)
     + df_grouped["end_date"].astype(str)
-).apply(hash_string)
+).apply(hash_string_v2)
 
 df_grouped["series_id"] = df_grouped["pool_name"].map(
     lambda x: cusip_mapping.get(x, "")

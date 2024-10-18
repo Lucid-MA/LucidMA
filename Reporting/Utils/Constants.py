@@ -229,8 +229,10 @@ investor_mapping = {
     "00176476001": "PRIME NOTES LLC SERIES A2Y-1",
     "176676001": "Prime Notes Series M-4",
     "6800001": "University Of Minnesota Foundation",
+    "100000001": "University Of Minnesota Foundation",
     "00006800001": "University Of Minnesota Foundation",
     "176399001": "GuideStone Financial Resources of the Southern Baptist Convention - Restricted Insurance Reserves",
+    "155714002": "Word of God Fellowship, Inc. Cash Reserves",
 }
 
 period_mapping = {

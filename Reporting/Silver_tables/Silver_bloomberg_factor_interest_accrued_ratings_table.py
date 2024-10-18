@@ -3,13 +3,13 @@ import logging
 import pandas as pd
 from sqlalchemy import MetaData, Table, String, Column, Date, Float, DateTime, inspect
 
-from Utils.Common import print_df, get_current_timestamp
+from Utils.Common import get_current_timestamp
 from Utils.database_utils import (
     read_table_from_db,
     get_database_engine,
     prod_db_type,
     staging_db_type,
-    upsert_data, upsert_data_multiple_keys,
+    upsert_data_multiple_keys,
 )
 
 # Configure logging
@@ -52,32 +52,42 @@ def create_table_with_schema(tb_name):
     print(f"Table {tb_name} created successfully or already exists.")
 
 
+"""
+Transforms ratings from multiple rating agencies (S&P, Moody's, Fitch, Kroll, DBRS, and Egan Jones) into a single "Lucid Rating."
+The function accounts for provisional ratings, US government-backed securities, and rating scale discrepancies across agencies.
+It processes the ratings in order of priority, assigns a rating index based on the agency's rating scale (AAA, AA, A, BBB, BB, NR),
+and returns the most favorable (lowest index) rating. It also handles errors, such as misplacement of Moody's ratings in other agencies' fields.
+"""
+
+
 def lucid_rating(row):
     # Extract values from the DataFrame row
-    sec_type = row["security_type"]
     sp_rating = row["rtg_sp"]
-    moody_rating = row["rtg_moody"]
+    moodys_rating = row["rtg_moody"]
     fitch_rating = row["rtg_fitch"]
     kroll_rating = row["rtg_kbra"]
     dbrs_rating = row["rtg_dbrs"]
     ej_rating = row["rtg_egan_jones"]
     issuer = row["issuer"]
+    sec_type = row["security_type"]
 
-    # Helper function to remove provisional rating prefix or set to "NR" if None
+    ratings = ["AAA", "AA", "A", "BBB", "BB", "NR"]
+    ratings_index = [6] * 6
+
+    # Remove provisional ratings
     def remove_provisional(rating):
         if rating is None:
-            return "NR"
+            return None
         return rating[3:] if rating.startswith("(P)") else rating
 
-    # Clean provisional ratings or set them to "NR" if None
     sp_rating = remove_provisional(sp_rating)
-    moody_rating = remove_provisional(moody_rating)
+    moodys_rating = remove_provisional(moodys_rating)
     fitch_rating = remove_provisional(fitch_rating)
     kroll_rating = remove_provisional(kroll_rating)
     dbrs_rating = remove_provisional(dbrs_rating)
     ej_rating = remove_provisional(ej_rating)
 
-    # Check for USG Risk only if sec_type is not None
+    # Check for USG Risk
     if sec_type and (
         sec_type.startswith("Agncy CMO") or sec_type.startswith("Agncy CMBS")
     ):
@@ -103,50 +113,44 @@ def lucid_rating(row):
         ):
             return "USG"
 
-    # Define rating categories and initialize ratings index
-    ratings = ["AAA", "AA", "A", "BBB", "BB", "NR"]
-    ratings_index = [6] * 6  # Default index corresponding to "NR"
-
-    # Function to determine rating index based on prefix
     def get_rating_index(rating, agency):
-        rating = rating.upper() if rating else "NR"
+        if rating is None:
+            return 6
+        rating = rating.upper()
         if rating == "WR" or rating == "NR":
             return 6
         elif rating.startswith("AAA"):
             return 1
-        elif rating in ["AA2U", "AA2"]:
-            return 2
         elif rating.startswith("AA"):
             return 2
-        elif rating == "AH" or rating.startswith("A"):
+        elif rating.startswith("A"):
             return 3
-        elif rating == "BAA1" or rating.startswith("BBB"):
+        elif rating.startswith("BBB") or (
+            agency == "Moodys" and rating.startswith("BAA")
+        ):
             return 4
-        elif rating.startswith("BA"):
-            return 5
-        elif rating.startswith("BB"):
+        elif rating.startswith("BB") or (
+            agency == "Moodys" and rating.startswith("BA")
+        ):
             return 5
         else:
-            if agency in ["SP", "Fitch", "Kroll", "DBRS", "EJ"] and rating[-1] in "123":
+            if agency != "Moodys" and rating[-1] in "123":
                 return f"Error: it appears that a Moodys Rating was put where and {agency} Rating should go"
             return 6
 
-    # Get index values for each rating
-    ratings_index[0] = get_rating_index(sp_rating, "SP")
-    ratings_index[1] = get_rating_index(moody_rating, "Moodys")
+    ratings_index[0] = get_rating_index(sp_rating, "S&P")
+    ratings_index[1] = get_rating_index(moodys_rating, "Moodys")
     ratings_index[2] = get_rating_index(fitch_rating, "Fitch")
     ratings_index[3] = get_rating_index(kroll_rating, "Kroll")
     ratings_index[4] = get_rating_index(dbrs_rating, "DBRS")
-    ratings_index[5] = get_rating_index(ej_rating, "EJ")
+    ratings_index[5] = get_rating_index(ej_rating, "Egan Jones")
 
-    # Check if there was any error in the rating indexes
-    if any(isinstance(index, str) for index in ratings_index):
-        return next(index for index in ratings_index if isinstance(index, str))
+    # Check for any errors
+    for index in ratings_index:
+        if isinstance(index, str):
+            return index
 
-    # Determine the minimum rating index
     lucid_index = min(ratings_index)
-
-    # Return the corresponding Lucid Rating
     return ratings[lucid_index - 1]
 
 
@@ -190,4 +194,6 @@ if not inspector.has_table(tb_name):
     create_table_with_schema(tb_name)
 
 # upsert_data(engine, tb_name, df_silver_bloomberg_data, "data_id", PUBLISH_TO_PROD)
-upsert_data_multiple_keys(engine, tb_name, df_silver_bloomberg_data, ["date", "bond_id"], PUBLISH_TO_PROD)
+upsert_data_multiple_keys(
+    engine, tb_name, df_silver_bloomberg_data, ["date", "bond_id"], PUBLISH_TO_PROD
+)
