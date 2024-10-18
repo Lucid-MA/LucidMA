@@ -146,12 +146,18 @@ combined2 AS (
 ),
 final AS (
     SELECT
-        CASE -- 0 is afterSweep false, 1 is afterSweep true, NULL not unsettled
+        CASE 
+            WHEN action_id LIKE 'ADJ_%' THEN 1
+            WHEN action_id LIKE 'MNF_%' THEN 1
+            WHEN action_id LIKE 'REALLOC_%' THEN 1
+            ELSE NULL
+        END AS flow_is_settled,
+        CASE 
             WHEN action_id LIKE 'ADJ_%' THEN 0
             WHEN action_id LIKE 'MNF_%' THEN 0
             WHEN action_id LIKE 'REALLOC_%' THEN 0
             ELSE NULL
-        END AS flow_settled,
+        END AS flow_after_sweep,
         *
     FROM combined2
 )

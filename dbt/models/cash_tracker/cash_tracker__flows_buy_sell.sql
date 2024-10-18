@@ -41,7 +41,7 @@ repo_open AS (
   SELECT
     'Option3-repo-open-1' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo open (credit collateral)' AS transaction_desc,
+    counterparty + ' repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('REPO_COLLATERAL')}}' AS flow_status,
@@ -53,7 +53,7 @@ repo_open AS (
   SELECT
     'Option3-repo-open-2' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo open (debit cash)' AS transaction_desc,
+    counterparty + ' repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -66,7 +66,7 @@ repo_term AS (
   SELECT
     'Option3-repo-term-1' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo term (debit collateral)' AS transaction_desc,
+    counterparty + ' repo term' AS transaction_desc,
     'MAIN' AS flow_account, 
     counterparty AS flow_security,
     '{{var('REPO_COLLATERAL')}}' AS flow_status,
@@ -78,7 +78,7 @@ repo_term AS (
   SELECT
     'Option3-repo-term-2' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo term (credit cash)' AS transaction_desc,
+    counterparty + ' repo term' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -91,7 +91,7 @@ reverse_repo_open AS (
   SELECT
     'Option3-reverserepo-open-1' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' reverse repo open (debit collateral)' AS transaction_desc,
+    counterparty + ' reverse repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('REPO_COLLATERAL')}}' AS flow_status,
@@ -103,7 +103,7 @@ reverse_repo_open AS (
   SELECT
     'Option3-reverserepo-open-2' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' reverse repo open (debit collateral)' AS transaction_desc,
+    counterparty + ' reverse repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -116,7 +116,7 @@ reverse_repo_term AS (
   SELECT
     'Option3-reverserepo-term-1' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' reverse repo term (credit collateral)' AS transaction_desc,
+    counterparty + ' reverse repo term' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('REPO_COLLATERAL')}}' AS flow_status,
@@ -128,7 +128,7 @@ reverse_repo_term AS (
   SELECT
     'Option3-reverserepo-term-2' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' reverse repo term (credit collateral)' AS transaction_desc,
+    counterparty + ' reverse repo term' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -141,7 +141,7 @@ sell AS (
   SELECT
     'Option3-sell-in' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo open (sell)' AS transaction_desc,
+    counterparty + ' repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -153,7 +153,7 @@ sell AS (
   SELECT
     'Option3-sell-out' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo open (sell)' AS transaction_desc,
+    counterparty + ' repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -166,7 +166,7 @@ buy_back AS (
   SELECT
     'Option3-buyback-out' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo close (buy)' AS transaction_desc,
+    counterparty + ' repo close' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -178,7 +178,7 @@ buy_back AS (
   SELECT
     'Option3-buyback-in' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' repo close (buy)' AS transaction_desc,
+    counterparty + ' repo close' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -191,7 +191,7 @@ buy AS (
   SELECT
     'Option3-buy-out' AS route,
     action_id AS transaction_action_id,
-    counterparty + 'reverse repo open (buy)' AS transaction_desc,
+    counterparty + 'reverse repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -203,7 +203,7 @@ buy AS (
   SELECT
     'Option3-buy-in' AS route,
     action_id AS transaction_action_id,
-    counterparty + 'reverse repo open (buy)' AS transaction_desc,
+    counterparty + 'reverse repo open' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -216,7 +216,7 @@ sell_back AS (
   SELECT
     'Option3-sellback-in' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' reverse repo close (sell)' AS transaction_desc,
+    counterparty + ' reverse repo close' AS transaction_desc,
     'MAIN' AS flow_account, 
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -228,7 +228,7 @@ sell_back AS (
   SELECT
     'Option3-sellback-out' AS route,
     action_id AS transaction_action_id,
-    counterparty + ' reverse repo close (sell)' AS transaction_desc,
+    counterparty + ' reverse repo close' AS transaction_desc,
     'MAIN' AS flow_account, 
     security AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
@@ -256,7 +256,8 @@ combined AS (
 ),
 final AS (
   SELECT
-    NULL AS flow_settled,
+    NULL AS flow_is_settled,
+    NULL AS flow_after_sweep,
     *
   FROM combined
 )

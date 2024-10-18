@@ -247,6 +247,7 @@ combined AS (
     flow_status,
     flow_amount,
     trade_id,
+    counterparty,
     used_alloc 
   FROM margin_flows
   UNION
@@ -262,12 +263,14 @@ combined AS (
     flow_status,
     flow_amount,
     trade_id,
+    counterparty,
     used_alloc 
   FROM series
 ),
 final AS (
   SELECT
-    NULL AS flow_settled,
+    NULL AS flow_is_settled,
+    NULL AS flow_after_sweep,
     *
   FROM combined
 )

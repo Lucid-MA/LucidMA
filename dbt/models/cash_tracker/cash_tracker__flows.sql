@@ -27,7 +27,8 @@ cashpairoffs AS (
     '{{var('CASH')}}' AS flow_security,
     '{{var('AVAILABLE')}}' AS flow_status,
     amount2 AS flow_amount,
-    NULL AS flow_settled,
+    NULL AS flow_is_settled,
+    NULL AS flow_after_sweep,
     *
   FROM {{ ref('cash_tracker__cashpairoffs') }}
   WHERE ABS(amount2) > 0
@@ -43,7 +44,8 @@ series_cashpairoffs AS (
       WHEN m.flow_account = 'EXPENSE' THEN 0.0
       ELSE CAST((m.amount2 * s.used_alloc) AS money)
     END AS flow_amount,
-    m.flow_settled,
+    m.flow_is_settled,
+    m.flow_after_sweep,
     s.*
   FROM {{ ref('cash_tracker__cashpairoffs_series') }} AS s
   JOIN cashpairoffs AS m ON (s.counterparty2 = m.counterparty2 AND s.trade_id = m.trade_id)
@@ -61,8 +63,10 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
-    flow_settled,
+    flow_is_settled,
+    flow_after_sweep,
     trade_id,
+    counterparty,
     used_alloc
   FROM buysell
   UNION
@@ -77,8 +81,10 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
-    flow_settled,
+    flow_is_settled,
+    flow_after_sweep,
     trade_id,
+    counterparty,
     used_alloc
   FROM series
   UNION
@@ -93,8 +99,10 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
-    flow_settled,
+    flow_is_settled,
+    flow_after_sweep,
     trade_id,
+    counterparty,
     used_alloc
   FROM cashpairoffs
   UNION
@@ -109,8 +117,10 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
-    flow_settled,
+    flow_is_settled,
+    flow_after_sweep,
     trade_id,
+    counterparty,
     used_alloc
   FROM series_cashpairoffs
   UNION
@@ -125,8 +135,10 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
-    flow_settled,
+    flow_is_settled,
+    flow_after_sweep,
     trade_id,
+    counterparty,
     used_alloc
   FROM margin
   UNION
@@ -141,8 +153,10 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
-    flow_settled,
+    flow_is_settled,
+    flow_after_sweep,
     trade_id,
+    NULL AS counterparty,
     0 AS used_alloc
   FROM manual_movements
 )
