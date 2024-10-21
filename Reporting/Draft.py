@@ -67,8 +67,23 @@
 # )
 #
 # print_df(security_attributes_df)
-from Utils.database_utils import read_table_from_db, helix_db_type, prod_db_type
+from datetime import datetime
 
-bronze_data_df = read_table_from_db("bronze_bond_data", prod_db_type)
-bronze_data_df = bronze_data_df[["bond_data_date", "bond_id", "interest_accrued"]]
-print(bronze_data_df.head())
+import pandas as pd
+from sqlalchemy import text
+
+from Utils.Common import print_df
+from Utils.SQL_queries import helix_ratings_query, OC_query_historical_v2
+from Utils.database_utils import execute_sql_query_v2, engine_helix, helix_db_type
+
+helix_rating_df = execute_sql_query_v2(helix_ratings_query, helix_db_type)
+
+print_df(helix_rating_df.head())
+
+report_date = "2024-10-16"
+params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
+df_bronze_oc = pd.read_sql(
+    text(OC_query_historical_v2), con=engine_helix, params=params
+)
+
+print_df(df_bronze_oc)

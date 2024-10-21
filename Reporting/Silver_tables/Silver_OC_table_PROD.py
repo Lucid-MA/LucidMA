@@ -25,33 +25,28 @@ engine = get_database_engine("postgres")
 engine_oc_rate = get_database_engine("sql_server_1")
 engine_oc_rate_prod = get_database_engine("sql_server_2")
 
+IS_PROD = True
+# Constants
 # Get the repository root directory
 repo_path = get_repo_root()
-bronze_repo_path = repo_path / "Reporting" / "Bronze_tables"
-bronze_tracker_path = bronze_repo_path / "File_trackers"
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
 
-# Dependent files
-cash_balance_python_file_path = bronze_repo_path / "Bronze_cash_balance_table.py"
+if IS_PROD:
+    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker PROD"
+else:
+    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker"
 
-cash_balance_status_file_path = (
-    bronze_tracker_path / "Bronze Table Processed Cash Balance PROD"
-)
 
-price_and_factor_python_file_path = (
-    bronze_repo_path / "Bronze_HELIX_price_factor_table.py"
-)
-
-price_and_factor_status_file_path = (
-    bronze_tracker_path / "Bronze Table Processed HELIX Price and Factor PROD"
-)
-
-factor_and_accrued_interest_python_file_path = (
-    bronze_repo_path / "Bronze_bond_data_table.py"
-)
-
-factor_and_accrued_interest_status_file_path = (
-    bronze_tracker_path / "Bronze Table Processed Daily Bond Data PROD"
-)
+def read_processed_dates():
+    processed_dates = set()
+    try:
+        with open(OC_RATES_TRACKER, "r") as file:
+            for line in file:
+                date = line.strip().split("_")[-1]
+                processed_dates.add(date)
+    except FileNotFoundError:
+        pass
+    return processed_date
 
 
 def create_table_with_schema(tb_name, engine):
@@ -199,7 +194,9 @@ def fetch_and_prepare_data(report_date):
 
     # CASH BALANCE
     df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
-
+    df_cash_balance = df_cash_balance.loc[
+        (df_cash_balance["Balance_date"] == report_date_dt)
+    ]
     # ACCRUED INTEREST
     """
     Since bloomberg data is only available from 10/10/2024, this will allow us to calculate 
@@ -207,6 +204,7 @@ def fetch_and_prepare_data(report_date):
     """
     if current_date_dt - report_date_dt >= timedelta(days=2):
         bronze_data_df = read_table_from_db("bronze_bond_data", prod_db_type)
+        bronze_data_df = bronze_data_df.loc[bronze_data_df["is_am"] == 0]
         df_accrued_interest = bronze_data_df[
             ["bond_data_date", "bond_id", "interest_accrued"]
         ]
@@ -232,52 +230,56 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2022-01-01"
-    end_date = "2022-12-31"
+    start_date = "2024-09-01"
+    end_date = "2024-10-16"
     trading_days = get_trading_days(start_date, end_date)
-
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
-    for REPORT_DATE in trading_days:
-        (
-            df_bronze_oc,
-            df_factor,
-            df_clean_price,
-            df_cash_balance,
-            df_accrued_interest,
-        ) = fetch_and_prepare_data(REPORT_DATE)
-        df = generate_silver_oc_rates_prod(
-            df_bronze_oc,
-            df_factor,
-            df_clean_price,
-            df_cash_balance,
-            df_accrued_interest,
-            REPORT_DATE,
-        )
 
-        if df is None or df.empty:
-            print(f"No data to upsert for date {REPORT_DATE}")
-        else:
-            upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
-            # Temporary
-            df = df[
-                [
-                    "oc_rates_id",
-                    "fund",
-                    "series",
-                    "report_date",
-                    "rating_buckets",
-                    "oc_rate",
-                    "clean_oc_rate",
-                    "collateral_mv",
-                    "clean_collateral_mv",
-                    "repo_money",
+    # processed_dates = read_processed_dates()
+    processed_dates = []
+
+    for REPORT_DATE in trading_days:
+        if REPORT_DATE not in processed_dates:
+            (
+                df_bronze_oc,
+                df_factor,
+                df_clean_price,
+                df_cash_balance,
+                df_accrued_interest,
+            ) = fetch_and_prepare_data(REPORT_DATE)
+            df = generate_silver_oc_rates_prod(
+                df_bronze_oc,
+                df_factor,
+                df_clean_price,
+                df_cash_balance,
+                df_accrued_interest,
+                REPORT_DATE,
+            )
+
+            if df is None or df.empty:
+                print(f"No data to upsert for date {REPORT_DATE}")
+            else:
+                upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
+                # Temporary
+                df = df[
+                    [
+                        "oc_rates_id",
+                        "fund",
+                        "series",
+                        "report_date",
+                        "rating_buckets",
+                        "oc_rate",
+                        "clean_oc_rate",
+                        "collateral_mv",
+                        "clean_collateral_mv",
+                        "repo_money",
+                    ]
                 ]
-            ]
-            # Export_pre_calculation_file
-            oc_file_name = f"oc_rates_{REPORT_DATE}.xlsx"
-            oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
-            oc_file_path = os.path.join(oc_export_path, oc_file_name)
-            df.to_excel(oc_file_path, engine="openpyxl")
+                # Export_pre_calculation_file
+                oc_file_name = f"oc_rates_{REPORT_DATE}.xlsx"
+                oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
+                oc_file_path = os.path.join(oc_export_path, oc_file_name)
+                df.to_excel(oc_file_path, engine="openpyxl")
 
     print("Process completed.")
 
