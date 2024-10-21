@@ -70,20 +70,42 @@
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import text
 
 from Utils.Common import print_df
-from Utils.SQL_queries import helix_ratings_query, OC_query_historical_v2
-from Utils.database_utils import execute_sql_query_v2, engine_helix, helix_db_type
-
-helix_rating_df = execute_sql_query_v2(helix_ratings_query, helix_db_type)
-
-print_df(helix_rating_df.head())
-
-report_date = "2024-10-16"
-params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
-df_bronze_oc = pd.read_sql(
-    text(OC_query_historical_v2), con=engine_helix, params=params
+from Utils.SQL_queries import helix_ratings_query
+from Utils.database_utils import (
+    execute_sql_query_v2,
+    helix_db_type,
+    read_table_from_db,
+    prod_db_type,
 )
 
-print_df(df_bronze_oc)
+report_date_raw = "2024-10-16"
+report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
+helix_rating_df = execute_sql_query_v2(
+    helix_ratings_query, helix_db_type, params=(report_date,)
+)
+
+collateral_rating_df = read_table_from_db("silver_collateral_rating", prod_db_type)
+
+collateral_rating_df["date"] = pd.to_datetime(collateral_rating_df["date"])
+report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
+collateral_rating_df = collateral_rating_df[
+    collateral_rating_df["date"] == report_date
+][["bond_id", "rating"]]
+
+# Rename the "rating" columns to distinguish between helix and collateral ratings
+helix_rating_df = helix_rating_df.rename(columns={"rating": "helix_rating"})
+collateral_rating_df = collateral_rating_df.rename(
+    columns={"rating": "collateral_rating"}
+)
+
+# Perform an inner join between helix_rating_df and collateral_rating_df on the "bond_id" column
+merged_df = pd.merge(helix_rating_df, collateral_rating_df, on="bond_id", how="inner")
+
+# Filter the merged DataFrame to include only rows where the ratings are different
+result_df = merged_df[merged_df["helix_rating"] != merged_df["collateral_rating"]][
+    ["bond_id", "helix_rating", "collateral_rating"]
+]
+
+print_df(result_df)

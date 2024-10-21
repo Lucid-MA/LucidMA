@@ -50,68 +50,6 @@ and (tradetypes.description = 'Reverse' or tradetypes.description = 'ReverseFree
 order by tradepieces.company asc, tradepieces.ledgername asc, tradepieces.contraname asc
 """
 
-OC_query_historical = f"""
-WITH active_trades AS (
-    SELECT tradepiece
-    FROM tradepieces
-    WHERE startdate <= :valdate
-    AND (closedate IS NULL OR closedate >= :valdate OR enddate >= :valdate)
-),
-latest_ratings AS (
-    SELECT ht.tradepiece, ht.comments AS rating
-    FROM history_tradepieces ht
-    JOIN (
-        SELECT tradepiece, MAX(datetimeid) AS max_datetimeid
-        FROM history_tradepieces
-        WHERE EXISTS (
-            SELECT 1
-            FROM active_trades at
-            WHERE at.tradepiece = history_tradepieces.tradepiece
-        )
-        GROUP BY tradepiece
-    ) latest
-    ON ht.tradepiece = latest.tradepiece AND ht.datetimeid = latest.max_datetimeid
-    WHERE CAST(ht.datetimeid AS DATE) = CAST(ht.bookdate AS DATE)
-)
-SELECT
-    CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END AS fund,
-    RTRIM(tp.ledgername) AS Series,
-    tp.tradepiece AS "Trade ID",
-    RTRIM(tt.description) AS TradeType,
-    tp.startdate AS "Start Date",
-    CASE WHEN tp.closedate IS NULL THEN tp.enddate ELSE tp.closedate END AS "End Date",
-    tp.fx_money AS Money,
-    LTRIM(RTRIM(tp.contraname)) AS Counterparty,
-    COALESCE(tc.lastrate, tp.reporate) AS "Orig. Rate",
-    tp.price AS "Orig. Price",
-    LTRIM(RTRIM(tp.isin)) AS BondID,
-    tp.par * CASE WHEN tp.tradetype IN (0, 22) THEN -1 ELSE 1 END AS "Par/Quantity",
-    CASE WHEN RTRIM(tt.description) IN ('ReverseFree', 'RepoFree') THEN 0 ELSE tp.haircut END AS HairCut,
-    tci.commissionvalue * 100 AS Spread,
-    LTRIM(RTRIM(tp.acct_number)) AS "cp short",
-    CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USG' WHEN tp.tradepiece IN (60320, 60321, 60258) THEN 'BBB' WHEN tp.comments = '' THEN rt.rating ELSE tp.comments END AS Comments,
-    tp.fx_money + tc.repointerest_unrealized + tc.repointerest_nbd AS "End Money",
-    CASE WHEN RTRIM(is3.description) = 'CLO CRE' THEN 'CMBS' ELSE RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USD Cash' ELSE is2.description END) END AS "Product Type",
-    RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'Cash' ELSE is3.description END) AS "Collateral Type"
-FROM tradepieces tp
-INNER JOIN tradepiececalcdatas tc ON tc.tradepiece = tp.tradepiece
-INNER JOIN tradecommissionpieceinfo tci ON tci.tradepiece = tp.tradepiece
-INNER JOIN tradetypes tt ON tt.tradetype = tp.shelltradetype
-INNER JOIN issues i ON i.cusip = tp.cusip
-INNER JOIN currencys c ON c.currency = tp.currency_money
-INNER JOIN statusdetails sd ON sd.statusdetail = tp.statusdetail
-INNER JOIN statusmains sm ON sm.statusmain = tp.statusmain
-INNER JOIN issuecategories ic ON ic.issuecategory = tp.issuecategory
-INNER JOIN issuesubtypes1 is1 ON is1.issuesubtype1 = ic.issuesubtype1
-INNER JOIN issuesubtypes2 is2 ON is2.issuesubtype2 = ic.issuesubtype2
-INNER JOIN issuesubtypes3 is3 ON is3.issuesubtype3 = ic.issuesubtype3
-INNER JOIN depositorys d ON tp.depositoryid = d.depositoryid
-LEFT JOIN latest_ratings rt ON rt.tradepiece = tp.tradepiece
-WHERE tp.statusmain <> 6
-AND tp.company IN (44, 45)
-AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
-ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
-"""
 
 OC_query_historical_v2 = f"""
 WITH active_trades AS (
@@ -178,88 +116,43 @@ ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
 """
 
 helix_ratings_query = """
-SELECT
-    Tradepieces.TRADEPIECE AS "Trade ID",
-    Tradepieces.LEDGERNAME AS "Ledger",
-    TRIM(TRADETYPES.DESCRIPTION) AS "TradeType",
-    Tradepieces.TRADEDATE AS "Trade Date",
-    Tradepieces.STARTDATE AS "Start Date",
-    CASE
-        WHEN Tradepieces.CLOSEDATE is NULL THEN Tradepieces.ENDDATE
-        ELSE Tradepieces.CLOSEDATE
-    END AS "End Date",
-    - Tradepieces.MONEY * TRADETYPES.MONEY_DIRECTION AS "Money",
-    CURRENCYS.CURRENCYCODE AS "Currency",
-    TRIM(Tradepieces.CONTRANAME) AS "Counterparty",
-    Tradepieces.REPORATE AS "Orig. Rate",
-    TRADEPIECECALCDATAS.todayrate AS "Today Rate",
-    TRADEPIECECALCDATAS.REPOINTEREST_ONEDAY AS "Daily Int.",
-    TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Accrued Int.",
-    TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED AS "Unrealized Int.",
-    TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD AS "Total Interest Due",
-    (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "Crnt Money Due",
-    (Tradepieces.MONEY + ABS(TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED) + ABS(TRADEPIECECALCDATAS.REPOINTEREST_NBD)) * TRADETYPES.INTEREST_DIRECTION AS "End Money",
-    TRIM(Tradepieces.ISIN) AS "BondID",
-    - Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Par/Quantity",
-    Tradepiececalcdatas.CURRENTMBSFACTOR AS "Issue Factor",
-    - Tradepiececalcdatas.CURRENTMBSFACTOR * Tradepieces.PAR * TRADETYPES.PAR_DIRECTION AS "Current Face",
-    TRADEPIECECALCDATAS.CURRENTPRICE AS "Current Price",
-    - TRADEPIECECALCDATAS.CURRENTMARKETVALUE * TRADETYPES.PAR_DIRECTION AS "Mkt Value",
-    Tradepieces.PRICE AS "Repo Price",
-    Tradepieces.PRICEFULL AS "Trade Price",
-    Tradepieces.HAIRCUT AS "HairCut",
-    CASE
-        WHEN Tradepieces.HAIRCUTMETHOD = 0 THEN 'No Haircut'
-        WHEN Tradepieces.HAIRCUTMETHOD = 1 THEN '% Proceeds'
-        WHEN Tradepieces.HAIRCUTMETHOD = 2 THEN 'Adj By %'
-        WHEN Tradepieces.HAIRCUTMETHOD = 3 THEN 'Adj By Points'
-        ELSE Tradepieces.X_SPECIALCODE1
-    END AS "Haircut Method",
-    RTRIM(CASE
-        WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
-        ELSE ISSUESUBTYPES2.DESCRIPTION
-    END) AS "Product Type",
-    RTRIM(CASE
-        WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD'
-        ELSE ISSUESUBTYPES1.DESCRIPTION
-    END) AS "Product",
-    Tradepieces.USERNAME AS "User",
-       RTRIM(ISNULL(Tradepieces.DEPOSITORY, '')) AS "Depository",
-       RTRIM(STATUSDETAILS.DESCRIPTION) AS "Status Detail",
-       TRIM(Tradepieces.ACCT_NUMBER) AS "CP Short Name",
-       RTRIM(STATUSMAINS.DESCRIPTION) AS "Status Main",
-       RTRIM(CASE
-             WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'Cash'
-             WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'Cash'
-             ELSE ISSUESUBTYPES3.DESCRIPTION
-       END) AS "Product Sub",
-       RTRIM(CASE
-             WHEN Tradepieces.cusip = 'CASHUSD01' THEN 'USD Cash'
-             WHEN Tradepieces.cusip = 'CASHEUR01' THEN 'EUR Cash'
-             ELSE ISNULL(ISSUES.DESCRIPTION_1, '')
-       END) AS "Description",
-       TRADEPIECEXREFS.FRONTOFFICEID AS "Facility",
-       Tradepieces.COMMENTS AS "Comments",
-       Tradecommissionpieceinfo.commissionvalue AS "Commission",
-       ISNULL(Tradepieces.STRATEGY, '') AS "Fund Entity"
-       FROM
-       tradepieces
-       INNER JOIN TRADEPIECEXREFS ON TRADEPIECEXREFS.TRADEPIECE = TRADEPIECES.TRADEPIECE
-       INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
-       INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE = TRADEPIECES.TRADEPIECE
-       INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE = TRADEPIECES.SHELLTRADETYPE
-       INNER JOIN ISSUES ON ISSUES.CUSIP = TRADEPIECES.CUSIP
-       INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY = TRADEPIECES.CURRENCY_PAR
-       INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL = TRADEPIECES.STATUSDETAIL
-       INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN = TRADEPIECES.STATUSMAIN
-       INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY = TRADEPIECES.ISSUECATEGORY
-       INNER JOIN ISSUESUBTYPES1 ON ISSUESUBTYPES1.ISSUESUBTYPE1 = ISSUECATEGORIES.ISSUESUBTYPE1
-       INNER JOIN ISSUESUBTYPES2 ON ISSUESUBTYPES2.ISSUESUBTYPE2 = ISSUECATEGORIES.ISSUESUBTYPE2
-       INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3 = ISSUECATEGORIES.ISSUESUBTYPE3
-       WHERE
-       tradepieces.company in (44,45)
-       AND tradepieces.statusmain <> 6
-       AND ((tradepieces.enddate > getdate() or tradepieces.enddate is null) and (tradepieces.closedate is null or tradepieces.closedate > getdate()))
+DECLARE @CustomDate DATE;
+SET @CustomDate = {date_placeholder}; -- Replace with your actual custom date
+
+WITH active_trades AS (
+    SELECT tradepiece
+    FROM tradepieces
+    WHERE startdate <= @CustomDate
+    AND (closedate IS NULL OR closedate >= @CustomDate)
+    AND (enddate >= @CustomDate)
+),
+latest_ratings AS (
+    SELECT ht.tradepiece, ht.comments AS rating, 
+           ROW_NUMBER() OVER (PARTITION BY ht.tradepiece ORDER BY ht.datetimeid DESC) AS rn
+    FROM history_tradepieces ht
+    WHERE EXISTS (
+        SELECT 1
+        FROM active_trades at
+        WHERE at.tradepiece = ht.tradepiece
+    )
+    AND CAST(ht.datetimeid AS DATE) = CAST(ht.bookdate AS DATE)
+)
+SELECT DISTINCT
+    LTRIM(RTRIM(tp.isin)) AS bond_id,
+    COALESCE(
+        CASE 
+            WHEN tp.comments = '' THEN ISNULL(rt.rating, 'NR') 
+            ELSE tp.comments 
+        END, 'NR') AS rating
+FROM tradepieces tp
+LEFT JOIN (
+    SELECT tradepiece, rating 
+    FROM latest_ratings 
+    WHERE rn = 1
+) rt ON rt.tradepiece = tp.tradepiece
+WHERE tp.STARTDATE <= @CustomDate
+AND (tp.enddate > @CustomDate OR tp.enddate IS NULL)
+AND (tp.CLOSEDATE > @CustomDate OR tp.CLOSEDATE IS NULL);
 """
 
 all_securities_query = """
@@ -870,7 +763,7 @@ JOIN ISSUES i
     ON h.ISSUE = i.ISSUE
 """
 
-# TODO: SHOULD USE THIS FOR ALL QUERRY FORMAT
+# TODO: SHOULD USE THIS FOR ALL QUERY FORMAT
 AUM_query = """
 DECLARE @CustomDate DATE;
 SET @CustomDate = {date_placeholder};
@@ -1134,6 +1027,83 @@ FROM
 OtherMandatesData;
 """
 
+# TODO: This should be used with execute_query_v2
+active_trade_by_date_helix_query = """
+DECLARE @CustomDate DATE;
+SET @CustomDate = {date_placeholder}; -- Replace with your actual date
+
+WITH active_trades AS (
+    SELECT tradepiece
+    FROM tradepieces
+    WHERE startdate <= @CustomDate
+    AND (closedate IS NULL OR closedate >= @CustomDate OR enddate >= @CustomDate)
+),
+latest_ratings AS (
+    SELECT ht.tradepiece, ht.comments AS rating
+    FROM history_tradepieces ht
+    JOIN (
+        SELECT tradepiece, MAX(datetimeid) AS max_datetimeid
+        FROM history_tradepieces
+        WHERE EXISTS (
+            SELECT 1
+            FROM active_trades at
+            WHERE at.tradepiece = history_tradepieces.tradepiece
+        )
+        GROUP BY tradepiece
+    ) latest
+    ON ht.tradepiece = latest.tradepiece AND ht.datetimeid = latest.max_datetimeid
+    WHERE CAST(ht.datetimeid AS DATE) = CAST(ht.bookdate AS DATE)
+)
+SELECT
+    CASE WHEN tp.company = 44 THEN 'USG' WHEN tp.company = 45 THEN 'Prime' END AS fund,
+    RTRIM(tp.ledgername) AS Series,
+    tp.tradepiece AS "Trade ID",
+    RTRIM(tt.description) AS TradeType,
+    tp.startdate AS "Start Date",
+    CASE WHEN tp.closedate IS NULL THEN tp.enddate ELSE tp.closedate END AS "End Date",
+    tp.fx_money AS Money,
+    LTRIM(RTRIM(tp.contraname)) AS Counterparty,
+    COALESCE(tc.lastrate, tp.reporate) AS "Orig. Rate",
+    tp.price AS "Orig. Price",
+    LTRIM(RTRIM(tp.isin)) AS BondID,
+    tp.par * CASE WHEN tp.tradetype IN (0, 22) THEN -1 ELSE 1 END AS "Par/Quantity",
+    CASE WHEN RTRIM(tt.description) IN ('ReverseFree', 'RepoFree') THEN 0 ELSE tp.haircut END AS HairCut,
+    tci.commissionvalue * 100 AS Spread,
+    LTRIM(RTRIM(tp.acct_number)) AS "cp short",
+    CASE 
+        WHEN tp.cusip = 'CASHUSD01' THEN 'USG' 
+        WHEN tp.tradepiece IN (60320, 60321, 60258) THEN 'BBB' 
+        WHEN tp.comments = '' THEN rt.rating 
+        ELSE tp.comments 
+    END AS Comments,
+    tp.fx_money + tc.repointerest_unrealized + tc.repointerest_nbd AS "End Money",
+    CASE 
+        WHEN RTRIM(is3.description) = 'CLO CRE' THEN 'CMBS' 
+        ELSE RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'USD Cash' ELSE is2.description END) 
+    END AS "Product Type",
+    RTRIM(CASE WHEN tp.cusip = 'CASHUSD01' THEN 'Cash' ELSE is3.description END) AS "Collateral Type"
+FROM tradepieces tp
+INNER JOIN tradepiececalcdatas tc ON tc.tradepiece = tp.tradepiece
+INNER JOIN tradecommissionpieceinfo tci ON tci.tradepiece = tp.tradepiece
+INNER JOIN tradetypes tt ON tt.tradetype = tp.shelltradetype
+INNER JOIN issues i ON i.cusip = tp.cusip
+INNER JOIN currencys c ON c.currency = tp.currency_money
+INNER JOIN statusdetails sd ON sd.statusdetail = tp.statusdetail
+INNER JOIN statusmains sm ON sm.statusmain = tp.statusmain
+INNER JOIN issuecategories ic ON ic.issuecategory = tp.issuecategory
+INNER JOIN issuesubtypes1 is1 ON is1.issuesubtype1 = ic.issuesubtype1
+INNER JOIN issuesubtypes2 is2 ON is2.issuesubtype2 = ic.issuesubtype2
+INNER JOIN issuesubtypes3 is3 ON is3.issuesubtype3 = ic.issuesubtype3
+INNER JOIN depositorys d ON tp.depositoryid = d.depositoryid
+LEFT JOIN latest_ratings rt ON rt.tradepiece = tp.tradepiece
+WHERE tp.statusmain <> 6
+AND tp.company IN (44, 45)
+AND tt.description IN ('Reverse', 'ReverseFree', 'RepoFree')
+AND tp.STARTDATE <= @CustomDate
+AND (tp.enddate > @CustomDate OR tp.enddate IS NULL)
+AND (tp.CLOSEDATE > @CustomDate OR tp.CLOSEDATE IS NULL)
+ORDER BY tp.company ASC, tp.ledgername ASC, tp.contraname ASC;
+"""
 
 counterparty_count_summary = """
 WITH active_trades AS (
