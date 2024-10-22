@@ -92,6 +92,7 @@ def fetch_and_prepare_data(report_date):
         "Series QX": ("3m", "IG & Crossover", "Open"),
         "Series Q364": ("3-12m", "IG & Crossover", "Open"),
         "Series 2YIG": ("1.5yrs", "IG Only", "Open"),
+        "Series A2Y": ("To be updated", "IG Only", "Open"),
         "Series A1": ("1yr", "IG Only", "Not Offered"),
         "Series C1": ("1m", "Highly Rated IG", "Not Offered"),
         "USG M": ("1m", "Gov't Only", "Open"),
@@ -226,8 +227,8 @@ def get_trading_days(start_date, end_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine)
-    start_date = "2024-04-15"
-    end_date = "2024-09-12"
+    start_date = "2024-10-17"
+    end_date = "2024-10-17"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():
