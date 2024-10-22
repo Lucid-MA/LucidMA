@@ -1,3 +1,18 @@
+import os
+import sys
+
+# Get the absolute path of the current script
+script_path = os.path.abspath(__file__)
+
+# Get the directory of the script (Bronze_tables directory)
+script_dir = os.path.dirname(script_path)
+
+# Get the Reporting directory (parent of Bronze_tables)
+reporting_dir = os.path.dirname(script_dir)
+
+# Add the Reporting directory to sys.path so Python can find 'Utils' and 'Price'
+sys.path.insert(0, reporting_dir)
+
 import logging
 
 from sqlalchemy import MetaData, Table, String, Column, Date, DateTime, inspect
@@ -18,17 +33,6 @@ from Utils.database_utils import (
     upsert_data_multiple_keys,
 )
 
-# # Get the absolute path of the current script
-# script_path = os.path.abspath(__file__)
-#
-# # Get the directory of the script
-# script_dir = os.path.dirname(script_path)
-#
-# # Get the parent directory (Reporting)
-# reporting_dir = os.path.dirname(script_dir)
-#
-# # Add the Reporting directory to the Python module search path
-# sys.path.append(reporting_dir)
 
 # Get the repository root directory
 repo_path = get_repo_root()
