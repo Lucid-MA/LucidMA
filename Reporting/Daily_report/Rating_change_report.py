@@ -14,9 +14,6 @@ from Utils.database_utils import (
     prod_db_type,
 )
 
-current_date = datetime.now().strftime("%Y-%m-%d")
-valdate = current_date
-
 
 def authenticate_and_get_token():
     client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
@@ -190,25 +187,25 @@ def refresh_data_and_send_email():
         ["bond_id", "helix_rating", "collateral_rating"]
     ]
 
-    html_content = process_data(result_df, "Rating Change Report")
+    # Check if result_df is not empty
+    if not result_df.empty:
+        html_content = process_data(result_df, "Rating Change Report")
 
-    subject = f"LRX - Rating Change Report {valdate}"
+        subject = f"LRX - Rating Change Report {report_date_raw}"
 
-    recipients = [
-        "tony.hoang@lucidma.com",
-        # "amelia.thompson@lucidma.com",
-        # "stephen.ng@lucidma.com",
-    ]
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+        recipients = ["operations@lucidma.com"]
+        cc_recipients = [
+            "tony.hoang@lucidma.com",
+        ]
 
-    send_email(
-        subject,
-        html_content,
-        recipients,
-        cc_recipients,
-    )
+        send_email(
+            subject,
+            html_content,
+            recipients,
+            cc_recipients,
+        )
+    else:
+        print("No rating changes found. Skipping email generation.")
 
 
 # Run the script

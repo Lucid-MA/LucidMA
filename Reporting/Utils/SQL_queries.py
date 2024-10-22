@@ -123,8 +123,11 @@ WITH active_trades AS (
     SELECT tradepiece
     FROM tradepieces
     WHERE startdate <= @CustomDate
-    AND (closedate IS NULL OR closedate >= @CustomDate)
-    AND (enddate >= @CustomDate)
+      AND (closedate IS NULL OR closedate >= @CustomDate)
+      AND (enddate IS NULL OR enddate >= @CustomDate)
+      AND statusmain <> 6
+      AND company IN (44, 45)
+      AND ledgername = 'Master' -- Ensure only 'Master' ledger is selected
 ),
 latest_ratings AS (
     SELECT ht.tradepiece, ht.comments AS rating, 
@@ -151,8 +154,14 @@ LEFT JOIN (
     WHERE rn = 1
 ) rt ON rt.tradepiece = tp.tradepiece
 WHERE tp.STARTDATE <= @CustomDate
-AND (tp.enddate > @CustomDate OR tp.enddate IS NULL)
-AND (tp.CLOSEDATE > @CustomDate OR tp.CLOSEDATE IS NULL);
+  AND (tp.enddate IS NULL OR tp.enddate > @CustomDate)
+  AND (tp.CLOSEDATE IS NULL OR tp.CLOSEDATE > @CustomDate)
+  AND tp.company IN (44, 45)
+  AND tp.statusmain <> 6
+  AND tp.ledgername = 'Master' -- Ensure only 'Master' ledger is selected
+  AND LTRIM(RTRIM(tp.isin)) NOT LIKE 'CASH%' -- Exclude ISINs that start with 'CASH'
+  AND LTRIM(RTRIM(tp.isin)) NOT LIKE 'JP%'; -- Exclude ISINs that start with 'JP'
+
 """
 
 all_securities_query = """
