@@ -6,9 +6,9 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Integer, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_file_path, get_repo_root
-from Utils.Hash import hash_string_v2
-from Utils.database_utils import engine_prod, engine_staging, upsert_data
+from Reporting.Utils.Common import get_file_path, get_repo_root
+from Reporting.Utils.Hash import hash_string_v2
+from Reporting.Utils.database_utils import engine_prod, engine_staging, upsert_data
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,16 @@ if PUBLISH_TO_PROD:
     processed_files_tracker = (
         bronze_tracker_dir / "Bronze Table Processed Daily Bond Data PROD"
     )
+    skipped_files_tracker = (
+        bronze_tracker_dir / "Bronze Table files to skip Daily Bond Data PROD"
+    )
 else:
     engine = engine_staging
     processed_files_tracker = (
         bronze_tracker_dir / "Bronze Table Processed Daily Bond Data"
+    )
+    skipped_files_tracker = (
+        bronze_tracker_dir / "Bronze Table files to skip Daily Bond Data"
     )
 
 # Directory and file pattern
@@ -67,6 +73,19 @@ def read_processed_files():
 
 def mark_file_processed(filename):
     with open(processed_files_tracker, "a") as file:
+        file.write(filename + "\n")
+
+
+def read_skipped_files(skipped_files_tracker):
+    try:
+        with open(skipped_files_tracker, "r") as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()
+
+
+def mark_file_skipped(filename, skipped_files_tracker):
+    with open(skipped_files_tracker, "a") as file:
         file.write(filename + "\n")
 
 
@@ -128,6 +147,7 @@ for filename in os.listdir(directory):
         filename.startswith(pattern)
         and filename.endswith(".xlsx")
         and filename not in read_processed_files()
+        and filename not in read_skipped_files(skipped_files_tracker)
     ):
         filepath = os.path.join(directory, filename)
 
@@ -136,6 +156,7 @@ for filename in os.listdir(directory):
             print(
                 f"Skipping {filename} as it does not contain a correct date format in file name."
             )
+            mark_file_skipped(filename, skipped_files_tracker)
             continue
 
         df = pd.read_excel(
@@ -178,6 +199,7 @@ for filename in os.listdir(directory):
         except KeyError as e:
             # Log the error with the logger function
             logger.error(f"Error processing {filename}: {e}")
+            mark_file_skipped(filename, skipped_files_tracker)
             # Skip to the next file
             continue
 
