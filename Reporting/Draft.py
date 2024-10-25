@@ -80,6 +80,10 @@ from Utils.database_utils import (
     prod_db_type,
 )
 
+unsettled_trade_df = read_table_from_db("bronze_nexen_unsettle_trades", prod_db_type)
+
+print(unsettled_trade_df.columns)
+
 report_date_raw = "2024-10-16"
 report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
 helix_rating_df = execute_sql_query_v2(
