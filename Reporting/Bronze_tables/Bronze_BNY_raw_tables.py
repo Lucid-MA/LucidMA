@@ -288,9 +288,12 @@ def process_dataframe(engine, tb_name, df):
             if col_name in aligned_df.columns:
                 aligned_df[col_name] = aligned_df[col_name].astype(str)
 
-        # Clear existing data and insert new data
-        if engine.execute(text(f"SELECT COUNT(*) FROM {tb_name}")).scalar() > 0:
-            clear_table_content(engine, tb_name)
+        # Check if table has data and clear it if necessary
+        with engine.connect() as connection:
+            result = connection.execute(text(f"SELECT COUNT(*) FROM {tb_name}"))
+            count = result.scalar()
+            if count > 0:
+                clear_table_content(engine, tb_name)
 
         # Insert aligned data
         aligned_df.to_sql(
