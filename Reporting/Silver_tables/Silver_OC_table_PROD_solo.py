@@ -5,8 +5,8 @@ import pandas as pd
 from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
-from Silver_OC_processing import generate_silver_oc_rates_prod
-from Utils.Common import get_repo_root, get_file_path, get_trading_days
+from Silver_OC_processing_solo import generate_silver_oc_rates_prod
+from Utils.Common import get_file_path, get_trading_days
 from Utils.SQL_queries import OC_query_historical_v2, HELIX_price_and_factor_by_date
 from Utils.database_utils import (
     get_database_engine,
@@ -18,35 +18,12 @@ from Utils.database_utils import (
 
 # Constants
 # REPORT_DATE = "2024-04-30"
-TABLE_NAME = "oc_rates"
+TABLE_NAME = "oc_rates_only"
 
 # Database engines
 engine = get_database_engine("postgres")
 engine_oc_rate = get_database_engine("sql_server_1")
 engine_oc_rate_prod = get_database_engine("sql_server_2")
-
-IS_PROD = True
-# Constants
-# Get the repository root directory
-repo_path = get_repo_root()
-silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
-
-if IS_PROD:
-    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker PROD"
-else:
-    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker"
-
-
-def read_processed_dates():
-    processed_dates = set()
-    try:
-        with open(OC_RATES_TRACKER, "r") as file:
-            for line in file:
-                date = line.strip().split("_")[-1]
-                processed_dates.add(date)
-    except FileNotFoundError:
-        pass
-    return processed_date
 
 
 def create_table_with_schema(tb_name, engine):
@@ -65,14 +42,6 @@ def create_table_with_schema(tb_name, engine):
         Column("collateral_mv", Float),
         Column("clean_collateral_mv", Float),
         Column("repo_money", Float),
-        Column("wtd_avg_rate", Float),
-        Column("wtd_avg_spread", Float),
-        Column("wtd_avg_haircut", Float),
-        Column("percentage_of_series_portfolio", Float),
-        Column("trade_invest", Float),
-        Column("pledged_cash_margin", Float),
-        Column("projected_total_balance", Float),
-        Column("total_invest", Float),
         Column("timestamp", DateTime),
         extend_existing=True,
     )
@@ -192,10 +161,13 @@ def fetch_and_prepare_data(report_date):
         & (df_clean_price["Price_date"] == report_date_dt)
     ][["Bond_ID", "Clean_price"]]
 
-    # CASH BALANCE
+    # CASH BALANCE - Technically do not use this for only OC Rates calculation, but need a list of series later on for processing
     df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
     df_cash_balance = df_cash_balance.loc[
-        (df_cash_balance["Balance_date"] == report_date_dt)
+        (
+            df_cash_balance["Balance_date"]
+            == datetime.strptime("2024-10-16", "%Y-%m-%d").date()
+        )
     ]
     # ACCRUED INTEREST
     """
@@ -230,8 +202,8 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2022-01-01"
-    end_date = "2022-12-31"
+    start_date = "2024-10-24"
+    end_date = "2024-10-28"
     trading_days = get_trading_days(start_date, end_date)
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
 

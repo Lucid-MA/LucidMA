@@ -60,7 +60,7 @@ sec_holdings_processed_files_tracker = (
 # SecHldgs_08102024.csv
 pattern = "SecHldgs_"
 archive_directory = get_file_path(
-    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/"
+    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/"
 )
 date_pattern = re.compile(r"(\d{2})(\d{2})(\d{4})")
 

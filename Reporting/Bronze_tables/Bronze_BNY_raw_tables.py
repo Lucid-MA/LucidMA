@@ -175,38 +175,138 @@ def clear_table_content(engine, tb_name):
             raise
 
 
-def process_dataframe(engine, tb_name, df):
+def get_table_columns(engine, table_name):
     """
-    Processes a DataFrame: creates a table, clears existing content, and inserts new data.
+    Get the column names from an existing database table.
 
     Args:
-        engine (sqlalchemy.engine.Engine): The database engine.
-        tb_name (str): The name of the table to process.
-        df (pd.DataFrame): The DataFrame containing the data to insert.
+        engine: SQLAlchemy engine
+        table_name: Name of the table
+
+    Returns:
+        list: List of column names if table exists, None otherwise
     """
-    create_custom_bronze_table(engine, tb_name, df)
+    try:
+        inspector = inspect(engine)
+        if table_name in inspector.get_table_names():
+            return [col["name"] for col in inspector.get_columns(table_name)]
+        return None
+    except Exception as e:
+        logger.error(f"Error getting columns for table {table_name}: {e}")
+        raise
 
-    # Convert the number column to string
-    for col_name in ["Settled Shares/Par", "Shares / Par", "Local Amount"]:
-        if col_name in df.columns:
-            df[col_name] = df[col_name].astype(str)
 
-    # Check if table is empty
-    with engine.connect() as connection:
-        result = connection.execute(text(f"SELECT COUNT(*) FROM {tb_name}"))
-        count = result.scalar()
+def align_dataframe_columns(df, table_columns):
+    """
+    Align DataFrame columns with table columns.
 
-    if count > 0:
-        clear_table_content(engine, tb_name)
+    Args:
+        df: Source DataFrame
+        table_columns: List of target table column names
 
-    # df.to_sql(tb_name, engine, if_exists="append", index=False)
-    df.to_sql(
-        tb_name,
-        engine,
-        if_exists="append",
-        index=False,
-    )
-    logger.info(f"Data inserted into table {tb_name} successfully.")
+    Returns:
+        DataFrame: DataFrame with aligned columns
+    """
+    # Create a copy to avoid modifying the original DataFrame
+    aligned_df = df.copy()
+
+    # Remove extra columns that aren't in the table
+    extra_columns = set(aligned_df.columns) - set(table_columns)
+    if extra_columns:
+        logger.warning(f"Removing extra columns from DataFrame: {extra_columns}")
+        aligned_df = aligned_df.drop(columns=extra_columns)
+
+    # Add missing columns with NULL values
+    missing_columns = set(table_columns) - set(aligned_df.columns)
+    if missing_columns:
+        logger.warning(f"Adding missing columns to DataFrame: {missing_columns}")
+        for col in missing_columns:
+            aligned_df[col] = None
+
+    # Reorder columns to match table schema
+    aligned_df = aligned_df.reindex(columns=table_columns)
+
+    return aligned_df
+
+
+def validate_required_columns(df, required_columns):
+    """
+    Validate that required columns are present in the DataFrame.
+
+    Args:
+        df: DataFrame to validate
+        required_columns: List of required column names
+
+    Raises:
+        ValueError: If any required columns are missing
+    """
+    missing_required = set(required_columns) - set(df.columns)
+    if missing_required:
+        error_msg = f"Required columns missing from DataFrame: {missing_required}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+
+def process_dataframe(engine, tb_name, df):
+    """
+    Modified process_dataframe function with column validation and alignment.
+
+    Args:
+        engine: SQLAlchemy engine
+        tb_name: Target table name
+        df: Source DataFrame
+    """
+    if df is None:
+        logger.warning(f"DataFrame for table {tb_name} is None. Skipping processing.")
+        return
+
+    # Define required columns for each table type
+    required_columns = {
+        "bronze_nexen_cash_and_security_transactions": ["file_date", "timestamp"],
+        "bronze_nexen_unsettle_trades": ["file_date", "timestamp"],
+        "bronze_nexen_cash_recon": ["file_date", "timestamp"],
+    }
+
+    try:
+        # Create table if it doesn't exist
+        create_custom_bronze_table(engine, tb_name, df)
+
+        # Get existing table columns
+        table_columns = get_table_columns(engine, tb_name)
+        if not table_columns:
+            logger.error(f"Could not get columns for table {tb_name}")
+            return
+
+        # Validate required columns
+        validate_required_columns(df, required_columns.get(tb_name, []))
+
+        # Align DataFrame columns with table schema
+        aligned_df = align_dataframe_columns(df, table_columns)
+
+        # Convert specific numeric columns to string
+        for col_name in ["Settled Shares/Par", "Shares / Par", "Local Amount"]:
+            if col_name in aligned_df.columns:
+                aligned_df[col_name] = aligned_df[col_name].astype(str)
+
+        # Check if table has data and clear it if necessary
+        with engine.connect() as connection:
+            result = connection.execute(text(f"SELECT COUNT(*) FROM {tb_name}"))
+            count = result.scalar()
+            if count > 0:
+                clear_table_content(engine, tb_name)
+
+        # Insert aligned data
+        aligned_df.to_sql(
+            tb_name,
+            engine,
+            if_exists="append",
+            index=False,
+        )
+        logger.info(f"Data inserted into table {tb_name} successfully.")
+
+    except Exception as e:
+        logger.error(f"Error processing data for table {tb_name}: {e}")
+        raise
 
 
 # Process each DataFrame
@@ -217,10 +317,7 @@ table_data = [
 ]
 
 for tb_name, df in table_data:
-    if df is not None:
-        process_dataframe(engine, tb_name, df)
-    else:
-        logger.warning(f"DataFrame for table {tb_name} is None. Skipping processing.")
+    process_dataframe(engine, tb_name, df)
 
 
 logger.info("All data processing completed successfully.")
