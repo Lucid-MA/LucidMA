@@ -69,10 +69,8 @@
 # print_df(security_attributes_df)
 from datetime import datetime
 
-import pandas as pd
-
 from Utils.Common import print_df
-from Utils.SQL_queries import helix_ratings_query
+from Utils.SQL_queries import HELIX_price_and_factor_by_date
 from Utils.database_utils import (
     execute_sql_query_v2,
     helix_db_type,
@@ -84,32 +82,41 @@ unsettled_trade_df = read_table_from_db("bronze_nexen_unsettle_trades", prod_db_
 
 print(unsettled_trade_df.columns)
 
-report_date_raw = "2024-10-16"
+report_date_raw = "2023-01-11"
 report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
-helix_rating_df = execute_sql_query_v2(
-    helix_ratings_query, helix_db_type, params=(report_date,)
+
+df_factor = execute_sql_query_v2(
+    HELIX_price_and_factor_by_date,
+    db_type=helix_db_type,
+    params=(report_date,),
 )
 
-collateral_rating_df = read_table_from_db("silver_collateral_rating", prod_db_type)
+print_df(df_factor.head())
 
-collateral_rating_df["date"] = pd.to_datetime(collateral_rating_df["date"])
-report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
-collateral_rating_df = collateral_rating_df[
-    collateral_rating_df["date"] == report_date
-][["bond_id", "rating"]]
-
-# Rename the "rating" columns to distinguish between helix and collateral ratings
-helix_rating_df = helix_rating_df.rename(columns={"rating": "helix_rating"})
-collateral_rating_df = collateral_rating_df.rename(
-    columns={"rating": "collateral_rating"}
-)
-
-# Perform an inner join between helix_rating_df and collateral_rating_df on the "bond_id" column
-merged_df = pd.merge(helix_rating_df, collateral_rating_df, on="bond_id", how="inner")
-
-# Filter the merged DataFrame to include only rows where the ratings are different
-result_df = merged_df[merged_df["helix_rating"] != merged_df["collateral_rating"]][
-    ["bond_id", "helix_rating", "collateral_rating"]
-]
-
-print_df(result_df)
+# helix_rating_df = execute_sql_query_v2(
+#     helix_ratings_query, helix_db_type, params=(report_date,)
+# )
+#
+# collateral_rating_df = read_table_from_db("silver_collateral_rating", prod_db_type)
+#
+# collateral_rating_df["date"] = pd.to_datetime(collateral_rating_df["date"])
+# report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
+# collateral_rating_df = collateral_rating_df[
+#     collateral_rating_df["date"] == report_date
+# ][["bond_id", "rating"]]
+#
+# # Rename the "rating" columns to distinguish between helix and collateral ratings
+# helix_rating_df = helix_rating_df.rename(columns={"rating": "helix_rating"})
+# collateral_rating_df = collateral_rating_df.rename(
+#     columns={"rating": "collateral_rating"}
+# )
+#
+# # Perform an inner join between helix_rating_df and collateral_rating_df on the "bond_id" column
+# merged_df = pd.merge(helix_rating_df, collateral_rating_df, on="bond_id", how="inner")
+#
+# # Filter the merged DataFrame to include only rows where the ratings are different
+# result_df = merged_df[merged_df["helix_rating"] != merged_df["collateral_rating"]][
+#     ["bond_id", "helix_rating", "collateral_rating"]
+# ]
+#
+# print_df(result_df)
