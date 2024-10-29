@@ -69,20 +69,25 @@
 # print_df(security_attributes_df)
 from datetime import datetime
 
-from Utils.Common import print_df
-from Utils.SQL_queries import HELIX_price_and_factor_by_date
+from Utils.Common import print_df, get_file_path
+from Utils.SQL_queries import (
+    HELIX_price_and_factor_by_date,
+    current_trade_daily_report_helix_trade_query,
+    as_of_trade_daily_report_helix_trade_query,
+)
 from Utils.database_utils import (
     execute_sql_query_v2,
     helix_db_type,
     read_table_from_db,
     prod_db_type,
+    execute_sql_query,
 )
 
 unsettled_trade_df = read_table_from_db("bronze_nexen_unsettle_trades", prod_db_type)
 
 print(unsettled_trade_df.columns)
 
-report_date_raw = "2023-01-11"
+report_date_raw = "2024-10-28"
 report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
 
 df_factor = execute_sql_query_v2(
@@ -90,6 +95,21 @@ df_factor = execute_sql_query_v2(
     db_type=helix_db_type,
     params=(report_date,),
 )
+
+output_path = get_file_path(
+    f"S:/Users/THoang/Data/current_trade_{report_date_raw}.xlsx"
+)
+df_helix_trade = execute_sql_query(
+    current_trade_daily_report_helix_trade_query, "sql_server_1", params=(report_date,)
+)
+df_helix_trade.to_excel(output_path, engine="openpyxl")
+
+
+output_path = get_file_path(f"S:/Users/THoang/Data/as_of_trade_{report_date_raw}.xlsx")
+df_helix_trade = execute_sql_query(
+    as_of_trade_daily_report_helix_trade_query, "sql_server_1", params=(report_date,)
+)
+df_helix_trade.to_excel(output_path, engine="openpyxl")
 
 print_df(df_factor.head())
 
