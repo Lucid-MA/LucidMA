@@ -97,7 +97,7 @@ def send_email(
         print(f"Email '{subject}' sent successfully")
 
 
-def process_data(data, subheader):
+def process_data_compliance_check_report(data):
     column_names = [
         "Series ID",
         "Series Name",
@@ -319,6 +319,211 @@ def process_data(data, subheader):
     return html_content
 
 
+def process_data_allocation_break_report(data):
+    # Drop the middle blank column by index (5th column has index 4)
+    data = data.drop(data.columns[5], axis=1)
+
+    # Rename columns to match the remaining 8 columns
+    data.columns = [
+        "Trade ID",
+        "Start Date",
+        "Master Money",
+        "Series Money",
+        "Money Break",
+        "Master Collateral Qty",
+        "Series Collateral Qty",
+        "Qty Break",
+    ]
+
+    # Define the number of columns in each section (4 columns for "Money Breaks" and 4 for "Collateral Qty Breaks")
+    total_columns = len(data.columns)
+    money_breaks_columns = 5
+    collateral_breaks_columns = total_columns - money_breaks_columns
+
+    # Calculate the width percentages
+    # money_breaks_width = (money_breaks_columns / total_columns) * 100
+    # collateral_breaks_width = (collateral_breaks_columns / total_columns) * 100
+    money_breaks_width = 45.5
+    collateral_breaks_width = 37.5
+
+    # Define columns to convert
+    numeric_columns = [
+        "Master Money",
+        "Series Money",
+        "Money Break",
+        "Master Collateral Qty",
+        "Series Collateral Qty",
+        "Qty Break",
+    ]
+
+    # Convert columns to numeric, apply np.ceil, and convert to integer type
+    data[numeric_columns] = (
+        data[numeric_columns]
+        .apply(
+            pd.to_numeric, errors="coerce"
+        )  # Convert to numeric, coercing errors to NaN
+        .apply(np.ceil)  # Apply ceiling to all numeric columns
+        .astype("Int64")  # Convert to nullable integer type
+    )
+
+    # Filter rows based on "Money Break" column
+    data = data[data["Money Break"].notna() & (abs(data["Money Break"]) > 1)]
+    data["Start Date"] = pd.to_datetime(data["Start Date"])
+
+    # HTML template for the table with conditional formatting
+    table_template = """
+    <table>
+        <thead>
+            <tr>
+                <th>Trade ID</th>
+                <th>Start Date</th>
+                <th>Master Money</th>
+                <th>Series Money</th>
+                <th class="right-border">Money Break</th>
+                <th>Master Collateral Qty</th>
+                <th>Series Collateral Qty</th>
+                <th>Qty Break</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for _, row in data.iterrows() %}
+            <tr>
+                <td>{{ row["Trade ID"] }}</td>
+                <td>{{ row["Start Date"].strftime('%Y-%m-%d') }}</td>
+                <td>{{ "{:,.0f}".format(row["Master Money"]) }}</td>
+                <td>{{ "{:,.0f}".format(row["Series Money"]) }}</td>
+                <td class="right-border">({{ "{:,.0f}".format(row["Money Break"]) }})</td>
+                <td>({{ "{:,.0f}".format(row["Master Collateral Qty"]) }})</td>
+                <td>{{ "{:,.0f}".format(row["Series Collateral Qty"]) }}</td>
+                <td>{{ "{:,.0f}".format(row["Qty Break"]) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    """
+
+    # Render the HTML with Jinja2
+    template = Template(table_template)
+    html_table = template.render(data=data)
+
+    html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                th, td {{
+                    border: 1px solid black;
+                    padding: 8px;
+                    text-align: center;
+                }}
+                th {{
+                    background-color: #f2f2f2;
+                }}
+                .header {{
+                    background-color: #d9edf7;
+                }}
+                .header span {{
+                    font-size: 24px;
+                    font-weight: bold;
+                }}
+                .subheader {{
+                    background-color: #dff0d8;
+                    font-weight: bold;
+                    text-align: center;
+                }}
+                .right-border {{
+                    border-right: 2px solid black; /* Thicker line to separate sections */
+                }}
+                .money-breaks {{
+                    width: {money_breaks_width}%;
+                }}
+                .collateral-breaks {{
+                    width: {collateral_breaks_width}%;
+                }}
+            </style>
+        </head>
+        <body>
+            <table>
+                <tr class="header">
+                    <td colspan="{total_columns}"><span>Lucid Management and Capital Partners LP</span></td>
+                </tr>
+                <tr class="subheader">
+                    <td colspan="{money_breaks_columns}" class="right-border money-breaks">Series Allocation Money Breaks</td>
+                    <td colspan="{collateral_breaks_columns}" class="collateral-breaks">Series Allocation Collateral Qty Breaks</td>
+                </tr>
+            </table>
+            <table>
+                {html_table}
+            </table>
+        </body>
+        </html>
+        """
+
+    return html_content
+
+
+def generate_combined_report(compliance_html, allocation_html):
+    # Generate individual HTML sections
+
+    # Combine them into one HTML content with spacing in between
+    combined_html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+            th, td {{
+                border: 1px solid black;
+                padding: 8px;
+                text-align: center;
+            }}
+            th {{
+                background-color: #f2f2f2;
+            }}
+            .header {{
+                background-color: #d9edf7;
+            }}
+            .header span {{
+                font-size: 24px;
+                font-weight: bold;
+            }}
+            .subheader {{
+                background-color: #dff0d8;
+                font-weight: bold;
+                text-align: center;
+            }}
+            .section-space {{
+                height: 30px; /* Space between the two sections */
+            }}
+        </style>
+    </head>
+    <body>
+        <!-- Compliance Check Report Section -->
+        {compliance_html}
+
+        <!-- Spacer -->
+        <div class="section-space"></div>
+
+        <!-- Allocation Break Report Section -->
+        {allocation_html}
+    </body>
+    </html>
+    """
+
+    return combined_html
+
+
 def refresh_data_and_send_email():
     file_path = get_file_path(
         r"S:/Users/THoang/Data/Prime Series Trade Allocations.xlsm"
@@ -360,25 +565,23 @@ def refresh_data_and_send_email():
 
     data = data[data["Compliance Checks"].notna()]
 
-    html_content = process_data(data, "PX Change Report - P & I Products")
+    html_content_compliance = process_data_compliance_check_report(data)
 
-    data_2 = pd.read_excel(
+    data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="N:X",  # Columns B to J
-        skiprows=5,  # Skip the first 5 rows (header will be row 6)
-        header=0,  # Now row 6 is the header
-    )
-    #### CONTINUE HERE TOMORROW ####
-
-    thresshold_style_2 = [3, 5]
-    html_content_2 = process_data(
-        data_2, -0.01, thresshold_style_2, "PX Change Report - IO Products"
+        usecols="C:K",  # Columns B to J
+        skiprows=15,  # Skip the first 4 rows (header will be row 5)
+        header=0,  # Now row 5 is the header
+        dtype=str,
     )
 
-    subject = f"LRX - PX change report P&I Products - {valdate}"
+    html_content_allocation = process_data_allocation_break_report(data)
 
-    subject_2 = f"LRX - PX change report IO Products - {valdate}"
+    html_content = generate_combined_report(
+        html_content_compliance, html_content_compliance
+    )
+    subject = f"LRX - Prime Series Trade Allocations - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
@@ -387,25 +590,11 @@ def refresh_data_and_send_email():
     ]
     cc_recipients = ["operations@lucidma.com"]
 
-    attachment_path = file_path
-    attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"
-
     send_email(
         subject,
         html_content,
         recipients,
         cc_recipients,
-        attachment_path,
-        attachment_name,
-    )
-
-    send_email(
-        subject_2,
-        html_content_2,
-        recipients,
-        cc_recipients,
-        attachment_path,
-        attachment_name,
     )
 
 
