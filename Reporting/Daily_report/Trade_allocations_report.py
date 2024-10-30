@@ -218,8 +218,8 @@ def process_data(data, subheader):
         },
     }
 
-    data['Max Helix Maturity'] = pd.to_datetime(data['Max Helix Maturity'])
-    data['Next Withdrawal Date'] = pd.to_datetime(data['Next Withdrawal Date'])
+    data["Max Helix Maturity"] = pd.to_datetime(data["Max Helix Maturity"])
+    data["Next Withdrawal Date"] = pd.to_datetime(data["Next Withdrawal Date"])
 
     # HTML template for the table with conditional formatting
     table_template = """
