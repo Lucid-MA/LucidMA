@@ -256,23 +256,6 @@ def align_dataframe_columns(df, table_columns):
     return aligned_df
 
 
-def validate_required_columns(df, required_columns):
-    """
-    Validate that required columns are present in the DataFrame.
-
-    Args:
-        df: DataFrame to validate
-        required_columns: List of required column names
-
-    Raises:
-        ValueError: If any required columns are missing
-    """
-    missing_required = set(required_columns) - set(df.columns)
-    if missing_required:
-        error_msg = f"Required columns missing from DataFrame: {missing_required}"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-
 
 def process_dataframe(engine, tb_name, df):
     """
@@ -287,12 +270,6 @@ def process_dataframe(engine, tb_name, df):
         logger.warning(f"DataFrame for table {tb_name} is None. Skipping processing.")
         return
 
-    # Define required columns for each table type
-    required_columns = {
-        tb_name_corp_action_cashflow: ["file_date", "timestamp"],
-        tb_name_corp_action_prime_usg: ["file_date", "timestamp"],
-    }
-
     try:
         # Create table if it doesn't exist
         create_custom_bronze_table(engine, tb_name, df)
@@ -302,9 +279,6 @@ def process_dataframe(engine, tb_name, df):
         if not table_columns:
             logger.error(f"Could not get columns for table {tb_name}")
             return
-
-        # Validate required columns
-        validate_required_columns(df, required_columns.get(tb_name, []))
 
         # Align DataFrame columns with table schema
         aligned_df = align_dataframe_columns(df, table_columns)
