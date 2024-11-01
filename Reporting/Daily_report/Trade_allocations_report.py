@@ -534,25 +534,25 @@ def refresh_data_and_send_email():
     excel = win32.gencache.EnsureDispatch("Excel.Application")
     excel.DisplayAlerts = False  # Disable alerts
     excel.Visible = False  # Make Excel invisible
-    # try:
-    #     workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
-    #     workbook.RefreshAll()
-    #     excel.CalculateUntilAsyncQueriesDone()
-    #     workbook.Save()
-    #     workbook.Close(SaveChanges=True)
-    #     # excel.Quit()
-    #     excel.DisplayAlerts = True  # Re-enable alerts
-    # except Exception as e:
-    #     subject = "Error opening or refreshing file"
-    #     body = f"Problem opening file {file_path}. Please review the file."
-    #     recipients = [
-    #         "tony.hoang@lucidma.com",
-    #         # "amelia.thompson@lucidma.com",
-    #         # "stephen.ng@lucidma.com",
-    #     ]
-    #     cc_recipients = ["operations@lucidma.com"]
-    #     # send_email(subject, body, recipients, cc_recipients)
-    #     raise Exception(f"Error opening or refreshing file: {str(e)}")
+    try:
+        workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
+        workbook.RefreshAll()
+        excel.CalculateUntilAsyncQueriesDone()
+        workbook.Save()
+        workbook.Close(SaveChanges=True)
+        # excel.Quit()
+        excel.DisplayAlerts = True  # Re-enable alerts
+    except Exception as e:
+        subject = "Error opening or refreshing file"
+        body = f"Problem opening file {file_path}. Please review the file."
+        recipients = [
+            "tony.hoang@lucidma.com",
+            # "amelia.thompson@lucidma.com",
+            # "stephen.ng@lucidma.com",
+        ]
+        cc_recipients = ["operations@lucidma.com"]
+        send_email(subject, body, recipients, cc_recipients)
+        raise Exception(f"Error opening or refreshing file: {str(e)}")
 
     data = pd.read_excel(
         file_path,
@@ -579,14 +579,14 @@ def refresh_data_and_send_email():
     html_content_allocation = process_data_allocation_break_report(data)
 
     html_content = generate_combined_report(
-        html_content_compliance, html_content_compliance
+        html_content_compliance, html_content_allocation
     )
     subject = f"LRX - Prime Series Trade Allocations - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
-        "amelia.thompson@lucidma.com",
-        "stephen.ng@lucidma.com",
+        # "amelia.thompson@lucidma.com",
+        # "stephen.ng@lucidma.com",
     ]
     cc_recipients = ["operations@lucidma.com"]
 
