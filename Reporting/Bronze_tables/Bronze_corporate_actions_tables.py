@@ -127,6 +127,8 @@ cashflow_columns = [
     "Reference Number",
     "Security Short Description",
     "CUSIP/CINS",
+    "file_date",
+    "timestamp",
 ]
 
 prime_usg_columns = [
@@ -140,6 +142,8 @@ prime_usg_columns = [
     "Eligible Units",
     "Security Short Description",
     "CUSIP / CINS",
+    "file_date",
+    "timestamp",
 ]
 
 df_cashflow = df_cashflow[cashflow_columns]
@@ -254,7 +258,6 @@ def align_dataframe_columns(df, table_columns):
     aligned_df = aligned_df.reindex(columns=table_columns)
 
     return aligned_df
-
 
 
 def process_dataframe(engine, tb_name, df):
