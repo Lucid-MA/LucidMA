@@ -289,8 +289,8 @@ def process_dataframe(engine, tb_name, df):
 
     # Define required columns for each table type
     required_columns = {
-        "bronze_nexen_cash_and_security_transactions": ["file_date", "timestamp"],
-        "bronze_nexen_unsettle_trades": ["file_date", "timestamp"],
+        tb_name_corp_action_cashflow: ["file_date", "timestamp"],
+        tb_name_corp_action_prime_usg: ["file_date", "timestamp"],
     }
 
     try:
