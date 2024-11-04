@@ -588,7 +588,9 @@ def refresh_data_and_send_email():
         # "amelia.thompson@lucidma.com",
         # "stephen.ng@lucidma.com",
     ]
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        # "operations@lucidma.com"
+    ]
 
     send_email(
         subject,
