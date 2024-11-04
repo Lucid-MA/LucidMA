@@ -9,7 +9,7 @@ import requests
 import win32com.client as win32
 from jinja2 import Template
 
-from Utils.Common import get_file_path
+from Reporting.Utils.Common import get_file_path
 
 current_date = datetime.now().strftime("%Y-%m-%d")
 valdate = current_date
@@ -588,9 +588,7 @@ def refresh_data_and_send_email():
         # "amelia.thompson@lucidma.com",
         # "stephen.ng@lucidma.com",
     ]
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     send_email(
         subject,
