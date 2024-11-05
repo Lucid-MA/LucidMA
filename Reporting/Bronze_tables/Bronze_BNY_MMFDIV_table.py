@@ -58,7 +58,7 @@ tb_name = "bronze_nexen_mmfdiv_table"
 repo_path = get_repo_root()
 bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
 processed_files_tracker = (
-    bronze_tracker_dir / "Bronze Table Processed Sec Holdings PROD"
+    bronze_tracker_dir / "Bronze Table Processed NEXEN MMFDIV PROD"
 )
 
 # SecHldgs_08102024.csv
