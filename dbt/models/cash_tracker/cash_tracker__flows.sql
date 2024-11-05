@@ -161,4 +161,20 @@ final AS (
   FROM manual_movements
 )
 
-SELECT * FROM final
+SELECT 
+  report_date,
+  fund,
+  series,
+  [route],
+  transaction_action_id,
+  transaction_desc,
+  flow_account, 
+  flow_security,
+  flow_status,
+  flow_amount,
+  flow_is_settled,
+  flow_after_sweep,
+  trade_id,
+  counterparty,
+  used_alloc
+FROM final
