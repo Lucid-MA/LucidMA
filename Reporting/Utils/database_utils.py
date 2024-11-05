@@ -219,7 +219,7 @@ def upsert_data_multiple_keys(
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join(
                     [
-                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", "").replace("?", "").replace(".", "").replace("-", "")}"
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", '').replace('?', '').replace('.', '').replace('-', '').replace('%','')}"
                         for col in df.columns
                     ]
                 )
@@ -278,7 +278,7 @@ def upsert_data_multiple_keys(
                     .replace("*", "")
                     .replace("'", "")
                     .replace("?", "")
-                    .replace(".", "").replace("-", "")
+                    .replace(".", "").replace("-", "").replace("%","")
                     for col in df.columns
                 ]
 
