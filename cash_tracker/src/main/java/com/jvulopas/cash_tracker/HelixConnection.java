@@ -64,7 +64,7 @@ public class HelixConnection {
 				"\r\n" + 
 				"select \r\n" + 
 				"concat((case when tradepieces.company in(44,46) then tradepieces.tradepiece when ltrim(rtrim(tradepieces.ledgername)) = 'Master' and (tradepieces.company = 45) then Tradepieces.TRADEPIECE\r\n" + 
-				"else coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid)\r\n" + 
+				"else tradepiecexrefs.frontofficeid\r\n" + 
 				"end), ' ', (case when tradepieces.startdate = @valdate then 'TRANSMITTED' else 'CLOSED' end)) action_id,\r\n" + 
 				"case when tradepieces.company = 44 then 'USG' when tradepieces.company = 45 then 'PRIME' when tradepieces.company = 46 then 'MMT' end fund, \r\n" + 
 				"upper(ltrim(rtrim(ledgername))) series,\r\n" + 
@@ -72,7 +72,7 @@ public class HelixConnection {
 				"\r\n" + 
 				"/* crucial column. if only one series in fund, this should be true, else false */\r\n" + 
 				"case when not tradepieces.company = 45 then 1 else 0 end is_also_master,\r\n" + 
-				"case when coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid) <> 0 then tradepieces.par * 1.0 /masterpieces.masterpar else 1 end used_alloc,\r\n" + 
+				"case when tradepiecexrefs.frontofficeid <> 0 then tradepieces.par * 1.0 /masterpieces.masterpar else 1 end used_alloc,\r\n" + 
 				"tradepieces.tradetype trade_type,\r\n" + 
 				"tradepieces.startdate start_date, CASE WHEN tradepieces.closedate is null then tradepieces.enddate else tradepieces.closedate END as end_date,\r\n" + 
 				"case when tradepieces.enddate = @valdate then 1 else 0 end set_to_term_on_date,\r\n" + 
@@ -81,13 +81,13 @@ public class HelixConnection {
 				"tradepieces.par quantity,\r\n" + 
 				"tradepieces.money,\r\n" + 
 				"(Tradepieces.money + TRADEPIECECALCDATAS.REPOINTEREST_UNREALIZED + TRADEPIECECALCDATAS.REPOINTEREST_NBD) end_money, \r\n" + 
-				"case when (tradepieces.company = 45 and ltrim(rtrim(tradepieces.ledgername)) = 'Master') or tradepieces.company in (44,46) then coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid) else '' end roll_of,\r\n" + 
+				"case when (tradepieces.company = 45 and ltrim(rtrim(tradepieces.ledgername)) = 'Master') or tradepieces.company in (44,46) then tradepiecexrefs.frontofficeid else '' end roll_of,\r\n" + 
 				"case when ltrim(rtrim(Tradepieces.acct_number)) = '400CAPTX' then 'TEX' ELSE ltrim(rtrim(Tradepieces.acct_number)) END counterparty,\r\n" + 
 				"Tradepieces.depository\r\n" + 
 				"from tradepieces join TRADEPIECECALCDATAS on tradepieces.tradepiece = TRADEPIECECALCDATAS.tradepiece\r\n" + 
 				"join TRADECOMMISSIONPIECEINFO on tradepieces.tradepiece = TRADECOMMISSIONPIECEINFO.TRADEPIECE JOIN TRADEPIECEXREFS ON TRADEPIECES.TRADEPIECE=TRADEPIECEXREFS.TRADEPIECE\r\n" + 
 				"left join (select tradepiece masterpiece, par masterpar from tradepieces) masterpieces on\r\n" + 
-				"coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid) = masterpieces.masterpiece\r\n" + 
+				"tradepiecexrefs.frontofficeid = masterpieces.masterpiece\r\n" + 
 				"where (Tradepieces.startdate = @valdate or CASE WHEN tradepieces.closedate is null then tradepieces.enddate else tradepieces.closedate END = @valdate)\r\n" + 
 				"and tradepieces.company in (44,45)\r\n" + 
 				"and tradepieces.statusmain not in (6) /* TODO should exclude this for historical?*/\r\n" + 
@@ -110,11 +110,11 @@ public class HelixConnection {
 				"/* repo frees and reverse frees */\r\n" + 
 				"select \r\n" + 
 				"concat((case when tradepieces.company in(44,46) then tradepieces.tradepiece when ltrim(rtrim(tradepieces.ledgername)) = 'Master' and (tradepieces.company = 45) then Tradepieces.TRADEPIECE\r\n" + 
-				"else coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid)\r\n" + 
+				"else tradepiecexrefs.frontofficeid\r\n" + 
 				"end), ' ', (case when tradepieces.startdate = @valdate then 'TRANSMITTED' else 'CLOSED' end)) action_id,\r\n" + 
 				"case when tradepieces.company = 44 then 'USG' when tradepieces.company = 45 then 'PRIME' when tradepieces.company = 46 then 'MMT' end fund, \r\n" + 
 				"upper(ltrim(rtrim(ledgername))) series,\r\n" + 
-				"case when coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid) <> 0 then tradepieces.par* 1.0/masterpieces.masterpar else 1 end used_alloc,\r\n" + 
+				"case when tradepiecexrefs.frontofficeid <> 0 then tradepieces.par* 1.0/masterpieces.masterpar else 1 end used_alloc,\r\n" + 
 				"\r\n" + 
 				"/* crucial column. if only one series in fund, this should be true, else false */\r\n" + 
 				"case when not tradepieces.company = 45 then 1 else 0 end is_also_master,\r\n" + 
@@ -134,7 +134,7 @@ public class HelixConnection {
 				"from tradepieces join TRADEPIECECALCDATAS on tradepieces.tradepiece = TRADEPIECECALCDATAS.tradepiece\r\n" + 
 				"join TRADECOMMISSIONPIECEINFO on tradepieces.tradepiece = TRADECOMMISSIONPIECEINFO.TRADEPIECE JOIN TRADEPIECEXREFS ON TRADEPIECES.TRADEPIECE=TRADEPIECEXREFS.TRADEPIECE\r\n" + 
 				"left join (select tradepiece masterpiece, par masterpar from tradepieces) masterpieces on\r\n" + 
-				"coalesce(case when TRADECOMMISSIONPIECEINFO.commissionvalue2 = 0 then null else TRADECOMMISSIONPIECEINFO.commissionvalue2 end, tradepiecexrefs.frontofficeid) = masterpieces.masterpiece\r\n" + 
+				"tradepiecexrefs.frontofficeid = masterpieces.masterpiece\r\n" + 
 				"where (Tradepieces.startdate = @valdate or Tradepieces.enddate = @valdate or Tradepieces.closedate = @valdate)\r\n" + 
 				"and tradepieces.company in (44,45)\r\n" +
 				"and Tradepieces.tradetype in (22,23)\r\n" + 
