@@ -1,4 +1,5 @@
 import os
+import pickle
 import re
 import sys
 
@@ -10,11 +11,10 @@ from sqlalchemy import (
     String,
     DateTime,
     Table,
-    Date,
 )
 from sqlalchemy.exc import SQLAlchemyError
 
-from Utils.Common import get_repo_root, get_file_path, get_current_timestamp
+from Utils.Common import get_file_path, get_current_timestamp
 from Utils.Hash import hash_string_v2
 
 # Get the absolute path of the current script
@@ -53,33 +53,12 @@ inspector = inspect(engine)
 
 # SEC HOLDINGS PROCESSING
 
-tb_name = "bronze_nexen_cash_sec_table"
-# Get the repository root directory
-repo_path = get_repo_root()
-bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
-processed_files_tracker = (
-    bronze_tracker_dir / "Bronze Table Processed NEXEN Cash Sec Txn PROD"
-)
+tb_name = "bronze_nexen_cash_and_security_transactions"
 
 # SecHldgs_08102024.csv
 pattern = "CashSecTRN5D_"
-archive_directory = get_file_path(
-    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/"
-)
+archive_directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/")
 date_pattern = re.compile(r"(\d{2})(\d{2})(\d{4})")
-
-
-def read_processed_files(processed_files_tracker):
-    try:
-        with open(processed_files_tracker, "r") as file:
-            return set(file.read().splitlines())
-    except FileNotFoundError:
-        return set()
-
-
-def mark_file_processed(filename, processed_files_tracker):
-    with open(processed_files_tracker, "a") as file:
-        file.write(filename + "\n")
 
 
 def extract_date(filename):
@@ -121,9 +100,7 @@ def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
     if not inspect(engine).has_table(tb_name):
         columns = []
         for col in df.columns:
-            if col == "file_date":
-                columns.append(Column(col, Date))
-            elif col == "data_id":
+            if col == "data_id":
                 columns.append(Column(col, String(50)))
             else:
                 columns.append(Column(col, String))
@@ -179,21 +156,19 @@ def process_dataframe(engine, tb_name, df):
         raise
 
 
+# Load data_id set from the pickle file or create an empty set if the file doesn't exist
+pickle_filepath = "data_id_list.pkl"
+if os.path.exists(pickle_filepath):
+    with open(pickle_filepath, "rb") as file:
+        data_id_set = pickle.load(file)
+else:
+    data_id_set = set()
+
+
 # Iterate over files in the specified directory
 for filename in os.listdir(archive_directory):
-    if (
-        filename.startswith(pattern)
-        and filename.endswith(".xls")
-        and filename not in read_processed_files(processed_files_tracker)
-    ):
+    if filename.startswith(pattern) and filename.endswith(".xls"):
         filepath = os.path.join(archive_directory, filename)
-
-        date = extract_date(filename)
-        if not date:
-            print(
-                f"Skipping {filename} as it does not contain a correct date format in file name."
-            )
-            continue
 
         # Read the Excel file
         df = pd.read_excel(
@@ -206,24 +181,56 @@ for filename in os.listdir(archive_directory):
 
         # Filter out rows where 'Report Run Date' is null
         df = df[~df["Reference Number"].isnull()]
+
+        # Identify columns that should be converted (those that can be parsed as numbers)
+        numeric_columns = df.columns[
+            df.apply(lambda col: pd.to_numeric(col, errors="coerce").notnull().all())
+        ]
+
+        # Apply conversion to format numeric values as strings without scientific notation
+        for col in numeric_columns:
+            df[col] = df[col].apply(
+                lambda x: (
+                    "{:.15f}".format(float(x)).rstrip("0").rstrip(".")
+                    if pd.notnull(x)
+                    else x
+                )
+            )
+
         df["data_id"] = df.apply(
             lambda row: hash_string_v2(
                 f"{row['Reference Number']}"
                 f"{row['Account Number'] if pd.notnull(row['Account Number']) else ''}"
-                f"{row['Cash Account Number'] if pd.notnull(row['Account Number']) else ''}"
-                f"{row['Transaction Type Name'] if pd.notnull(row['Account Number']) else ''}"
+                f"{row['Cash Account Number'] if pd.notnull(row['Cash Account Number']) else ''}"
+                f"{row['Transaction Type Name'] if pd.notnull(row['Transaction Type Name']) else ''}"
+                f"{row['Local Amount'] if pd.notnull(row['Local Amount']) else ''}"
             ),
             axis=1,
         )
-        df["File_date"] = date
-        df["File_date"] = pd.to_datetime(df["File_date"]).dt.strftime("%Y-%m-%d")
+
+        # Filter out rows that already exist in the data_id set
+        df = df[~df["data_id"].isin(data_id_set)]
+
+        # If there are no new rows to process, skip this file
+        if df.empty:
+            print(f"Skipping {filename} as no new data to process.")
+            continue
+
         df["timestamp"] = get_current_timestamp()
+
         cols = ["data_id"] + [col for col in df.columns if col not in ["data_id"]]
         df = df[cols]
+
         try:
             # Create table if it doesn't exist
             create_custom_bronze_table(engine, tb_name, df)
             process_dataframe(engine, tb_name, df)
-            mark_file_processed(filename, processed_files_tracker)
+            # Update the data_id set with new entries and save it to the pickle file
+            data_id_set.update(df['data_id'])
+            with open(pickle_filepath, 'wb') as file:
+                pickle.dump(data_id_set, file)
+
+            print(f"Processed {filename} and updated the data_id set.")
+
         except SQLAlchemyError:
             print(f"Skipping {filename} due to an error")

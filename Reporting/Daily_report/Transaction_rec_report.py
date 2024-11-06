@@ -101,10 +101,10 @@ def send_email(
 def process_data(data, subheader):
     # Define the column names including the new "Helix Status" column
     column_names = [
-        "Trade ID",
+        "Helix Trade ID",
         "Helix Status",
         "BNY Ref",
-        "Settled",
+        "BNY Status",
         "Counterparty",
         "Start Date",
         "End Date",
@@ -117,7 +117,6 @@ def process_data(data, subheader):
 
     # List of columns to convert
     cols_to_convert = [
-        "Trade ID",
         "Money",
         "Shares",
     ]
@@ -126,17 +125,12 @@ def process_data(data, subheader):
     for col in cols_to_convert:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # # Round up 'Trade ID', 'Money', and 'Shares' and convert to integers
-    # data["Trade ID"] = np.ceil(data["Trade ID"]).astype("Int32")
-    # data["Money"] = np.ceil(data["Money"]).astype("Int64")
-    # data["Shares"] = np.ceil(data["Shares"]).astype("Int64")
-    # data["BNY Ref"] = data["BNY Ref"].astype("string")
-
     # Remove rows where Trade ID is '0' or NaN
     data = data[
-        (~(data["Trade ID"] == 0))
-        & (data["Trade ID"].notna())
-        & (~(data["Trade ID"] == "0.0"))
+        (~(data["Helix Trade ID"] == 0))
+        & (data["Helix Trade ID"].notna())
+        & (~(data["Helix Trade ID"] == "0.0"))
+        & (~(data["Helix Trade ID"] == "0"))
     ]
 
     # Convert "Start Date" and "End Date" columns to datetime
@@ -177,7 +171,7 @@ def process_data(data, subheader):
             return ""
         try:
             date_val = datetime.strptime(val, "%Y-%m-%d").date()
-            return "background-color: #FFD700" if date_val < today else ""
+            return "background-color: #FFD700" if date_val <= today else ""
         except ValueError:
             return ""
 
@@ -186,7 +180,7 @@ def process_data(data, subheader):
             return ""
         try:
             date_val = datetime.strptime(val, "%Y-%m-%d").date()
-            return "background-color: #FFD700" if date_val < today else ""
+            return "background-color: #FFD700" if date_val <= today else ""
         except ValueError:
             return ""
 
@@ -200,8 +194,7 @@ def process_data(data, subheader):
     data = data.style.applymap(highlight_helix_status, subset=["Helix Status"]) \
                      .applymap(highlight_start_date, subset=["Start Date"]) \
                      .applymap(highlight_end_date, subset=["End Date"]) \
-                     .applymap(highlight_settled, subset=["Settled"])
-                     # .hide_index_()
+                     .applymap(highlight_settled, subset=["BNY Status"])
 
     # Format the styled DataFrame as an HTML table
     html_table = data.hide(axis="index").to_html(index=False, border=1, escape=False)
@@ -259,10 +252,7 @@ def refresh_data_and_send_email():
     )
 
     html_table = process_data(data, "Unsettled Trades - PRIME Fund")
-    """
-    NOTE: Email formatting with subheader
-    Just easier to do the width like below
-    """
+
     html_content = f"""
                     <!DOCTYPE html>
                     <html lang="en">
@@ -295,11 +285,11 @@ def refresh_data_and_send_email():
                             }}
                             .helix-activity {{
                                 background-color: #d9edf7;
-                                width: 16.7%;
+                                width: 16.0%;
                             }}
                             .nexen-activity {{
                                 background-color: #dff0d8;
-                                width: 16.9%;
+                                width: 16.0%;
                             }}
                             .trade-details {{
                                 background-color: #f2f2f2;
@@ -319,11 +309,6 @@ def refresh_data_and_send_email():
                             </tr>
                         </table>
                         <table>
-                            <tr>
-                                <td class="subheader helix-activity" colspan="{len(data.columns[:1])}">Helix Activity</td>
-                                <td class="subheader nexen-activity" colspan="{len(data.columns[1:2])}">Nexen Activity</td>
-                                <td class="subheader trade-details" colspan="{len(data.columns[2:])}">Trade Details</td>
-                            </tr>
                             {html_table}
                         </table>
                     </body>

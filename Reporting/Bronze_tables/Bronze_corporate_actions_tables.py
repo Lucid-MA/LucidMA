@@ -60,7 +60,7 @@ today = datetime.now()
 today_pattern = today.strftime("%d%m%Y")
 
 file_patterns = {
-    "df_cashflow": f"Corporate_Actions_Cashflows_{today_pattern}.xls",
+    # "df_cashflow": f"Corporate_Actions_Cashflows_{today_pattern}.xls",
     "df_prime_usg": f"Corporate_Actions_Prime_and_USG_{today_pattern}.xls",
 }
 
@@ -146,7 +146,7 @@ prime_usg_columns = [
     "timestamp",
 ]
 
-df_cashflow = df_cashflow[cashflow_columns]
+# df_cashflow = df_cashflow[cashflow_columns]
 df_prime_usg = df_prime_usg[prime_usg_columns]
 
 
@@ -309,7 +309,7 @@ def process_dataframe(engine, tb_name, df):
 
 # Process each DataFrame
 table_data = [
-    (tb_name_corp_action_cashflow, df_cashflow),
+    # (tb_name_corp_action_cashflow, df_cashflow),
     (tb_name_corp_action_prime_usg, df_prime_usg),
 ]
 

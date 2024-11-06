@@ -1,142 +1,227 @@
-# import logging
-#
-# from Bronze_tables.Price.bloomberg_utils import excluded_cusips, diff_cusip_map, BloombergDataFetcher, \
-#     bb_fields_selected, bb_historical_fields_selected
-# from Utils.Common import print_df
-# from Utils.SQL_queries import bloomberg_bond_id_query
-# from Utils.database_utils import execute_sql_query, helix_db_type
-#
-#
-# def get_bond_list():
-#     """
-#     Bond list:
-#     - List of all cusips from Helix
-#     - Add 38178DAA5
-#     - Cusips from S:/Lucid/Data/Bond Data/Non-Collateral Cusips.xlsx from both columns:
-#         "Vantage Proxies"
-#         "Other"
-#     - All the values in diff_cusip_map. These are cusips in BBerg but different ticker to access
-#     - Remove Hardwired cusips:
-#         special_bond_data = fetch_spec_df()
-#         special_cusips = [x for x in special_bond_data.index]
-#
-#     - Remove 'PNI' cusips
-#
-#     - Transform to Bloomberg format:
-#         cusip_pass = [("/cusip/" if len(x) == 9 else "/mtge/" if x in ('3137F8RH8','3137F8ZC0') else "/isin/") + x for x in cusip_pass]
-#
-#     """
-#     records = execute_sql_query(bloomberg_bond_id_query, helix_db_type, params=[])
-#     cusips_list = records["BondID"].tolist()
-#
-#     # Define the excluded_cusips list
-#
-#     # Excluding all PNI cusips and cusips in the excluded_cusips list
-#     cusips_list = [
-#         cusip
-#         for cusip in cusips_list
-#         if not (len(cusip) >= 3 and cusip[:3] == "PNI") and cusip not in excluded_cusips
-#     ]
-#
-#     joined_cusips_list = list(set(cusips_list))
-#
-#     joined_cusips_list = [
-#         diff_cusip_map.get(cusip, cusip) for cusip in joined_cusips_list
-#     ]
-#
-#     return joined_cusips_list
-#
-# # Initialization
-# fetcher = BloombergDataFetcher()
-#
-# # Get bond list
-# sec_list = get_bond_list()
-#
-# sec_list = sec_list[:10]
-#
-# # self,
-# #         session: blpapi.Session,
-# #         securities: List[str],
-# #         start_date: str,
-# #         fields: List[str],
-# #         end_date: Optional[str] = None,
-# #
-# logging.info("Fetching security attributes...")
-# security_attributes_df = fetcher.get_historical_security_attributes(
-#     securities=sec_list, start_date = '20241008', fields=bb_historical_fields_selected, end_date = '20241009'
-# )
-#
-# print_df(security_attributes_df)
-from datetime import datetime
+import os
+import re
+import sys
 
-from Utils.Common import print_df, get_file_path
-from Utils.SQL_queries import (
-    HELIX_price_and_factor_by_date,
-    current_trade_daily_report_helix_trade_query,
-    as_of_trade_daily_report_helix_trade_query,
+import pandas as pd
+from sqlalchemy import (
+    inspect,
+    MetaData,
+    Column,
+    String,
+    DateTime,
+    Table,
 )
+from sqlalchemy.exc import SQLAlchemyError
+
+from Utils.Common import get_repo_root, get_file_path, get_current_timestamp
+from Utils.Hash import hash_string_v2
+
+# Get the absolute path of the current script
+script_path = os.path.abspath(__file__)
+
+# Get the directory of the script (Bronze_tables directory)
+script_dir = os.path.dirname(script_path)
+
+# Add the parent directory of the script to the Python module search path
+sys.path.insert(0, os.path.dirname(script_dir))
+
+
 from Utils.database_utils import (
-    execute_sql_query_v2,
-    helix_db_type,
-    read_table_from_db,
-    prod_db_type,
-    execute_sql_query,
+    get_database_engine,
+    upsert_data_multiple_keys,
+    get_table_columns,
+    align_dataframe_columns,
 )
 
-unsettled_trade_df = read_table_from_db("bronze_nexen_unsettle_trades", prod_db_type)
+import logging
 
-print(unsettled_trade_df.columns)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-report_date_raw = "2024-10-28"
-report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
+PUBLISH_TO_PROD = True
 
-df_factor = execute_sql_query_v2(
-    HELIX_price_and_factor_by_date,
-    db_type=helix_db_type,
-    params=(report_date,),
+if PUBLISH_TO_PROD:
+    engine = get_database_engine("sql_server_2")
+else:
+    engine = get_database_engine("postgres")
+
+inspector = inspect(engine)
+
+# SEC HOLDINGS PROCESSING
+
+tb_name = "bronze_nexen_cash_and_security_transactions"
+# Get the repository root directory
+repo_path = get_repo_root()
+bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
+processed_files_tracker = (
+    bronze_tracker_dir / "Bronze Table Processed NEXEN Cash Sec Txn PROD"
 )
 
-output_path = get_file_path(
-    f"S:/Users/THoang/Data/current_trade_{report_date_raw}.xlsx"
+# SecHldgs_08102024.csv
+pattern = "CashSecTRN5D_"
+archive_directory = get_file_path(
+    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/"
 )
-df_helix_trade = execute_sql_query(
-    current_trade_daily_report_helix_trade_query, "sql_server_1", params=(report_date,)
+date_pattern = re.compile(r"(\d{2})(\d{2})(\d{4})")
+
+
+def read_processed_files(processed_files_tracker):
+    try:
+        with open(processed_files_tracker, "r") as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()
+
+
+def mark_file_processed(filename, processed_files_tracker):
+    with open(processed_files_tracker, "a") as file:
+        file.write(filename + "\n")
+
+
+def extract_date(filename):
+    """
+    This function extracts the date from a filename in DDMMYYYY format
+    and returns it as MM-DD-YYYY.
+
+    Args:
+        filename (str): The filename to extract the date from.
+
+    Returns:
+        str or None: The formatted date (MM-DD-YYYY) if found, or None if not found.
+    """
+    # Use regex to match the date
+    match = date_pattern.search(filename)
+
+    if match:
+        day, month, year = match.groups()
+        return f"{month}-{day}-{year}"  # Format as MM-DD-YYYY
+    return None
+
+
+def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
+    """
+    Creates a new database table based on the columns in the given DataFrame.
+
+    Args:
+        engine (sqlalchemy.engine.Engine): The database engine.
+        tb_name (str): The name of the table to create.
+        df (pd.DataFrame): The DataFrame containing the data.
+        include_timestamp (bool, optional): Whether to include a timestamp column. Defaults to True.
+
+    Raises:
+        sqlalchemy.exc.SQLAlchemyError: If an error occurs while creating the table.
+    """
+    metadata = MetaData()
+    metadata.bind = engine
+    # Create the table if it doesn't exist
+    if not inspect(engine).has_table(tb_name):
+        columns = []
+        for col in df.columns:
+            if col == "data_id":
+                columns.append(Column(col, String(50)))
+            else:
+                columns.append(Column(col, String))
+
+        if include_timestamp:
+            columns.append(Column("timestamp", DateTime))
+
+        table = Table(tb_name, metadata, *columns, extend_existing=True)
+
+        try:
+            metadata.create_all(engine)
+            print(f"Table {tb_name} created successfully or already exists.")
+        except Exception as e:
+            print(f"Failed to create table {tb_name}: {e}")
+            raise
+
+
+def process_dataframe(engine, tb_name, df):
+    """
+    Modified process_dataframe function with column validation and alignment.
+
+    Args:
+        engine: SQLAlchemy engine
+        tb_name: Target table name
+        df: Source DataFrame
+    """
+    if df is None:
+        logger.warning(f"DataFrame for table {tb_name} is None. Skipping processing.")
+        return
+
+    try:
+        # Get existing table columns
+        table_columns = get_table_columns(engine, tb_name)
+        if not table_columns:
+            logger.error(f"Could not get columns for table {tb_name}")
+            return
+
+        # Align DataFrame columns with table schema
+        aligned_df = align_dataframe_columns(df, table_columns)
+
+        # Insert aligned data
+        upsert_data_multiple_keys(
+            engine,
+            tb_name,
+            df,
+            ["data_id"],
+            PUBLISH_TO_PROD,
+        )
+        logger.info(f"Data inserted into table {tb_name} successfully.")
+
+    except Exception as e:
+        logger.error(f"Error processing data for table {tb_name}: {e}")
+        raise
+
+
+filepath = get_file_path(
+    "S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/CashSecTRN5D_20241106142451_346856701.xls"
 )
-df_helix_trade.to_excel(output_path, engine="openpyxl")
 
-
-output_path = get_file_path(f"S:/Users/THoang/Data/as_of_trade_{report_date_raw}.xlsx")
-df_helix_trade = execute_sql_query(
-    as_of_trade_daily_report_helix_trade_query, "sql_server_1", params=(report_date,)
+# Read the Excel file
+df = pd.read_excel(
+    filepath,
+    dtype=str,
 )
-df_helix_trade.to_excel(output_path, engine="openpyxl")
 
-print_df(df_factor.head())
+# Remove newline characters from column names
+df.columns = df.columns.str.replace(r"\n", "", regex=True)
 
-# helix_rating_df = execute_sql_query_v2(
-#     helix_ratings_query, helix_db_type, params=(report_date,)
-# )
-#
-# collateral_rating_df = read_table_from_db("silver_collateral_rating", prod_db_type)
-#
-# collateral_rating_df["date"] = pd.to_datetime(collateral_rating_df["date"])
-# report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
-# collateral_rating_df = collateral_rating_df[
-#     collateral_rating_df["date"] == report_date
-# ][["bond_id", "rating"]]
-#
-# # Rename the "rating" columns to distinguish between helix and collateral ratings
-# helix_rating_df = helix_rating_df.rename(columns={"rating": "helix_rating"})
-# collateral_rating_df = collateral_rating_df.rename(
-#     columns={"rating": "collateral_rating"}
-# )
-#
-# # Perform an inner join between helix_rating_df and collateral_rating_df on the "bond_id" column
-# merged_df = pd.merge(helix_rating_df, collateral_rating_df, on="bond_id", how="inner")
-#
-# # Filter the merged DataFrame to include only rows where the ratings are different
-# result_df = merged_df[merged_df["helix_rating"] != merged_df["collateral_rating"]][
-#     ["bond_id", "helix_rating", "collateral_rating"]
-# ]
-#
-# print_df(result_df)
+# Filter out rows where 'Report Run Date' is null
+df = df[~df["Reference Number"].isnull()]
+
+# Identify columns that should be converted (those that can be parsed as numbers)
+numeric_columns = df.columns[
+    df.apply(lambda col: pd.to_numeric(col, errors="coerce").notnull().all())
+]
+
+# Apply conversion to format numeric values as strings without scientific notation
+for col in numeric_columns:
+    df[col] = df[col].apply(
+        lambda x: (
+            "{:.15f}".format(float(x)).rstrip("0").rstrip(".") if pd.notnull(x) else x
+        )
+    )
+
+
+df["data_id"] = df.apply(
+    lambda row: hash_string_v2(
+        f"{row['Reference Number']}"
+        f"{row['Account Number'] if pd.notnull(row['Account Number']) else ''}"
+        f"{row['Cash Account Number'] if pd.notnull(row['Cash Account Number']) else ''}"
+        f"{row['Transaction Type Name'] if pd.notnull(row['Transaction Type Name']) else ''}"
+        f"{row['Local Amount'] if pd.notnull(row['Local Amount']) else ''}"
+    ),
+    axis=1,
+)
+df["timestamp"] = get_current_timestamp()
+cols = ["data_id"] + [col for col in df.columns if col not in ["data_id"]]
+df = df[cols]
+try:
+    # Create table if it doesn't exist
+    create_custom_bronze_table(engine, tb_name, df)
+    process_dataframe(engine, tb_name, df)
+except SQLAlchemyError:
+    print(f"Skipping due to an error")
