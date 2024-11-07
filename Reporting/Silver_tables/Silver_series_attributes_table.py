@@ -38,13 +38,13 @@ def create_table_with_schema(tb_name):
         tb_name,
         metadata,
         Column("security_id", String(255), primary_key=True),
-        Column("fund_name", String),
+        Column("fund_program", String),
         Column("fund_description", String),
         Column("type", String),
-        Column("legal_fund_name", String),
-        Column("fund_inception", Date),
-        Column("series_name", String),
-        Column("series_abbreviation", String),
+        Column("issuing_entity", String),
+        Column("ssc_pool_name", String),
+        Column("series_internal_name", String),
+        Column("series_legal_name", String),
         Column("series_description", String),
         Column("series_inception", Date, nullable=True),
         Column("final_maturity_date", Date, nullable=True),
@@ -58,6 +58,13 @@ def create_table_with_schema(tb_name):
         Column("expense_ratio_cap", Numeric(precision=5, scale=2)),
         Column("day_count", Integer),
         Column("interval", String),
+        Column("withdrawal_notice_bd", Integer),
+        Column("withdrawal_mark", String),
+        Column("maturity_limit_day_count", Integer),
+        Column("withdrawal_frequency", String),
+        Column("status", String),
+        Column("other_eligible_assets", String),
+        Column("borrowing_base_description", String),
         Column("timestamp", DateTime),
         extend_existing=True,
     )
@@ -130,16 +137,16 @@ try:
     # Read the "Series attributes.xlsx" file
     series_attributes_df = pd.read_excel(file_path)
 
-    # Rename the columns
+    # Rename the columns according to the new schema
     series_attributes_df.columns = [
         "security_id",
-        "fund_name",
+        "fund_program",
         "fund_description",
         "type",
-        "legal_fund_name",
-        "fund_inception",
-        "series_name",
-        "series_abbreviation",
+        "issuing_entity",
+        "ssc_pool_name",
+        "series_internal_name",
+        "series_legal_name",
         "series_description",
         "series_inception",
         "final_maturity_date",
@@ -153,36 +160,25 @@ try:
         "expense_ratio_cap",
         "day_count",
         "interval",
+        "withdrawal_notice_bd",
+        "withdrawal_mark",
+        "maturity_limit_day_count",
+        "withdrawal_frequency",
+        "status",
+        "other_eligible_assets",
+        "borrowing_base_description"
     ]
 
-    # Convert the 'fund_inception' and 'series_inception' columns to 'YYYY-MM-DD' format
-    series_attributes_df["fund_inception"] = series_attributes_df[
-        "fund_inception"
-    ].apply(
-        lambda x: (
-            pd.to_datetime(x).strftime("%Y-%m-%d")
-            if pd.notnull(x) and x != "NaT"
-            else None
+    # Convert date columns to 'YYYY-MM-DD' format
+    date_columns = ["series_inception", "final_maturity_date"]
+    for col in date_columns:
+        series_attributes_df[col] = series_attributes_df[col].apply(
+            lambda x: (
+                pd.to_datetime(x).strftime("%Y-%m-%d")
+                if pd.notnull(x) and x != "NaT"
+                else None
+            )
         )
-    )
-    series_attributes_df["series_inception"] = series_attributes_df[
-        "series_inception"
-    ].apply(
-        lambda x: (
-            pd.to_datetime(x).strftime("%Y-%m-%d")
-            if pd.notnull(x) and x != "NaT"
-            else None
-        )
-    )
-    series_attributes_df["final_maturity_date"] = series_attributes_df[
-        "final_maturity_date"
-    ].apply(
-        lambda x: (
-            pd.to_datetime(x).strftime("%Y-%m-%d")
-            if pd.notnull(x) and x != "NaT"
-            else None
-        )
-    )
 
     # Add the timestamp column
     series_attributes_df["timestamp"] = get_datetime_object()
