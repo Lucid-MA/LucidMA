@@ -49,7 +49,7 @@ else:
 
 inspector = inspect(engine)
 
-tb_name_cash_security = "bronze_nexen_cash_and_security_transactions"
+# tb_name_cash_security = "bronze_nexen_cash_and_security_transactions"
 tb_name_unsettle_trades = "bronze_nexen_unsettle_trades"
 tb_name_cash_recon = "bronze_nexen_cash_recon"
 # Specify the directory path
@@ -58,8 +58,8 @@ directory = get_file_path(r"S:\Mandates\Funds\Fund Reporting\NEXEN Reports")
 
 # Define the file patterns
 file_patterns = {
-    "df_cash_security": r"Cash_and_Security_Transactions_(\d{2})(\d{2})(\d{4})\.xls",
-    "df_unsettled_trades": r"Unsettled_Trades_(\d{2})(\d{2})(\d{4})\.xls",
+    # "df_cash_security": r"Cash_and_Security_Transactions_(\d{2})(\d{2})(\d{4})\.xls",
+    "df_unsettled_trades": r"UnsetTRN_(\d{2})(\d{2})(\d{4})\.xls",
     "df_cash_recon": r"CashRecon_(\d{2})(\d{2})(\d{4})\.xls",
 }
 
@@ -114,7 +114,7 @@ for df_name, file_pattern in file_patterns.items():
 
 
 # Access the DataFrames
-df_cash_security = dataframes.get("df_cash_security")
+# df_cash_security = dataframes.get("df_cash_security")
 df_unsettled_trades = dataframes.get("df_unsettled_trades")
 df_cash_recon = dataframes.get("df_cash_recon")
 
@@ -168,7 +168,6 @@ def clear_table_content(engine, tb_name):
     with engine.connect() as connection:
         try:
             connection.execute(text(f"DELETE FROM {tb_name}"))
-            connection.commit()
             logger.info(f"Content of table {tb_name} cleared successfully.")
         except Exception as e:
             logger.error(f"Failed to clear content of table {tb_name}: {e}")
@@ -311,7 +310,7 @@ def process_dataframe(engine, tb_name, df):
 
 # Process each DataFrame
 table_data = [
-    (tb_name_cash_security, df_cash_security),
+    # (tb_name_cash_security, df_cash_security),
     (tb_name_unsettle_trades, df_unsettled_trades),
     (tb_name_cash_recon, df_cash_recon),
 ]

@@ -153,7 +153,9 @@ def process_data(data, subheader):
 
 
 def refresh_data_and_send_email():
-    file_path = get_file_path(r"S:/Mandates/Operations/Collateral Rec V2.xlsm")
+    file_path = get_file_path(
+        r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Collateral Rec V2.xlsm"
+    )
     sheet_name = "Reconciliation"
 
     # Open the Excel file and refresh the data connection

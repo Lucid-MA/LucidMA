@@ -205,6 +205,17 @@ for col in numeric_columns:
         )
     )
 
+# Identify columns that are date-like
+date_columns = df.columns[
+    df.apply(lambda col: pd.to_datetime(col, errors="coerce").notnull().all())
+]
+
+# Convert date columns to 'MM-DD-YYYY' format as strings
+for col in date_columns:
+    df[col] = pd.to_datetime(df[col], errors="coerce").dt.strftime("%m-%d-%Y")
+
+# Ensure the result stays as a string type (should already be due to strftime)
+df[date_columns] = df[date_columns].astype(str)
 
 df["data_id"] = df.apply(
     lambda row: hash_string_v2(
