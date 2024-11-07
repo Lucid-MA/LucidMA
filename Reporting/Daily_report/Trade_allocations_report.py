@@ -526,7 +526,7 @@ def generate_combined_report(compliance_html, allocation_html):
 
 def refresh_data_and_send_email():
     file_path = get_file_path(
-        r"S:/Users/THoang/Data/Prime Series Trade Allocations.xlsm"
+        r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Prime Series Trade Allocations.xlsm"
     )
     sheet_name = "Reconciliation"
 
