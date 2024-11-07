@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 
 import msal
-import numpy as np
 import pandas as pd
 import requests
 import win32com.client as win32
@@ -100,10 +99,12 @@ def send_email(
 
 
 def process_data(data, subheader):
+    # Define the column names including the new "Helix Status" column
     column_names = [
-        "Trade ID",
+        "Helix Trade ID",
+        "Helix Status",
         "BNY Ref",
-        "Settled",
+        "BNY Status",
         "Counterparty",
         "Start Date",
         "End Date",
@@ -116,7 +117,6 @@ def process_data(data, subheader):
 
     # List of columns to convert
     cols_to_convert = [
-        "Trade ID",
         "Money",
         "Shares",
     ]
@@ -125,18 +125,12 @@ def process_data(data, subheader):
     for col in cols_to_convert:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Round up 'Quantity', 'Investment Amount', 'MV', and 'MV Change' and convert to integers
-    # Use 'Int64' to allow NaN values
-    data["Trade ID"] = np.ceil(data["Trade ID"]).astype("Int32")
-    data["Money"] = np.ceil(data["Money"]).astype("Int64")
-    data["Shares"] = np.ceil(data["Shares"]).astype("Int64")
-    data["BNY Ref"] = data["BNY Ref"].astype("string")
-
     # Remove rows where Trade ID is '0' or NaN
     data = data[
-        (~(data["Trade ID"] == 0))
-        & (data["Trade ID"].notna())
-        & (~(data["Trade ID"] == "0.0"))
+        (~(data["Helix Trade ID"] == 0))
+        & (data["Helix Trade ID"].notna())
+        & (~(data["Helix Trade ID"] == "0.0"))
+        & (~(data["Helix Trade ID"] == "0"))
     ]
 
     # Convert "Start Date" and "End Date" columns to datetime
@@ -152,11 +146,11 @@ def process_data(data, subheader):
     data["End Date"] = data["End Date"].fillna("")
 
     # Format "Money" with comma and no decimal
-    data["Money"] = data["Money"].apply("{:,.0f}".format)
+    data["Money"] = data["Money"].apply(lambda x: "{:,.0f}".format(x) if pd.notna(x) else "")
 
     # Format 'Shares' column with comma, parentheses for negative values, and no decimal
     data["Shares"] = data["Shares"].apply(
-        lambda x: "({:,.0f})".format(abs(x)) if x < 0 else "{:,.0f}".format(x)
+        lambda x: "({:,.0f})".format(abs(x)) if pd.notna(x) and x < 0 else ("{:,.0f}".format(x) if pd.notna(x) else "")
     )
 
     if data.empty:
@@ -165,23 +159,51 @@ def process_data(data, subheader):
     # Replace NaN values with an empty string
     data = data.fillna("")
 
-    # Apply conditional styling to the "Settled" column
-    def highlight_settled(val):
-        if val == "Settled":
-            return "background-color: lightgreen"
-        else:
+    # Today's date for date comparison
+    today = datetime.now().date()
+
+    # Conditional formatting functions
+    def highlight_helix_status(val):
+        return "background-color: #FFD700" if val == "Pending" else ""
+
+    def highlight_start_date(val):
+        if not val:
+            return ""
+        try:
+            date_val = datetime.strptime(val, "%Y-%m-%d").date()
+            return "background-color: #FFD700" if date_val <= today else ""
+        except ValueError:
             return ""
 
-    data = data.style.applymap(highlight_settled, subset=["Settled"])
+    def highlight_end_date(val):
+        if not val:
+            return ""
+        try:
+            date_val = datetime.strptime(val, "%Y-%m-%d").date()
+            return "background-color: #FFD700" if date_val <= today else ""
+        except ValueError:
+            return ""
+
+    def highlight_settled(val):
+        return "background-color: #90EE90" if val == "Settled" else ""
+
+    # Remove the index by resetting it
+    data = data.reset_index(drop=True)
+
+    # Apply conditional styling
+    data = data.style.applymap(highlight_helix_status, subset=["Helix Status"]) \
+                     .applymap(highlight_start_date, subset=["Start Date"]) \
+                     .applymap(highlight_end_date, subset=["End Date"]) \
+                     .applymap(highlight_settled, subset=["BNY Status"])
 
     # Format the styled DataFrame as an HTML table
-    html_table = data.to_html(index=False, border=1, escape=False)
+    html_table = data.hide(axis="index").to_html(index=False, border=1, escape=False)
 
     return html_table
 
 
 def refresh_data_and_send_email():
-    file_path = get_file_path(r"S:/Mandates/Operations/Transaction Rec V2.xlsm")
+    file_path = get_file_path(r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Transaction Rec V3.xlsm")
     sheet_name = "Reconciliation"
 
     # Open the Excel file and refresh the data connection
@@ -206,11 +228,11 @@ def refresh_data_and_send_email():
         body = f"Problem opening file {file_path}. Please review the file."
         recipients = [
             "tony.hoang@lucidma.com",
-            # "amelia.thompson@lucidma.com",
-            # "stephen.ng@lucidma.com",
+            "amelia.thompson@lucidma.com",
+            "stephen.ng@lucidma.com",
         ]
         cc_recipients = [
-            # "operations@lucidma.com"
+            "operations@lucidma.com"
         ]
         send_email(subject, body, recipients, cc_recipients)
         raise Exception(f"Error opening or refreshing file: {str(e)}")
@@ -223,100 +245,85 @@ def refresh_data_and_send_email():
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="C:K",
+        usecols="C:L",
         skiprows=7,  # Skip the first 7 rows (header will be row 8)
         header=0,  # Now row 8 is the header
+        dtype=str
     )
 
     html_table = process_data(data, "Unsettled Trades - PRIME Fund")
 
-    data_2 = pd.read_excel(
-        file_path,
-        sheet_name=sheet_name,
-        usecols="N:V",
-        skiprows=7,
-        header=0,
-    )
-
-    html_table_2 = process_data(data_2, "Unsettled Trades - USG Fund")
-
     html_content = f"""
-                            <!DOCTYPE html>
-                            <html lang="en">
-                            <head>
-                                <meta charset="UTF-8">
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <style>
-                                    table {{
-                                        width: 100%;
-                                        border-collapse: collapse;
-                                    }}
-                                    th, td {{
-                                        border: 1px solid black;
-                                        padding: 8px;
-                                        text-align: center;
-                                    }}
-                                    th {{
-                                        background-color: #f2f2f2;
-                                    }}
-                                    .header {{
-                                        background-color: #d9edf7;
-                                    }}
-                                    .header span {{
-                                        font-size: 24px;
-                                        font-weight: bold;
-                                    }}
-                                    .subheader {{
-                                        background-color: #dff0d8;
-                                    }}
-                                    .bold-text {{
-                                        font-weight: bold;
-                                        margin-top: 20px;
-                                        margin-bottom: 10px;
-                                    }}
-                                </style>
-                            </head>
-                            <body>
-                                <div class="bold-text">Unsettled Trade - PRIME Fund:</div>
-                                <table>
-                                    <tr class="header">
-                                        <td colspan="{len(data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
-                                    </tr>
-                                    <tr class="subheader">
-                                        <td colspan="{len(data.columns)}">Unsettled Trade - PRIME Fund</td>
-                                    </tr>
-                                </table>
-                                <table>
-                                    {html_table}
-                                </table>
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                            }}
+                            th, td {{
+                                border: 1px solid black;
+                                padding: 8px;
+                                text-align: center;
+                            }}
+                            th {{
+                                background-color: #f2f2f2;
+                            }}
+                            .header {{
+                                background-color: #d9edf7;
+                            }}
+                            .header span {{
+                                font-size: 24px;
+                                font-weight: bold;
+                            }}
+                            .subheader {{
+                                font-weight: bold;
+                                font-size: 18px;
+                            }}
+                            .helix-activity {{
+                                background-color: #d9edf7;
+                                width: 16.0%;
+                            }}
+                            .nexen-activity {{
+                                background-color: #dff0d8;
+                                width: 16.0%;
+                            }}
+                            .trade-details {{
+                                background-color: #f2f2f2;
+                            }}
+                            .bold-text {{
+                                font-weight: bold;
+                                margin-top: 20px;
+                                margin-bottom: 10px;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="bold-text">Unsettled Trade - PRIME Fund:</div>
+                        <table>
+                            <tr class="header">
+                                <td colspan="{len(data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
+                            </tr>
+                        </table>
+                        <table>
+                            {html_table}
+                        </table>
+                    </body>
+                    </html>
+                    """
 
-                                {'<br>' if html_table_2 is not None else ''}
-
-                                {'<div class="bold-text">Unsettled Trade - USG Fund:</div>' if html_table_2 is not None else ''}
-                                {'<table>' if html_table_2 is not None else ''}
-                                    {'<tr class="header">' if html_table_2 is not None else ''}
-                                        {'<td colspan="' + str(len(data_2.columns)) + '"><span>Lucid Management and Capital Partners LP</span></td>' if html_table_2 is not None else ''}
-                                    {'</tr>' if html_table_2 is not None else ''}
-                                    {'<tr class="subheader">' if html_table_2 is not None else ''}
-                                        {'<td colspan="' + str(len(data_2.columns)) + '">Unsettled Trade - USG Fund</td>' if html_table_2 is not None else ''}
-                                    {'</tr>' if html_table_2 is not None else ''}
-                                {'</table>' if html_table_2 is not None else ''}
-                                {'<table>' if html_table_2 is not None else ''}
-                                    {html_table_2 if html_table_2 is not None else ''}
-                                {'</table>' if html_table_2 is not None else ''}
-                            </body>
-                            </html>
-                            """
-
-    subject = f"LRX – Transaction Settlement Recon – Prime/USG - {valdate}"
+    subject = f"LRX – Transaction Settlement Recon – Prime - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
-        # "amelia.thompson@lucidma.com",
-        # "stephen.ng@lucidma.com",
+        "amelia.thompson@lucidma.com",
+        "stephen.ng@lucidma.com",
     ]
     cc_recipients = [
-        # "operations@lucidma.com"
+        "operations@lucidma.com"
     ]
 
     attachment_path = file_path

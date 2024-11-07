@@ -53,9 +53,10 @@ combined AS (
         '{{var('AVAILABLE')}}' AS flow_status,
         CASE
             WHEN flows.flow_account = 'EXPENSE' THEN 0.0
+            WHEN flows.flow_amount = 0 THEN 0.0
             ELSE (-source.amount/flows.flow_amount) * flows.flow_amount 
         END AS flow_amount,
-        (-source.amount/flows.flow_amount) AS portion,
+        (-source.amount/NULLIF(flows.flow_amount,0)) AS portion,
         source.amount AS orig_amt,
         flows.flow_amount AS flow_amt, 
         from_fund AS fund,
@@ -82,9 +83,10 @@ combined AS (
         '{{var('AVAILABLE')}}' AS flow_status,
         CASE
             WHEN flows.flow_account = 'EXPENSE' THEN 0.0
+            WHEN flows.flow_amount = 0 THEN 0.0
             ELSE (source.amount/flows.flow_amount) * flows.flow_amount 
         END AS flow_amount,
-        (source.amount/flows.flow_amount) AS portion,
+        (source.amount/NULLIF(flows.flow_amount,0)) AS portion,
         source.amount AS orig_amt,
         flows.flow_amount AS flow_amt,
         to_fund AS fund,

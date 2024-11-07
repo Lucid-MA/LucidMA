@@ -16,7 +16,7 @@ WITH dates AS (
         {{ ref("util_date__window") }}
     WHERE
         d > '2024-09-01'
-        AND d < '2024-09-30'
+        AND d < '2025-01-01'
 ),
 tradepieces AS (
     SELECT

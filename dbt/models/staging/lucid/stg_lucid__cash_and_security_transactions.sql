@@ -5,7 +5,7 @@ WITH source AS (
   FROM
     {{ source(
       'lucid',
-      'cash_recon'
+      'cash_and_security_transactions'
     ) }}
 ),
 renamed AS (
@@ -30,7 +30,7 @@ renamed AS (
     detail_tran_type_description,
     local_currency_code,
     TRY_CAST(
-      settle_pay_date AS DATE
+      [settle_/_pay_date] AS DATE
     ) AS settle_pay_date,
     TRY_CAST(
       actual_settle_date AS DATE
@@ -42,9 +42,9 @@ renamed AS (
       local_amount AS money
     ) AS local_amount,
     TRY_CAST(
-      shares_par AS money
+      [shares_/_par] AS money
     ) AS shares_par,
-    cusip_cins,
+    [cusip/cins] AS cusip_cins,
     isin,
     sweep_vehicle_name,
     location_name,
@@ -54,6 +54,7 @@ renamed AS (
     ) AS cash_post_date
   FROM
     source
+  WHERE transaction_type_name != 'INTERNAL MOVEMENT'
 ),
 final AS (
   SELECT

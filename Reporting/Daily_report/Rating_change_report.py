@@ -1,6 +1,6 @@
 import base64
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import msal
 import pandas as pd
@@ -159,8 +159,9 @@ def process_data(data, subheader):
 def refresh_data_and_send_email():
     report_date_raw = datetime.now().strftime("%Y-%m-%d")
     report_date = datetime.strptime(report_date_raw, "%Y-%m-%d")
+    previous_report_date = report_date - timedelta(days=1)
     helix_rating_df = execute_sql_query_v2(
-        helix_ratings_query, helix_db_type, params=(report_date,)
+        helix_ratings_query, helix_db_type, params=(previous_report_date,)
     )
 
     collateral_rating_df = read_table_from_db("silver_collateral_rating", prod_db_type)

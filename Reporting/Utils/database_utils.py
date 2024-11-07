@@ -219,7 +219,7 @@ def upsert_data_multiple_keys(
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join(
                     [
-                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", "").replace("?", "").replace(".", "").replace("-", "")}"
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", '').replace('?', '').replace('.', '').replace('-', '').replace('%','')}"
                         for col in df.columns
                     ]
                 )
@@ -278,7 +278,7 @@ def upsert_data_multiple_keys(
                     .replace("*", "")
                     .replace("'", "")
                     .replace("?", "")
-                    .replace(".", "").replace("-", "")
+                    .replace(".", "").replace("-", "").replace("%","")
                     for col in df.columns
                 ]
 
@@ -419,3 +419,57 @@ def is_table_empty(engine, table_name):
             count = result.scalar()
             return count == 0
     return False
+
+
+def get_table_columns(engine, table_name):
+    """
+    Get the column names from an existing database table.
+
+    Args:
+        engine: SQLAlchemy engine
+        table_name: Name of the table
+
+    Returns:
+        list: List of column names if table exists, None otherwise
+    """
+    try:
+        inspector = inspect(engine)
+        if table_name in inspector.get_table_names():
+            return [col["name"] for col in inspector.get_columns(table_name)]
+        return None
+    except Exception as e:
+        logger.error(f"Error getting columns for table {table_name}: {e}")
+        raise
+
+
+def align_dataframe_columns(df, table_columns):
+    """
+    Align DataFrame columns with table columns.
+
+    Args:
+        df: Source DataFrame
+        table_columns: List of target table column names
+
+    Returns:
+        DataFrame: DataFrame with aligned columns
+    """
+    # Create a copy to avoid modifying the original DataFrame
+    aligned_df = df.copy()
+
+    # Remove extra columns that aren't in the table
+    extra_columns = set(aligned_df.columns) - set(table_columns)
+    if extra_columns:
+        logger.warning(f"Removing extra columns from DataFrame: {extra_columns}")
+        aligned_df = aligned_df.drop(columns=extra_columns)
+
+    # Add missing columns with NULL values
+    missing_columns = set(table_columns) - set(aligned_df.columns)
+    if missing_columns:
+        logger.warning(f"Adding missing columns to DataFrame: {missing_columns}")
+        for col in missing_columns:
+            aligned_df[col] = None
+
+    # Reorder columns to match table schema
+    aligned_df = aligned_df.reindex(columns=table_columns)
+
+    return aligned_df

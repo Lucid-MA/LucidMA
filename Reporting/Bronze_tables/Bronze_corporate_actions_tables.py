@@ -49,18 +49,19 @@ else:
 
 inspector = inspect(engine)
 
-# tb_name_cash_security = "bronze_nexen_cash_and_security_transactions"
-tb_name_unsettle_trades = "bronze_nexen_unsettle_trades"
-tb_name_cash_recon = "bronze_nexen_cash_recon"
+tb_name_corp_action_cashflow = "bronze_nexen_corp_action_cashflow"
+tb_name_corp_action_prime_usg = "bronze_nexen_corp_action_prime_usg"
+
 # Specify the directory path
-directory = get_file_path(r"S:\Mandates\Funds\Fund Reporting\NEXEN Reports")
+directory = get_file_path(r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports")
 
+# Define the file patterns with today's date
+today = datetime.now()
+today_pattern = today.strftime("%d%m%Y")
 
-# Define the file patterns
 file_patterns = {
-    # "df_cash_security": r"Cash_and_Security_Transactions_(\d{2})(\d{2})(\d{4})\.xls",
-    "df_unsettled_trades": r"UnsetTRN_(\d{2})(\d{2})(\d{4})\.xls",
-    "df_cash_recon": r"CashRecon_(\d{2})(\d{2})(\d{4})\.xls",
+    # "df_cashflow": f"Corporate_Actions_Cashflows_{today_pattern}.xls",
+    "df_prime_usg": f"Corporate_Actions_Prime_and_USG_{today_pattern}.xls",
 }
 
 # Create a dictionary to store the DataFrames
@@ -70,53 +71,83 @@ dataframes = {}
 for df_name, file_pattern in file_patterns.items():
     file_path = None
     for root, dirs, files in os.walk(directory):
-        # Skip the Archive directory
+        # Skip the Archive and Test directories
         if "Archive" in dirs:
             dirs.remove("Archive")
         if "Test" in dirs:
             dirs.remove("Test")
         for file in files:
-            match = re.match(file_pattern, file)
-            if match:
+            if re.match(file_pattern, file):
                 file_path = os.path.join(root, file)
                 print(f"Found file: {file_path}")
                 break
         if file_path:
             break  # Stop searching if we've found a file
 
-    # Check if the file is found
+    # Process the file if found
     if file_path:
-        # Read the Excel file into a DataFrame
-        dataframes[df_name] = pd.read_excel(file_path, dtype=str)
-        logger.info(f"{df_name} loaded successfully.")
+        try:
+            # Read the Excel file into a DataFrame
+            dataframes[df_name] = pd.read_excel(file_path, dtype=str)
+            logger.info(f"{df_name} loaded successfully.")
 
-        # Extract the date from the file name using regex
-        filename = os.path.basename(file_path)
-        date_match = re.match(file_pattern, filename)
-        if date_match:
-            day, month, year = date_match.groups()
-            file_date = datetime(int(year), int(month), int(day))
-            logger.info(f"Processing date: {file_date}")
+            # Set the file_date column to today's date
             dataframes[df_name]["file_date"] = pd.Series(
-                [file_date] * len(dataframes[df_name]), index=dataframes[df_name].index
+                [today] * len(dataframes[df_name]), index=dataframes[df_name].index
             )
-        else:
-            logger.warning(f"Could not extract date from filename: {filename}")
 
-        # Add the 'timestamp' column with the current timestamp
-        current_timestamp = datetime.now()
-        dataframes[df_name]["timestamp"] = pd.Series(
-            [current_timestamp] * len(dataframes[df_name]),
-            index=dataframes[df_name].index,
-        )
+            # Add the 'timestamp' column with the current timestamp
+            current_timestamp = datetime.now()
+            dataframes[df_name]["timestamp"] = pd.Series(
+                [current_timestamp] * len(dataframes[df_name]),
+                index=dataframes[df_name].index,
+            )
+
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {str(e)}")
+            print(f"Error processing file for {df_name}: {str(e)}")
     else:
         print(f"File not found for {df_name}.")
 
 
 # Access the DataFrames
-# df_cash_security = dataframes.get("df_cash_security")
-df_unsettled_trades = dataframes.get("df_unsettled_trades")
-df_cash_recon = dataframes.get("df_cash_recon")
+df_cashflow = dataframes.get("df_cashflow")
+df_prime_usg = dataframes.get("df_prime_usg")
+
+cashflow_columns = [
+    "Account Number",
+    "Account Name",
+    "Settle / Pay Date",
+    "Actual Settle Date",
+    "Shares / Par",
+    "Local Amount",
+    "Status",
+    "Transaction Type Name",
+    "Detail Tran Type Description",
+    "Reference Number",
+    "Security Short Description",
+    "CUSIP/CINS",
+    "file_date",
+    "timestamp",
+]
+
+prime_usg_columns = [
+    "Account Number",
+    "Account Name",
+    "Announcement Reference ID",
+    "Notification Status",
+    "Event Type Name",
+    "Action Class",
+    "Payable Date",
+    "Eligible Units",
+    "Security Short Description",
+    "CUSIP / CINS",
+    "file_date",
+    "timestamp",
+]
+
+# df_cashflow = df_cashflow[cashflow_columns]
+df_prime_usg = df_prime_usg[prime_usg_columns]
 
 
 def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
@@ -139,7 +170,7 @@ def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
     for col in df.columns:
         if col == "file_date":
             columns.append(Column(col, Date))
-        elif col in ["Settled Shares/Par", "Shares / Par", "Local Amount"]:
+        elif col in ["Eligible Units", "Shares / Par", "Local Amount"]:
             columns.append(Column(col, NVARCHAR(50)))  # Specify maximum length
         else:
             columns.append(Column(col, String))
@@ -168,6 +199,7 @@ def clear_table_content(engine, tb_name):
     with engine.connect() as connection:
         try:
             connection.execute(text(f"DELETE FROM {tb_name}"))
+            connection.commit()
             logger.info(f"Content of table {tb_name} cleared successfully.")
         except Exception as e:
             logger.error(f"Failed to clear content of table {tb_name}: {e}")
@@ -228,24 +260,6 @@ def align_dataframe_columns(df, table_columns):
     return aligned_df
 
 
-def validate_required_columns(df, required_columns):
-    """
-    Validate that required columns are present in the DataFrame.
-
-    Args:
-        df: DataFrame to validate
-        required_columns: List of required column names
-
-    Raises:
-        ValueError: If any required columns are missing
-    """
-    missing_required = set(required_columns) - set(df.columns)
-    if missing_required:
-        error_msg = f"Required columns missing from DataFrame: {missing_required}"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
-
-
 def process_dataframe(engine, tb_name, df):
     """
     Modified process_dataframe function with column validation and alignment.
@@ -259,13 +273,6 @@ def process_dataframe(engine, tb_name, df):
         logger.warning(f"DataFrame for table {tb_name} is None. Skipping processing.")
         return
 
-    # Define required columns for each table type
-    required_columns = {
-        "bronze_nexen_cash_and_security_transactions": ["file_date", "timestamp"],
-        "bronze_nexen_unsettle_trades": ["file_date", "timestamp"],
-        "bronze_nexen_cash_recon": ["file_date", "timestamp"],
-    }
-
     try:
         # Create table if it doesn't exist
         create_custom_bronze_table(engine, tb_name, df)
@@ -276,16 +283,8 @@ def process_dataframe(engine, tb_name, df):
             logger.error(f"Could not get columns for table {tb_name}")
             return
 
-        # Validate required columns
-        validate_required_columns(df, required_columns.get(tb_name, []))
-
         # Align DataFrame columns with table schema
         aligned_df = align_dataframe_columns(df, table_columns)
-
-        # Convert specific numeric columns to string
-        for col_name in ["Settled Shares/Par", "Shares / Par", "Local Amount"]:
-            if col_name in aligned_df.columns:
-                aligned_df[col_name] = aligned_df[col_name].astype(str)
 
         # Check if table has data and clear it if necessary
         with engine.connect() as connection:
@@ -310,9 +309,8 @@ def process_dataframe(engine, tb_name, df):
 
 # Process each DataFrame
 table_data = [
-    # (tb_name_cash_security, df_cash_security),
-    (tb_name_unsettle_trades, df_unsettled_trades),
-    (tb_name_cash_recon, df_cash_recon),
+    # (tb_name_corp_action_cashflow, df_cashflow),
+    (tb_name_corp_action_prime_usg, df_prime_usg),
 ]
 
 for tb_name, df in table_data:

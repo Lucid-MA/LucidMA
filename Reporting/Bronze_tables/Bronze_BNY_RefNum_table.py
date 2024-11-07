@@ -10,11 +10,11 @@ from sqlalchemy import (
     String,
     DateTime,
     Table,
+    Date,
 )
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_repo_root, get_file_path, get_current_timestamp
-from Utils.Hash import hash_string_v2
 
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
@@ -52,18 +52,18 @@ inspector = inspect(engine)
 
 # SEC HOLDINGS PROCESSING
 
-tb_name = "bronze_nexen_cash_and_security_transactions"
+tb_name = "bronze_nexen_refnumber_table"
 # Get the repository root directory
 repo_path = get_repo_root()
 bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
 processed_files_tracker = (
-    bronze_tracker_dir / "Bronze Table Processed NEXEN Cash Sec Txn PROD"
+    bronze_tracker_dir / "Bronze Table Processed NEXEN RefNum PROD"
 )
 
 # SecHldgs_08102024.csv
-pattern = "CashSecTRN5D_"
+pattern = "RefNum_"
 archive_directory = get_file_path(
-    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/"
+    r"S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Archive/"
 )
 date_pattern = re.compile(r"(\d{2})(\d{2})(\d{4})")
 
@@ -120,8 +120,8 @@ def create_custom_bronze_table(engine, tb_name, df, include_timestamp=True):
     if not inspect(engine).has_table(tb_name):
         columns = []
         for col in df.columns:
-            if col == "data_id":
-                columns.append(Column(col, String(50)))
+            if col == "file_date":
+                columns.append(Column(col, Date))
             else:
                 columns.append(Column(col, String))
 
@@ -166,7 +166,7 @@ def process_dataframe(engine, tb_name, df):
             engine,
             tb_name,
             df,
-            ["data_id"],
+            ["Reference Number"],
             PUBLISH_TO_PROD,
         )
         logger.info(f"Data inserted into table {tb_name} successfully.")
@@ -176,63 +176,37 @@ def process_dataframe(engine, tb_name, df):
         raise
 
 
-filepath = get_file_path(
-    "S:/Mandates/Funds/Fund Reporting/NEXEN Reports/Test/CashSecTRN5D_20241106142451_346856701.xls"
-)
+# Iterate over files in the specified directory
+for filename in os.listdir(archive_directory):
+    if (
+        filename.startswith(pattern)
+        and filename.endswith(".csv")
+        and filename not in read_processed_files(processed_files_tracker)
+    ):
+        filepath = os.path.join(archive_directory, filename)
 
-# Read the Excel file
-df = pd.read_excel(
-    filepath,
-    dtype=str,
-)
+        date = extract_date(filename)
+        if not date:
+            print(
+                f"Skipping {filename} as it does not contain a correct date format in file name."
+            )
+            continue
 
-# Remove newline characters from column names
-df.columns = df.columns.str.replace(r"\n", "", regex=True)
-
-# Filter out rows where 'Report Run Date' is null
-df = df[~df["Reference Number"].isnull()]
-
-# Identify columns that should be converted (those that can be parsed as numbers)
-numeric_columns = df.columns[
-    df.apply(lambda col: pd.to_numeric(col, errors="coerce").notnull().all())
-]
-
-# Apply conversion to format numeric values as strings without scientific notation
-for col in numeric_columns:
-    df[col] = df[col].apply(
-        lambda x: (
-            "{:.15f}".format(float(x)).rstrip("0").rstrip(".") if pd.notnull(x) else x
+        # Read the Excel file
+        df = pd.read_csv(
+            filepath,
+            dtype=str,
         )
-    )
 
-# Identify columns that are date-like
-date_columns = df.columns[
-    df.apply(lambda col: pd.to_datetime(col, errors="coerce").notnull().all())
-]
-
-# Convert date columns to 'MM-DD-YYYY' format as strings
-for col in date_columns:
-    df[col] = pd.to_datetime(df[col], errors="coerce").dt.strftime("%m-%d-%Y")
-
-# Ensure the result stays as a string type (should already be due to strftime)
-df[date_columns] = df[date_columns].astype(str)
-
-df["data_id"] = df.apply(
-    lambda row: hash_string_v2(
-        f"{row['Reference Number']}"
-        f"{row['Account Number'] if pd.notnull(row['Account Number']) else ''}"
-        f"{row['Cash Account Number'] if pd.notnull(row['Cash Account Number']) else ''}"
-        f"{row['Transaction Type Name'] if pd.notnull(row['Transaction Type Name']) else ''}"
-        f"{row['Local Amount'] if pd.notnull(row['Local Amount']) else ''}"
-    ),
-    axis=1,
-)
-df["timestamp"] = get_current_timestamp()
-cols = ["data_id"] + [col for col in df.columns if col not in ["data_id"]]
-df = df[cols]
-try:
-    # Create table if it doesn't exist
-    create_custom_bronze_table(engine, tb_name, df)
-    process_dataframe(engine, tb_name, df)
-except SQLAlchemyError:
-    print(f"Skipping due to an error")
+        # Filter out rows where 'Report Run Date' is null
+        df = df[~df["Reference Number"].isnull()]
+        df["File_date"] = date
+        df["File_date"] = pd.to_datetime(df["File_date"]).dt.strftime("%Y-%m-%d")
+        df["timestamp"] = get_current_timestamp()
+        try:
+            # Create table if it doesn't exist
+            create_custom_bronze_table(engine, tb_name, df)
+            process_dataframe(engine, tb_name, df)
+            mark_file_processed(filename, processed_files_tracker)
+        except SQLAlchemyError:
+            print(f"Skipping {filename} due to an error")

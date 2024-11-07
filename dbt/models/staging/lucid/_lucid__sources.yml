@@ -8,3 +8,11 @@ sources:
       - name: cash_blotter
       - name: cash_recon
       - name: manual_allocations
+      - name: failing_trade_history
+      - name: balance_history
+      - name: cash_and_security_transactions
+  - name: sql2
+    database: Prod1
+    schema: dbo
+    tables:
+      - name: bronze_nexen_cash_balance
