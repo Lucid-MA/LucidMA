@@ -18,16 +18,15 @@ from Utils.database_utils import (
     engine_staging,
 )
 
-PUBLISH_TO_PROD = False
+PUBLISH_TO_PROD = True
 
-# Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if PUBLISH_TO_PROD:
     engine = engine_prod
 else:
     engine = engine_staging
 
 tb_name = "silver_series_attributes"
-# Path to the "Series attributes.xlsx" file
+# Update path to CSV file
 file_path = get_file_path(r"S:/Users/THoang/Data/Series attributes.xlsx")
 
 
@@ -51,14 +50,22 @@ def create_table_with_schema(tb_name):
         Column("benchmark_1", String),
         Column("benchmark_2", String),
         Column("benchmark_3", String),
-        Column("rating", String),
-        Column("rating_org", String),
-        Column("minimum_investment", Integer),
-        Column("series_withdrawal", String),
+        Column("rating_EJR", String),
+        Column("series_withdrawal_des", String),
         Column("expense_ratio_cap", Numeric(precision=5, scale=2)),
+        Column("mgmt_fee_cap", Numeric(precision=5, scale=2)),
         Column("day_count", Integer),
-        Column("interval", String),
-        Column("withdrawal_notice_bd", Integer),
+        Column("payment_interval", String),
+        Column("collateral_max_USG", String),
+        Column("collateral_max_AA", String),
+        Column("collateral_max_A", String),
+        Column("collateral_max_BBB", String),
+        Column("collateral_max_BB", String),
+        Column("collateral_max_B", String),
+        Column("Collateral_BBB_Gty", String),
+        Column("Collateral_A_Bank_Gty", String),
+        Column("Liquidity_Bucket_95D", String),
+        Column("Withdrawal_Notice_BD", Integer),
         Column("withdrawal_mark", String),
         Column("maturity_limit_day_count", Integer),
         Column("withdrawal_frequency", String),
@@ -75,9 +82,7 @@ def create_table_with_schema(tb_name):
 def upsert_data(tb_name, df):
     with engine.connect() as conn:
         try:
-            with conn.begin():  # Start a transaction
-                # Constructing the UPSERT SQL dynamically based on DataFrame columns
-                # Replace NaN values with None
+            with conn.begin():
                 df = df.astype(object).where(pd.notnull(df), None)
 
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
@@ -94,23 +99,22 @@ def upsert_data(tb_name, df):
 
                     upsert_sql = text(
                         f"""
-                                        MERGE INTO {tb_name} AS target
-                                        USING (VALUES ({value_placeholders})) AS source ({column_names})
-                                        ON target.security_id = source.security_id
-                                        WHEN MATCHED THEN
-                                            UPDATE SET {update_clause}
-                                        WHEN NOT MATCHED THEN
-                                            INSERT ({column_names})
-                                            VALUES ({value_placeholders});
-                                        """
+                        MERGE INTO {tb_name} AS target
+                        USING (VALUES ({value_placeholders})) AS source ({column_names})
+                        ON target.security_id = source.security_id
+                        WHEN MATCHED THEN
+                            UPDATE SET {update_clause}
+                        WHEN NOT MATCHED THEN
+                            INSERT ({column_names})
+                            VALUES ({value_placeholders});
+                        """
                     )
                 else:
                     update_clause = ", ".join(
                         [
                             f'"{col}"=EXCLUDED."{col}"'
                             for col in df.columns
-                            if col
-                            != "security_id"  # Assuming "security_id" is unique and used for conflict resolution
+                            if col != "security_id"
                         ]
                     )
 
@@ -123,7 +127,6 @@ def upsert_data(tb_name, df):
                         """
                     )
 
-                # Execute upsert in a transaction
                 conn.execute(upsert_sql, df.to_dict(orient="records"))
             print(f"Data upserted successfully into {tb_name}.")
         except SQLAlchemyError as e:
@@ -134,10 +137,10 @@ def upsert_data(tb_name, df):
 create_table_with_schema(tb_name)
 
 try:
-    # Read the "Series attributes.xlsx" file
+    # Read the CSV file instead of Excel
     series_attributes_df = pd.read_excel(file_path)
 
-    # Rename the columns according to the new schema
+    # Clean column names to match schema
     series_attributes_df.columns = [
         "security_id",
         "fund_program",
@@ -153,39 +156,51 @@ try:
         "benchmark_1",
         "benchmark_2",
         "benchmark_3",
-        "rating",
-        "rating_org",
-        "minimum_investment",
-        "series_withdrawal",
+        "rating_EJR",
+        "series_withdrawal_des",
         "expense_ratio_cap",
+        "mgmt_fee_cap",
         "day_count",
-        "interval",
-        "withdrawal_notice_bd",
+        "payment_interval",
+        "collateral_max_USG",
+        "collateral_max_AA",
+        "collateral_max_A",
+        "collateral_max_BBB",
+        "collateral_max_BB",
+        "collateral_max_B",
+        "Collateral_BBB_Gty",
+        "Collateral_A_Bank_Gty",
+        "Liquidity_Bucket_95D",
+        "Withdrawal_Notice_BD",
         "withdrawal_mark",
         "maturity_limit_day_count",
         "withdrawal_frequency",
         "status",
         "other_eligible_assets",
-        "borrowing_base_description"
+        "borrowing_base_description",
     ]
 
-    # Convert date columns to 'YYYY-MM-DD' format
+    # Convert date columns to datetime
     date_columns = ["series_inception", "final_maturity_date"]
     for col in date_columns:
-        series_attributes_df[col] = series_attributes_df[col].apply(
-            lambda x: (
-                pd.to_datetime(x).strftime("%Y-%m-%d")
-                if pd.notnull(x) and x != "NaT"
-                else None
-            )
-        )
+        series_attributes_df[col] = pd.to_datetime(
+            series_attributes_df[col]
+        ).dt.strftime("%Y-%m-%d")
 
-    # Add the timestamp column
+    # Convert numeric columns
+    series_attributes_df["expense_ratio_cap"] = pd.to_numeric(
+        series_attributes_df["expense_ratio_cap"], errors="coerce"
+    )
+    series_attributes_df["mgmt_fee_cap"] = pd.to_numeric(
+        series_attributes_df["mgmt_fee_cap"], errors="coerce"
+    )
+
+    # Add timestamp column
     series_attributes_df["timestamp"] = get_datetime_object()
 
     print("Series attributes data loaded successfully.")
 except Exception as e:
-    print("Failed to read the 'Series attributes.xlsx' file. Error:", e)
+    print("Failed to read the 'Series attributes.csv' file. Error:", e)
 
 if series_attributes_df is not None:
     upsert_data(tb_name, series_attributes_df)
