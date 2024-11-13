@@ -33,7 +33,8 @@ public class AutoCashTracker {
 
 			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\Historical\\TrackerState_" +  prevDateString + ".xlsx", valDate);
 //			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\TrackerState.xlsx", valDate);
-			
+//			Court court = new Court("S:\\Mandates\\Operations\\Daily Reconciliation\\Tony\\TrackerState.xlsx", valDate);
+
 			System.out.println("Fetching trade data from Helix.");
 			court.connectToHelix();
 			court.fetchTradeData();
@@ -42,8 +43,8 @@ public class AutoCashTracker {
 			System.out.println("Fetching expected swings and wires."); // MUST do this AFTER fetching data from helix
 			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Cash Blotter.xlsx", valDate);
 //			court.fetchManualMovements("S:\\Mandates\\Operations\\Daily Reconciliation\\Cash Blotter.xlsx", valDate);
-			String bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\CashRecon_" + localValDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".xls";
-			//String bnyFile = "C:\\Users\\jvulopas\\Desktop\\tmp_trash\\CashRecon_15042021.xls";
+//			String bnyFile = "S:\\Mandates\\Funds\\Fund Reporting\\NEXEN Reports\\CashRecon_" + localValDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".xls";
+			String bnyFile = "S:\\Mandates\\Operations\\Daily Reconciliation\\CashRecon_test.xls";
 			File testFile = new File(bnyFile);
 			if (!testFile.exists()) {
 				System.out.println("going manual");
