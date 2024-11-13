@@ -1,6 +1,5 @@
 import base64
 import os
-import time
 from datetime import datetime
 
 import msal
@@ -26,7 +25,7 @@ def authenticate_and_get_token():
         "redirect_uri": "http://localhost:8080",
     }
 
-    cache_file = "../../../../../../Mandates/Operations/Script Files/Daily Reports/token_cache.bin"
+    cache_file = "token_cache.bin"
     token_cache = msal.SerializableTokenCache()
 
     if os.path.exists(cache_file):
@@ -527,10 +526,9 @@ def generate_combined_report(compliance_html, allocation_html):
 
 def refresh_data_and_send_email():
     file_path = get_file_path(
-        r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/LRX Trade Allocations and Flags.xlsm"
-
+        r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Prime Series Trade Allocations.xlsm"
     )
-    sheet_name = "Portfolio Allocations"
+    sheet_name = "Reconciliation"
 
     # Open the Excel file and refresh the data connection
     excel = win32.gencache.EnsureDispatch("Excel.Application")
@@ -539,16 +537,9 @@ def refresh_data_and_send_email():
     try:
         workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
         workbook.RefreshAll()
-
-        # Ensure Excel completes all async calculations before continuing
         excel.CalculateUntilAsyncQueriesDone()
-
-        # Add a delay to ensure Excel has time to finish any background tasks
-        time.sleep(10)  # 10-second delay (adjust as necessary)
-
         workbook.Save()
         workbook.Close(SaveChanges=True)
-
         # excel.Quit()
         excel.DisplayAlerts = True  # Re-enable alerts
     except Exception as e:
@@ -559,106 +550,37 @@ def refresh_data_and_send_email():
             # "amelia.thompson@lucidma.com",
             # "stephen.ng@lucidma.com",
         ]
-        cc_recipients = [
-            # "operations@lucidma.com"
-        ]
+        cc_recipients = ["operations@lucidma.com"]
         send_email(subject, body, recipients, cc_recipients)
         raise Exception(f"Error opening or refreshing file: {str(e)}")
 
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="C:D",  # Only columns C and D
-        skiprows=8,  # Skip the first 8 rows (row 9 will be the header)
-        nrows=5,  # Read only the next 5 rows (rows 9 to 13)
-        header=0,  # Row 9 becomes the header
+        usecols="A:B, D:L",  # Columns B to J
+        skiprows=4,  # Skip the first 4 rows (header will be row 5)
+        header=0,  # Now row 5 is the header
         dtype=str,
     )
 
-    html_table = data.to_html(
-        index=False,
-        border=1,
-        escape=False,
-        classes="custom-table"  # Add a class for custom styling
+    data = data[data["Compliance Checks"].notna()]
+
+    html_content_compliance = process_data_compliance_check_report(data)
+
+    data = pd.read_excel(
+        file_path,
+        sheet_name=sheet_name,
+        usecols="C:K",  # Columns B to J
+        skiprows=15,  # Skip the first 4 rows (header will be row 5)
+        header=0,  # Now row 5 is the header
+        dtype=str,
     )
 
-    # Add custom CSS for styling
-    html_style = """
-    <style>
-        .custom-table thead th {
-            font-size: 1.5em;  /* Increase the font size of the header */
-            text-align: center; /* Center-align the header text */
-        }
-        .custom-table tbody td:first-child {
-            text-align: left;  /* Left-align the first column */
-        }
-    </style>
-    """
+    html_content_allocation = process_data_allocation_break_report(data)
 
-    # Combine the style and the table HTML
-    html_table = html_style + html_table
-
-
-    html_content = f"""
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <style>
-                                table {{
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                }}
-                                th, td {{
-                                    border: 1px solid black;
-                                    padding: 8px;
-                                    text-align: center;
-                                }}
-                                th {{
-                                    background-color: #f2f2f2;
-                                }}
-                                .header {{
-                                    background-color: #d9edf7;
-                                }}
-                                .header span {{
-                                    font-size: 24px;
-                                    font-weight: bold;
-                                }}
-                                .subheader {{
-                                    font-weight: bold;
-                                    font-size: 18px;
-                                }}
-                                .helix-activity {{
-                                    background-color: #d9edf7;
-                                    width: 16.0%;
-                                }}
-                                .nexen-activity {{
-                                    background-color: #dff0d8;
-                                    width: 16.0%;
-                                }}
-                                .trade-details {{
-                                    background-color: #f2f2f2;
-                                }}
-                                .bold-text {{
-                                    font-weight: bold;
-                                    margin-top: 20px;
-                                    margin-bottom: 10px;
-                                }}
-                            </style>
-                        </head>
-                        <body>
-                            <table>
-                                <tr class="header">
-                                    <td colspan="{len(data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
-                                </tr>
-                            </table>
-                            <table>
-                                {html_table}
-                            </table>
-                        </body>
-                        </html>
-                        """
+    html_content = generate_combined_report(
+        html_content_compliance, html_content_allocation
+    )
     subject = f"LRX - Prime Series Trade Allocations - {valdate}"
 
     recipients = [
@@ -666,20 +588,13 @@ def refresh_data_and_send_email():
         # "amelia.thompson@lucidma.com",
         # "stephen.ng@lucidma.com",
     ]
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
-
-    attachment_path = file_path
-    attachment_name = f"Trade Allocations and Flags_{valdate}.xlsm"
+    cc_recipients = ["operations@lucidma.com"]
 
     send_email(
         subject,
         html_content,
         recipients,
         cc_recipients,
-        attachment_path,
-        attachment_name,
     )
 
 

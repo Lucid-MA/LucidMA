@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 from datetime import datetime
 
 import msal
@@ -240,7 +241,7 @@ def process_data(data, threshold, threshold_style, subheader):
                                 <tr class="subheader">
                                     <td colspan="{len(filtered_data.columns)}">{subheader}</td>
                                 </tr>
-                                
+
                             </table>
                             <table>
                                 {html_table}
@@ -253,9 +254,7 @@ def process_data(data, threshold, threshold_style, subheader):
 
 
 def refresh_data_and_send_email():
-    file_path = get_file_path(
-        r"S:/Lucid/Trading & Markets/Trading and Settlement Tools/Collateral PX Change Report.xlsm"
-    )
+    file_path = get_file_path(r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Collateral PX Change Report_v2.xlsm")
     sheet_name = "Biggest Movers"
 
     # Open the Excel file and refresh the data connection
@@ -265,11 +264,16 @@ def refresh_data_and_send_email():
     try:
         workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
         workbook.RefreshAll()
+
+        # Ensure Excel completes all async calculations before continuing
         excel.CalculateUntilAsyncQueriesDone()
+
+        # Add a delay to ensure Excel has time to finish any background tasks
+        time.sleep(15)  # 10-second delay (adjust as necessary)
+
         workbook.Save()
         workbook.Close(SaveChanges=True)
-        excel.Quit()
-        excel.DisplayAlerts = True  # Re-enable alerts
+
     except Exception as e:
         subject = "Error opening or refreshing file"
         body = f"Problem opening file {file_path}. Please review the file."
@@ -278,9 +282,17 @@ def refresh_data_and_send_email():
             "amelia.thompson@lucidma.com",
             "stephen.ng@lucidma.com",
         ]
-        cc_recipients = ["operations@lucidma.com"]
+        cc_recipients = [
+            "operations@lucidma.com"
+        ]
         send_email(subject, body, recipients, cc_recipients)
         raise Exception(f"Error opening or refreshing file: {str(e)}")
+
+    finally:
+        # Ensure Excel quits and display alerts are re-enabled
+        excel.DisplayAlerts = True  # Re-enable alerts
+        excel.Quit()
+
 
     data = pd.read_excel(
         file_path,
@@ -317,7 +329,9 @@ def refresh_data_and_send_email():
         "amelia.thompson@lucidma.com",
         "stephen.ng@lucidma.com",
     ]
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        "operations@lucidma.com"
+    ]
 
     attachment_path = file_path
     attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"

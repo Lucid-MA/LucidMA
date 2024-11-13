@@ -98,7 +98,7 @@ def send_email(
         print(f"Email '{subject}' sent successfully")
 
 
-def process_data(data, subheader):
+def process_data(data):
     # Define the column names including the new "Helix Status" column
     column_names = [
         "Trade ID",
@@ -166,16 +166,16 @@ def process_data(data, subheader):
     data = data.reset_index(drop=True)
 
     # Format the styled DataFrame as an HTML table
-    html_table = data.hide(axis="index").to_html(index=False, border=1, escape=False)
+    html_table = data.to_html(index=False, border=1, escape=False)
 
     return html_table
 
 
 def refresh_data_and_send_email():
     file_path = get_file_path(
-        r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Transaction Rec V3.xlsm"
+        r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Corporate Actions Report.xlsm"
     )
-    sheet_name = "Reconciliation"
+    sheet_name = "Summary"
 
     # Open the Excel file and refresh the data connection
     excel = win32.gencache.EnsureDispatch("Excel.Application")
@@ -199,10 +199,12 @@ def refresh_data_and_send_email():
         body = f"Problem opening file {file_path}. Please review the file."
         recipients = [
             "tony.hoang@lucidma.com",
-            "amelia.thompson@lucidma.com",
-            "stephen.ng@lucidma.com",
+            # "amelia.thompson@lucidma.com",
+            # "stephen.ng@lucidma.com",
         ]
-        cc_recipients = ["operations@lucidma.com"]
+        cc_recipients = [
+            # "operations@lucidma.com"
+        ]
         send_email(subject, body, recipients, cc_recipients)
         raise Exception(f"Error opening or refreshing file: {str(e)}")
 
@@ -214,13 +216,13 @@ def refresh_data_and_send_email():
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="C:L",
+        usecols="B:C,E,H:K",
         skiprows=7,  # Skip the first 7 rows (header will be row 8)
         header=0,  # Now row 8 is the header
         dtype=str,
     )
 
-    html_table = process_data(data, "Unsettled Trades - PRIME Fund")
+    html_table = process_data(data)
 
     html_content = f"""
                     <!DOCTYPE html>
@@ -271,7 +273,6 @@ def refresh_data_and_send_email():
                         </style>
                     </head>
                     <body>
-                        <div class="bold-text">Unsettled Trade - PRIME Fund:</div>
                         <table>
                             <tr class="header">
                                 <td colspan="{len(data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
@@ -284,7 +285,7 @@ def refresh_data_and_send_email():
                     </html>
                     """
 
-    subject = f"LRX – Transaction Settlement Recon – Prime - {valdate}"
+    subject = f"LRX – Corporate Actions Report - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
@@ -294,7 +295,7 @@ def refresh_data_and_send_email():
     cc_recipients = ["operations@lucidma.com"]
 
     attachment_path = file_path
-    attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
+    attachment_name = f"Corporate Actions Report_{valdate}.xlsm"
 
     send_email(
         subject,
