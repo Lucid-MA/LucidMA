@@ -528,7 +528,6 @@ def generate_combined_report(compliance_html, allocation_html):
 def refresh_data_and_send_email():
     file_path = get_file_path(
         r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/LRX Trade Allocations and Flags.xlsm"
-
     )
     sheet_name = "Portfolio Allocations"
 
@@ -579,7 +578,7 @@ def refresh_data_and_send_email():
         index=False,
         border=1,
         escape=False,
-        classes="custom-table"  # Add a class for custom styling
+        classes="custom-table",  # Add a class for custom styling
     )
 
     # Add custom CSS for styling
@@ -597,7 +596,6 @@ def refresh_data_and_send_email():
 
     # Combine the style and the table HTML
     html_table = html_style + html_table
-
 
     html_content = f"""
                         <!DOCTYPE html>
@@ -666,9 +664,7 @@ def refresh_data_and_send_email():
         # "amelia.thompson@lucidma.com",
         # "stephen.ng@lucidma.com",
     ]
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     attachment_path = file_path
     attachment_name = f"Trade Allocations and Flags_{valdate}.xlsm"
