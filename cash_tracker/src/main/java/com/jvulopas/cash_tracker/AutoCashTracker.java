@@ -17,7 +17,7 @@ public class AutoCashTracker {
 		try {
 			Date valDate = null;
 			try {
-				valDate = new SimpleDateFormat("yyyy-MM-dd").parse("2024-05-09");
+				valDate = new SimpleDateFormat("yyyy-MM-dd").parse("2024-11-14");
 			} catch (ParseException e) {
 				System.out.println("Error parsing the date: " + e.getMessage());
 				return;

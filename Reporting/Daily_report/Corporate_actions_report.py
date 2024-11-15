@@ -139,6 +139,8 @@ def process_data(data):
     # Replace NaT values in CA Payable Date column with an empty string
     data["CA Payable Date"] = data["CA Payable Date"].fillna("")
 
+    data = data.sort_values(by="CA Payable Date", ascending=True)
+
     # Format "Money" with comma and no decimal
     data["End Money"] = data["End Money"].apply(
         lambda x: "{:,.0f}".format(x) if pd.notna(x) else ""
