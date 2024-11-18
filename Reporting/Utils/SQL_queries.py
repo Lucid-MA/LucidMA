@@ -1414,3 +1414,37 @@ SELECT
 FROM 
     investors
 """
+
+## PRICE PX REPORT ##
+price_report_helix_query = """
+select tradepieces.tradepiece, tradepieces.TRADESHELL, tradepieces.TRADETYPE,
+tradepieces.company,ltrim(rtrim(tradepieces.contraname)) contraname, tradepieces.startdate,
+coalesce(tradepieces.closedate, tradepieces.enddate) "End Date",
+Tradepieces.FX_MONEY as "Money",
+TRADEPIECECALCDATAS.TODAYRATE, trim(tradepieces.ISIN) isin,
+tradepieces.HAIRCUT, tradepieces.PAR, 
+tradepiececalcdatas.CURRENTMBSFACTOR "CURRFACTOR",
+tradepieces.MONEY, tradepiececalcdatas.CURRENTPRICE, ltrim(rtrim(tradepieces.acct_number)) acct_number,
+case when tradepieces.currency_par = 60 then 'USD' when tradepieces.currency_par = 69 then 'EUR' else null end currency,
+TRADEPIECECALCDATAS.REPOINTEREST_NBD as "Accrued Int", 
+Tradepieces.PAR * tradepiececalcdatas.CURRENTPRICE * tradepiececalcdatas.CURRENTMBSFACTOR/100 as "Market Value",
+ISSUESUBTYPES3.DESCRIPTION "Collateral Type",
+tradepieces.comments as "Rating",
+ISSUES.description_1 as "Product Type"
+from tradepieces 
+INNER JOIN TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE=TRADEPIECES.TRADEPIECE
+INNER JOIN TRADECOMMISSIONPIECEINFO ON TRADECOMMISSIONPIECEINFO.TRADEPIECE=TRADEPIECES.TRADEPIECE
+INNER JOIN TRADETYPES ON TRADETYPES.TRADETYPE=TRADEPIECES.SHELLTRADETYPE
+INNER JOIN ISSUES ON ISSUES.CUSIP=TRADEPIECEs.CUSIP
+INNER JOIN CURRENCYS ON CURRENCYS.CURRENCY=TRADEPIECES.CURRENCY_MONEY
+INNER JOIN STATUSDETAILS ON STATUSDETAILS.STATUSDETAIL=TRADEPIECES.STATUSDETAIL
+INNER JOIN STATUSMAINS ON STATUSMAINS.STATUSMAIN=TRADEPIECES.STATUSMAIN
+INNER JOIN ISSUECATEGORIES ON ISSUECATEGORIES.ISSUECATEGORY=TRADEPIECES.ISSUECATEGORY
+INNER JOIN ISSUESUBTYPES3 ON ISSUESUBTYPES3.ISSUESUBTYPE3=ISSUECATEGORIES.ISSUESUBTYPE3
+where
+tradepieces.company in (44,45,46)
+and not (tradepieces.company = 45 and ltrim(rtrim(tradepieces.ledgername)) <> 'Master')
+and tradepieces.statusmain <> 6
+and (tradepieces.startdate <= getDate() and ( coalesce(tradepieces.closedate, tradepieces.enddate) > getdate() or coalesce(tradepieces.closedate, tradepieces.enddate) is null) )
+order by tradepieces.company, tradepieces.contraname, tradepieces.startdate
+"""

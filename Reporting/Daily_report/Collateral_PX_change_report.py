@@ -1,15 +1,19 @@
 import base64
 import os
-import time
 from datetime import datetime
 
 import msal
 import numpy as np
 import pandas as pd
 import requests
-import win32com.client as win32
 
-from Utils.Common import get_file_path
+from Utils.SQL_queries import price_report_helix_query
+from Utils.database_utils import (
+    execute_sql_query_v2,
+    helix_db_type,
+    read_table_from_db,
+    prod_db_type,
+)
 
 current_date = datetime.now().strftime("%Y-%m-%d")
 valdate = current_date
@@ -254,44 +258,39 @@ def process_data(data, threshold, threshold_style, subheader):
 
 
 def refresh_data_and_send_email():
-    file_path = get_file_path(r"S:/Mandates/Operations/Script Files/Daily Reports/ExcelRprtGen/Collateral PX Change Report_v2.xlsm")
-    sheet_name = "Biggest Movers"
 
-    # Open the Excel file and refresh the data connection
-    excel = win32.gencache.EnsureDispatch("Excel.Application")
-    excel.DisplayAlerts = False  # Disable alerts
-    excel.Visible = False  # Make Excel invisible
-    try:
-        workbook = excel.Workbooks.Open(file_path, ReadOnly=False, UpdateLinks=False)
-        workbook.RefreshAll()
+    helix_rating_df = execute_sql_query_v2(
+        price_report_helix_query, helix_db_type, params=()
+    )
 
-        # Ensure Excel completes all async calculations before continuing
-        excel.CalculateUntilAsyncQueriesDone()
+    helix_rating_columns_to_use = [
+        "isin",  # Bond ID
+        "Money",  # Invest Amount
+        "PAR",  # Quantity
+        "Market Value",  # MV
+        "Product Type",  # Check whether it's IO or not
+        "Rating",
+        "Collateral Type",
+    ]
 
-        # Add a delay to ensure Excel has time to finish any background tasks
-        time.sleep(15)  # 10-second delay (adjust as necessary)
+    helix_rating_df = helix_rating_df[helix_rating_columns_to_use]
 
-        workbook.Save()
-        workbook.Close(SaveChanges=True)
+    helix_rating_df.columns = [
+        "Bond ID",
+        "Invest Amount",
+        "Quantity",
+        "MV",
+        "Product Type",
+        "Rating",
+        "Collateral Type",
+    ]
 
-    except Exception as e:
-        subject = "Error opening or refreshing file"
-        body = f"Problem opening file {file_path}. Please review the file."
-        recipients = [
-            "tony.hoang@lucidma.com",
-            "amelia.thompson@lucidma.com",
-            "stephen.ng@lucidma.com",
-        ]
-        cc_recipients = [
-            "operations@lucidma.com"
-        ]
-        send_email(subject, body, recipients, cc_recipients)
-        raise Exception(f"Error opening or refreshing file: {str(e)}")
+    price_df = read_table_from_db("silver_clean_and_dirty_prices", prod_db_type)
 
-    finally:
-        # Ensure Excel quits and display alerts are re-enabled
-        excel.DisplayAlerts = True  # Re-enable alerts
-        excel.Quit()
+    factor_df = read_table_from_db("bronze_bond_data", prod_db_type)
+    factor_df = factor_df[["bond_id", "mtg_factor", "bond_data_date", "is_am"]]
+    factor_df = factor_df[(factor_df["is_am"] == 0) & (factor_df["bond_data_date"] == valdate)]
+
 
 
     data = pd.read_excel(
@@ -329,30 +328,28 @@ def refresh_data_and_send_email():
         "amelia.thompson@lucidma.com",
         "stephen.ng@lucidma.com",
     ]
-    cc_recipients = [
-        "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     attachment_path = file_path
     attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"
 
-    send_email(
-        subject,
-        html_content,
-        recipients,
-        cc_recipients,
-        attachment_path,
-        attachment_name,
-    )
-
-    send_email(
-        subject_2,
-        html_content_2,
-        recipients,
-        cc_recipients,
-        attachment_path,
-        attachment_name,
-    )
+    # send_email(
+    #     subject,
+    #     html_content,
+    #     recipients,
+    #     cc_recipients,
+    #     attachment_path,
+    #     attachment_name,
+    # )
+    #
+    # send_email(
+    #     subject_2,
+    #     html_content_2,
+    #     recipients,
+    #     cc_recipients,
+    #     attachment_path,
+    #     attachment_name,
+    # )
 
 
 # Run the script
