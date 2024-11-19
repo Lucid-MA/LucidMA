@@ -31,7 +31,21 @@ cashpairoffs AS (
     NULL AS flow_after_sweep,
     *
   FROM {{ ref('cash_tracker__cashpairoffs') }}
-  WHERE ABS(amount2) > 0
+),
+cashpairoffs_agg AS (
+  SELECT 
+    report_date,
+    fund,
+    transaction_action_id,
+    transaction_desc,
+    flow_account, 
+    flow_security,
+    flow_status,
+    SUM(flow_amount) AS flow_amount,
+    counterparty,
+    MIN(used_alloc) AS used_alloc
+  FROM cashpairoffs
+  GROUP BY report_date, fund, transaction_action_id, transaction_desc, flow_account, flow_security, flow_status, counterparty
 ),
 series_cashpairoffs AS (
   SELECT
@@ -49,7 +63,6 @@ series_cashpairoffs AS (
     s.*
   FROM {{ ref('cash_tracker__cashpairoffs_series') }} AS s
   JOIN cashpairoffs AS m ON (s.counterparty2 = m.counterparty2 AND s.trade_id = m.trade_id)
-  WHERE ABS(s.amount2) > 0
 ),
 final AS (
   SELECT 
@@ -92,19 +105,19 @@ final AS (
     report_date,
     fund,
     '' AS series,
-    [route],
+    'cashpairoffs' AS [route],
     transaction_action_id,
     transaction_desc,
     flow_account, 
     flow_security,
     flow_status,
     flow_amount,
-    flow_is_settled,
-    flow_after_sweep,
-    trade_id,
+    NULL AS flow_is_settled,
+    NULL AS flow_after_sweep,
+    NULL AS trade_id,
     counterparty,
     used_alloc
-  FROM cashpairoffs
+  FROM cashpairoffs_agg
   UNION
   SELECT 
     report_date,

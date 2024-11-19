@@ -16,3 +16,4 @@ sources:
     schema: dbo
     tables:
       - name: bronze_nexen_cash_balance
+      - name: bronze_nexen_cash_and_security_transactions

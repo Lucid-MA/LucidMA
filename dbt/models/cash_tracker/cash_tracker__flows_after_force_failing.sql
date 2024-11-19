@@ -29,7 +29,8 @@ final AS (
     is_margin,
     is_hxswing,
     sweep_detected,
-    generated_id
+    generated_id,
+    reference_number
   FROM flows
 )
 

@@ -3,6 +3,7 @@ cash_recon AS (
   SELECT
     *
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
+  --WHERE TRIM(UPPER(transaction_type_name)) != 'INTERNAL MOVEMENT'
 ),
 sweeps AS (
   SELECT
