@@ -1,12 +1,14 @@
 import base64
 import os
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 
 import msal
 import numpy as np
 import pandas as pd
 import requests
 
+from Utils.Common import get_previous_business_day
 from Utils.SQL_queries import price_report_helix_query
 from Utils.database_utils import (
     execute_sql_query_v2,
@@ -15,8 +17,12 @@ from Utils.database_utils import (
     prod_db_type,
 )
 
-current_date = datetime.now().strftime("%Y-%m-%d")
-valdate = current_date
+holiday_df = read_table_from_db("holidays", prod_db_type)
+
+current_date = datetime.now() - timedelta(days=0)
+prev_date = get_previous_business_day(current_date, holiday_df)
+valdate = current_date.strftime("%Y-%m-%d")
+prev_valdate = prev_date.strftime("%Y-%m-%d")
 
 
 def authenticate_and_get_token():
@@ -102,6 +108,23 @@ def send_email(
 
 
 def process_data(data, threshold, threshold_style, subheader):
+
+    column_order = [
+        "Bond ID",
+        "Quantity",
+        "Invest Amount",
+        "MV",
+        "T-1 Price",
+        "Current Price",
+        "PX Change DoD",
+        "PX Change % DoD",
+        "MV Change",
+        "Rating",
+        "Collateral Type",
+    ]
+
+    data = data[column_order]
+
     column_names = [
         "Bond ID",
         "Quantity",
@@ -259,7 +282,7 @@ def process_data(data, threshold, threshold_style, subheader):
 
 def refresh_data_and_send_email():
 
-    helix_rating_df = execute_sql_query_v2(
+    price_report_helix_df = execute_sql_query_v2(
         price_report_helix_query, helix_db_type, params=()
     )
 
@@ -273,9 +296,9 @@ def refresh_data_and_send_email():
         "Collateral Type",
     ]
 
-    helix_rating_df = helix_rating_df[helix_rating_columns_to_use]
+    price_report_helix_df = price_report_helix_df[helix_rating_columns_to_use]
 
-    helix_rating_df.columns = [
+    price_report_helix_df.columns = [
         "Bond ID",
         "Invest Amount",
         "Quantity",
@@ -287,36 +310,183 @@ def refresh_data_and_send_email():
 
     price_df = read_table_from_db("silver_clean_and_dirty_prices", prod_db_type)
 
-    factor_df = read_table_from_db("bronze_bond_data", prod_db_type)
-    factor_df = factor_df[["bond_id", "mtg_factor", "bond_data_date", "is_am"]]
-    factor_df = factor_df[
-        (factor_df["is_am"] == 0) & (factor_df["bond_data_date"] == valdate)
+    # Ensure the price_date column is in datetime format
+    price_df["price_date"] = pd.to_datetime(price_df["price_date"], errors="coerce")
+
+    # Filter rows where price_date matches either valdate or prev_valdate
+    price_df = price_df[
+        price_df["price_date"].dt.strftime("%Y-%m-%d").isin([valdate, prev_valdate])
     ]
 
-    data = pd.read_excel(
-        file_path,
-        sheet_name=sheet_name,
-        usecols="B:L",  # Columns B to J
-        skiprows=5,  # Skip the first 5 rows (header will be row 6)
-        header=0,  # Now row 6 is the header
+    # Keep only necessary columns
+    price_df = price_df[["price_date", "bond_id", "dirty_price"]]
+
+    factor_df = read_table_from_db("bronze_bond_data", prod_db_type)
+
+    factor_df["bond_data_date"] = pd.to_datetime(
+        factor_df["bond_data_date"], errors="coerce"
     )
+
+    factor_df = factor_df[
+        (factor_df["is_am"] == 0)
+        & (
+            factor_df["bond_data_date"]
+            .dt.strftime("%Y-%m-%d")
+            .isin([valdate, prev_valdate])
+        )
+    ]
+
+    factor_df = factor_df[["bond_id", "mtg_factor", "bond_data_date"]]
+
+    ######
+
+    price_report_helix_df = (
+        price_report_helix_df.groupby("Bond ID")
+        .agg(
+            {
+                "Invest Amount": "sum",
+                "Quantity": "sum",
+                "MV": "sum",
+                "Product Type": "first",  # Assumes "Product Type" is consistent within each "Bond ID"
+                "Rating": "first",  # Same assumption for "Rating"
+                "Collateral Type": "first",  # Same assumption for "Collateral Type"
+            }
+        )
+        .reset_index()
+    )
+
+    ### PRICE ###
+    # Add "Current Price" column by merging on Bond ID and price_date = valdate
+    price_report_helix_df = price_report_helix_df.merge(
+        price_df[price_df["price_date"] == valdate][["bond_id", "dirty_price"]],
+        how="left",
+        left_on="Bond ID",
+        right_on="bond_id",
+    ).rename(columns={"dirty_price": "Current Price"})
+
+    # Drop the extra bond_id column after the merge
+    price_report_helix_df = price_report_helix_df.drop(columns=["bond_id"])
+
+    # Add "T-1 Price" column by merging on Bond ID and price_date = prev_valdate
+    price_report_helix_df = price_report_helix_df.merge(
+        price_df[price_df["price_date"] == prev_valdate][["bond_id", "dirty_price"]],
+        how="left",
+        left_on="Bond ID",
+        right_on="bond_id",
+    ).rename(columns={"dirty_price": "T-1 Price"})
+
+    # Drop the extra bond_id column after the merge
+    price_report_helix_df = price_report_helix_df.drop(columns=["bond_id"])
+
+    # Calculate "PX Change DoD"
+    price_report_helix_df["PX Change DoD"] = (
+        price_report_helix_df["Current Price"] - price_report_helix_df["T-1 Price"]
+    )
+
+    # Calculate "PX Change % DoD"
+    price_report_helix_df["PX Change % DoD"] = (
+        price_report_helix_df["PX Change DoD"] / price_report_helix_df["T-1 Price"]
+    )
+
+    ### FACTOR ###
+    # Add "Current Factor" column by merging on Bond ID and bond_data_date = valdate
+    price_report_helix_df = price_report_helix_df.merge(
+        factor_df[factor_df["bond_data_date"] == valdate][["bond_id", "mtg_factor"]],
+        how="left",
+        left_on="Bond ID",
+        right_on="bond_id",
+    ).rename(columns={"mtg_factor": "Current Factor"})
+
+    # Drop the extra bond_id column after the merge
+    price_report_helix_df = price_report_helix_df.drop(columns=["bond_id"])
+
+    # Add "T-1 Factor" column by merging on Bond ID and bond_data_date = prev_valdate
+    price_report_helix_df = price_report_helix_df.merge(
+        factor_df[factor_df["bond_data_date"] == prev_valdate][
+            ["bond_id", "mtg_factor"]
+        ],
+        how="left",
+        left_on="Bond ID",
+        right_on="bond_id",
+    ).rename(columns={"mtg_factor": "T-1 Factor"})
+
+    # Drop the extra bond_id column after the merge
+    price_report_helix_df = price_report_helix_df.drop(columns=["bond_id"])
+
+    ### CALCULATING CHANGE ###
+
+    # Convert relevant columns to numeric
+    columns_to_convert = [
+        "Current Price",
+        "T-1 Price",
+        "T-1 Factor",
+        "Current Factor",
+        "Quantity",
+    ]
+
+    for col in columns_to_convert:
+        price_report_helix_df[col] = pd.to_numeric(
+            price_report_helix_df[col], errors="coerce"
+        )
+
+    # After conversion, NaN values (if any) can be handled with fillna or other methods
+    price_report_helix_df.fillna(0, inplace=True)
+
+    # Calculate MV Change from Price
+    price_report_helix_df["MV Change from Price"] = (
+        (price_report_helix_df["Current Price"] - price_report_helix_df["T-1 Price"])
+        * price_report_helix_df["T-1 Factor"]
+        * price_report_helix_df["Quantity"]
+    ) / 100
+
+    # Calculate MV Change from Factor
+    price_report_helix_df["MV Change from Factor"] = (
+        (price_report_helix_df["Current Factor"] - price_report_helix_df["T-1 Factor"])
+        * price_report_helix_df["T-1 Price"]
+        * price_report_helix_df["Quantity"]
+    ) / 100
+
+    # Combine both to calculate total MV Change
+    price_report_helix_df["MV Change"] = (
+        price_report_helix_df["MV Change from Price"]
+        + price_report_helix_df["MV Change from Factor"]
+    )
+
+    # Drop intermediate columns if not needed
+    price_report_helix_df = price_report_helix_df.drop(
+        columns=[
+            "MV Change from Price",
+            "MV Change from Factor",
+            "Current Factor",
+            "T-1 Factor",
+        ]
+    )
+
+    ### BREAK DOWN IO AND PI PRODUCT ###
+
+    price_df_io_product = price_report_helix_df[
+        price_report_helix_df["Product Type"].str.contains(
+            r"\bIO\b", na=False, flags=re.IGNORECASE
+        )
+    ]
+
+    price_df_pi_product = price_report_helix_df[
+        ~price_report_helix_df["Product Type"].str.contains(
+            r"\bIO\b", na=False, flags=re.IGNORECASE
+        )
+    ]
 
     thresshold_style_1 = [0.25, 0.5]
     html_content = process_data(
-        data, -0.001, thresshold_style_1, "PX Change Report - P & I Products"
-    )
-
-    data_2 = pd.read_excel(
-        file_path,
-        sheet_name=sheet_name,
-        usecols="N:X",  # Columns B to J
-        skiprows=5,  # Skip the first 5 rows (header will be row 6)
-        header=0,  # Now row 6 is the header
+        price_df_pi_product,
+        -0.001,
+        thresshold_style_1,
+        "PX Change Report - P & I Products",
     )
 
     thresshold_style_2 = [3, 5]
     html_content_2 = process_data(
-        data_2, -0.01, thresshold_style_2, "PX Change Report - IO Products"
+        price_df_io_product, -0.01, thresshold_style_2, "PX Change Report - IO Products"
     )
 
     subject = f"LRX - PX change report P&I Products - {valdate}"
@@ -325,31 +495,33 @@ def refresh_data_and_send_email():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        "amelia.thompson@lucidma.com",
-        "stephen.ng@lucidma.com",
+        # "amelia.thompson@lucidma.com",
+        # "stephen.ng@lucidma.com",
     ]
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        # "operations@lucidma.com"
+    ]
 
-    attachment_path = file_path
+    # attachment_path = file_path
     attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"
 
-    # send_email(
-    #     subject,
-    #     html_content,
-    #     recipients,
-    #     cc_recipients,
-    #     attachment_path,
-    #     attachment_name,
-    # )
-    #
-    # send_email(
-    #     subject_2,
-    #     html_content_2,
-    #     recipients,
-    #     cc_recipients,
-    #     attachment_path,
-    #     attachment_name,
-    # )
+    send_email(
+        subject,
+        html_content,
+        recipients,
+        cc_recipients,
+        # attachment_path,
+        # attachment_name,
+    )
+
+    send_email(
+        subject_2,
+        html_content_2,
+        recipients,
+        cc_recipients,
+        # attachment_path,
+        # attachment_name,
+    )
 
 
 # Run the script

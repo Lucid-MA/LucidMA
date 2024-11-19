@@ -2,7 +2,7 @@ import math
 import platform
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import holidays
@@ -159,3 +159,27 @@ def get_repo_root():
     except subprocess.CalledProcessError:
         print("Not a Git repository. Using the current directory as the root.")
         return Path.cwd()
+
+
+def get_previous_business_day(
+    current_date: datetime, holidays_df: pd.DataFrame
+) -> datetime:
+    """
+    Calculate the previous business day given a date, excluding weekends and holidays.
+
+    :param current_date: The date (datetime object) to calculate the previous business day from.
+    :param holidays_df: DataFrame containing a 'date' column with holiday dates.
+    :return: The previous business day as a datetime object.
+    """
+    if not isinstance(current_date, datetime):
+        raise TypeError("current_date must be a datetime object.")
+    if not isinstance(holidays_df, pd.DataFrame) or "date" not in holidays_df.columns:
+        raise TypeError("holidays_df must be a pandas DataFrame with a 'date' column.")
+
+    previous_day = current_date - timedelta(days=1)
+
+    # Keep checking until we find a non-holiday, non-weekend day
+    while previous_day.weekday() >= 5 or previous_day in holidays_df["date"].values:
+        previous_day -= timedelta(days=1)
+
+    return previous_day
