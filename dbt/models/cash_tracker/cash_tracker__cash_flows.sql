@@ -15,7 +15,7 @@ flows AS (
     flow_acct_number,
     CASE
       WHEN flow_is_settled = 1 THEN flow_amount
-      ELSE NULL
+      ELSE flow_amount
     END AS flow_amount,
     flow_security,
     flow_status,
@@ -26,7 +26,8 @@ flows AS (
     used_alloc,
     is_hxswing,
     is_margin,
-    generated_id
+    generated_id,
+    reference_number
   FROM {{ ref('cash_tracker__flows_after_force_failing') }}
   WHERE 
     series = ''
@@ -168,6 +169,7 @@ cash_flows AS (
   SELECT
     t.report_date,
     t.transaction_action_id,
+    main.reference_number,
     COALESCE(main.flow_is_settled,expense.flow_is_settled,margin.flow_is_settled,mgmt.flow_is_settled,subscription.flow_is_settled) AS flow_is_settled,
     t.fund,
     t.series,
@@ -219,6 +221,7 @@ all_flows AS (
  SELECT
     report_date,
     transaction_action_id,
+    reference_number,
     flow_is_settled,
     fund,
     series,
@@ -234,6 +237,7 @@ all_flows AS (
    SELECT
     report_date,
     transaction_action_id,
+    NULL AS reference_number,
     flow_is_settled,
     fund,
     series,
@@ -249,6 +253,7 @@ all_flows AS (
 final AS (
   SELECT
     cf.report_date,
+    cf.reference_number,
     cf.flow_is_settled,
     cf.fund,
     cf.series,

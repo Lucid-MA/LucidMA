@@ -34,8 +34,8 @@ table1 AS (
             ELSE 'Other'
         END AS fund,
         CASE
-            WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX'
-            ELSE LTRIM(RTRIM(acct_number))
+            WHEN TRIM(UPPER(acct_number)) = '400CAPTX' THEN 'TEX'
+            ELSE TRIM(UPPER(acct_number))
         END AS acct_number,
         LTRIM(RTRIM(ledgername)) AS ledgername,
         ROUND(
@@ -90,8 +90,8 @@ table1 AS (
             company,
             ledgername,
             CASE
-                WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX'
-                ELSE LTRIM(RTRIM(acct_number))
+                WHEN TRIM(UPPER(acct_number)) = '400CAPTX' THEN 'TEX'
+                ELSE TRIM(UPPER(acct_number))
             END
 ),
 table2 AS (
@@ -104,8 +104,8 @@ table2 AS (
             ELSE 'Other'
         END AS fund,
         CASE
-            WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX'
-            ELSE LTRIM(RTRIM(acct_number))
+            WHEN TRIM(UPPER(acct_number)) = '400CAPTX' THEN 'TEX'
+            ELSE TRIM(UPPER(acct_number))
         END AS acct_number,
         LTRIM(RTRIM(ledgername)) AS ledgername,
         ROUND(
@@ -154,8 +154,8 @@ table2 AS (
             company,
             ledgername,
             CASE
-                WHEN LTRIM(RTRIM(acct_number)) = '400CAPTX' THEN 'TEX'
-                ELSE LTRIM(RTRIM(acct_number))
+                WHEN TRIM(UPPER(acct_number)) = '400CAPTX' THEN 'TEX'
+                ELSE TRIM(UPPER(acct_number))
             END
 ),
 FINAL AS (

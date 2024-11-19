@@ -36,13 +36,11 @@ tradepiececalcdatas AS (
 ),
 trade_query_part1 AS (
   SELECT
-    COALESCE(
-      CASE
-        WHEN tradecommissionpieceinfo.commissionvalue2 = 0 THEN NULL
-        ELSE tradecommissionpieceinfo.commissionvalue2
-      END,
-      COALESCE(TRY_CAST(tradepiecexrefs.frontofficeid AS FLOAT), NULL)
-    ) AS master_refid,
+    CASE
+      WHEN tradepiecexrefs.frontofficeid IS NOT NULL THEN TRY_CAST(tradepiecexrefs.frontofficeid AS FLOAT)
+      WHEN tradecommissionpieceinfo.commissionvalue2 > 9999 THEN tradecommissionpieceinfo.commissionvalue2
+      ELSE NULL
+    END AS master_refid,
     tradepieces.tradepiece,
     tradepieces.company,
     LTRIM(RTRIM(tradepieces.ledgername)) AS ledgername,
@@ -68,29 +66,21 @@ trade_query_part1 AS (
     tradepieces.isgscc is_buy_sell,
     tradepieces.par quantity,
     tradepieces.money,
-    (
-      tradepieces.money + tradepiececalcdatas.repointerest_unrealized + tradepiececalcdatas.repointerest_nbd
-    ) end_money,
+    (tradepieces.money + tradepiececalcdatas.repointerest_unrealized + tradepiececalcdatas.repointerest_nbd) AS end_money,
     CASE
-      WHEN (
-        tradepieces.company = 45
-        AND LTRIM(RTRIM(tradepieces.ledgername)) = 'Master'
-      )
-      OR tradepieces.company IN (
-        44,
-        46
-      ) THEN COALESCE(
+      WHEN ( tradepieces.company = 45 AND TRIM(UPPER(tradepieces.ledgername)) = 'MASTER')
+        OR tradepieces.company IN ( 44, 46) 
+        THEN 
         CASE
-          WHEN tradecommissionpieceinfo.commissionvalue2 = 0 THEN NULL
-          ELSE tradecommissionpieceinfo.commissionvalue2
-        END,
-        COALESCE(TRY_CAST(tradepiecexrefs.frontofficeid AS FLOAT), '')
-      )
-      ELSE ''
+          WHEN tradepiecexrefs.frontofficeid IS NOT NULL THEN TRY_CAST(tradepiecexrefs.frontofficeid AS FLOAT)
+          WHEN tradecommissionpieceinfo.commissionvalue2 > 9999 THEN tradecommissionpieceinfo.commissionvalue2
+          ELSE 0
+        END
+      ELSE 0
     END roll_of,
     CASE
-      WHEN LTRIM(RTRIM(tradepieces.acct_number)) = '400CAPTX' THEN 'TEX'
-      ELSE LTRIM(RTRIM(tradepieces.acct_number))
+      WHEN TRIM(UPPER(tradepieces.acct_number)) = '400CAPTX' THEN 'TEX'
+      ELSE TRIM(UPPER(tradepieces.acct_number))
     END counterparty,
     tradepieces.depository,
     tradepieces.startdate,
@@ -124,14 +114,9 @@ trade_query_final AS (
     CONCAT(
       (
         CASE
-          WHEN company IN(
-            44,
-            46
-          ) THEN tradepiece
-          WHEN LTRIM(RTRIM(ledgername)) = 'Master'
-          AND (
-            company = 45
-          ) THEN tradepiece
+          WHEN company IN ( 44, 46) THEN tradepiece
+          WHEN TRIM(UPPER(ledgername)) = 'MASTER'
+            AND ( company = 45) THEN tradepiece
           ELSE master_refid
         END
       ),

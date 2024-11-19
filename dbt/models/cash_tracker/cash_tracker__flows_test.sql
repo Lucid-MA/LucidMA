@@ -3,15 +3,15 @@ cash_flows AS (
   SELECT
     CASE
       WHEN main_cash_flow <> 0 THEN 1
-      WHEN expense_cash_flow <> 0 THEN 1
-      WHEN margin_cash_flow <> 0 THEN 1
-      WHEN management_cash_flow <> 0 THEN 1
-      WHEN subscription_cash_flow <> 0 THEN 1
+      --WHEN expense_cash_flow <> 0 THEN 1
+      --WHEN margin_cash_flow <> 0 THEN 1
+      --WHEN management_cash_flow <> 0 THEN 1
+      --WHEN subscription_cash_flow <> 0 THEN 1
       ELSE 0
     END AS flow_is_settled,
     *
   FROM dbt.cash_flows_prime_master
-  WHERE [description] != 'MM Sweep'
+  WHERE TRIM([description]) != 'MM Sweep'
 ),
 cash_sweeps AS (
   SELECT
@@ -42,7 +42,7 @@ select
   --management_balance AS mgmt_balance,
   subscription_cash_flow,
   --subscription_balance,
-  [description] AS flow_description
+  TRIM([description]) AS flow_description
 from cash_flows
 where 1=1
 AND date IN ('2024-09-17','2024-09-18','2024-09-19','2024-09-20','2024-09-23','2024-10-16','2024-10-17')
@@ -65,7 +65,11 @@ AND date IN ('2024-09-17','2024-09-18','2024-09-19','2024-09-20','2024-09-23','2
 expected_flows AS (
 SELECT 
   report_date,
-  flow_is_settled,
+  reference_number,
+  CASE
+    WHEN main_cash_flow = 0 THEN 0
+    ELSE flow_is_settled
+  END AS flow_is_settled,
   CASE
     WHEN flow_description = 'MM Sweep' THEN 1
     ELSE 0
@@ -82,7 +86,7 @@ SELECT
   subscription_cash_flow,
   --subscription_balance,
   flow_description
-FROM dbt.cash_tracker__cash_flows
+FROM {{ ref('cash_tracker__cash_flows') }}
 WHERE 1=1 
 AND report_date IN ('2024-10-25','2024-10-17')
 ),
@@ -90,13 +94,13 @@ recon_sweeps_dates AS (
   select 
     report_date,
     fund 
-  from dbt.cash_tracker__cash_recon_sweeps
+  from {{ ref('cash_tracker__cash_recon_sweeps') }}
   group by report_date, fund
 ),
 recon_sweeps AS (
   select
     *
-  from dbt.cash_tracker__cash_recon_sweeps
+  from {{ ref('cash_tracker__cash_recon_sweeps') }}
 ),
 observed_sweeps AS (
   select 
@@ -143,6 +147,7 @@ observed_sweeps AS (
 combined AS (
   SELECT
     report_date,
+    NULL AS reference_number,
     flow_is_settled,
     'JAVA' AS source,
     is_sweep,
@@ -157,6 +162,7 @@ combined AS (
   UNION ALL
   SELECT
     report_date,
+    reference_number,
     flow_is_settled,
     'SQL' AS source,
     is_sweep,
@@ -171,6 +177,7 @@ combined AS (
   UNION ALL
   SELECT
     report_date,
+    NULL AS reference_number,
     flow_is_settled,
     source,
     is_sweep,

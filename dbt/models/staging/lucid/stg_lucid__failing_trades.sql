@@ -21,7 +21,7 @@ renamed AS (
       amount AS money
     ) AS amount,
     related_id,
-    [description],
+    TRIM([description]) AS [description],
     CASE
       WHEN PATINDEX('%[^0-9]%', related_id) = 0 THEN TRY_CAST(related_id AS INT)
       WHEN PATINDEX('%[0-9]%', related_id) > 0 THEN
@@ -34,10 +34,10 @@ renamed AS (
       ELSE NULL
     END AS helix_id,
     CASE
-      WHEN UPPER(description) LIKE '%MARGIN%' THEN
+      WHEN UPPER(TRIM(description)) LIKE '%MARGIN%' THEN
         CASE
-          WHEN UPPER(description) LIKE 'RECEIVE RETURNED%' THEN TRIM(REPLACE(SUBSTRING(UPPER(description),17,LEN(description)), ' MARGIN',''))
-          ELSE TRIM(REPLACE(SUBSTRING(UPPER(description),PATINDEX('% %',description),LEN(description)), ' MARGIN',''))
+          WHEN UPPER(TRIM(description)) LIKE 'RECEIVE RETURNED%' THEN TRIM(REPLACE(SUBSTRING(UPPER(TRIM(description)),17,LEN(TRIM(description))), ' MARGIN',''))
+          ELSE TRIM(REPLACE(SUBSTRING(UPPER(TRIM(description)),PATINDEX('% %',TRIM(description)),LEN(TRIM(description))), ' MARGIN',''))
         END
       ELSE ''
     END AS counterparty

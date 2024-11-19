@@ -55,7 +55,8 @@ combined AS (
     is_margin,
     is_hxswing,
     sweep_detected,
-    generated_id
+    generated_id,
+    reference_number
   FROM expected_flows
   UNION ALL
   SELECT
@@ -78,7 +79,8 @@ combined AS (
     0 AS is_margin,
     0 AS is_hxswing,
     NULL AS sweep_detected,
-    generated_id
+    generated_id,
+    NULL AS reference_number
   FROM realloc_cash_flows
 ),
 final AS (
