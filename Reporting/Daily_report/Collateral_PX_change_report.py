@@ -289,9 +289,9 @@ def refresh_data_and_send_email():
 
     factor_df = read_table_from_db("bronze_bond_data", prod_db_type)
     factor_df = factor_df[["bond_id", "mtg_factor", "bond_data_date", "is_am"]]
-    factor_df = factor_df[(factor_df["is_am"] == 0) & (factor_df["bond_data_date"] == valdate)]
-
-
+    factor_df = factor_df[
+        (factor_df["is_am"] == 0) & (factor_df["bond_data_date"] == valdate)
+    ]
 
     data = pd.read_excel(
         file_path,
