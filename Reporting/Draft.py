@@ -50,6 +50,11 @@ else:
 
 inspector = inspect(engine)
 
+# df_factor = execute_sql_query_v2(
+#     HELIX_current_factor,
+#     db_type=helix_db_type,
+# )
+
 # SEC HOLDINGS PROCESSING
 
 tb_name = "bronze_nexen_cash_and_security_transactions"

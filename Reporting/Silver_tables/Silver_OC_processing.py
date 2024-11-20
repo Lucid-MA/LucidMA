@@ -1,22 +1,16 @@
-import os
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
-from Utils.Common import format_decimal, get_repo_root, get_file_path
+from Utils.Common import format_decimal, get_repo_root
 from Utils.Hash import hash_string_v2
 
-IS_PROD = True
 # Constants
 # Get the repository root directory
 repo_path = get_repo_root()
 silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
-
-if IS_PROD:
-    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker PROD"
-else:
-    OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker"
+OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates Tracker PROD"
 
 
 def calculate_clean_collateral_mv(row):
@@ -98,7 +92,7 @@ def generate_silver_oc_rates_prod(
     # Assuming report_date is a string in the format 'YYYY-MM-DD'
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
-    df_cash_balance = update_cash_balance_table(cash_balance_data, report_date_dt)
+    df_cash_balance = cash_balance_data
     fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
     for fund_name, series_name in fund_series_pairs:
@@ -112,9 +106,6 @@ def generate_silver_oc_rates_prod(
         cash_balance_mask = (df_cash_balance["Fund"] == fund_name) & (
             df_cash_balance["Series"] == series_name
         )
-        projected_total_balance = df_cash_balance.loc[
-            cash_balance_mask, "Projected_Total_Balance"
-        ].values[0]
 
         mask_bronze_oc = (bronze_oc_data["End Date"] > valdate) | (
             bronze_oc_data["End Date"].isnull()
@@ -163,9 +154,6 @@ def generate_silver_oc_rates_prod(
             calculate_clean_collateral_mv, axis=1
         )
         df_bronze["Collateral_MV"] = df_bronze.apply(calculate_collateral_mv, axis=1)
-        df_bronze["WAR"] = df_bronze["Orig. Rate"] * df_bronze["Money"] / 100
-        df_bronze["WAH"] = df_bronze["HairCut"] * df_bronze["Money"] / 100
-        df_bronze["WAS"] = df_bronze["Spread"] * df_bronze["Money"] / 10000
 
         # Net market value of Allocated margin cash and securities
         df_cash_margin = (
@@ -207,9 +195,6 @@ def generate_silver_oc_rates_prod(
             df_margin["Net_cash_and_securities_margin_balance"] <= 0,
             "Net_cash_and_securities_margin_balance",
         ].sum()
-
-        trade_invest = df_bronze["Money"].sum()
-        total_invest = projected_total_balance + trade_invest + abs(pledged_cash_margin)
 
         ######################################
 
@@ -544,21 +529,6 @@ def generate_silver_oc_rates_prod(
             df_bronze["Clean_margin_RCV_allocation"] + df_bronze["Clean_collateral_MV"],
         )
 
-        # Export_pre_calculation_file
-        oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
-        pre_calculation_file_name = (
-            f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
-        )
-        pre_calculation_file_path = os.path.join(
-            oc_export_path, pre_calculation_file_name
-        )
-
-        if not (df_bronze is None or df_bronze.empty):
-            df_bronze.to_excel(
-                pre_calculation_file_path,
-                engine="openpyxl",
-            )
-
         df_result = (
             df_bronze.groupby("Comments")
             .agg(
@@ -566,35 +536,12 @@ def generate_silver_oc_rates_prod(
                     "Money": "sum",
                     "Collateral_value_allocated": "sum",
                     "Clean_collateral_value_allocated": "sum",
-                    "WAR": "sum",
-                    "WAS": "sum",
-                    "WAH": "sum",
                 }
             )
             .reset_index()
             .rename(columns={"Money": "Repo_money"})
         )
 
-        # TODO: Continue here
-
-        df_result["Wtd_Avg_Rate"] = np.where(
-            df_result["Repo_money"] != 0,
-            df_result["WAR"] / df_result["Repo_money"],
-            None,
-        )
-        df_result["Wtd_Avg_Spread"] = np.where(
-            df_result["Repo_money"] != 0,
-            df_result["WAS"] / df_result["Repo_money"],
-            None,
-        )
-        df_result["Wtd_Avg_Haircut"] = np.where(
-            df_result["Repo_money"] != 0,
-            df_result["WAH"] / df_result["Repo_money"],
-            None,
-        )
-        df_result["Percentage_of_Series_Portfolio"] = (
-            df_result["Repo_money"] / total_invest
-        )
         df_result["Current_OC"] = np.where(
             df_result["Repo_money"] != 0,
             df_result["Collateral_value_allocated"] / df_result["Repo_money"],
@@ -609,21 +556,13 @@ def generate_silver_oc_rates_prod(
         columns_to_format = [
             "Clean_current_OC",
             "Current_OC",
-            "Wtd_Avg_Rate",
-            "Wtd_Avg_Spread",
-            "Wtd_Avg_Haircut",
-            "Percentage_of_Series_Portfolio",
         ]
         df_result[columns_to_format] = df_result[columns_to_format].apply(
             format_decimal
         )
-        df_result.drop(columns=["WAR", "WAS", "WAH"], inplace=True)
+
         df_result.columns = [col.lower() for col in df_result.columns]
 
-        df_result["trade_invest"] = trade_invest
-        df_result["pledged_cash_margin"] = pledged_cash_margin
-        df_result["projected_total_balance"] = projected_total_balance
-        df_result["total_invest"] = total_invest
         df_result["oc_rates_id"] = df_result.apply(
             lambda row: hash_string_v2(
                 f"{fund_name}{series_name}{row['comments']}{report_date}"

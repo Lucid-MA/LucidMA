@@ -772,6 +772,25 @@ JOIN ISSUES i
     ON h.ISSUE = i.ISSUE
 """
 
+
+HELIX_current_factor = """
+SELECT DISTINCT 
+    LTRIM(RTRIM(tradepieces.ISIN)) AS BondID,
+    tradepiececalcdatas.CURRENTMBSFACTOR AS Helix_factor
+FROM 
+    tradepieces
+INNER JOIN 
+    TRADEPIECECALCDATAS ON TRADEPIECECALCDATAS.TRADEPIECE = TRADEPIECES.TRADEPIECE
+WHERE 
+    tradepieces.company IN (44, 45, 46)
+    AND NOT (tradepieces.company = 45 AND LTRIM(RTRIM(tradepieces.ledgername)) <> 'Master')
+    AND tradepieces.statusmain <> 6
+    AND (tradepieces.startdate <= GETDATE() AND 
+         (COALESCE(tradepieces.closedate, tradepieces.enddate) > GETDATE() OR 
+          COALESCE(tradepieces.closedate, tradepieces.enddate) IS NULL))
+ORDER BY 
+    BondID;
+"""
 # TODO: SHOULD USE THIS FOR ALL QUERY FORMAT
 AUM_query = """
 DECLARE @CustomDate DATE;
