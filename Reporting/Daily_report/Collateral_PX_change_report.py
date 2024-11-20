@@ -495,12 +495,10 @@ def refresh_data_and_send_email():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        # "amelia.thompson@lucidma.com",
-        # "stephen.ng@lucidma.com",
+        "amelia.thompson@lucidma.com",
+        "stephen.ng@lucidma.com",
     ]
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     # attachment_path = file_path
     attachment_name = f"Collateral PX Change Report_{valdate}.xlsm"
