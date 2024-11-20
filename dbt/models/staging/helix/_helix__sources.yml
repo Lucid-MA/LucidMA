@@ -9,3 +9,12 @@ sources:
       - name: tradecommissionpieceinfo
       - name: tradepiecexrefs
       - name: tradepiececalcdatas
+
+  - name: helix2
+    database: Prod1
+    schema: airbyte_internal
+    tables:
+      - name: helix_raw__stream_TRADEPIECES
+      - name: helix_raw__stream_TRADECOMMISSIONPIECEINFO
+      - name: helix_raw__stream_TRADEPIECEXREFS
+      - name: helix_raw__stream_TRADEPIECECALCDATAS

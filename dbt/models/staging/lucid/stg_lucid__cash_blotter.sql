@@ -3,30 +3,32 @@ WITH source AS (
     *
   FROM
     {{ source(
-      'lucid',
-      'cash_blotter'
+      'sql2',
+      'bronze_cash_blotter'
     ) }}
 ),
 renamed AS (
   SELECT
+    cash_blotter_id,
     TRY_CAST(
-      trade_date AS DATE
+      [Trade Date] AS DATE
     ) AS trade_date,
     TRY_CAST(
-      settle_date AS DATE
+      [Settle Date] AS DATE
     ) AS settle_date,
-    ref_id,
+    [Ref ID] AS ref_id,
     CASE
-      WHEN related_helix_id = '#N/A' THEN NULL
+      WHEN [Related Helix ID] = '#N/A' THEN NULL
       ELSE TRY_CAST(
-        related_helix_id AS INT
+        [Related Helix ID] AS INT
       )
     END AS related_helix_id,
-    from_account,
-    to_account,
+    TRY_CAST([From Account] AS BIGINT) AS from_account,
+    TRY_CAST([To Account] AS BIGINT) AS to_account,
     TRY_CAST(
-      amount AS money
-    ) AS amount
+      [Amount] AS FLOAT
+    ) AS amount,
+    [timestamp]
   FROM
     source
 )
