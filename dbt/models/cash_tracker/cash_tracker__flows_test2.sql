@@ -50,6 +50,7 @@ expected_flows AS (
       ELSE amount
     END AS amount,
     reference_number,
+    [route],
     match_rank
   FROM expected
 ),
@@ -73,6 +74,7 @@ combined AS (
     COALESCE(e.acct_name, o.acct_name) AS acct_name,
     e.helix_id,
     e.settled,
+    e.[route],
     e.match_rank,
     e.transaction_desc AS e_desc,
     e.amount AS e_amount,
@@ -101,6 +103,7 @@ final AS (
     c.acct_name,
     c.helix_id,
     c.settled,
+    c.[route],
     c.match_rank,
     c.e_desc,
     COALESCE(SUM(c.e_amount) OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num),0) AS e_balance,

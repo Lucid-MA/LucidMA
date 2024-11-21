@@ -8,7 +8,7 @@ renamed AS (
   SELECT
     report_date AS balance_date,
     TRIM(a.fund) AS fund,
-    '' AS series,
+    NULL AS series,
     TRIM(a.acct_name) AS acct_name,
     CASE
       WHEN sweep_vehicle_number IS NULL THEN '{{var('CASH')}}'

@@ -5,7 +5,6 @@
         "post-hook": [
             "{{ create_nonclustered_index(columns = ['report_date']) }}",
             "{{ create_nonclustered_index(columns = ['fund']) }}",
-            "{{ create_nonclustered_index(columns = ['series']) }}",
             "{{ create_nonclustered_index(columns = ['trade_id']) }}",
         ]
     })
