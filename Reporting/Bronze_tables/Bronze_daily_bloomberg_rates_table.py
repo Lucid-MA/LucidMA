@@ -1,5 +1,10 @@
 import os
 import sys
+from datetime import datetime, timedelta
+
+import msal
+import requests
+import base64
 
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
@@ -59,6 +64,7 @@ benchmark_file_path = get_file_path(r"S:/Lucid/Data/Historical Benchmarks.xlsx")
 
 if MANUAL_REFRESH:
     import win32com.client as win32
+
     # Open the Excel file and refresh the data connection
     excel = win32.gencache.EnsureDispatch("Excel.Application")
     excel.Visible = False  # Make Excel visible
@@ -93,6 +99,88 @@ if MANUAL_REFRESH:
     del sheet_2
     del workbook
     del excel
+
+
+def authenticate_and_get_token():
+    client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
+    tenant_id = "86cd4a88-29b5-4f22-ab55-8d9b2c81f747"
+    config = {
+        "client_id": client_id,
+        "authority": f"https://login.microsoftonline.com/{tenant_id}",
+        "scope": ["https://graph.microsoft.com/Mail.Send"],
+        "redirect_uri": "http://localhost:8080",
+    }
+
+    cache_file = "token_cache.bin"
+    token_cache = msal.SerializableTokenCache()
+
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            token_cache.deserialize(f.read())
+
+    client = msal.PublicClientApplication(
+        config["client_id"], authority=config["authority"], token_cache=token_cache
+    )
+
+    accounts = client.get_accounts()
+    if accounts:
+        result = client.acquire_token_silent(config["scope"], account=accounts[0])
+        if not result:
+            print("No cached token found. Authenticating interactively...")
+            result = client.acquire_token_interactive(scopes=config["scope"])
+    else:
+        print("No cached accounts found. Authenticating interactively...")
+        result = client.acquire_token_interactive(scopes=config["scope"])
+
+    if "error" in result:
+        raise Exception(f"Error acquiring token: {result['error_description']}")
+
+    with open(cache_file, "w") as f:
+        f.write(token_cache.serialize())
+
+    return result["access_token"]
+
+
+def send_email(
+    subject, body, recipients, cc_recipients, attachment_path=None, attachment_name=None
+):
+    token = authenticate_and_get_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    email_data = {
+        "message": {
+            "subject": subject,
+            "body": {"contentType": "HTML", "content": body},
+            "from": {"emailAddress": {"address": "operations@lucidma.com"}},
+            "toRecipients": [
+                {"emailAddress": {"address": recipient}} for recipient in recipients
+            ],
+            "ccRecipients": [
+                {"emailAddress": {"address": cc_recipient}}
+                for cc_recipient in cc_recipients
+            ],
+        }
+    }
+
+    if attachment_path and attachment_name:
+        with open(attachment_path, "rb") as attachment:
+            content_bytes = base64.b64encode(attachment.read()).decode("utf-8")
+
+        email_data["message"]["attachments"] = [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": attachment_name,
+                "contentBytes": content_bytes,
+            }
+        ]
+
+    response = requests.post(
+        "https://graph.microsoft.com/v1.0/me/sendMail", headers=headers, json=email_data
+    )
+    if response.status_code != 202:
+        raise Exception(f"Error sending email: {response.text}")
+    else:
+        print(f"Email '{subject}' sent successfully")
 
 
 def create_table_with_schema(tb_name):
@@ -341,29 +429,112 @@ if MANUAL_REFRESH:
     except Exception as e:
         print("Failed to update the table manually. Error:", e)
 
+else:
+    try:
+        securities = [
+            "TSFR1M Index",
+            "TSFR3M Index",
+            "TSFR6M Index",
+            "TSFR12M Index",
+            "US0001M Index",
+            "US0003M Index",
+            "DCPA030Y Index",
+            "DCPA090Y Index",
+            "DCPA180Y Index",
+            "DCPA270Y Index",
+            "GBM Govt",
+            "GB3 Govt",
+            "EUR CURNCY",
+            "DGCXX US Equity",
+        ]
 
-securities = [
-    "TSFR1M Index",
-    "TSFR3M Index",
-    "TSFR6M Index",
-    "TSFR12M Index",
-    "US0001M Index",
-    "US0003M Index",
-    "DCPA030Y Index",
-    "DCPA090Y Index",
-    "DCPA180Y Index",
-    "DCPA270Y Index",
-    "GBM Govt",
-    "GB3 Govt",
-    "EUR CURNCY",
-    "DGCXX US Equity",
-]
+        fetcher = BloombergDataFetcher()
+        security_attributes_df = fetcher.get_benchmark_security_attributes(
+            securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_SH_LAST"]
+        )
+        security_attributes_df["benchmark_date"] = get_current_date()
+        security_attributes_df["timestamp"] = get_current_timestamp()
+        if security_attributes_df is not None:
+            upsert_data(tb_name, security_attributes_df)
 
-fetcher = BloombergDataFetcher()
-security_attributes_df = fetcher.get_benchmark_security_attributes(
-    securities, ["PX_LAST", "MATURITY", "PX_CLOSE_1D", "DVD_SH_LAST"]
-)
-security_attributes_df["benchmark_date"] = get_current_date()
-security_attributes_df["timestamp"] = get_current_timestamp()
-if security_attributes_df is not None:
-    upsert_data(tb_name, security_attributes_df)
+        # Send out successful email:
+        current_date = datetime.now() - timedelta(days=0)
+        valdate = current_date.strftime("%Y-%m-%d")
+        subject = f"LRX - Daily Reference Data - {valdate}"
+
+        recipients = [
+            "tony.hoang@lucidma.com",
+            "amelia.thompson@lucidma.com",
+            "stephen.ng@lucidma.com",
+        ]
+        cc_recipients = []
+
+        # Format the styled DataFrame as an HTML table
+        html_table = security_attributes_df.to_html(index=False, border=1, escape=False)
+
+        html_content = f"""
+                                <!DOCTYPE html>
+                                <html lang="en">
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <style>
+                                        table {{
+                                            width: 100%;
+                                            border-collapse: collapse;
+                                        }}
+                                        th, td {{
+                                            border: 1px solid black;
+                                            padding: 8px;
+                                            text-align: center;
+                                        }}
+                                        th {{
+                                            background-color: #f2f2f2;
+                                        }}
+                                        .header {{
+                                            background-color: #d9edf7;
+                                        }}
+                                        .header span {{
+                                            font-size: 24px;
+                                            font-weight: bold;
+                                        }}
+                                        .subheader {{
+                                            background-color: #dff0d8;
+                                        }}
+                                    </style>
+                                </head>
+                                <body>
+                                    <table>
+                                        <tr class="header">
+                                            <td colspan="{len(security_attributes_df.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
+                                        </tr>
+                                    </table>
+                                    <table>
+                                        {html_table}
+                                    </table>
+                                </body>
+                                </html>
+                                """
+
+        send_email(
+            subject,
+            html_content,
+            recipients,
+            cc_recipients,
+            # attachment_path,
+            # attachment_name,
+        )
+
+    except Exception as e:
+        subject = "Error obtaining daily reference data from Bloomberg"
+        body = (
+            f"Problem with refreshing latest reference data from the Bloomberg terminal. Might require login to establish active connection. \n"
+            f"Error: {str(e)}"
+        )
+        recipients = [
+            "tony.hoang@lucidma.com",
+            # "amelia.thompson@lucidma.com",
+            # "stephen.ng@lucidma.com",
+        ]
+        cc_recipients = []
+        send_email(subject, body, recipients, cc_recipients)
