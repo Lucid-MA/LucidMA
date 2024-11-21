@@ -50,7 +50,7 @@ from Utils.database_utils import get_database_engine
 PUBLISH_TO_PROD = True
 
 # Flag to update database via excel file
-MANUAL_REFRESH = False
+MANUAL_REFRESH = True
 
 # Assuming get_database_engine is already defined and returns a SQLAlchemy engine
 if PUBLISH_TO_PROD:
@@ -454,6 +454,8 @@ else:
         )
         security_attributes_df["benchmark_date"] = get_current_date()
         security_attributes_df["timestamp"] = get_current_timestamp()
+        security_attributes_df["US0001M Index"] = None
+        security_attributes_df["US0003M Index"] = None
         if security_attributes_df is not None:
             upsert_data(tb_name, security_attributes_df)
 
@@ -464,8 +466,10 @@ else:
 
         recipients = [
             "tony.hoang@lucidma.com",
-            "amelia.thompson@lucidma.com",
-            "stephen.ng@lucidma.com",
+            # "amelia.thompson@lucidma.com",
+            # "stephen.ng@lucidma.com",
+            # "mattias.almers@lucidma.com",
+            # "martin.stpierre@lucidma.com",
         ]
         cc_recipients = []
 
