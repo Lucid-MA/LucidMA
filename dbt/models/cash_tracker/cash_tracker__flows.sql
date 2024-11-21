@@ -1,3 +1,15 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_nonclustered_index(columns = ['report_date']) }}",
+            "{{ create_nonclustered_index(columns = ['fund']) }}",
+            "{{ create_nonclustered_index(columns = ['flow_account']) }}",
+        ]
+    })
+}}
+
 WITH
 buysell AS (
   SELECT
@@ -105,7 +117,7 @@ final AS (
     report_date,
     fund,
     '' AS series,
-    'cashpairoffs' AS [route],
+    'cashpairoffs_agg' AS [route],
     transaction_action_id,
     transaction_desc,
     flow_account, 

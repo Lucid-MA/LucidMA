@@ -18,3 +18,4 @@ sources:
       - name: bronze_nexen_cash_balance
       - name: bronze_nexen_cash_and_security_transactions
       - name: bronze_cash_blotter
+      - name: bronze_manual_allocation

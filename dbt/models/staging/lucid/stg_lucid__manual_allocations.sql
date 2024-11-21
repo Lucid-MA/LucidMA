@@ -3,22 +3,24 @@ WITH source AS (
         *
     FROM
         {{ source(
-            'lucid',
-            'manual_allocations'
+            'sql2',
+            'bronze_manual_allocation'
         ) }}
 ),
 renamed AS (
     SELECT
+        allocation_id,
         TRY_CAST(
-            settle_date AS DATE
+            [Settle Date] AS DATE
         ) AS settle_date,
-        ref_id,
-        from_account,
-        to_account,
-        series_name,
+        [Ref ID] AS ref_id,
+        [From Account] AS from_account,
+        [To Account] AS to_account,
+        [Series Name] AS series_name,
         TRY_CAST(
-            amount AS money
-        ) AS amount
+            [Amount] AS FLOAT
+        ) AS amount,
+        [timestamp]
     FROM
         source
 )
