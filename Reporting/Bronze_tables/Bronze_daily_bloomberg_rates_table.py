@@ -466,10 +466,10 @@ else:
 
         recipients = [
             "tony.hoang@lucidma.com",
-            # "amelia.thompson@lucidma.com",
-            # "stephen.ng@lucidma.com",
-            # "mattias.almers@lucidma.com",
-            # "martin.stpierre@lucidma.com",
+            "amelia.thompson@lucidma.com",
+            "stephen.ng@lucidma.com",
+            "mattias.almers@lucidma.com",
+            "martin.stpierre@lucidma.com",
         ]
         cc_recipients = []
 
@@ -537,8 +537,10 @@ else:
         )
         recipients = [
             "tony.hoang@lucidma.com",
-            # "amelia.thompson@lucidma.com",
-            # "stephen.ng@lucidma.com",
+            "amelia.thompson@lucidma.com",
+            "stephen.ng@lucidma.com",
+            "mattias.almers@lucidma.com",
+            "martin.stpierre@lucidma.com",
         ]
         cc_recipients = []
         send_email(subject, body, recipients, cc_recipients)
