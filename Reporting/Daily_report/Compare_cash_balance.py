@@ -8,7 +8,7 @@ import requests
 from Utils.Common import get_file_path
 
 # Custom run date
-# process_date = '2024-07-17'
+# process_date = '2024-10-31'
 
 # Get the current date and format it
 day_to_offset = 0
@@ -54,12 +54,12 @@ def read_and_process_nexen_data(nexen_report_path):
         9904578400,
         9904578401,
         6577208400,
-        1417578400,
-        1417578401,
+        # 1417578400, # Exclude Elliot accounts
+        # 1417578401, # Exclude Elliot accounts
         2782078400,
         2782078401,
-        1420198400,
-        1420198401,
+        # 1420198400, # Exclude Elliot accounts
+        # 1420198401, # Exclude Elliot accounts
         2782088400,
         2782088401,
         6577248400,
@@ -73,22 +73,23 @@ def read_and_process_nexen_data(nexen_report_path):
     ]
     df_nexen = df_nexen[df_nexen["Cash Account Number"].isin(cash_account_numbers)]
 
-    # Combine Elliott account into Prime Margin
-    elliott_account_number_mapping = {141757: 278204, 142019: 278204}
-    elliot_account_name_mapping = {
-        "LUCID PRIME PLEDGEE OF ELLIOTT INTL": "LUCID PRIME MARGIN CASH AC",
-        "LUCID PRIME PLEDGEE OF ELLIOTTASSOC": "LUCID PRIME MARGIN CASH AC",
-    }
-    df_nexen["Account Number"] = (
-        df_nexen["Account Number"]
-        .map(elliott_account_number_mapping)
-        .fillna(df_nexen["Account Number"])
-    )
-    df_nexen["Account Name"] = (
-        df_nexen["Account Name"]
-        .map(elliot_account_name_mapping)
-        .fillna(df_nexen["Account Name"])
-    )
+    # # Heather proposed to separate these out on November 21st
+    # # Combine Elliott account into Prime Margin
+    # elliott_account_number_mapping = {141757: 278204, 142019: 278204}
+    # elliot_account_name_mapping = {
+    #     "LUCID PRIME PLEDGEE OF ELLIOTT INTL": "LUCID PRIME MARGIN CASH AC",
+    #     "LUCID PRIME PLEDGEE OF ELLIOTTASSOC": "LUCID PRIME MARGIN CASH AC",
+    # }
+    # df_nexen["Account Number"] = (
+    #     df_nexen["Account Number"]
+    #     .map(elliott_account_number_mapping)
+    #     .fillna(df_nexen["Account Number"])
+    # )
+    # df_nexen["Account Name"] = (
+    #     df_nexen["Account Name"]
+    #     .map(elliot_account_name_mapping)
+    #     .fillna(df_nexen["Account Name"])
+    # )
 
     # Group By result
     df_nexen = (
@@ -212,6 +213,10 @@ def create_difference_dataframe(df_nexen, df_tracker_state):
     df_diff["Cash Account Number"] = pd.Categorical(
         df_diff["Account Number"], categories=sort_order, ordered=True
     )
+
+    df_diff = df_diff[
+        df_diff["Account Number"].isin([277540, 278204, 278205, 278207, 278208])
+    ]
 
     # Failing trade
     df_fail_trade = pd.read_excel(
@@ -352,7 +357,7 @@ def main():
         <style>
             table {{
                 border-collapse: collapse;
-                width: 100%;
+                width: 100%
             }}
             th, td {{
                 text-align: left;
@@ -368,6 +373,7 @@ def main():
         <h2>Cash Comparison Report - {process_date}</h2>
         <p>The following table compares the cash balances between the Nexen report (CashBal) and the Cash Tracker output (TrackerState) for each fund and account. 
         It highlights any differences greater than $5 in red. The table also includes the failed trade amounts for each fund and account.</p>
+        <p>Please note that Elliott accounts are excluded from PRIME MARGIN account in this report
         {html_table}
 
         <h3>Failed trade details</h3>
@@ -376,10 +382,10 @@ def main():
     </html>
     """
 
-    subject = f"Cash Comparison Report - {process_date}"
+    subject = f"LRX – Cash Reconciliation – Prime/USG - {process_date}"
     recipients = [
-        # "operations@lucidma.com",
-        # "Heather.Campbell@lucidma.com",
+        "operations@lucidma.com",
+        "Heather.Campbell@lucidma.com",
         "tony.hoang@lucidma.com",
     ]
 
