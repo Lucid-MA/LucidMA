@@ -1,14 +1,3 @@
-{{
-    config({
-        "as_columnstore": false,
-        "materialized": 'table',
-        "post-hook": [
-            "{{ create_nonclustered_index(columns = ['report_date']) }}",
-        ]
-    })
-
-}}
-
 WITH
 trades AS (
   SELECT
@@ -27,7 +16,7 @@ new_rolling_on_by_date AS (
   FROM trades
   WHERE 
     (series = 'MASTER' OR is_also_master = 1)
-    AND report_date = start_date
+    --AND report_date = start_date
     AND is_same_date = 1
     AND is_roll_of = 1
     AND is_rolling_on = 1

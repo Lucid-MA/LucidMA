@@ -105,6 +105,7 @@ trade_query_part1 AS (
 masterpieces AS (
   SELECT
     tradepiece AS masterpiece,
+    ledgername,
     par AS masterpar
   FROM
     tradepieces
@@ -115,7 +116,7 @@ trade_query_final AS (
       (
         CASE
           WHEN company IN ( 44, 46) THEN tradepiece
-          WHEN TRIM(UPPER(ledgername)) = 'MASTER'
+          WHEN TRIM(UPPER(trade_query_part1.ledgername)) = 'MASTER'
             AND ( company = 45) THEN tradepiece
           ELSE master_refid
         END
@@ -134,7 +135,8 @@ trade_query_final AS (
     trade_query_part1
     LEFT JOIN masterpieces
     ON (
-      trade_query_part1.master_refid = masterpieces.masterpiece
+      trade_query_part1.master_refid IS NOT NULL
+      AND trade_query_part1.master_refid = masterpieces.masterpiece
     )
 ),
 final AS (

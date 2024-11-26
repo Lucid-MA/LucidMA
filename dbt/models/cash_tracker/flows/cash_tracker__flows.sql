@@ -1,26 +1,16 @@
-{{
-    config({
-        "as_columnstore": false,
-        "materialized": 'table',
-        "post-hook": [
-            "{{ create_nonclustered_index(columns = ['report_date']) }}",
-            "{{ create_nonclustered_index(columns = ['fund']) }}",
-            "{{ create_nonclustered_index(columns = ['flow_account']) }}",
-        ]
-    })
-}}
-
 WITH
 buysell AS (
   SELECT
     *
   FROM {{ ref('cash_tracker__flows_buy_sell') }}
 ),
+/*
 series AS (
   SELECT
     *
   FROM {{ ref('cash_tracker__flows_series') }}
 ),
+*/
 margin AS (
   SELECT
     *
@@ -48,17 +38,17 @@ cashpairoffs_agg AS (
   SELECT 
     report_date,
     fund,
-    transaction_action_id,
-    transaction_desc,
-    flow_account, 
-    flow_security,
-    flow_status,
-    SUM(flow_amount) AS flow_amount,
+    'PO ' + counterparty2 AS transaction_action_id,
+    'PO ' + counterparty2 AS transaction_desc,
+    'MAIN' AS flow_account, 
+    '{{var('CASH')}}' AS flow_security,
+    '{{var('AVAILABLE')}}' AS flow_status,
+    amount AS flow_amount,
     counterparty,
-    MIN(used_alloc) AS used_alloc
-  FROM cashpairoffs
-  GROUP BY report_date, fund, transaction_action_id, transaction_desc, flow_account, flow_security, flow_status, counterparty
+    used_alloc
+  FROM {{ ref('cash_tracker__cashpairoffs_summary') }}
 ),
+/*
 series_cashpairoffs AS (
   SELECT
     m.transaction_action_id,
@@ -76,6 +66,7 @@ series_cashpairoffs AS (
   FROM {{ ref('cash_tracker__cashpairoffs_series') }} AS s
   JOIN cashpairoffs AS m ON (s.counterparty2 = m.counterparty2 AND s.trade_id = m.trade_id)
 ),
+*/
 final AS (
   SELECT 
     report_date,
@@ -95,6 +86,7 @@ final AS (
     used_alloc
   FROM buysell
   UNION
+  /*
    SELECT 
     report_date,
     fund,
@@ -113,6 +105,7 @@ final AS (
     used_alloc
   FROM series
   UNION
+  */
   SELECT 
     report_date,
     fund,
@@ -131,6 +124,7 @@ final AS (
     used_alloc
   FROM cashpairoffs_agg
   UNION
+/*
   SELECT 
     report_date,
     fund,
@@ -149,6 +143,7 @@ final AS (
     used_alloc
   FROM series_cashpairoffs
   UNION
+*/
   SELECT 
     report_date,
     fund,

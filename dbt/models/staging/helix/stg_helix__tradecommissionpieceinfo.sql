@@ -1,3 +1,14 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_clustered_index(columns = ['tradepiece']) }}",
+        ]
+    })
+
+}}
+
 WITH source AS (
     SELECT
         *

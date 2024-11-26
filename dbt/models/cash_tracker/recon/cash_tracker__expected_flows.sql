@@ -11,27 +11,23 @@
 }}
 
 WITH
-accounts AS (
-  SELECT
-    *
-  FROM {{ ref('stg_lucid__accounts') }}
-),
 cash_recon AS (
   SELECT
     *
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
   WHERE 1=1
+    AND report_date <= CAST(getdate() AS DATE)
     --AND TRIM(UPPER(transaction_type_name)) != 'INTERNAL MOVEMENT'
     --AND cusip_cins != '{{var('SWEEP')}}'
 ),
 cash_flows AS (
   SELECT
     f.*,
-    a.acct_number AS flow_acct_number
+    f.acct_number AS flow_acct_number
   FROM {{ ref('cash_tracker__flows_plus_allocations') }} AS f
-  JOIN accounts AS a ON (f.fund = a.fund AND f.flow_account = a.acct_name)
-  WHERE
-    flow_security = '{{ var('CASH') }}'
+  WHERE 1=1
+    AND report_date <= CAST(getdate() AS DATE)
+    AND flow_security = '{{ var('CASH') }}'
     AND flow_status = '{{ var('AVAILABLE') }}'
     AND series = ''
     AND SUBSTRING(transaction_action_id,1,8) != 'REALLOC_'

@@ -5,17 +5,13 @@
         "post-hook": [
             "{{ create_nonclustered_index(columns = ['report_date']) }}",
             "{{ create_nonclustered_index(columns = ['fund']) }}",
+            "{{ create_nonclustered_index(columns = ['series']) }}",
             "{{ create_nonclustered_index(columns = ['trade_id']) }}",
         ]
     })
 }}
 
 WITH
-accounts AS (
-  SELECT
-    *
-  FROM {{ ref('stg_lucid__accounts') }}
-),
 expected_flows AS (
   SELECT
     *
@@ -24,9 +20,8 @@ expected_flows AS (
 realloc_cash_flows AS (
   SELECT
     f.*,
-    a.acct_number AS flow_acct_number
+    f.acct_number AS flow_acct_number
   FROM {{ ref('cash_tracker__flows_plus_allocations') }} AS f
-  JOIN accounts AS a ON (f.fund = a.fund AND f.flow_account = a.acct_name)
   WHERE
     flow_security = '{{ var('CASH') }}'
     AND flow_status = '{{ var('AVAILABLE') }}'

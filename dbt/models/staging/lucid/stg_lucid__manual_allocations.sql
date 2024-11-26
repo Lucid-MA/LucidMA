@@ -1,3 +1,15 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_nonclustered_index(columns = ['settle_date']) }}",
+            "{{ create_nonclustered_index(columns = ['from_account']) }}",
+            "{{ create_nonclustered_index(columns = ['to_account']) }}",
+        ]
+    })
+}}
+
 WITH source AS (
     SELECT
         *
@@ -14,8 +26,8 @@ renamed AS (
             [Settle Date] AS DATE
         ) AS settle_date,
         [Ref ID] AS ref_id,
-        [From Account] AS from_account,
-        [To Account] AS to_account,
+        TRY_CAST([From Account] AS VARCHAR(100)) AS from_account,
+        TRY_CAST([To Account] AS VARCHAR(100)) AS to_account,
         [Series Name] AS series_name,
         TRY_CAST(
             [Amount] AS FLOAT

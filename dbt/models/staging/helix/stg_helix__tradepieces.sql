@@ -1,3 +1,16 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_clustered_index(columns = ['tradepiece']) }}",
+            "{{ create_nonclustered_index(columns = ['company']) }}",
+            "{{ create_nonclustered_index(columns = ['statusmain']) }}",
+        ]
+    })
+
+}}
+
 WITH source AS (
     SELECT
         *
@@ -20,7 +33,7 @@ json_data AS (
         TRY_CAST(JSON_VALUE(_airbyte_data, '$.ENTERDATETIMEID') AS DATETIME2) AS ENTERDATETIMEID,
         --TRY_CAST(JSON_VALUE(_airbyte_data, '$.BOOKDATE') AS DATETIME2) AS BOOKDATE,
         --TRY_CAST(JSON_VALUE(_airbyte_data, '$.ALLOCATEDATE') AS DATETIME2) AS ALLOCATEDATE,
-        --TRY_CAST(JSON_VALUE(_airbyte_data, '$.TRADEDATE') AS DATETIME2) AS TRADEDATE,
+        TRY_CAST(JSON_VALUE(_airbyte_data, '$.TRADEDATE') AS DATETIME2) AS TRADEDATE,
         TRY_CAST(JSON_VALUE(_airbyte_data, '$.STARTDATE') AS DATETIME2) AS STARTDATE,
         TRY_CAST(JSON_VALUE(_airbyte_data, '$.CLOSEDATE') AS DATETIME2) AS CLOSEDATE,
         TRY_CAST(JSON_VALUE(_airbyte_data, '$.ENDDATE') AS DATETIME2) AS ENDDATE,
@@ -51,9 +64,11 @@ json_data AS (
 ),
 renamed AS (
     SELECT
+        ROW_NUMBER() OVER (PARTITION by tradepiece ORDER BY datetimeid DESC) AS row_num,
         tradepiece,
         statusmain,
         company,
+        TRY_CAST(tradedate as DATE) as tradedate,
         TRY_CAST(startdate as DATE) as startdate,
         TRY_CAST(closedate as DATE) as closedate,
         TRY_CAST(enddate as DATE) as enddate,
@@ -73,3 +88,4 @@ SELECT
     *
 FROM
     renamed
+WHERE row_num = 1

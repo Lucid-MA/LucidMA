@@ -38,6 +38,15 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   lucid_dbt:
+    staging:
+      +tag: staging
+      stg_helix:
+      stg_lucid:
+    cash_tracker:
+      base:
+      flows:
+      recon:
+      reports:
 
 seeds:
   lucid_dbt:
