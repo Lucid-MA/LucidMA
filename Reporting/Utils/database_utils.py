@@ -16,6 +16,7 @@ prod_db_type = "sql_server_2"
 helix_db_type = "sql_server_1"
 
 # Configuration
+'''
 DB_CONFIG = {
     "postgres": {
         "db_endpoint": "luciddb1.czojmxqfrx7k.us-east-1.rds.amazonaws.com",
@@ -42,6 +43,33 @@ DB_CONFIG = {
         "trusted_connection": "yes",
         "user_mac": "Lucid\\tony.hoang",
         "user_windows": "tony.hoang",
+        "password": os.getenv("MY_PASSWORD"),
+    },
+}
+'''
+
+DB_CONFIG = {
+    "postgres": {
+        "db_endpoint": "luciddb1.czojmxqfrx7k.us-east-1.rds.amazonaws.com",
+        "db_port": "5432",
+        "db_user": "dbmasteruser",
+        "db_password": "lnRz*(N_7aOf~7Hx6oRo8;,<vYp|~#PC",
+        "db_name": "reporting",
+    },
+    "sql_server_1": {
+        "driver": "ODBC+Driver+17+for+SQL+Server",
+        "server_windows": "LUCIDSQL1",
+        "database": "HELIXREPO_PROD_02",
+        "trusted_connection": "yes",
+        "user_windows": "swayam.sinha",
+        "password": os.getenv("MY_PASSWORD"),
+    },
+    "sql_server_2": {
+        "driver": "ODBC+Driver+17+for+SQL+Server",
+        "server_windows": "LUCIDSQL2",
+        "database": "Prod1",
+        "trusted_connection": "yes",
+        "user_windows": "swayam.sinha",
         "password": os.getenv("MY_PASSWORD"),
     },
 }
@@ -136,7 +164,7 @@ def upsert_data(
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join(
                     [
-                        f":{col.replace(' ', '_').replace('/', '_').replace('&','').replace('#','').replace('*','').replace("'", "").replace("?", "").replace(".","").replace("-","")}"
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&','').replace('#','').replace('*','').replace('?', '').replace('.','').replace('-','')}"
                         for col in df.columns
                     ]
                 )
@@ -219,7 +247,7 @@ def upsert_data_multiple_keys(
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join(
                     [
-                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", '').replace('?', '').replace('.', '').replace('-', '').replace('%','')}"
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace('?', '').replace('.', '').replace('-', '').replace('%','')}"
                         for col in df.columns
                     ]
                 )
