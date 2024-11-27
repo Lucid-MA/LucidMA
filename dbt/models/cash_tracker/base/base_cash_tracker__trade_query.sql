@@ -156,4 +156,7 @@ final AS (
   WHERE closedate IS NOT NULL OR enddate IS NOT NULL
 )
 
-SELECT * FROM final
+SELECT 
+  *,
+  report_date AS orig_report_date
+FROM final

@@ -13,7 +13,9 @@
 WITH
 failing_trades AS (
   SELECT
+    _flow_id,
     report_date,
+    orig_report_date,
     fund,
     series,
     'failing-trades' AS [route],
@@ -40,5 +42,5 @@ failing_trades AS (
   {% endif %}
 {% else %}
   SELECT * FROM failing_trades 
-  WHERE report_date > '2024-01-01' AND report_date < '2024-11-12'
+  WHERE report_date > '2024-01-01' AND report_date < '2024-08-30'
 {% endif %}

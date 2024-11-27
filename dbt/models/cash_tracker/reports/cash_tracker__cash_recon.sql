@@ -1,7 +1,9 @@
 WITH 
 expected AS (
   SELECT
+    _flow_id,
     report_date,
+    orig_report_date,
     fund,
     flow_account AS acct_name,
     flow_acct_number AS acct_number,
@@ -34,12 +36,15 @@ observed AS (
     transaction_type_name
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
   WHERE 1=1
+  AND fund IS NOT NULL
   AND (location_name != 'STIF LOCATIONS' OR transaction_type_name = 'DIVIDEND')
 ),
 expected_flows AS (
   SELECT
+    _flow_id,
     'EXPECTED' AS source,
     report_date,
+    orig_report_date,
     fund,
     acct_name,
     acct_number,
@@ -79,7 +84,9 @@ combined AS (
     e.helix_id,
     e.settled,
     e.[route],
+    e.orig_report_date,
     e.match_rank,
+    _flow_id,
     e.transaction_desc AS e_desc,
     e.margin_total,
     e.amount AS e_amount,
@@ -113,8 +120,10 @@ balance_calc AS (
     c.helix_id,
     c.settled,
     c.[route],
+    c.orig_report_date,
     c.match_rank,
     c.margin_total,
+    _flow_id,
     c.e_desc,
     COALESCE(SUM(c.e_amount) OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num),0) AS e_balance,
     c.e_amount,
@@ -146,8 +155,10 @@ final AS (
     helix_id,
     settled,
     [route],
+    orig_report_date,
     match_rank,
     margin_total,
+    _flow_id,
     e_desc,
     e_balance,
     e_amount,

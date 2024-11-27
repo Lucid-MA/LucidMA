@@ -1,6 +1,5 @@
  {{
     config({
-        "enabled": false,
         "as_columnstore": false,
         "materialized": 'table',
         "post-hook": [
@@ -19,20 +18,11 @@ flows AS (
   FROM {{ ref('cash_tracker__flows') }}
   WHERE flow_account IS NOT NULL
 ),
-accounts AS (
-  SELECT
-    *
-  FROM {{ ref('stg_lucid__accounts') }}
-),
-manual_allocations AS (
-  SELECT
-    *
-  FROM {{ ref('cash_tracker__manual_allocations') }}
-  WHERE flow_account IS NOT NULL
-),
 failing_trades AS (
   SELECT
+    _flow_id,
     {{ next_business_day('report_date') }} AS report_date,
+    orig_report_date,
     fund,
     series,
     [route],
@@ -51,7 +41,9 @@ failing_trades AS (
 ),
 final AS (
    SELECT 
+    _flow_id,
     report_date,
+    orig_report_date,
     fund,
     series,
     [route],
@@ -69,7 +61,9 @@ final AS (
   FROM flows
   UNION
   SELECT 
+    _flow_id,
     report_date,
+    orig_report_date,
     fund,
     series,
     [route],
@@ -85,29 +79,13 @@ final AS (
     counterparty,
     used_alloc
   FROM failing_trades
-  UNION
-  SELECT 
-    report_date,
-    fund,
-    series,
-    [route],
-    transaction_action_id,
-    transaction_desc,
-    flow_account, 
-    flow_security,
-    flow_status,
-    flow_amount,
-    flow_is_settled,
-    flow_after_sweep,
-    trade_id,
-    NULL AS counterparty,
-    portion AS used_alloc
-  FROM manual_allocations
 )
 
 SELECT 
+  _flow_id,
   ROW_NUMBER() OVER (ORDER BY report_date, CASE WHEN trade_id IS NULL THEN 1 ELSE 0 END, trade_id) AS generated_id,
   report_date,
+  orig_report_date,
   final.fund,
   TRY_CAST(series AS NVARCHAR(50)) AS series,
   [route],

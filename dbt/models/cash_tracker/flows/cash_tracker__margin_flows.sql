@@ -236,6 +236,7 @@ series AS (
 combined AS (
   SELECT
     report_date,
+    orig_report_date,
     fund,
     '' AS series,
     [route],
@@ -249,9 +250,11 @@ combined AS (
     counterparty,
     used_alloc 
   FROM margin_flows
+  /*
   UNION
   SELECT
     report_date,
+    orig_report_date,
     fund,
     series,
     [route],
@@ -265,6 +268,7 @@ combined AS (
     counterparty,
     used_alloc 
   FROM series
+  */
 ),
 final AS (
   SELECT

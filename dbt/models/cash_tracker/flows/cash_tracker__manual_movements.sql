@@ -121,6 +121,7 @@ final AS (
 
 SELECT
     settle_date AS report_date,
+    settle_date AS orig_report_date,
     *
 FROM
     final
