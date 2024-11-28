@@ -45,6 +45,9 @@ file_path = get_file_path(
     r"S:/Lucid/Trading & Markets/Trading and Settlement Tools/Roll Trade Details Publisher.xlsx"
 )
 
+# Helix ID	Counterparty	CUSIP	End Date	Security Description	Trade Rating	Current Rating
+# Current Haircut	Current Spread	Previous MC	Used Price	Action	Haircut	Spread	 Margin Cushion	Agreed Price
+
 
 def create_table_with_schema(tb_name):
     metadata = MetaData()
@@ -58,10 +61,17 @@ def create_table_with_schema(tb_name):
         Column("CUSIP", String(100)),
         Column("End Date", Date),
         Column("Security Description", String),
-        Column("Settlement", String),
+        Column("Trade Rating", String),
+        Column("Current Rating", String),
+        Column("Current Haircut", Float),
+        Column("Current Spread", Float),
+        Column("Previous MC", Float),
+        Column("Used Price", Float),
+        Column("Action", String),
         Column("Haircut", Float),
         Column("Spread", Float),
         Column("Margin Cushion", Float),
+        Column("Agreed Price", Float),
         Column("User", String),
         Column("timestamp", DateTime),
         extend_existing=True,
@@ -82,8 +92,8 @@ if initialize_table:
         file_path,
         sheet_name="Publisher",
         skiprows=4,
-        header=0,  # header will be on row 3
-        usecols="A:J",
+        header=0,  # header will be on row 5
+        usecols="A:P",
         dtype=str,
     )
 
