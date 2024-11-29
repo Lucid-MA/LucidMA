@@ -13,6 +13,7 @@ sweeps AS (
     SUM(local_amount) AS sweep_amount
   FROM cash_recon
   WHERE location_name = 'STIF LOCATIONS' AND transaction_type_name != 'DIVIDEND'
+  AND fund IS NOT NULL
   GROUP BY report_date, fund, acct_name
 )
 

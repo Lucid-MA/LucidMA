@@ -4,9 +4,10 @@
         "materialized": 'table',
         "post-hook": [
             "{{ create_nonclustered_index(columns = ['report_date']) }}",
+            "{{ create_nonclustered_index(columns = ['flow_account']) }}",
+            "{{ create_nonclustered_index(columns = ['transaction_action_id']) }}",
         ]
     })
-
 }}
 
 WITH

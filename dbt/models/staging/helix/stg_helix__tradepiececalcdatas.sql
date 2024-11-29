@@ -1,3 +1,14 @@
+{{
+    config({
+        "as_columnstore": false,
+        "materialized": 'table',
+        "post-hook": [
+            "{{ create_clustered_index(columns = ['tradepiece']) }}",
+        ]
+    })
+
+}}
+
 WITH source AS (
     SELECT
         *
@@ -17,6 +28,7 @@ json_data AS (
 ),
 renamed AS (
     SELECT
+        ROW_NUMBER() OVER (PARTITION by tradepiece ORDER BY datetimeid DESC) AS row_num,
         tradepiece,
         repointerest_unrealized,
         repointerest_nbd,
@@ -28,3 +40,4 @@ SELECT
     *
 FROM
     renamed
+WHERE row_num = 1

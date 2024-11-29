@@ -11,27 +11,24 @@
 }}
 
 WITH
-accounts AS (
-  SELECT
-    *
-  FROM {{ ref('stg_lucid__accounts') }}
-),
 cash_recon AS (
   SELECT
     *
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
   WHERE 1=1
+    AND fund IS NOT NULL
+    AND report_date <= CAST(getdate() AS DATE)
     --AND TRIM(UPPER(transaction_type_name)) != 'INTERNAL MOVEMENT'
     --AND cusip_cins != '{{var('SWEEP')}}'
 ),
 cash_flows AS (
   SELECT
     f.*,
-    a.acct_number AS flow_acct_number
-  FROM {{ ref('cash_tracker__flows_plus_allocations') }} AS f
-  JOIN accounts AS a ON (f.fund = a.fund AND f.flow_account = a.acct_name)
-  WHERE
-    flow_security = '{{ var('CASH') }}'
+    f.acct_number AS flow_acct_number
+  FROM {{ ref('cash_tracker__flows_plus_failing_trades') }} AS f
+  WHERE 1=1
+    AND report_date <= CAST(getdate() AS DATE)
+    AND flow_security = '{{ var('CASH') }}'
     AND flow_status = '{{ var('AVAILABLE') }}'
     AND series = ''
     AND SUBSTRING(transaction_action_id,1,8) != 'REALLOC_'
@@ -51,6 +48,7 @@ cp_margins AS (
 ),
 expected AS (
    SELECT 
+    cash_flows._flow_id,
     CASE
       WHEN flow_amount <= 0 THEN flow_acct_number
       ELSE NULL
@@ -67,6 +65,7 @@ expected AS (
     trade_id AS related_helix_id,
     transaction_desc AS [description],
     cash_flows.report_date,
+    cash_flows.orig_report_date,
     REPLACE(transaction_desc,'_',' ') AS desc_replaced,
     generated_id,
     cash_flows.fund,

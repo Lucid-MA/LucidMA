@@ -46,6 +46,33 @@ DB_CONFIG = {
     },
 }
 
+# Swayam
+# DB_CONFIG = {
+#     "postgres": {
+#         "db_endpoint": "luciddb1.czojmxqfrx7k.us-east-1.rds.amazonaws.com",
+#         "db_port": "5432",
+#         "db_user": "dbmasteruser",
+#         "db_password": "lnRz*(N_7aOf~7Hx6oRo8;,<vYp|~#PC",
+#         "db_name": "reporting",
+#     },
+#     "sql_server_1": {
+#         "driver": "ODBC+Driver+17+for+SQL+Server",
+#         "server_windows": "LUCIDSQL1",
+#         "database": "HELIXREPO_PROD_02",
+#         "trusted_connection": "yes",
+#         "user_windows": "swayam.sinha",
+#         "password": os.getenv("MY_PASSWORD"),
+#     },
+#     "sql_server_2": {
+#         "driver": "ODBC+Driver+17+for+SQL+Server",
+#         "server_windows": "LUCIDSQL2",
+#         "database": "Prod1",
+#         "trusted_connection": "yes",
+#         "user_windows": "swayam.sinha",
+#         "password": os.getenv("MY_PASSWORD"),
+#     },
+# }
+
 
 def get_database_engine(db_type):
     if db_type == "postgres":
@@ -119,9 +146,6 @@ engine_prod = get_database_engine(prod_db_type)
 engine_helix = get_database_engine(helix_db_type)
 
 
-
-
-
 def upsert_data(
     engine,
     table_name: str,
@@ -136,7 +160,7 @@ def upsert_data(
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join(
                     [
-                        f":{col.replace(' ', '_').replace('/', '_').replace('&','').replace('#','').replace('*','').replace("'", "").replace("?", "").replace(".","").replace("-","")}"
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&','').replace('#','').replace('*','').replace('?', '').replace('.','').replace('-','')}"
                         for col in df.columns
                     ]
                 )
@@ -191,7 +215,8 @@ def upsert_data(
                     .replace("*", "")
                     .replace("'", "")
                     .replace("?", "")
-                    .replace(".","").replace("-","")
+                    .replace(".", "")
+                    .replace("-", "")
                     for col in df.columns
                 ]
 
@@ -219,7 +244,7 @@ def upsert_data_multiple_keys(
                 column_names = ", ".join([f'"{col}"' for col in df.columns])
                 value_placeholders = ", ".join(
                     [
-                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace("'", '').replace('?', '').replace('.', '').replace('-', '').replace('%','')}"
+                        f":{col.replace(' ', '_').replace('/', '_').replace('&', '').replace('#', '').replace('*', '').replace('?', '').replace('.', '').replace('-', '').replace('%','')}"
                         for col in df.columns
                     ]
                 )
@@ -237,7 +262,12 @@ def upsert_data_multiple_keys(
                         ]
                     )
 
-                    match_condition = " AND ".join([f'TARGET."{key}" = SOURCE."{key}"' for key in primary_key_names])
+                    match_condition = " AND ".join(
+                        [
+                            f'TARGET."{key}" = SOURCE."{key}"'
+                            for key in primary_key_names
+                        ]
+                    )
 
                     upsert_sql = text(
                         f"""
@@ -259,7 +289,9 @@ def upsert_data_multiple_keys(
                         ]
                     )
 
-                    conflict_targets = ", ".join([f'"{key}"' for key in primary_key_names])
+                    conflict_targets = ", ".join(
+                        [f'"{key}"' for key in primary_key_names]
+                    )
 
                     upsert_sql = text(
                         f"""
@@ -278,7 +310,9 @@ def upsert_data_multiple_keys(
                     .replace("*", "")
                     .replace("'", "")
                     .replace("?", "")
-                    .replace(".", "").replace("-", "").replace("%","")
+                    .replace(".", "")
+                    .replace("-", "")
+                    .replace("%", "")
                     for col in df.columns
                 ]
 
@@ -286,26 +320,33 @@ def upsert_data_multiple_keys(
                 connection.execute(upsert_sql, df.to_dict(orient="records"))
             logger.info(f"Latest data upserted successfully into {table_name}.")
         except SQLAlchemyError as e:
-                logger.error(f"An error occurred: {e}")
-                raise
+            logger.error(f"An error occurred: {e}")
+            raise
 
     logger.info(f"Data upserted successfully into {table_name}.")
 
 
 def upsert_data_multiple_keys_v2(
-        engine,
-        table_name: str,
-        df: pd.DataFrame,
-        primary_key_names: list,
-        publish_to_prod: bool,
+    engine,
+    table_name: str,
+    df: pd.DataFrame,
+    primary_key_names: list,
+    publish_to_prod: bool,
 ):
     # Remove duplicates based on primary key columns
-    df = df.drop_duplicates(subset=primary_key_names, keep='last')
+    df = df.drop_duplicates(subset=primary_key_names, keep="last")
 
     # Normalize column names
     df.columns = [
-        col.replace(" ", "_").replace("/", "_").replace("&", "").replace("#", "")
-        .replace("*", "").replace("'", "").replace("?", "").replace(".", "").replace("-", "")
+        col.replace(" ", "_")
+        .replace("/", "_")
+        .replace("&", "")
+        .replace("#", "")
+        .replace("*", "")
+        .replace("'", "")
+        .replace("?", "")
+        .replace(".", "")
+        .replace("-", "")
         for col in df.columns
     ]
 
@@ -320,16 +361,29 @@ def upsert_data_multiple_keys_v2(
 
                 if publish_to_prod:
                     update_clause = ", ".join(
-                        [f'"{col}" = SOURCE."{col}"' for col in df.columns if col not in primary_key_names]
+                        [
+                            f'"{col}" = SOURCE."{col}"'
+                            for col in df.columns
+                            if col not in primary_key_names
+                        ]
                     )
-                    match_condition = " AND ".join([f'TARGET."{key}" = SOURCE."{key}"' for key in primary_key_names])
+                    match_condition = " AND ".join(
+                        [
+                            f'TARGET."{key}" = SOURCE."{key}"'
+                            for key in primary_key_names
+                        ]
+                    )
 
-                    change_condition = ' OR '.join([
-                        f'SOURCE."{col}" <> TARGET."{col}" OR (SOURCE."{col}" IS NULL AND TARGET."{col}" IS NOT NULL) OR (SOURCE."{col}" IS NOT NULL AND TARGET."{col}" IS NULL)'
-                        for col in df.columns if col not in primary_key_names
-                    ])
+                    change_condition = " OR ".join(
+                        [
+                            f'SOURCE."{col}" <> TARGET."{col}" OR (SOURCE."{col}" IS NULL AND TARGET."{col}" IS NOT NULL) OR (SOURCE."{col}" IS NOT NULL AND TARGET."{col}" IS NULL)'
+                            for col in df.columns
+                            if col not in primary_key_names
+                        ]
+                    )
 
-                    upsert_sql = text(f"""
+                    upsert_sql = text(
+                        f"""
                         MERGE INTO {table_name} AS TARGET
                         USING (SELECT {column_names} FROM (VALUES ({value_placeholders})) AS SOURCE ({column_names})) AS SOURCE
                         ON {match_condition}
@@ -340,19 +394,28 @@ def upsert_data_multiple_keys_v2(
                             VALUES ({','.join(f'SOURCE."{col}"' for col in df.columns)})
                         WHEN NOT MATCHED BY SOURCE AND ({match_condition}) THEN
                             DELETE;
-                    """)
+                    """
+                    )
                 else:
                     update_clause = ", ".join(
-                        [f'"{col}"=EXCLUDED."{col}"' for col in df.columns if col not in primary_key_names]
+                        [
+                            f'"{col}"=EXCLUDED."{col}"'
+                            for col in df.columns
+                            if col not in primary_key_names
+                        ]
                     )
-                    conflict_targets = ", ".join([f'"{key}"' for key in primary_key_names])
+                    conflict_targets = ", ".join(
+                        [f'"{key}"' for key in primary_key_names]
+                    )
 
-                    upsert_sql = text(f"""
+                    upsert_sql = text(
+                        f"""
                         INSERT INTO {table_name} ({column_names})
                         VALUES ({value_placeholders})
                         ON CONFLICT ({conflict_targets})
                         DO UPDATE SET {update_clause};
-                    """)
+                    """
+                    )
 
                 # Execute the upsert statement
                 connection.execute(upsert_sql, df.to_dict(orient="records"))
@@ -360,13 +423,16 @@ def upsert_data_multiple_keys_v2(
             logger.info(f"Latest data upserted successfully into {table_name}.")
         except IntegrityError as ie:
             logger.error(f"IntegrityError occurred: {ie}")
-            logger.error("This might be due to unexpected duplicate keys in the target table.")
+            logger.error(
+                "This might be due to unexpected duplicate keys in the target table."
+            )
             raise
         except SQLAlchemyError as e:
             logger.error(f"An error occurred: {e}")
             raise
 
     logger.info(f"Data upsert operation completed for {table_name}.")
+
 
 def create_custom_bronze_table(
     engine,
@@ -393,7 +459,6 @@ def create_custom_bronze_table(
     metadata.bind = engine
 
     main_columns = [Column(primary_column_name, String(255), primary_key=True)]
-
 
     string_columns = [Column(col, String) for col in string_columns_list]
     columns = main_columns + string_columns

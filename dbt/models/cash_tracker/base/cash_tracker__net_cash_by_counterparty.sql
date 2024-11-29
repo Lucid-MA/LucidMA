@@ -6,7 +6,6 @@
             "{{ create_nonclustered_index(columns = ['report_date']) }}",
         ]
     })
-
 }}
 
 WITH dates AS (
