@@ -39,7 +39,7 @@ inspector = inspect(engine)
 
 # SEC HOLDINGS PROCESSING
 
-tb_name = "roll_trade_settlement_details"
+tb_name = "roll_trade_details"
 
 file_path = get_file_path(
     r"S:/Lucid/Trading & Markets/Trading and Settlement Tools/Roll Trade Details Publisher.xlsx"
@@ -72,6 +72,7 @@ def create_table_with_schema(tb_name):
         Column("Spread", Float),
         Column("Margin Cushion", Float),
         Column("Agreed Price", Float),
+        Column("Agreed Rate", Float),
         Column("User", String),
         Column("timestamp", DateTime),
         extend_existing=True,
