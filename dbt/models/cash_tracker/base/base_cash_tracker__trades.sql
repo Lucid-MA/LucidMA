@@ -5,6 +5,12 @@
         "post-hook": [
             "{{ create_nonclustered_index(columns = ['report_date']) }}",
             "{{ create_nonclustered_index(columns = ['trade_id']) }}",
+            "{{ create_nonclustered_index(columns = ['action_id']) }}",
+            "{{ create_nonclustered_index(columns = ['series']) }}",
+            "{{ create_nonclustered_index(columns = ['is_same_date']) }}",
+            "{{ create_nonclustered_index(columns = ['is_also_master']) }}",
+            "{{ create_nonclustered_index(columns = ['is_rolling_on']) }}",
+            "{{ create_nonclustered_index(columns = ['is_trade_rolling']) }}",
         ]
     })
 

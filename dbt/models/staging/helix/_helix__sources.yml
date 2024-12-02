@@ -1,15 +1,6 @@
 version: 2
 
 sources:
-  - name: helix
-    database: Prod1
-    schema: helix
-    tables:
-      - name: tradepieces
-      - name: tradecommissionpieceinfo
-      - name: tradepiecexrefs
-      - name: tradepiececalcdatas
-
   - name: helix2
     database: Prod1
     schema: airbyte_internal
