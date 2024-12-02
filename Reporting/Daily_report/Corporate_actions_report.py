@@ -103,6 +103,7 @@ def process_data(data):
     column_names = [
         "Trade ID",
         "CUSIP",
+        "Status",
         "Counterparty",
         "End Money",
         "Shares",
@@ -139,7 +140,7 @@ def process_data(data):
     # Replace NaT values in CA Payable Date column with an empty string
     data["CA Payable Date"] = data["CA Payable Date"].fillna("")
 
-    data = data.sort_values(by="CA Payable Date", ascending=True)
+    data = data.sort_values(by="CA Payable Date", ascending=False)
 
     # Format "Money" with comma and no decimal
     data["End Money"] = data["End Money"].apply(
@@ -167,8 +168,18 @@ def process_data(data):
     # Remove the index by resetting it
     data = data.reset_index(drop=True)
 
+    # Style only the 'Status' column where the value is 'Break To Action'
+    def highlight_status(val):
+        if val == "Break to Action":
+            return "background-color: #FFA500;"
+        return ""
+
+    styled_table = data.style.applymap(
+        highlight_status, subset=["Status"]
+    ).set_table_attributes('style="width:100%;"')
+
     # Format the styled DataFrame as an HTML table
-    html_table = data.to_html(index=False, border=1, escape=False)
+    html_table = styled_table.to_html(index=False, border=1, escape=False)
 
     return html_table
 
@@ -201,12 +212,8 @@ def refresh_data_and_send_email():
         body = f"Problem opening file {file_path}. Please review the file."
         recipients = [
             "tony.hoang@lucidma.com",
-            # "amelia.thompson@lucidma.com",
-            # "stephen.ng@lucidma.com",
         ]
-        cc_recipients = [
-            # "operations@lucidma.com"
-        ]
+        cc_recipients = ["operations@lucidma.com"]
         send_email(subject, body, recipients, cc_recipients)
         raise Exception(f"Error opening or refreshing file: {str(e)}")
 
@@ -218,7 +225,7 @@ def refresh_data_and_send_email():
     data = pd.read_excel(
         file_path,
         sheet_name=sheet_name,
-        usecols="B:C,E,H:K",
+        usecols="B:D,E,I:L",
         skiprows=7,  # Skip the first 7 rows (header will be row 8)
         header=0,  # Now row 8 is the header
         dtype=str,
