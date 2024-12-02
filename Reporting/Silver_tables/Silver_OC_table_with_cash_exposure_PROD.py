@@ -40,7 +40,8 @@ if IS_PROD:
         silver_tracker_dir / "Silver OC Rates With Cash Exposure Tracker PROD"
     )
     OC_RATES_SKIPPED_DATES_TRACKER = (
-        silver_tracker_dir / "Silver OC Rates Skipped Dates Tracker PROD"
+        silver_tracker_dir
+        / "Silver OC Rates With Cash Exposure Skipped Dates Tracker PROD"
     )
 else:
     OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates With Cash Exposure Tracker"
