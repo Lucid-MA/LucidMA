@@ -9,7 +9,6 @@ from Silver_OC_by_series_processing import generate_silver_oc_rates_prod
 from Utils.Common import get_file_path, get_trading_days, get_repo_root
 from Utils.SQL_queries import (
     OC_query_historical_v2,
-    HELIX_price_and_factor_by_date,
     HELIX_current_factor,
 )
 from Utils.database_utils import (
@@ -22,7 +21,7 @@ from Utils.database_utils import (
 
 # Constants
 # REPORT_DATE = "2024-04-30"
-TABLE_NAME = "oc_rates_by_series"
+TABLE_NAME = "oc_rates"
 
 # Database engines
 engine = get_database_engine("postgres")
@@ -33,7 +32,7 @@ engine_oc_rate_prod = get_database_engine("sql_server_2")
 repo_path = get_repo_root()
 silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
 OC_RATES_SKIPPED_DATES_TRACKER = (
-    silver_tracker_dir / "Silver OC Rates By Series Skipped Dates Tracker PROD"
+    silver_tracker_dir / "Silver OC Rates V2 Skipped Dates Tracker PROD"
 )
 
 
@@ -47,6 +46,7 @@ def create_table_with_schema(tb_name, engine):
         Column("fund", String),
         Column("series", String),
         Column("report_date", Date),
+        Column("rating_buckets", String),
         Column("oc_rate", Float),
         Column("clean_oc_rate", Float),
         Column("collateral_mv", Float),
@@ -142,21 +142,21 @@ def fetch_and_prepare_data(report_date):
 
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
-    # FACTOR
+    # # FACTOR
     current_date_dt = datetime.now().date()
-
-    if current_date_dt - report_date_dt >= timedelta(days=2):
-        df_factor = execute_sql_query_v2(
-            HELIX_price_and_factor_by_date,
-            db_type=helix_db_type,
-            params=(report_date_dt,),
-        )
-        df_factor = df_factor[["BondID", "Helix_factor"]]
-    else:
-        df_factor = execute_sql_query_v2(
-            HELIX_current_factor,
-            db_type=helix_db_type,
-        )
+    #
+    # if current_date_dt - report_date_dt >= timedelta(days=2):
+    #     df_factor = execute_sql_query_v2(
+    #         HELIX_price_and_factor_by_date,
+    #         db_type=helix_db_type,
+    #         params=(report_date_dt,),
+    #     )
+    #     df_factor = df_factor[["BondID", "Helix_factor"]]
+    # else:
+    #     df_factor = execute_sql_query_v2(
+    #         HELIX_current_factor,
+    #         db_type=helix_db_type,
+    #     )
 
     # CLEAN PRICE
     df_clean_price = read_table_from_db("bronze_daily_used_price", prod_db_type)
@@ -173,7 +173,7 @@ def fetch_and_prepare_data(report_date):
             == datetime.strptime("2024-10-16", "%Y-%m-%d").date()
         )
     ]
-    # ACCRUED INTEREST
+    # ACCRUED INTEREST & FACTOR
     """
     Since bloomberg data is only available from 10/10/2024, this will allow us to calculate 
     OC rates historically
@@ -189,9 +189,20 @@ def fetch_and_prepare_data(report_date):
             },
             inplace=True,
         )
+        df_factor = bronze_data_df[bronze_data_df["File_date"] == report_date_dt]
+        df_factor = df_factor[["CUSIP", "MTG Factor"]]
+        # This temporary rename is to make it consistent with downstream process after switching out the source for FACTOR
+        df_factor.rename(
+            columns={"CUSIP": "BondID", "MTG Factor": "Helix_factor"}, inplace=True
+        )
+
     else:
         df_accrued_interest = read_table_from_db(
             "silver_bloomberg_factor_interest_accrued", prod_db_type
+        )
+        df_factor = execute_sql_query_v2(
+            HELIX_current_factor,
+            db_type=helix_db_type,
         )
 
     df_accrued_interest = df_accrued_interest.loc[
@@ -210,8 +221,8 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2020-11-17"
-    end_date = "2020-11-17"
+    start_date = "2021-12-30"
+    end_date = "2021-12-30"
     trading_days = get_trading_days(start_date, end_date)
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
 

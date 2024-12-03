@@ -5,12 +5,14 @@ import pandas as pd
 
 from Utils.Common import format_decimal, get_repo_root
 from Utils.Hash import hash_string_v2
+from Utils.database_utils import upsert_data, engine_prod
 
 # Constants
 # Get the repository root directory
 repo_path = get_repo_root()
 silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
-OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates By Series Tracker PROD"
+OC_RATES_TRACKER = silver_tracker_dir / "Silver OC Rates V2 Tracker PROD"
+engine = engine_prod
 
 
 def calculate_clean_collateral_mv(row):
@@ -510,6 +512,131 @@ def generate_silver_oc_rates_prod(
             df_bronze["Clean_margin_RCV_allocation"] + df_bronze["Clean_collateral_MV"],
         )
 
+        ### Upsert OC rate level by trade level###
+        df_trade = df_bronze.copy()
+
+        df_trade["report_date"] = report_date
+        df_trade["oc_rates_id"] = df_trade.apply(
+            lambda row: hash_string_v2(
+                f"{row['fund']}"
+                f"{row['Series']}"
+                f"{row['Trade ID']}"
+                f"{row['report_date']}"
+            ),
+            axis=1,
+        )
+
+        # Reorder columns: Move data_id and oc_date to the front
+        cols = ["oc_rates_id", "report_date"] + [
+            col for col in df_trade.columns if col not in ["oc_rates_id", "report_date"]
+        ]
+        df_trade = df_trade[cols]
+        if not df_trade.empty:
+            upsert_data(engine, "oc_rates_trade_level", df_trade, "oc_rates_id", True)
+
+        # Drop the 'data_id' and 'oc_date' columns
+        df_trade.drop(columns=["oc_rates_id", "report_date"], inplace=True)
+
+        ##############################
+
+        ## By series
+        df_result_series = (
+            df_bronze.groupby(["fund", "Series"])
+            .agg(
+                {
+                    "Money": "sum",
+                    "Collateral_value_allocated": "sum",
+                    "Clean_collateral_value_allocated": "sum",
+                }
+            )
+            .reset_index()
+            .rename(columns={"Money": "Repo_money"})
+        )
+
+        df_result_series["Current_OC"] = np.where(
+            df_result_series["Repo_money"] != 0,
+            df_result_series["Collateral_value_allocated"]
+            / df_result_series["Repo_money"],
+            None,
+        )
+        df_result_series["Clean_current_OC"] = np.where(
+            df_result_series["Repo_money"] != 0,
+            df_result_series["Clean_collateral_value_allocated"]
+            / df_result_series["Repo_money"],
+            None,
+        )
+
+        columns_to_format = [
+            "Clean_current_OC",
+            "Current_OC",
+        ]
+        df_result_series[columns_to_format] = df_result_series[columns_to_format].apply(
+            format_decimal
+        )
+
+        df_result_series.columns = [col.lower() for col in df_result_series.columns]
+
+        df_result_series["oc_rates_id"] = df_result_series.apply(
+            lambda row: hash_string_v2(f"{fund_name}{series_name}{report_date}"),
+            axis=1,
+        ).astype(str)
+        df_result_series["fund"] = fund_name
+        df_result_series["series"] = series_name
+        df_result_series["report_date"] = report_date
+        df_result_series = df_result_series.rename(
+            columns={
+                "current_oc": "oc_rate",
+                "clean_current_oc": "clean_oc_rate",
+                "collateral_value_allocated": "collateral_mv",
+                "clean_collateral_value_allocated": "clean_collateral_mv",
+            }
+        )
+
+        df_result_series = df_result_series[
+            ~(
+                (df_result_series["repo_money"] == 0)
+                & (df_result_series["oc_rate"].isna())
+            )
+        ]
+
+        new_order = (
+            [
+                "oc_rates_id",
+                "report_date",
+                "fund",
+                "series",
+                "oc_rate",
+                "clean_oc_rate",
+                "collateral_mv",
+                "clean_collateral_mv",
+                "repo_money",
+            ]
+            + [
+                col
+                for col in df_result_series.columns
+                if col
+                not in [
+                    "oc_rates_id",
+                    "report_date",
+                    "fund",
+                    "series",
+                    "oc_rate",
+                    "clean_oc_rate",
+                    "collateral_mv",
+                    "clean_collateral_mv",
+                    "repo_money",
+                ]
+            ]
+            + ["timestamp"]
+        )
+        df_result_series["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df_result_series = df_result_series.reindex(columns=new_order)
+        if not df_result_series.empty:
+            upsert_data(
+                engine, "oc_rates_series", df_result_series, "oc_rates_id", True
+            )
+
+        ###
         df_result = (
             df_bronze.groupby("Comments")
             .agg(
