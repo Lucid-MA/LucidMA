@@ -54,7 +54,7 @@ expected_flows AS (
     amount,
     margin_total,
     CASE
-      WHEN is_margin = 1 THEN margin_total
+      WHEN is_margin = 1 AND margin_total IS NOT NULL THEN margin_total
       ELSE amount
     END AS sort_amount,
     reference_number,

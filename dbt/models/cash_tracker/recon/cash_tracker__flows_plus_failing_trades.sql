@@ -100,6 +100,10 @@ SELECT
   trade_id,
   counterparty,
   used_alloc,
-  a.acct_number
+  a.acct_number,
+  CASE
+      WHEN PATINDEX('%MARGIN%', UPPER(transaction_desc)) > 0 THEN 1
+      ELSE 0
+  END AS is_margin
 FROM final
 JOIN accounts AS a ON (final.fund = a.fund AND final.flow_account = a.acct_name)
