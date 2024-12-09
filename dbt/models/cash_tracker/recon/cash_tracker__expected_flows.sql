@@ -4,6 +4,7 @@
         "materialized": 'table',
         "post-hook": [
             "{{ create_nonclustered_index(columns = ['report_date']) }}",
+            "{{ create_nonclustered_index(columns = ['_flow_id']) }}",
             "{{ create_nonclustered_index(columns = ['fund']) }}",
             "{{ create_nonclustered_index(columns = ['trade_id']) }}",
         ]
@@ -116,6 +117,7 @@ ranked_matches AS (
       WHEN e.is_po = 1 AND e.flow_amount > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= {{var('PAIROFF_DIFF_THRESHOLD')}} THEN 120 + {{ abs_diff('o.local_amount', 'e.flow_amount') }}
       WHEN e.is_po = 0 AND e.related_helix_id IS NULL AND e.flow_amount > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 140
       WHEN e.is_po = 1 AND PATINDEX(UPPER(o.client_reference_number)+'%', UPPER(e.desc_replaced)) = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 150
+      WHEN e.is_po = 0 AND e.flow_amount < 0 AND o.transaction_type_name = 'BUY' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 160
       ELSE 9999
     END AS match_rank,
     CASE
@@ -161,10 +163,19 @@ ref_matches AS (
 ),
 combined_matches AS (
   SELECT
+    settle_date AS report_date,
+    _flow_id,
+    1 AS match_rank,
+    reference_number,
+    is_settled
+  FROM {{ ref('stg_lucid__manual_matches') }}
+  UNION ALL
+  SELECT
     report_date,
     _flow_id,
     match_rank,
-    reference_number
+    reference_number,
+    NULL AS is_settled
   FROM margin_matches
   WHERE row_rank = 1
   UNION ALL
@@ -172,7 +183,8 @@ combined_matches AS (
     report_date,
     _flow_id,
     match_rank,
-    reference_number
+    reference_number,
+    NULL AS is_settled
   FROM ref_matches
   WHERE rank2 = 1
 ),
@@ -180,7 +192,38 @@ final_flows AS (
   SELECT
     o.client_reference_number,
     o.transaction_type_name,
-    e.*,
+    e.[_flow_id],
+    e.[from],
+    e.[to],
+    e.amount,
+    e.is_hxswing,
+    e.related_helix_id,
+    e.[description],
+    e.report_date,
+    e.orig_report_date,
+    e.desc_replaced,
+    e.generated_id,
+    e.fund,
+    e.series,
+    e.[route],
+    e.transaction_action_id,
+    e.transaction_desc,
+    e.flow_account,
+    e.flow_acct_number,
+    e.flow_security,
+    e.flow_status,
+    e.flow_amount,
+    CASE
+      WHEN m.is_settled IS NOT NULL THEN m.is_settled
+      ELSE e.flow_is_settled
+    END AS flow_is_settled,
+    e.flow_after_sweep,
+    e.trade_id,
+    e.counterparty,
+    e.is_margin,
+    e.is_po,
+    e.margin_total,
+    e.used_alloc,
     o.local_amount,
     o.reference_number,
     o.helix_id AS ob_helix_id,

@@ -1,0 +1,27 @@
+CREATE TABLE Prod1.dbo.cash_tracker_manual_matches (
+  settle_date date NOT NULL,
+  [_flow_id] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+  reference_number varchar(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+  is_settled int DEFAULT 1
+);
+
+CREATE INDEX _idx ON Prod1.dbo.cash_tracker_manual_matches ([_flow_id]);
+
+INSERT INTO Prod1.dbo.cash_tracker_manual_matches (settle_date,[_flow_id],reference_number,is_settled) VALUES 
+('2024-11-01','04343d6e5f3f19ed9c925d9807f43ebb',NULL,1),
+('2024-11-01','b52f66f20d42cca1ed543ecf399f741d',NULL,1),
+('2024-11-01','98d49bde4bb12ceab3fab2feaa294049',NULL,1),
+('2024-11-01','06e2bfe0048052a9404dd25ac234ebec',NULL,1),
+('2024-11-14','269f73cb23b60170519fbc9948f27d4c','1243190404758',1),
+('2024-11-14','9f31f0b01557bb55525c7c10ae02f1d0','1243190409221',1),
+('2024-11-14','028a20c659c3945b63da13b93e1e51a4','1243190409651',1),
+('2024-11-18','7764a1c55aa4a6e133a85e185d54e60b','6023799561301002-31',1),
+('2024-11-19','cba4257b1f4a3066f573b293b30d4f1c','1243240356231',1),
+('2024-11-19','a2cc1a3a3bdcf463b4f8060a25e76bd2','1243240349530',1),
+('2024-11-19','f3730de69fabb8899dee2e9bde91cb56','1243240353607',1),
+('2024-11-19','e7552cebdcfef985da81e31cbcffd765','1243240356231',1),
+('2024-11-19','03dfa88e4d71ab95eff32a397edd8e84','2044279561401002-31',1),
+('2024-11-19','435762d1009b4f158811dd33379a98cc','2044278561401001-31',1),
+('2024-11-19','b3f6ea1e4e42817d8f9a67e3388bb7c5','2044279561401002-31',1),
+('2024-11-14','b94ff2b15af396147fe0851992682b4d','5246665560901001-31',1),
+('2024-11-14','b94ff2b15af396147fe0851992682b4d','6018893560901002-31',1);

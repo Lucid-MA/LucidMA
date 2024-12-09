@@ -1,8 +1,8 @@
 import os
 from datetime import datetime, timedelta
 
-start_date = datetime.strptime("2024-10-31", "%Y-%m-%d")
-end_date = datetime.strptime("2024-11-28", "%Y-%m-%d")
+start_date = datetime.strptime("2024-11-20", "%Y-%m-%d")
+end_date = datetime.strptime("2024-12-04", "%Y-%m-%d")
 current_date = start_date
 
 while current_date <= end_date:

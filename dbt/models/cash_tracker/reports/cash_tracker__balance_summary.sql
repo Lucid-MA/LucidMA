@@ -28,19 +28,23 @@ eod_history AS (
 account_history AS (
   SELECT
     DISTINCT
-      report_date,
-      fund,
-      acct_name,
-      account_number,
-      cash_account_number
-  FROM eod_history
-  WHERE 1=1
+      c.calendar_date AS report_date,
+      a.fund,
+      a.acct_name,
+      a.acct_number AS account_number,
+      CAST(a.acct_number AS VARCHAR) + '8400' AS cash_account_number
+  FROM {{ ref('stg_lucid__accounts') }} AS a
+  CROSS JOIN {{ ref('stg_lucid__calendar') }} AS c
+  WHERE c.is_business_day = 1
+  AND c.calendar_date >= '2024-11-01'
+  AND c.calendar_date < CAST(GETDATE() AS DATE)
   --AND cash_account_number LIKE '%8400'
 ),
 bnym_activity AS (
   SELECT
     report_date,
     short_acct_number,
+    MAX(sweep_detected) AS sweep_detected,
     SUM(CASE
       WHEN cusip_cins = 'X9USDDGCM' THEN local_amount
       WHEN cusip_cins = 'X9USDCMSH' THEN local_amount
@@ -52,24 +56,45 @@ bnym_activity AS (
   AND cash_account_number LIKE '%8400'
   GROUP BY report_date, short_acct_number
 ),
+final_settled_flows AS (
+  SELECT
+    report_date,
+    fund,
+    flow_account,
+    flow_acct_number,
+    SUM(flow_amount) AS cash_total
+  FROM {{ ref('cash_tracker__flows_after_force_failing') }}
+  WHERE flow_is_settled = 1
+  GROUP BY report_date, fund, flow_account, flow_acct_number
+),
 combined AS (
   SELECT
     ah.report_date,
     ah.fund,
     ah.acct_name,
     ah.account_number,
-    COALESCE(ch.prior_eod_balance, 0) AS bnym_cash_bod,
+    ba.sweep_detected,
+    COALESCE(ch.prior_eod_balance, 0) AS cash_actual_bod,
     COALESCE(ba.cash_amount, 0) AS bnym_cash_activity,
-    bhc.ending_balance AS cash_actual_eod,
-    COALESCE(sh.prior_eod_balance, 0) AS bnym_sweep_bod,
+    COALESCE(bhc.ending_balance, 0) AS cash_actual_eod,
+    COALESCE(sh.prior_eod_balance, 0) AS sweep_actual_bod,
     COALESCE(ba.sweep_amount, 0) * -1 AS bnym_sweep_activity,
-    bhs.ending_balance AS sweep_actual_eod
+    COALESCE(bhs.ending_balance, 0) AS sweep_actual_eod,
+    CASE
+      WHEN sweep_detected = 1 THEN COALESCE(cf.cash_total, 0) - (COALESCE(ch.prior_eod_balance, 0) + COALESCE(cf.cash_total, 0))
+      ELSE COALESCE(cf.cash_total, 0) 
+    END AS ct_cash_activity,
+    CASE
+      WHEN sweep_detected = 1 THEN COALESCE(ch.prior_eod_balance, 0) + COALESCE(cf.cash_total, 0) 
+      ELSE 0
+    END AS ct_sweep_activity
   FROM account_history AS ah
   LEFT JOIN eod_history AS ch ON (ah.report_date=ch.report_date AND ah.account_number=ch.account_number AND ch.security LIKE 'CASHUSD%')
   LEFT JOIN eod_history AS sh ON (ah.report_date=sh.report_date AND ah.account_number=sh.account_number AND sh.security LIKE 'X9X9USD%')
   LEFT JOIN bnym_activity AS ba ON (ah.report_date=ba.report_date AND ah.account_number=ba.short_acct_number)
   LEFT JOIN balance_history AS bhc ON (ah.report_date=bhc.report_date AND ah.cash_account_number=bhc.cash_account_number AND bhc.security LIKE 'CASHUSD%')
   LEFT JOIN balance_history AS bhs ON (ah.report_date=bhs.report_date AND ah.cash_account_number=bhs.cash_account_number AND bhs.security LIKE 'X9X9USD%')
+  LEFT JOIN final_settled_flows AS cf ON (ah.report_date=cf.report_date AND ah.account_number=cf.flow_acct_number)
 ),
 final AS (
   SELECT
@@ -77,14 +102,20 @@ final AS (
     fund,
     acct_name,
     account_number,
-    bnym_cash_bod,
-    bnym_cash_activity,
-    (bnym_cash_bod + bnym_cash_activity) AS bnym_cash_eod,
     cash_actual_eod,
-    bnym_sweep_bod,
+    (cash_actual_bod + bnym_cash_activity) AS bnym_cash_eod,
+    (cash_actual_bod + ct_cash_activity) AS ct_cash_eod,
+    sweep_actual_eod,
+    (sweep_actual_bod + bnym_sweep_activity) AS bnym_sweep_eod,
+    (sweep_actual_bod + ct_sweep_activity) AS ct_sweep_eod,
+    sweep_detected,
+    cash_actual_bod,
+    bnym_cash_activity,
+    ct_cash_activity,
+    (bnym_cash_activity + bnym_sweep_activity) AS bnym_cash_trans,
+    sweep_actual_bod,
     bnym_sweep_activity,
-    (bnym_sweep_bod + bnym_sweep_activity) AS bnym_sweep_eod,
-    sweep_actual_eod
+    ct_sweep_activity
   FROM combined
 )
 
