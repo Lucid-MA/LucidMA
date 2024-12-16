@@ -54,7 +54,7 @@ expected_flows AS (
     amount,
     margin_total,
     CASE
-      WHEN is_margin = 1 THEN margin_total
+      WHEN is_margin = 1 AND margin_total IS NOT NULL THEN margin_total
       ELSE amount
     END AS sort_amount,
     reference_number,
@@ -95,8 +95,12 @@ combined AS (
     COALESCE(e.reference_number, o.reference_number) AS reference_number,
     ROW_NUMBER() OVER (ORDER BY COALESCE(e.sort_amount, o.amount), e.generated_id) AS row_num,
     CASE
-    WHEN o.reference_number IS NULL THEN 0
-    ELSE ROW_NUMBER() OVER (PARTITION BY o.report_date, o.fund, o.reference_number ORDER BY e.generated_id)
+      WHEN e._flow_id IS NULL THEN 0
+      ELSE ROW_NUMBER() OVER (PARTITION BY e.report_date, e.fund, e._flow_id ORDER BY e.generated_id)
+    END AS ct_use,
+    CASE
+      WHEN o.reference_number IS NULL THEN 0
+      ELSE ROW_NUMBER() OVER (PARTITION BY o.report_date, o.fund, o.reference_number ORDER BY e.generated_id)
     END AS bynm_use
   FROM expected_flows AS e
   FULL OUTER JOIN observed_flows AS o 
@@ -125,15 +129,20 @@ balance_calc AS (
     c.margin_total,
     _flow_id,
     c.e_desc,
-    COALESCE(SUM(c.e_amount) OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num),0) AS e_balance,
-    c.e_amount,
+    COALESCE(SUM(CASE WHEN ct_use = 1 THEN c.e_amount ELSE NULL END) 
+      OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num) ,0) 
+      AS e_balance,
+    CASE
+      WHEN ct_use = 1 THEN c.e_amount
+      ELSE NULL
+    END AS e_amount,
     CASE
       WHEN bynm_use = 1 THEN c.o_amount
       ELSE NULL
     END AS o_amount,
-    COALESCE(SUM(
-      CASE WHEN bynm_use = 1 THEN c.o_amount ELSE NULL END
-      ) OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num),0) AS o_balance,
+    COALESCE(SUM(CASE WHEN bynm_use = 1 THEN c.o_amount ELSE NULL END) 
+      OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num) ,0) 
+      AS o_balance,
     c.o_desc,
     c.reference_number,
     row_num AS order_by_amt,
