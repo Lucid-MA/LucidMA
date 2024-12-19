@@ -19,6 +19,7 @@ cash_recon AS (
   WHERE 1=1
     AND fund IS NOT NULL
     AND report_date <= CAST(getdate() AS DATE)
+    AND (location_name != 'STIF LOCATIONS' OR transaction_type_name = 'DIVIDEND')
     --AND TRIM(UPPER(transaction_type_name)) != 'INTERNAL MOVEMENT'
     --AND cusip_cins != '{{var('SWEEP')}}'
 ),
@@ -102,14 +103,14 @@ ranked_matches AS (
     o.helix_id AS ob_helix_id,
     o.sweep_detected,
     CASE
-      WHEN e.is_margin = 1 AND e.flow_amount < 0 AND PATINDEX(UPPER('MRGN '+e.counterparty+'%'), UPPER(o.client_reference_number)) = 1 THEN 1
-      WHEN e.is_margin = 1 AND e.flow_amount > 0 AND PATINDEX(UPPER('MRGN '+e.counterparty+'%'), UPPER(o.client_reference_number)) = 1 THEN 2
-      WHEN e.is_margin = 1 AND e.margin_total > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND {{ abs_diff('o.local_amount', 'e.margin_total') }} <= 0.05 THEN 3 + {{ abs_diff('o.local_amount', 'e.margin_total') }}
-      WHEN e.is_margin = 1 AND e.margin_total <= 0 AND {{ abs_diff('o.local_amount', 'e.margin_total') }} <= 0.05 THEN 4 + {{ abs_diff('o.local_amount', 'e.margin_total') }}
-      WHEN e.is_margin = 1 AND e.flow_amount < 0 AND {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.05 THEN 5 + {{ abs_diff('o.local_amount', 'e.flow_amount') }}
-      WHEN e.is_margin = 1 AND e.flow_amount > 0 AND o.local_amount >= 0 AND {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.05 THEN 6 + {{ abs_diff('o.local_amount', 'e.flow_amount') }}
-      WHEN e.related_helix_id IS NOT NULL AND o.is_hxswing = 0 AND e.related_helix_id = o.helix_id THEN 10
-      WHEN (e.related_helix_id IS NULL OR e.is_hxswing = 1) AND e.transaction_desc = o.client_reference_number THEN 20
+      WHEN e.is_margin = 1 AND o.is_hxswing = 0 AND e.flow_amount < 0 AND PATINDEX(UPPER('MRGN '+e.counterparty+'%'), UPPER(o.client_reference_number)) = 1 THEN 2
+      WHEN e.is_margin = 1 AND o.is_hxswing = 0 AND e.flow_amount > 0 AND PATINDEX(UPPER('MRGN '+e.counterparty+'%'), UPPER(o.client_reference_number)) = 1 THEN 3
+      WHEN e.is_margin = 1 AND o.is_hxswing = 0 AND e.margin_total > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND {{ abs_diff('o.local_amount', 'e.margin_total') }} <= 0.05 THEN 4 + {{ abs_diff('o.local_amount', 'e.margin_total') }}
+      WHEN e.is_margin = 1 AND o.is_hxswing = 0 AND e.margin_total <= 0 AND {{ abs_diff('o.local_amount', 'e.margin_total') }} <= 0.05 THEN 5 + {{ abs_diff('o.local_amount', 'e.margin_total') }}
+      WHEN e.is_margin = 1 AND o.is_hxswing = 0 AND e.flow_amount < 0 AND {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.05 THEN 6 + {{ abs_diff('o.local_amount', 'e.flow_amount') }}
+      WHEN e.is_margin = 1 AND o.is_hxswing = 0 AND e.flow_amount > 0 AND o.local_amount >= 0 AND {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.05 THEN 7 + {{ abs_diff('o.local_amount', 'e.flow_amount') }}
+      WHEN (e.related_helix_id IS NULL OR e.is_hxswing = 1) AND e.transaction_desc = o.client_reference_number THEN 10
+      WHEN e.related_helix_id IS NOT NULL AND o.is_hxswing = 0 AND e.related_helix_id = o.helix_id THEN 20
       WHEN e.is_po = 1 AND PATINDEX(UPPER(e.desc_replaced)+'%', UPPER(o.client_reference_number)) = 1 THEN 30
       WHEN e.related_helix_id IS NULL AND PATINDEX('PMSWING%', UPPER(e.description)) = 1 AND PATINDEX(UPPER(o.client_reference_number)+'%', UPPER(e.description)) = 1 THEN 40
       WHEN o.helix_id IS NOT NULL AND PATINDEX('ERROR_SWING%', UPPER(e.description)) = 1 AND TRY_CAST(SUBSTRING(e.description, 12, len(e.description)) AS INTEGER) = o.helix_id THEN 60
@@ -118,6 +119,7 @@ ranked_matches AS (
       WHEN e.is_po = 0 AND e.related_helix_id IS NULL AND e.flow_amount > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 140
       WHEN e.is_po = 1 AND PATINDEX(UPPER(o.client_reference_number)+'%', UPPER(e.desc_replaced)) = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 150
       WHEN e.is_po = 0 AND e.flow_amount < 0 AND o.transaction_type_name = 'BUY' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 160
+      WHEN e.is_hxswing = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 200
       ELSE 9999
     END AS match_rank,
     CASE
@@ -188,6 +190,12 @@ combined_matches AS (
   FROM ref_matches
   WHERE rank2 = 1
 ),
+sorted_matches AS (
+  SELECT
+    *,
+    ROW_NUMBER() OVER (PARTITION BY report_date, _flow_id ORDER BY match_rank) AS row_rank
+  FROM combined_matches
+),
 final_flows AS (
   SELECT
     o.client_reference_number,
@@ -228,16 +236,21 @@ final_flows AS (
     o.reference_number,
     o.helix_id AS ob_helix_id,
     o.sweep_detected,
-    COALESCE(m.match_rank, 9999) AS match_rank,
+    CASE
+      WHEN m.match_rank IS NOT NULL THEN m.match_rank
+      WHEN e.is_margin = 1 AND e.margin_total = 0.0 THEN 0
+      ELSE 9999
+    END AS match_rank,
     CASE
       WHEN o.location_name = 'STIF LOCATIONS' AND o.transaction_type_name != 'DIVIDEND' THEN 1
       ELSE 0
     END AS after_sweep
   FROM expected AS e
-  LEFT JOIN combined_matches m 
+  LEFT JOIN sorted_matches m 
     ON (
       e.report_date = m.report_date
       AND e._flow_id = m._flow_id
+      AND row_rank = 1
     )
   LEFT JOIN cash_recon AS o
     ON (
@@ -250,9 +263,11 @@ final AS (
     *,
     CASE
       WHEN reference_number IS NOT NULL THEN 1
+      WHEN is_margin = 1 AND margin_total = 0.0 AND match_rank = 0 THEN 1
       ELSE flow_is_settled
     END AS expected_is_settled,
     CASE
+      WHEN is_margin = 1 AND margin_total = 0.0 AND match_rank = 0 THEN flow_after_sweep
       WHEN reference_number IS NOT NULL THEN after_sweep
       ELSE flow_after_sweep
     END AS expected_after_sweep,

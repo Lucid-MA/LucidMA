@@ -30,6 +30,7 @@ series_trades AS (
       ELSE 0
     END AS is_new_trade_rolling
   FROM trades
+  WHERE series != 'MASTER' 
 ),
 part1 AS (
   SELECT
@@ -41,7 +42,7 @@ part1 AS (
     -1 * modifier * ABS([money]) AS amount2,
     *
   FROM series_trades
-  WHERE series != 'MASTER' AND is_new_trade_rolling = 1
+  WHERE is_new_trade_rolling = 1
 ),
 part2 AS (
   SELECT
@@ -53,7 +54,7 @@ part2 AS (
     modifier * ABS([money]) AS amount2,
     *
   FROM series_trades
-  WHERE series != 'MASTER' AND is_trade_rolling = 1
+  WHERE is_new_trade_rolling = 0 AND is_trade_rolling = 1
 ),
 final AS (
   SELECT

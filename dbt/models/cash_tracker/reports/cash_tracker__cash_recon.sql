@@ -177,7 +177,23 @@ final AS (
     o_desc,
     reference_number,
     order_by_amt,
-    bynm_use
+    bynm_use,
+    CASE 
+      WHEN reference_number IS NULL THEN NULL
+      ELSE SUM(COALESCE(e_amount, 0)) OVER (PARTITION BY report_date, reference_number) 
+    END AS e_total_by_ref,
+    CASE 
+      WHEN reference_number IS NULL THEN NULL
+      ELSE SUM(COALESCE(o_amount, 0)) OVER (PARTITION BY report_date, reference_number) 
+    END AS o_total_by_ref,
+    CASE
+      WHEN _flow_id IS NULL THEN NULL
+      ELSE SUM(COALESCE(e_amount, 0)) OVER (PARTITION BY report_date, _flow_id) 
+    END AS e_total_by_flow,
+    CASE
+      WHEN _flow_id IS NULL THEN NULL
+      ELSE SUM(COALESCE(o_amount, 0)) OVER (PARTITION BY report_date, _flow_id) 
+    END AS o_total_by_flow
   FROM balance_calc
 )
 
