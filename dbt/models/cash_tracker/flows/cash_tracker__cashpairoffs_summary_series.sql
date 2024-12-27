@@ -17,18 +17,19 @@ source AS (
       fund,
       counterparty2,
       counterparty,
+      series,
       sum(amount2) as amount,
-      MIN(used_alloc) AS used_alloc
-    FROM {{ ref('cash_tracker__cashpairoffs') }}
-    GROUP BY report_date, fund, counterparty2, counterparty
+      min(used_alloc) AS used_alloc
+    FROM {{ ref('cash_tracker__cashpairoffs_series') }}
+    GROUP BY report_date, fund, counterparty2, counterparty, series
 ),
-cashpairoffs_agg AS (
+cashpairoffs_series_agg AS (
   SELECT 
     report_date,
     report_date AS orig_report_date,
     fund,
-    '' AS series,
-    'cashpairoffs_agg' AS [route],
+    series,
+    'cashpairoffs_series_agg' AS [route],
     'PO ' + counterparty2 AS transaction_action_id,
     'PO ' + counterparty2 AS transaction_desc,
     'MAIN' AS flow_account, 
@@ -42,4 +43,4 @@ cashpairoffs_agg AS (
   FROM source
 )
 
-SELECT * FROM cashpairoffs_agg
+SELECT * FROM cashpairoffs_series_agg

@@ -51,7 +51,7 @@ part2 AS (
       WHEN counterparty IN ('400CAP', 'CTVA', 'AGNC') THEN counterparty + '~' + depository
       ELSE counterparty
     END AS counterparty2,
-    modifier * ABS([money]) AS amount2,
+    modifier * ABS(end_money) AS amount2,
     *
   FROM series_trades
   WHERE is_new_trade_rolling = 0 AND is_trade_rolling = 1

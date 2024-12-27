@@ -22,6 +22,7 @@ failing_trades AS (
     transaction_action_id,
     transaction_desc,
     flow_account, 
+    flow_acct_number, 
     flow_security,
     flow_status,
     flow_amount,

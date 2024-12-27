@@ -236,6 +236,7 @@ final_flows AS (
     o.reference_number,
     o.helix_id AS ob_helix_id,
     o.sweep_detected,
+    o.cash_account_number,
     CASE
       WHEN m.match_rank IS NOT NULL THEN m.match_rank
       WHEN e.is_margin = 1 AND e.margin_total = 0.0 THEN 0

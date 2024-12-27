@@ -93,4 +93,4 @@ FROM
 LEFT JOIN {{ ref('stg_lucid__accounts')}} AS a
   ON (final.short_acct_number = a.acct_number)
 WHERE TRIM(UPPER(transaction_type_name)) != 'INTERNAL MOVEMENT'
-  --AND cash_account_number LIKE '%8400'
+  AND cash_account_number LIKE '%8400'
