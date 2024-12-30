@@ -15,3 +15,4 @@ sources:
       - name: bronze_cash_blotter
       - name: bronze_manual_allocation
       - name: holidays
+      - name: cash_tracker_manual_matches

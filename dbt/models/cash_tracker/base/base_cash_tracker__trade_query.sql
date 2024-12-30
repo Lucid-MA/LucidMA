@@ -110,7 +110,7 @@ masterpieces AS (
   FROM
     tradepieces
 ),
-trade_query_final AS (
+trade_query_part2 AS (
   SELECT
     CONCAT(
       (
@@ -139,24 +139,31 @@ trade_query_final AS (
       AND trade_query_part1.master_refid = masterpieces.masterpiece
     )
 ),
-final AS (
+trade_query_final AS (
   SELECT
     startdate AS report_date,
     CONCAT(trade_id,' TRANSMITTED') AS action_id,
     *
   FROM
-    trade_query_final
+    trade_query_part2
   UNION ALL
   SELECT
     COALESCE(closedate, enddate) AS report_date,
     CONCAT(trade_id,' CLOSED') AS action_id,
     *
   FROM
-    trade_query_final
+    trade_query_part2
   WHERE closedate IS NOT NULL OR enddate IS NOT NULL
+),
+final AS (
+  SELECT
+    ROW_NUMBER() OVER (PARTITION BY report_date, fund, series, trade_id ORDER BY tradepiece DESC) AS row_rank,
+    *
+  FROM trade_query_final
 )
 
 SELECT 
   *,
   report_date AS orig_report_date
 FROM final
+WHERE row_rank = 1

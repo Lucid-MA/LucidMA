@@ -70,7 +70,7 @@ eod_flows AS (
     f.*
   FROM flows f
   WHERE 1=1
-    AND fund IN (SELECT fund FROM funds_to_sweep WHERE report_date = f.report_date)
+    AND flow_acct_number IN (SELECT flow_acct_number FROM funds_to_sweep WHERE report_date = f.report_date)
     AND series = ''
     AND flow_is_settled = 1
 ),
@@ -92,7 +92,7 @@ unsettled_flows AS (
     f.*
   FROM flows f
   WHERE 1=1
-    AND fund IN (SELECT fund FROM funds_to_sweep WHERE report_date = f.report_date)
+    AND flow_acct_number IN (SELECT flow_acct_number FROM funds_to_sweep WHERE report_date = f.report_date)
     AND f.flow_is_settled = 0
     AND f.is_margin = 0
     AND f.is_hxswing = 0
@@ -128,7 +128,7 @@ combined AS (
   LEFT JOIN unsettled_amounts un ON (eod.report_date=un.report_date AND eod.fund=un.fund AND eod.flow_account=un.flow_account AND eod.flow_security=un.flow_security AND eod.flow_status=bod.flow_status)
   LEFT JOIN cash_recon_sweeps cs ON (eod.report_date=cs.report_date AND eod.fund=cs.fund AND eod.flow_account=cs.acct_name)
   WHERE 1=1
-    AND eod.fund IN (SELECT fund FROM funds_to_sweep WHERE report_date = eod.report_date)
+    AND eod.flow_acct_number IN (SELECT flow_acct_number FROM funds_to_sweep WHERE report_date = eod.report_date)
 ),
 final AS (
   SELECT

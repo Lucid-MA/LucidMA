@@ -14,32 +14,9 @@ manual_movements AS (
     *
   FROM {{ ref('cash_tracker__manual_movements') }}
 ),
-cashpairoffs AS (
-  SELECT
-    'PO ' + counterparty2 AS transaction_action_id,
-    'PO ' + counterparty2 AS transaction_desc,
-    'MAIN' AS flow_account, 
-    '{{var('CASH')}}' AS flow_security,
-    '{{var('AVAILABLE')}}' AS flow_status,
-    amount2 AS flow_amount,
-    NULL AS flow_is_settled,
-    NULL AS flow_after_sweep,
-    *
-  FROM {{ ref('cash_tracker__cashpairoffs') }}
-),
 cashpairoffs_agg AS (
-  SELECT 
-    report_date,
-    report_date AS orig_report_date,
-    fund,
-    'PO ' + counterparty2 AS transaction_action_id,
-    'PO ' + counterparty2 AS transaction_desc,
-    'MAIN' AS flow_account, 
-    '{{var('CASH')}}' AS flow_security,
-    '{{var('AVAILABLE')}}' AS flow_status,
-    amount AS flow_amount,
-    counterparty,
-    used_alloc
+  SELECT
+    *
   FROM {{ ref('cash_tracker__cashpairoffs_summary') }}
 ),
 final AS (
@@ -66,8 +43,8 @@ final AS (
     report_date,
     orig_report_date,
     fund,
-    '' AS series,
-    'cashpairoffs_agg' AS [route],
+    series,
+    [route],
     transaction_action_id,
     transaction_desc,
     flow_account, 

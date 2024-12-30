@@ -1,3 +1,7 @@
+{{ config(
+  enabled=false
+)}}
+
 WITH
 flows AS (
   SELECT

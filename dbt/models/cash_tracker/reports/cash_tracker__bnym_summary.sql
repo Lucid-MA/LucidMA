@@ -24,6 +24,7 @@ bnym_activity AS (
     SUM(local_amount) AS cash_amount
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
   WHERE 1=1
+  AND cash_account_number LIKE '%8400'
     --AND TRIM(UPPER(transaction_type_name)) != 'INTERNAL MOVEMENT'
   GROUP BY report_date, short_acct_number
 ),
