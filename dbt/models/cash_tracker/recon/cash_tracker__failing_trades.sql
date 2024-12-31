@@ -22,7 +22,6 @@ failing_trades AS (
     transaction_action_id,
     transaction_desc,
     flow_account, 
-    flow_acct_number, 
     flow_security,
     flow_status,
     flow_amount,
@@ -30,7 +29,8 @@ failing_trades AS (
     flow_after_sweep,
     trade_id,
     counterparty,
-    used_alloc
+    used_alloc,
+    flow_acct_number
   FROM {{ ref('cash_tracker__expected_flows') }}
   WHERE (match_rank = 9999 OR expected_is_settled = 0)
 )

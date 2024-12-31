@@ -48,31 +48,6 @@ combined AS (
     FROM pairoff_margin
 ),
 combined2 AS (
-    /*
-     SELECT
-        'cash-blotter-series' AS route,
-        action_id AS transaction_action_id,
-        action_id AS transaction_desc,
-        from_acct_name AS flow_account, 
-        '{{var('CASH')}}' AS flow_security,
-        '{{var('AVAILABLE')}}' AS flow_status,
-        CASE
-            WHEN from_acct_name = 'EXPENSE' THEN 0.0
-            ELSE (-amount * ua.used_alloc) 
-        END AS flow_amount,
-        from_fund AS fund,
-        ua.series,
-        c.*
-    FROM combined AS c
-    JOIN {{ ref('cash_tracker__used_allocs') }} AS ua
-        ON (
-            c.related_helix_id IS NOT NULL
-            AND c.from_fund = ua.fund
-            AND c.related_helix_id = ua.trade_id
-        )
-    WHERE is_outgoing = 1 AND SUBSTRING(action_id, 1, 7) != 'HXSWING'
-    UNION
-    */
     SELECT
         'cash-blotter-outgoing' AS route,
         action_id AS transaction_action_id,
