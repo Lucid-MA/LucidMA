@@ -33,10 +33,11 @@ series AS (
     mf.flow_account, 
     mf.flow_security,
     mf.flow_status,
-    CASE
+    mf.flow_amount AS master_flow_amount,
+    CAST(CASE
       WHEN mf.flow_account = 'EXPENSE' THEN 0.0
-      ELSE (mf.flow_amount * tf.used_alloc) 
-    END AS flow_amount,
+      ELSE (mf.flow_amount * tf.used_alloc)
+    END AS MONEY) AS flow_amount,
     tf.*
   FROM tradesfree tf
   LEFT JOIN margin_flows mf ON (
@@ -57,6 +58,7 @@ final AS (
     flow_account, 
     flow_security,
     flow_status,
+    master_flow_amount,
     flow_amount,
     NULL AS flow_is_settled,
     NULL AS flow_after_sweep,

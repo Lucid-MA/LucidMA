@@ -166,4 +166,4 @@ SELECT
   *,
   report_date AS orig_report_date
 FROM final
-WHERE row_rank = 1
+--WHERE row_rank = 1
