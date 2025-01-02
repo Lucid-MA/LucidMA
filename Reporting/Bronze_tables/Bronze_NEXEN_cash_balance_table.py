@@ -143,7 +143,7 @@ def upsert_data(tb_name, df):
 
 tb_name = "bronze_nexen_cash_balance"
 inspector = inspect(engine)
-if not inspector.has_table("table_name"):
+if not inspector.has_table(tb_name):
     create_table_with_schema(tb_name, pd.read_csv(framework_file))
 
 

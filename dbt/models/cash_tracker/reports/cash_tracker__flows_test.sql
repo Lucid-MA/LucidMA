@@ -1,6 +1,6 @@
 {{ config(
   enabled=false
-) }}
+)}}
 
 WITH
 cash_flows AS (

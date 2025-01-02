@@ -176,10 +176,13 @@ def get_previous_business_day(
     if not isinstance(holidays_df, pd.DataFrame) or "date" not in holidays_df.columns:
         raise TypeError("holidays_df must be a pandas DataFrame with a 'date' column.")
 
-    previous_day = current_date - timedelta(days=1)
+    # Ensure holidays_df["date"] is of datetime.date type
+    holidays = holidays_df["date"].dt.date
+
+    previous_day = current_date.date() - timedelta(days=1)
 
     # Keep checking until we find a non-holiday, non-weekend day
-    while previous_day.weekday() >= 5 or previous_day in holidays_df["date"].values:
+    while previous_day.weekday() >= 5 or previous_day in holidays.values:
         previous_day -= timedelta(days=1)
 
     return previous_day

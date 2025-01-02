@@ -14,6 +14,7 @@ vars:
   AVAILABLE: 'AVAILABLE'
   REPO_COLLATERAL: 'REPO_COLLATERAL'
   PAIROFF_DIFF_THRESHOLD: 5
+  surrogate_key_treat_nulls_as_empty_strings: True
 
 # These configurations specify where dbt should look for different types of files.
 # The `model-paths` config, for example, states that models in this project can be
@@ -29,6 +30,9 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+dispatch:
+  - macro_namespace: dbt_utils
+    search_order: ['tsql_utils', 'dbt_utils']
 
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models

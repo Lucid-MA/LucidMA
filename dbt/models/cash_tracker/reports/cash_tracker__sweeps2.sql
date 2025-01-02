@@ -1,3 +1,7 @@
+{{ config(
+  enabled=false
+)}}
+
 WITH
 flows AS (
   SELECT
@@ -56,6 +60,7 @@ funds_to_sweep AS (
   JOIN {{ ref('stg_lucid__accounts') }} AS a
     ON (a.acct_number = c.short_acct_number)
   WHERE c.sweep_detected = 1
+    AND c.fund IS NOT NULL
     --AND TRIM(UPPER(c.transaction_type_name)) != 'INTERNAL MOVEMENT'
 ),
 eod_flows AS (

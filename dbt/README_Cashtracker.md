@@ -3,9 +3,8 @@
 ## Tables
 The four main models are as follows.
 
-- dbt.cash_tracker__flows_plus_allocations
+- dbt.cash_tracker__flows_plus_failing_trades
     * Helix flows/Cash Blotter (dbt.cash_tracker__flows)
-    * manual allocations (dbt.cash_tracker__manual_allocations)
     * failing trades (dbt.stg_lucid__failing_trades)
 
 - dbt.stg_lucid__cash_and_security_transactions

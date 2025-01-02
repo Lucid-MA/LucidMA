@@ -21,7 +21,7 @@ realloc_cash_flows AS (
   SELECT
     f.*,
     f.acct_number AS flow_acct_number
-  FROM {{ ref('cash_tracker__flows_plus_allocations') }} AS f
+  FROM {{ ref('cash_tracker__flows_plus_failing_trades') }} AS f
   WHERE
     flow_security = '{{ var('CASH') }}'
     AND flow_status = '{{ var('AVAILABLE') }}'

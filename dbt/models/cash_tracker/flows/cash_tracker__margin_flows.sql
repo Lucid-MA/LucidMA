@@ -213,29 +213,10 @@ margin_flows AS (
     *
   FROM margin_return_received_margin
 ),
-series AS (
-  SELECT
-    'Margin-series' AS route,
-    mf.transaction_action_id,
-    mf.transaction_desc,
-    mf.flow_account, 
-    mf.flow_security,
-    mf.flow_status,
-    CASE
-      WHEN mf.flow_account = 'EXPENSE' THEN 0.0
-      ELSE (mf.flow_amount * tf.used_alloc) 
-    END AS flow_amount,
-    tf.*
-  FROM tradesfree tf
-  LEFT JOIN margin_flows mf ON (
-    tf.action_id = mf.action_id
-    AND tf.report_date = mf.report_date
-  )
-  WHERE tf.series != 'MASTER'
-),
-combined AS (
+final AS (
   SELECT
     report_date,
+    orig_report_date,
     fund,
     '' AS series,
     [route],
@@ -245,33 +226,13 @@ combined AS (
     flow_security,
     flow_status,
     flow_amount,
-    trade_id,
-    counterparty,
-    used_alloc 
-  FROM margin_flows
-  UNION
-  SELECT
-    report_date,
-    fund,
-    series,
-    [route],
-    transaction_action_id,
-    transaction_desc,
-    flow_account, 
-    flow_security,
-    flow_status,
-    flow_amount,
-    trade_id,
-    counterparty,
-    used_alloc 
-  FROM series
-),
-final AS (
-  SELECT
     NULL AS flow_is_settled,
     NULL AS flow_after_sweep,
-    *
-  FROM combined
+    trade_id,
+    counterparty,
+    action_id,
+    used_alloc 
+  FROM margin_flows
 )
 
 SELECT * FROM final

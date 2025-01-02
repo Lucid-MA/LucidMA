@@ -53,7 +53,8 @@ renamed AS (
     TRIM([Reference Number]) AS reference_number,
     TRY_CAST(
       [Cash Post Date] AS DATE
-    ) AS cash_post_date
+    ) AS cash_post_date,
+    [timestamp] AS created_at
   FROM
     source
 ),

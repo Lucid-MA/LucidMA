@@ -1,5 +1,6 @@
  {{
     config({
+        "enabled": false,
         "as_columnstore": false,
         "materialized": 'table',
         "post-hook": [

@@ -13,7 +13,9 @@
 WITH
 failing_trades AS (
   SELECT
+    _flow_id,
     report_date,
+    orig_report_date,
     fund,
     series,
     'failing-trades' AS [route],
@@ -27,7 +29,8 @@ failing_trades AS (
     flow_after_sweep,
     trade_id,
     counterparty,
-    used_alloc
+    used_alloc,
+    flow_acct_number
   FROM {{ ref('cash_tracker__expected_flows') }}
   WHERE (match_rank = 9999 OR expected_is_settled = 0)
 )
@@ -40,5 +43,5 @@ failing_trades AS (
   {% endif %}
 {% else %}
   SELECT * FROM failing_trades 
-  WHERE report_date > '2024-01-01' AND report_date < '2024-11-12'
+  WHERE report_date > '2024-01-01' AND report_date < '2024-08-30'
 {% endif %}

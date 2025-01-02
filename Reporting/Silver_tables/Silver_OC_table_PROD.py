@@ -6,7 +6,7 @@ from sqlalchemy import text, Table, MetaData, Column, String, Float, Date, DateT
 from sqlalchemy.exc import SQLAlchemyError
 
 from Silver_OC_processing import generate_silver_oc_rates_prod
-from Utils.Common import get_file_path, get_trading_days
+from Utils.Common import get_file_path, get_trading_days, get_repo_root
 from Utils.SQL_queries import (
     OC_query_historical_v2,
     HELIX_price_and_factor_by_date,
@@ -28,6 +28,13 @@ TABLE_NAME = "oc_rates"
 engine = get_database_engine("postgres")
 engine_oc_rate = get_database_engine("sql_server_1")
 engine_oc_rate_prod = get_database_engine("sql_server_2")
+
+# Get the repository root directory
+repo_path = get_repo_root()
+silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
+OC_RATES_SKIPPED_DATES_TRACKER = (
+    silver_tracker_dir / "Silver OC Rates Skipped Dates Tracker PROD"
+)
 
 
 def create_table_with_schema(tb_name, engine):
@@ -211,8 +218,8 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2024-11-14"
-    end_date = "2024-11-19"
+    start_date = "2021-06-30"
+    end_date = "2022-12-31"
     trading_days = get_trading_days(start_date, end_date)
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
 
@@ -221,46 +228,50 @@ def main():
 
     for REPORT_DATE in trading_days:
         if REPORT_DATE not in processed_dates:
-            (
-                df_bronze_oc,
-                df_factor,
-                df_clean_price,
-                df_cash_balance,
-                df_accrued_interest,
-            ) = fetch_and_prepare_data(REPORT_DATE)
-            df = generate_silver_oc_rates_prod(
-                df_bronze_oc,
-                df_factor,
-                df_clean_price,
-                df_cash_balance,
-                df_accrued_interest,
-                REPORT_DATE,
-            )
+            try:
+                (
+                    df_bronze_oc,
+                    df_factor,
+                    df_clean_price,
+                    df_cash_balance,
+                    df_accrued_interest,
+                ) = fetch_and_prepare_data(REPORT_DATE)
+                df = generate_silver_oc_rates_prod(
+                    df_bronze_oc,
+                    df_factor,
+                    df_clean_price,
+                    df_cash_balance,
+                    df_accrued_interest,
+                    REPORT_DATE,
+                )
 
-            if df is None or df.empty:
-                print(f"No data to upsert for date {REPORT_DATE}")
-            else:
-                upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
-                # Temporary
-                df = df[
-                    [
-                        "oc_rates_id",
-                        "fund",
-                        "series",
-                        "report_date",
-                        "rating_buckets",
-                        "oc_rate",
-                        "clean_oc_rate",
-                        "collateral_mv",
-                        "clean_collateral_mv",
-                        "repo_money",
+                if df is None or df.empty:
+                    print(f"No data to upsert for date {REPORT_DATE}")
+                else:
+                    upsert_data(TABLE_NAME, df, engine_oc_rate_prod)
+                    # Temporary
+                    df = df[
+                        [
+                            "oc_rates_id",
+                            "fund",
+                            "series",
+                            "report_date",
+                            "rating_buckets",
+                            "oc_rate",
+                            "clean_oc_rate",
+                            "collateral_mv",
+                            "clean_collateral_mv",
+                            "repo_money",
+                        ]
                     ]
-                ]
-                # Export_pre_calculation_file
-                oc_file_name = f"oc_rates_{REPORT_DATE}.xlsx"
-                oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
-                oc_file_path = os.path.join(oc_export_path, oc_file_name)
-                df.to_excel(oc_file_path, engine="openpyxl")
+                    # Export_pre_calculation_file
+                    oc_file_name = f"oc_rates_{REPORT_DATE}.xlsx"
+                    oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates")
+                    oc_file_path = os.path.join(oc_export_path, oc_file_name)
+                    df.to_excel(oc_file_path, engine="openpyxl")
+            except ValueError:
+                with open(OC_RATES_SKIPPED_DATES_TRACKER, "a") as file:
+                    file.write(REPORT_DATE + "\n")
 
     print("Process completed.")
 
