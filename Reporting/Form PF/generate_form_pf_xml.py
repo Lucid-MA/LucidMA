@@ -31,9 +31,9 @@ FILING_DATE = "2024-12-31"  # quarter-end here as YYYY-MM-DD string
 IS_QUARTERLY_FILING = True
 
 # Turn this flag on to get data for quarterly only
-ONLY_QUARTERLY_DATA = True
+ONLY_QUARTERLY_DATA = False
 
-DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
+DOING_HEDGE = True  # if y/e and doing MMT and other non liq-funds
 # WORKBOOK_PATH = prefix_path + "2024/10.15.24/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
 WORKBOOK_PATH = prefix_path + "2025/1.15.25/Lucid Form PF Q4 and year end - Updated for Part 3 Amendments FOR TEST FILING.xlsx"
 
@@ -128,28 +128,28 @@ if not ONLY_QUARTERLY_DATA:
         "Section 1b - Prv Fnd Prime M",
         "Section 1b - Prv Fnd Prime C1",
         "Section 1b - Prv Fnd Prime MIG",
-        "Section 1b - Prv Fnd Prime USGM",
+        # "Section 1b - Prv Fnd Prime USGM",
     ]
     SECTION_3_SHEETS1 = [
         "Sec 3 Item A-C USG M",
         "Sec 3 Item A-C Prime M",
         "Sec 3 Item A-C Prime C1",
         "Sec 3 Item A-C Prime MIG",
-        "Sec 3 Item A-C Prime USGM",
+        # "Sec 3 Item A-C Prime USGM",
     ]
     SECTION_3_SHEETS2 = [
         "Sec 3 Item D-E USG M",
         "Sec 3 Item D-E Prime M",
         "Sec 3 Item D-E Prime C1",
         "Sec 3 Item D-E Prime MIG",
-        "Sec 3 Item D-E Prime USGM",
+        # "Sec 3 Item D-E Prime USGM",
     ]
     Q58B_SHEETS = {
         "Sec 3 Item D-E USG M": "Q58-USG M",
         "Sec 3 Item D-E Prime M": "Q58-Prime M",
         "Sec 3 Item D-E Prime C1": "Q58-Prime C1",
         "Sec 3 Item D-E Prime MIG": "Q58-Prime MIG",
-        "Sec 3 Item D-E Prime USGM": "Q58-Prime USGM"
+        # "Sec 3 Item D-E Prime USGM": "Q58-Prime USGM"
     }
 
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
@@ -159,7 +159,7 @@ if not ONLY_QUARTERLY_DATA:
         prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Monthly.xlsx",
         prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Custom1.xlsx",
         prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_MonthlyIG.xlsx",
-        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_USGM.xlsx",
+        # prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_USGM.xlsx",
         # prefix_path + "2024/10.15.24/Test/2024_7_8_9_USG_Monthly.xlsx",
         # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Monthly.xlsx",
         # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Custom1.xlsx",
@@ -171,7 +171,7 @@ if not ONLY_QUARTERLY_DATA:
         ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series C1]", "805-3531452546", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series MIG]", "805-1061582636", "LIQUIDITY"],
-        ["Lucid Prime Fund LLC [Series USGM]", "805-9881830623", "LIQUIDITY"],
+        # ["Lucid Prime Fund LLC [Series USGM]", "805-9881830623", "LIQUIDITY"],
     ]
 else:
     SECTION_1B_SHEETS = [
