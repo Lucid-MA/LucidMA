@@ -38,7 +38,9 @@ combined AS (
     bh.beginning_balance,
     bh.net_activity,
     COALESCE(bc.cash_amount, -1 * bs.sweep_amount) AS total_amount,
-    bh.ending_balance
+    bh.ending_balance,
+    bc.cash_amount,
+    bs.sweep_amount
   FROM balance_history AS bh 
   LEFT JOIN bnym_activity AS bc ON (bh.report_date=bc.report_date AND bh.account_number=bc.short_acct_number AND bh.security LIKE 'CASHUSD%')
   LEFT JOIN bnym_activity AS bs ON (bh.report_date=bs.report_date AND bh.account_number=bs.short_acct_number AND bh.security LIKE 'X9X9USD%')
