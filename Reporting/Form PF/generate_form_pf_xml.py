@@ -27,7 +27,7 @@ from Utils.Common import get_file_path
 prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working files/")
 
 # PARAMETERS TO INITIALIZE
-FILING_DATE = "2024-09-30"  # quarter-end here as YYYY-MM-DD string
+FILING_DATE = "2024-12-31"  # quarter-end here as YYYY-MM-DD string
 IS_QUARTERLY_FILING = True
 
 # Turn this flag on to get data for quarterly only
@@ -35,12 +35,12 @@ ONLY_QUARTERLY_DATA = True
 
 DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
 # WORKBOOK_PATH = prefix_path + "2024/10.15.24/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
-WORKBOOK_PATH = prefix_path + "2024/10.15.24/Test/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
+WORKBOOK_PATH = prefix_path + "2025/1.15.25/Lucid Form PF Q4 and year end - Updated for Part 3 Amendments FOR TEST FILING.xlsx"
 
 if ONLY_QUARTERLY_DATA:
     XML_OUTPUT_PATH = (
         prefix_path
-        + "2024/10.15.24/lucid_form_pf_"
+        + "2025/1.15.25/XML/lucid_form_pf_"
         + datetime.now().strftime("%Y%m%d_%H_%M_%S")
         + "_quarterly"
         + ".xml"
@@ -48,7 +48,7 @@ if ONLY_QUARTERLY_DATA:
 else:
     XML_OUTPUT_PATH = (
             prefix_path
-            + "2024/10.15.24/lucid_form_pf_"
+            + "2025/1.15.25/XML/lucid_form_pf_"
             + datetime.now().strftime("%Y%m%d_%H_%M_%S")
             + "_monthly"
             + ".xml"
@@ -128,33 +128,38 @@ if not ONLY_QUARTERLY_DATA:
         "Section 1b - Prv Fnd Prime M",
         "Section 1b - Prv Fnd Prime C1",
         "Section 1b - Prv Fnd Prime MIG",
+        "Section 1b - Prv Fnd Prime USGM",
     ]
     SECTION_3_SHEETS1 = [
         "Sec 3 Item A-C USG M",
         "Sec 3 Item A-C Prime M",
         "Sec 3 Item A-C Prime C1",
         "Sec 3 Item A-C Prime MIG",
+        "Sec 3 Item A-C Prime USGM",
     ]
     SECTION_3_SHEETS2 = [
         "Sec 3 Item D-E USG M",
         "Sec 3 Item D-E Prime M",
         "Sec 3 Item D-E Prime C1",
         "Sec 3 Item D-E Prime MIG",
+        "Sec 3 Item D-E Prime USGM",
     ]
     Q58B_SHEETS = {
         "Sec 3 Item D-E USG M": "Q58-USG M",
         "Sec 3 Item D-E Prime M": "Q58-Prime M",
         "Sec 3 Item D-E Prime C1": "Q58-Prime C1",
         "Sec 3 Item D-E Prime MIG": "Q58-Prime MIG",
+        "Sec 3 Item D-E Prime USGM": "Q58-Prime USGM"
     }
 
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
     # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
     Q63_PATHS = [
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_USG_Monthly.xlsx",
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Monthly.xlsx",
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Custom1.xlsx",
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_MonthlyIG.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_USG_Monthly.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Monthly.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Custom1.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_MonthlyIG.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_USGM.xlsx",
         # prefix_path + "2024/10.15.24/Test/2024_7_8_9_USG_Monthly.xlsx",
         # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Monthly.xlsx",
         # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Custom1.xlsx",
@@ -166,6 +171,7 @@ if not ONLY_QUARTERLY_DATA:
         ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series C1]", "805-3531452546", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series MIG]", "805-1061582636", "LIQUIDITY"],
+        ["Lucid Prime Fund LLC [Series USGM]", "805-9881830623", "LIQUIDITY"],
     ]
 else:
     SECTION_1B_SHEETS = [
@@ -192,9 +198,9 @@ else:
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
     # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
     Q63_PATHS = [
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Quarterly1.xlsx",
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_Q364.xlsx",
-        prefix_path + "2024/10.15.24/q62/2024_7_8_9_Prime_QuarterlyX.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Quarterly1.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Q364.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_QuarterlyX.xlsx",
     ]
 
     FUND_DATA = [
@@ -355,19 +361,29 @@ def section1a_itemC(wb):
     curr_row = curr_row + 6
 
     q_n = sheet.Range("B" + str(curr_row)).Value
+    if isinstance(q_n, float):
+        q_n = str(int(q_n)) if q_n.is_integer() else str(q_n)
+    else:
+        q_n = str(q_n)
     while q_n != None:
         new_misc_item = ET.SubElement(misc_items, "PFSection1aItemCMiscellaneous")
         warn = True
         if q_n == "55.(a), 55.(b),55.(f) and 58 ":
             ET.SubElement(new_misc_item, "QuestionNumber").text = "55a,b,f; 58"
             warn = False
-        else:
+        # Updated 12/31/2025 to accomodate two new items
+        elif q_n == "53.(a), 53.(b),53.(f), 56 and 63":
             ET.SubElement(new_misc_item, "QuestionNumber").text = "53a,b,f;56;63"
-        if warn and len(q_n) > 15:
-            print(
-                "WARNING: Question number response too long. Max length is 15. Value is: "
-                + q_n
-            )
+        elif q_n == "3,8,9,12,20":
+            ET.SubElement(new_misc_item, "QuestionNumber").text = "3,8,9,12,20"
+        else:
+            ET.SubElement(new_misc_item, "QuestionNumber").text = "17"
+        #
+        # if warn and len(q_n) > 15:
+        #     print(
+        #         "WARNING: Question number response too long. Max length is 15. Value is: "
+        #         + q_n
+        #     )
         ET.SubElement(new_misc_item, "Description").text = sheet.Range(
             "C" + str(curr_row)
         ).Value
@@ -1795,7 +1811,7 @@ def section3_itemG(wb):
         ET.SubElement(info, "MMFSeriesNumber").text = sheet.Range("D141").Value
 
 
-def open_workbook(xlapp, xlfile):
+def open_workbook_original(xlapp, xlfile):
     """
     Helper function to open the workbook.
     Requires an excel instance and a workbook path
@@ -1805,11 +1821,23 @@ def open_workbook(xlapp, xlfile):
     except Exception as e:
         try:
             xlwb = xlapp.Workbooks.Open(
-                xlfile, 0, 1
+                xlfile, UpdateLinks=0, ReadOnly=1
             )  # don't update links, open read only
         except Exception as e:
             print(e)
             xlwb = None
+    return xlwb
+
+def open_workbook(xlapp, xlfile):
+    """
+    Helper function to open the workbook.
+    Always opens a fresh version from disk.
+    """
+    try:
+        xlwb = xlapp.Workbooks.Open(xlfile, UpdateLinks=0, ReadOnly=0)
+    except Exception as e:
+        print(f"Failed to open workbook: {e}")
+        xlwb = None
     return xlwb
 
 
