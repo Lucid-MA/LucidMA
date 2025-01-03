@@ -86,9 +86,13 @@ df["Start_date"] = pd.to_datetime(df["Start_date"], format="%m/%d/%Y")
 df["End_date"] = pd.to_datetime(df["End_date"], format="%m/%d/%Y")
 df["Amount"] = df["Amt1"].astype(float)
 
+# Ensure 'FileDate' is in datetime format
+df["FileDate"] = pd.to_datetime(df["FileDate"], format="%Y-%m-%d")
+
 # Step 1: Filter the DataFrame for the specified date range
 df = df[
     (df["Start_date"] >= pd.Timestamp("2021-01-01"))
+    # Uncomment and adjust the next lines if needed:
     # & (df["End_date"] <= pd.Timestamp("2024-03-31"))
     # & (df["PoolDescription"] == "Lucid Prime Fund LLC")
 ]
@@ -103,89 +107,60 @@ subset_cols = [
     "Head1",
     "Amount",
 ]
-deduplicated_df = df.drop_duplicates(subset=subset_cols)
-deduplicated_df = (
-    deduplicated_df.groupby(subset_cols[:-1])["Amount"].sum().reset_index()
-)
 
-end_time = time.time()  # Capture end time
-process_time = end_time - start_time
-print(f"Data processing time: {process_time:.2f} seconds")
+# Deduplicate, keeping the row with the latest 'FileDate'
+deduplicated_df = df.loc[df.groupby(subset_cols)["FileDate"].idxmax()]
 
+# Add a 'Day Count' column
+deduplicated_df["Day Count"] = (
+    deduplicated_df["End_date"] - deduplicated_df["Start_date"]
+).dt.days
+
+deduplicated_df["ID"] = (
+    deduplicated_df["PoolDescription"].astype(str)
+    + deduplicated_df["InvestorDescription"].astype(str)
+    + deduplicated_df["Start_date"].astype(str)
+    + deduplicated_df["End_date"].astype(str)
+).apply(hash_string_v2)
+
+# Define the current columns to keep and their new names
 current_columns = [
-    "ID",
     "PeriodDescription",
     "Start_date",
     "End_date",
     "Day Count",
-    "Returns",
-    "Annualized Returns",
     "PoolDescription",
     "InvestorCode",
     "InvestorDescription",
-    "Beginning Cap Acct Bal",
-    "Withdrawal - BOP",
-    "Contribution",
-    "Revised Beginning Cap Balance",
-    "Income",
-    "Expense",
-    "Mgmt Fee",
-    "Mgmt Fee Waiver",
-    "Mark to Market",
-    "Ending Cap Acct Bal",
-    "Withdrawal - EOP",
-    "Revised Ending Cap Acct Balance",
+    "Head1",
+    "Amount",
+    "FileName",
 ]
-
-# Define the new column names
 new_columns = [
-    "ID",
     "period_description",
     "start_date",
     "end_date",
     "day_count",
-    "returns",
-    "annualized_returns",
     "pool_description",
     "investor_code",
     "investor_description",
-    "beginning_cap_acct_bal",
-    "withdrawal_bop",
-    "contribution",
-    "revised_beginning_cap_balance",
-    "income",
-    "expense",
-    "mgmt_fee",
-    "mgmt_fee_waiver",
-    "mark_to_market",
-    "ending_cap_acct_bal",
-    "withdrawal_eop",
-    "revised_ending_cap_acct_balance",
+    "transaction_type",
+    "amount",
+    "file_name",
 ]
 
-# Create a dictionary to map current column names to new column names
+# Rename the columns
 rename_dict = dict(zip(current_columns, new_columns))
+deduplicated_df.rename(columns=rename_dict, inplace=True)
 
-# Rename the columns in the DataFrame
-pivot_df.rename(columns=rename_dict, inplace=True)
+deduplicated_df["timestamp"] = get_current_timestamp_datetime()
 
 ## TABLE UPLOAD ##
-table_name = "silver_ssc_data"
+table_name = "silver_ssc_data_thomas"
 
 # Columns with float data type
 float_columns = [
-    "beginning_cap_acct_bal",
-    "withdrawal_bop",
-    "contribution",
-    "revised_beginning_cap_balance",
-    "income",
-    "expense",
-    "mgmt_fee",
-    "mgmt_fee_waiver",
-    "mark_to_market",
-    "ending_cap_acct_bal",
-    "withdrawal_eop",
-    "revised_ending_cap_acct_balance",
+    "amount",
 ]
 
 
@@ -194,20 +169,6 @@ column_types = {
     "start_date": Date,
     "end_date": Date,
     "day_count": Integer,
-    "returns": DECIMAL(38, 18),
-    "annualized_returns": DECIMAL(38, 18),
-    "beginning_cap_acct_bal": Float,
-    "withdrawal_bop": Float,
-    "contribution": Float,
-    "revised_beginning_cap_balance": Float,
-    "income": Float,
-    "expense": Float,
-    "mgmt_fee": Float,
-    "mgmt_fee_waiver": Float,
-    "mark_to_market": Float,
-    "ending_cap_acct_bal": Float,
-    "withdrawal_eop": Float,
-    "revised_ending_cap_acct_balance": Float,
     "timestamp": DateTime,
 }
 
@@ -218,11 +179,9 @@ def create_table_with_schema(
     metadata = MetaData()
 
     columns = []
-    for col_name in pivot_df[new_columns].columns:
+    for col_name in deduplicated_df.columns:
         sqlalchemy_type = column_types.get(col_name, default_type)
         columns.append(Column(col_name, sqlalchemy_type))
-
-    columns.append(Column("timestamp", DateTime))
 
     silver_ssc_data_table = Table(table_name, metadata, *columns)
 
@@ -239,47 +198,13 @@ inspector = inspect(engine)
 if not inspector.has_table(table_name):
     create_table_with_schema(table_name, engine, column_types)
 
-# Create the "processed_entries" column
-pivot_df["processed_entries"] = (
-    pivot_df["pool_description"].astype(str)
-    + "_"
-    + pivot_df["investor_description"].astype(str)
-    + "_"
-    + pivot_df["start_date"].astype(str)
-    + "_"
-    + pivot_df["end_date"].astype(str)
+upsert_data(
+    engine,
+    table_name,
+    deduplicated_df,
+    "ID",
+    PUBLISH_TO_PROD,
 )
-
-# Convert null/missing values to 0 for float columns
-pivot_df[float_columns] = pivot_df[float_columns].fillna(0)
-pivot_df[float_columns] = pivot_df[float_columns].astype(float)
-pivot_df[float_columns] = pivot_df[float_columns].round(5)
-
-# Read the processed dates from the tracker file
-processed_entries = set(read_processed_files(Silver_SSC_TRACKER))
-
-# Filter out the already processed dates
-mask = ~pivot_df["processed_entries"].isin(processed_entries)
-new_entries = pivot_df[mask]
-
-
-if not new_entries.empty:
-    # Update the tracker file with new processed entries
-    new_processed_entries = new_entries["processed_entries"].unique()
-    with open(Silver_SSC_TRACKER, "a") as f:
-        f.write("\n".join(new_processed_entries) + "\n")
-    # Add the timestamp column
-    new_entries["timestamp"] = get_current_timestamp_datetime()
-    new_entries = new_entries[new_columns + ["timestamp"]]
-    #
-    # Upsert the new data
-    upsert_data(
-        engine,
-        table_name,
-        new_entries,
-        "ID",
-        PUBLISH_TO_PROD,
-    )
 
 end_time_2 = time.time()
 process_time = end_time_2 - end_time
