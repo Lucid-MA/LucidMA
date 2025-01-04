@@ -376,6 +376,8 @@ def section1a_itemC(wb):
             ET.SubElement(new_misc_item, "QuestionNumber").text = "53a,b,f;56;63"
         elif q_n == "3,8,9,12,20":
             ET.SubElement(new_misc_item, "QuestionNumber").text = "3,8,9,12,20"
+        elif q_n == "Q 8-16":
+            ET.SubElement(new_misc_item, "QuestionNumber").text = "8 to 16"
         else:
             ET.SubElement(new_misc_item, "QuestionNumber").text = "17"
         #
@@ -484,9 +486,7 @@ def section1b_itemB(wb):
                 int(sheet.Range("G61").Value)
             )
 
-        ET.SubElement(assets, "BeneficiallyOwnedByTop5Percent").text = str(
-            int(sheet.Range("C65").Value)
-        )
+        ET.SubElement(assets, "BeneficiallyOwnedByTop5Percent").text = str(int(sheet.Range("C65").Value))
         ET.SubElement(assets, "BeneficiallyOwnedByUSPersonsPercent").text = str(
             int(sheet.Range("C70").Value)
         )
