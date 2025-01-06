@@ -54,6 +54,7 @@ renamed AS (
     TRY_CAST(
       [Cash Post Date] AS DATE
     ) AS cash_post_date,
+    [Transaction Status Post Timestamp] AS transaction_status_post_timestamp,
     [timestamp] AS created_at
   FROM
     source

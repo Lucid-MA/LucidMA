@@ -119,7 +119,6 @@ ranked_matches AS (
       WHEN e.is_po = 0 AND e.related_helix_id IS NULL AND e.flow_amount > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 140
       WHEN e.is_po = 1 AND PATINDEX(UPPER(o.client_reference_number)+'%', UPPER(e.desc_replaced)) = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 150
       WHEN e.is_po = 0 AND e.flow_amount < 0 AND o.transaction_type_name = 'BUY' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 160
-      WHEN e.is_hxswing = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 200
       ELSE 9999
     END AS match_rank,
     CASE

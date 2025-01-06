@@ -94,7 +94,7 @@ combined AS (
     CASE
     WHEN o.reference_number IS NULL THEN 0
     ELSE ROW_NUMBER() OVER (PARTITION BY o.report_date, o.fund, o.reference_number ORDER BY e.generated_id)
-    END AS bynm_use
+    END AS bnym_use
   FROM expected_flows AS e
   FULL OUTER JOIN observed_flows AS o 
     ON (
@@ -123,16 +123,16 @@ balance_calc AS (
     COALESCE(SUM(c.e_amount) OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num),0) AS e_balance,
     c.e_amount,
     CASE
-      WHEN bynm_use = 1 THEN c.o_amount
+      WHEN bnym_use = 1 THEN c.o_amount
       ELSE NULL
     END AS o_amount,
     COALESCE(SUM(
-      CASE WHEN bynm_use = 1 THEN c.o_amount ELSE NULL END
+      CASE WHEN bnym_use = 1 THEN c.o_amount ELSE NULL END
       ) OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num),0) AS o_balance,
     c.o_desc,
     c.reference_number,
     row_num AS order_by_amt,
-    bynm_use
+    bnym_use
   FROM combined AS c
   LEFT JOIN bnyn_summary AS b
     ON (
@@ -161,7 +161,7 @@ final AS (
     o_desc,
     reference_number,
     order_by_amt,
-    bynm_use
+    bnym_use
   FROM balance_calc
 )
 
