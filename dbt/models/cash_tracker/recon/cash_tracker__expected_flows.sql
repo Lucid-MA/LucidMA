@@ -192,7 +192,10 @@ combined_matches AS (
 sorted_matches AS (
   SELECT
     *,
-    ROW_NUMBER() OVER (PARTITION BY report_date, _flow_id ORDER BY match_rank) AS row_rank
+    CASE
+      WHEN match_rank = 1.0 THEN 1
+      ELSE ROW_NUMBER() OVER (PARTITION BY report_date, _flow_id ORDER BY match_rank) 
+    END AS row_rank
   FROM combined_matches
 ),
 final_flows AS (
