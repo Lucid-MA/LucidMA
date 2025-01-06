@@ -14,7 +14,7 @@ option1 AS (
   SELECT
     'Option1' AS route,
     CASE
-      WHEN counterparty IN ('400CAP', 'CTVA', 'AGNC') THEN counterparty + '~' + depository
+      WHEN counterparty IN ('400CAP', 'CTVA', 'AGNC', 'CFCO', 'LMRMSTR') THEN counterparty + '~' + depository
       ELSE counterparty
     END AS counterparty2,
     -1 * modifier * ABS([money]) AS amount2,
@@ -26,7 +26,7 @@ option2 AS (
   SELECT
     'Option2' AS route,
     CASE
-      WHEN counterparty IN ('400CAP', 'CTVA', 'AGNC') THEN counterparty + '~' + depository
+      WHEN counterparty IN ('400CAP', 'CTVA', 'AGNC', 'CFCO', 'LMRMSTR') THEN counterparty + '~' + depository
       ELSE counterparty
     END AS counterparty2,
     modifier * ABS(end_money) AS amount2,
