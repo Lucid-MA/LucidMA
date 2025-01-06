@@ -65,6 +65,7 @@ final_settled_flows AS (
     SUM(flow_amount) AS cash_total
   FROM {{ ref('cash_tracker__flows_after_force_failing') }}
   WHERE flow_is_settled = 1
+  AND ct_use = 1
   GROUP BY report_date, fund, flow_account, flow_acct_number
 ),
 combined AS (
