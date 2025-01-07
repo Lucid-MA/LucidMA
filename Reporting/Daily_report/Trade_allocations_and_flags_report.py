@@ -221,9 +221,18 @@ def extract_trade_allocation_data(file_path, sheet_name):
     table_start = start_row_index + 1
     table_df = df.iloc[table_start:].reset_index(drop=True)
 
-    # Include the lines for Total Master, Total Series, and Break
-    additional_rows = table_df.iloc[:3, [2, 3]].dropna()
+    # Search for specific rows by their labels in the 'Unnamed: 2' column
+    labels = ["Total Master", "Total Series", "Break"]
+    additional_rows = table_df[table_df["Unnamed: 2"].isin(labels)][
+        ["Unnamed: 2", "Unnamed: 3"]
+    ].dropna()
     additional_rows.columns = ["Label", "Value"]
+
+    # Format the 'Value' column to include a dollar sign and two decimals
+    additional_rows["Value"] = pd.to_numeric(additional_rows["Value"], errors="coerce")
+    additional_rows["Value"] = additional_rows["Value"].apply(
+        lambda x: f"${x:,.2f}" if pd.notna(x) else ""
+    )
 
     # Find the header row for 'Series vs Master Allocations'
     header_row_index = table_df[table_df["Unnamed: 2"] == "Series"].index[0]
@@ -233,6 +242,19 @@ def extract_trade_allocation_data(file_path, sheet_name):
     allocation_table.columns = allocation_table.iloc[0]
     allocation_table = allocation_table[1:].reset_index(drop=True)
     allocation_table = allocation_table[["Series", "Money"]].dropna(how="all")
+
+    # Filter rows to only include valid 'Series' entries
+    allocation_table = allocation_table[
+        allocation_table["Series"].str.startswith(("MASTER", "PRIME"))
+    ]
+
+    # Format the 'Money' column to have two decimals and comma-separated values
+    allocation_table["Money"] = pd.to_numeric(
+        allocation_table["Money"], errors="coerce"
+    )
+    allocation_table["Money"] = allocation_table["Money"].apply(
+        lambda x: f"${x:,.2f}" if pd.notna(x) else ""
+    )
 
     return additional_rows, allocation_table
 
@@ -246,7 +268,6 @@ def format_html_email_with_header(additional_rows, allocation_table):
 
     # Header section
     header_html = f"""
-    <div class="bold-text">Unsettled Trade - PRIME Fund:</div>
     <table>
         <tr class="header">
             <td colspan="2"><span>Lucid Management and Capital Partners LP</span></td>
@@ -288,7 +309,7 @@ def format_html_email_with_header(additional_rows, allocation_table):
     </head>
     <body>
         {header_html}
-        <h3>3. Trade Allocation Breaks</h3>
+        <h3>Trade Allocation Breaks</h3>
         <h4>Series vs Master Allocations</h4>
         {additional_html}
         <br>
@@ -327,9 +348,9 @@ def refresh_data_and_send_email():
         body = f"Problem opening file {file_path}. Please review the file."
         recipients = [
             "tony.hoang@lucidma.com",
-            "thomas.durante@lucidma.com",
-            "aliza.schwed@lucidma.com",
-            "swayam.sinha@lucidma.com",
+            # "thomas.durante@lucidma.com",
+            # "aliza.schwed@lucidma.com",
+            # "swayam.sinha@lucidma.com",
         ]
         cc_recipients = [
             # "operations@lucidma.com"
@@ -352,19 +373,17 @@ def refresh_data_and_send_email():
     )
     email_body = format_html_email_with_header(additional_rows, allocation_table)
 
-    subject = f"LRX – Transaction Settlement Recon – Prime - {valdate}"
+    subject = f"LRX – Trade Allocations and Flags report - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
-        # "aliza.schwed@lucidma.com",
-        # "swayam.sinha@lucidma.com",
+        "aliza.schwed@lucidma.com",
+        "swayam.sinha@lucidma.com",
     ]
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     attachment_path = file_path
-    attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
+    attachment_name = f"Trade Allocations and Flags_{valdate}.xlsm"
 
     send_email(
         subject,
