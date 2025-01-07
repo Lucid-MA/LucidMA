@@ -77,11 +77,18 @@ combined AS (
     ba.sweep_detected,
     COALESCE(ch.prior_eod_balance, 0) AS cash_actual_bod,
     COALESCE(ba.cash_amount, 0) AS bnym_cash_activity,
-    COALESCE(ba.sweep_amount, 0) * -1 AS bnym_sweep_activity,
     COALESCE(bhc.ending_balance, 0) AS cash_actual_eod,
     COALESCE(sh.prior_eod_balance, 0) AS sweep_actual_bod,
+    COALESCE(ba.sweep_amount, 0) * -1 AS bnym_sweep_activity,
     COALESCE(bhs.ending_balance, 0) AS sweep_actual_eod,
-    COALESCE(cf.cash_total, 0) AS ct_cash_flows
+    CASE
+      WHEN sweep_detected = 1 THEN COALESCE(cf.cash_total, 0) - (COALESCE(ch.prior_eod_balance, 0) + COALESCE(cf.cash_total, 0))
+      ELSE COALESCE(cf.cash_total, 0) 
+    END AS ct_cash_activity,
+    CASE
+      WHEN sweep_detected = 1 THEN COALESCE(ch.prior_eod_balance, 0) + COALESCE(cf.cash_total, 0) 
+      ELSE 0
+    END AS ct_sweep_activity
   FROM account_history AS ah
   LEFT JOIN eod_history AS ch ON (ah.report_date=ch.report_date AND ah.account_number=ch.account_number AND ch.security LIKE 'CASHUSD%')
   LEFT JOIN eod_history AS sh ON (ah.report_date=sh.report_date AND ah.account_number=sh.account_number AND sh.security LIKE 'X9X9USD%')
@@ -97,17 +104,52 @@ calc_eod AS (
     acct_name,
     account_number,
     cash_actual_eod,
+    (cash_actual_bod + bnym_cash_activity) AS bnym_cash_eod,
+    (cash_actual_bod + ct_cash_activity) AS ct_cash_eod,
+    sweep_actual_eod,
+    (sweep_actual_bod + bnym_sweep_activity) AS bnym_sweep_eod,
+    (sweep_actual_bod + ct_sweep_activity) AS ct_sweep_eod,
+    sweep_detected,
     cash_actual_bod,
     bnym_cash_activity,
-    (cash_actual_bod + bnym_cash_activity) AS bnym_cash_eod,
-    ct_cash_flows,
-    (cash_actual_bod + ct_cash_flows - bnym_sweep_activity) AS ct_cash_eod,
-    sweep_actual_eod,
+    ct_cash_activity,
+    SUM(bnym_cash_activity) OVER (PARTITION BY account_number ORDER BY report_date) AS sum_bnym_cash,
+    SUM(ct_cash_activity) OVER (PARTITION BY account_number ORDER BY report_date) AS sum_ct_cash,
+    SUM(bnym_sweep_activity) OVER (PARTITION BY account_number ORDER BY report_date) AS sum_bnym_sweep,
+    SUM(ct_sweep_activity) OVER (PARTITION BY account_number ORDER BY report_date) AS sum_ct_sweep,
+    (bnym_cash_activity + bnym_sweep_activity) AS bnym_cash_trans,
     sweep_actual_bod,
     bnym_sweep_activity,
-    (sweep_actual_bod + bnym_sweep_activity) AS bnym_sweep_eod,
-    sweep_detected
+    ct_sweep_activity
   FROM combined
+),
+calc_diffs AS (
+  SELECT 
+    report_date,
+    fund,
+    acct_name,
+    account_number,
+    cash_actual_eod,
+    bnym_cash_eod,
+    ct_cash_eod,
+    (bnym_cash_eod - ct_cash_eod) AS diff_cash_eod,
+    sweep_actual_eod,
+    bnym_sweep_eod,
+    ct_sweep_eod,
+    (bnym_sweep_eod - ct_sweep_eod) AS diff_sweep_eod,
+    sweep_detected,
+    cash_actual_bod,
+    bnym_cash_activity,
+    ct_cash_activity,
+    sum_bnym_cash,
+    sum_ct_cash,
+    sum_bnym_sweep,
+    sum_ct_sweep,
+    bnym_cash_trans,
+    sweep_actual_bod,
+    bnym_sweep_activity,
+    ct_sweep_activity 
+  FROM calc_eod
 ),
 final AS (
   SELECT 
@@ -115,16 +157,31 @@ final AS (
     fund,
     acct_name,
     account_number,
-    cash_actual_bod,
-    ct_cash_flows,
-    -1 * bnym_sweep_activity AS ct_sweep_activity,
-    ct_cash_eod,
+    cash_actual_eod,
     bnym_cash_eod,
-    (ct_cash_eod - bnym_cash_eod) as diff_cash_eod,
+    ct_cash_eod,
+    diff_cash_eod,
+    SUM(diff_cash_eod) OVER (PARTITION BY account_number ORDER BY report_date) AS diff_cash_total,
+    --(sum_bnym_cash - sum_ct_cash) AS diff_sum_cash,
+    sweep_actual_eod,
+    bnym_sweep_eod,
+    ct_sweep_eod,
+    diff_sweep_eod,
+    SUM(diff_sweep_eod) OVER (PARTITION BY account_number ORDER BY report_date) AS diff_sweep_total,
+    --(sum_bnym_sweep - sum_ct_sweep) AS diff_sum_sweep,
+    sweep_detected,
+    cash_actual_bod,
+    bnym_cash_activity,
+    ct_cash_activity,
+    sum_bnym_cash,
+    sum_ct_cash,
+    sum_bnym_sweep,
+    sum_ct_sweep,
+    bnym_cash_trans,
     sweep_actual_bod,
     bnym_sweep_activity,
-    bnym_sweep_eod
-  FROM calc_eod
+    ct_sweep_activity 
+  FROM calc_diffs
 )
 
 SELECT * FROM final
