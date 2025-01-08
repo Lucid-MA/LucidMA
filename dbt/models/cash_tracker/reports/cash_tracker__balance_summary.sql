@@ -123,7 +123,14 @@ final AS (
     (ct_cash_eod - bnym_cash_eod) as diff_cash_eod,
     sweep_actual_bod,
     bnym_sweep_activity,
-    bnym_sweep_eod
+    bnym_sweep_eod,
+    cash_actual_eod,
+    sweep_actual_eod,
+    bnym_sweep_eod AS ct_sweep_eod,
+    bnym_cash_activity,
+    ct_cash_flows AS ct_cash_activity,
+    bnym_cash_activity AS bnym_cash_trans,
+    sweep_detected
   FROM calc_eod
 )
 
