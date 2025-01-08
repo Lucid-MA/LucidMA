@@ -390,6 +390,7 @@ pool_mapping = {
     "GEN-LUCIDII_A1": "Lucid Prime Fund LLC_A1",
     "GEN-LUCID": "Lucid Cash Fund USG LLC",
     "GEN-LUCIDII_A2Y": "Lucid Prime Fund LLC_A2Y",
+    "GEN-LUCIDII_USG": "Lucid Prime Fund LLC_USGM",
 }
 
 vehicle_mapping = {
