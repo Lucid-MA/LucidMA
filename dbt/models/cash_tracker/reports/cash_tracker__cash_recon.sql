@@ -33,7 +33,8 @@ observed AS (
     client_reference_number,
     local_amount AS amount,
     reference_number,
-    transaction_type_name
+    transaction_type_name,
+    cash_posting_transaction_timestamp
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
   WHERE 1=1
   AND fund IS NOT NULL
@@ -73,7 +74,8 @@ observed_flows AS (
     helix_id,
     client_reference_number,
     amount,
-    reference_number
+    reference_number,
+    cash_posting_transaction_timestamp
   FROM observed
 ),
 combined AS (
@@ -93,6 +95,7 @@ combined AS (
     o.amount AS o_amount,
     o.client_reference_number AS o_desc,
     COALESCE(e.reference_number, o.reference_number) AS reference_number,
+    o.cash_posting_transaction_timestamp,
     ROW_NUMBER() OVER (ORDER BY COALESCE(e.sort_amount, o.amount), e.generated_id) AS row_num,
     CASE
       WHEN e._flow_id IS NULL THEN 0
@@ -145,6 +148,7 @@ balance_calc AS (
       AS o_balance,
     c.o_desc,
     c.reference_number,
+    c.cash_posting_transaction_timestamp,
     row_num AS order_by_amt,
     bnym_use
   FROM combined AS c
@@ -176,6 +180,7 @@ final AS (
     o_balance,
     o_desc,
     reference_number,
+    cash_posting_transaction_timestamp,
     order_by_amt,
     bnym_use,
     CASE 

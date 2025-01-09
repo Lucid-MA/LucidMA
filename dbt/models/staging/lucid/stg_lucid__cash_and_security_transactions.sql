@@ -55,6 +55,7 @@ renamed AS (
       [Cash Post Date] AS DATE
     ) AS cash_post_date,
     [Transaction Status Post Timestamp] AS transaction_status_post_timestamp,
+    [Cash Posting Transaction Timestamp] AS cash_posting_transaction_time,
     [timestamp] AS created_at
   FROM
     source
@@ -82,6 +83,12 @@ final AS (
       WHEN location_name = 'STIF LOCATIONS' AND transaction_type_name != 'DIVIDEND' THEN 1
       ELSE 0
     END AS sweep_detected,
+    CAST(
+        CONCAT(
+            FORMAT(cash_post_date, 'yyyy-MM-dd'), ' ',
+            REPLACE(cash_posting_transaction_time, '.', ':')
+        ) AS DATETIME
+    ) AS cash_posting_transaction_timestamp, 
     *
   FROM renamed
 )
