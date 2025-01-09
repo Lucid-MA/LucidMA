@@ -31,11 +31,11 @@ FILING_DATE = "2024-12-31"  # quarter-end here as YYYY-MM-DD string
 IS_QUARTERLY_FILING = True
 
 # Turn this flag on to get data for quarterly only
-ONLY_QUARTERLY_DATA = True
+ONLY_QUARTERLY_DATA = False
 
-DOING_HEDGE = False  # if y/e and doing MMT and other non liq-funds
+DOING_HEDGE = True  # if y/e and doing MMT and other non liq-funds
 # WORKBOOK_PATH = prefix_path + "2024/10.15.24/Lucid Form PF Q3 - Updated for Part 3 Amendments.xlsx"
-WORKBOOK_PATH = prefix_path + "2025/1.15.25/Lucid Form PF Q4 and year end - Updated for Part 3 Amendments FOR TEST FILING.xlsx"
+WORKBOOK_PATH = prefix_path + "2025/1.15.25/Lucid Form PF Q4 and year end - Updated for Part 3 Amendments - TONY.xlsx"
 
 if ONLY_QUARTERLY_DATA:
     XML_OUTPUT_PATH = (
@@ -125,53 +125,51 @@ FILING_FREQUENCY = "Q"
 if not ONLY_QUARTERLY_DATA:
     SECTION_1B_SHEETS = [
         "Section 1b - Priv Fnd USG M",
-        "Section 1b - Prv Fnd Prime M",
+        # "Section 1b - Prv Fnd Prime M",
         "Section 1b - Prv Fnd Prime C1",
         "Section 1b - Prv Fnd Prime MIG",
-        # "Section 1b - Prv Fnd Prime USGM",
+        "Section 1b - Prv Fnd Prime USGM",
     ]
     SECTION_3_SHEETS1 = [
         "Sec 3 Item A-C USG M",
-        "Sec 3 Item A-C Prime M",
+        # "Sec 3 Item A-C Prime M",
         "Sec 3 Item A-C Prime C1",
         "Sec 3 Item A-C Prime MIG",
-        # "Sec 3 Item A-C Prime USGM",
+        "Sec 3 Item A-C Prime USGM",
     ]
     SECTION_3_SHEETS2 = [
         "Sec 3 Item D-E USG M",
-        "Sec 3 Item D-E Prime M",
+        # "Sec 3 Item D-E Prime M",
         "Sec 3 Item D-E Prime C1",
         "Sec 3 Item D-E Prime MIG",
-        # "Sec 3 Item D-E Prime USGM",
+        "Sec 3 Item D-E Prime USGM",
     ]
     Q58B_SHEETS = {
         "Sec 3 Item D-E USG M": "Q58-USG M",
-        "Sec 3 Item D-E Prime M": "Q58-Prime M",
+        # "Sec 3 Item D-E Prime M": "Q58-Prime M",
         "Sec 3 Item D-E Prime C1": "Q58-Prime C1",
         "Sec 3 Item D-E Prime MIG": "Q58-Prime MIG",
-        # "Sec 3 Item D-E Prime USGM": "Q58-Prime USGM"
+        "Sec 3 Item D-E Prime USGM": "Q58-Prime USGM"
     }
 
     # ORDER MATTERS HERE - Q63_PATHS AND FUND_DATA must be parallel (change line) in section 3E
     # only the liquidity funds for section 3 - can ignore a1, 2yig, mmt
     Q63_PATHS = [
         prefix_path + "2025/1.15.25/q62/2024_10_11_12_USG_Monthly.xlsx",
-        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Monthly.xlsx",
+        # prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Monthly.xlsx",
         prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_Custom1.xlsx",
         prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_MonthlyIG.xlsx",
-        # prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_USGM.xlsx",
-        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_USG_Monthly.xlsx",
-        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Monthly.xlsx",
-        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_Custom1.xlsx",
-        # prefix_path + "2024/10.15.24/Test/2024_7_8_9_Prime_MonthlyIG.xlsx",
+        prefix_path + "2025/1.15.25/q62/2024_10_11_12_Prime_USGM.xlsx",
     ]
 
     FUND_DATA = [
         ["Lucid Cash Fund USG LLC", "805-6455113436", "LIQUIDITY"],
-        ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"],
+        # ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"], # add back
         ["Lucid Prime Fund LLC [Series C1]", "805-3531452546", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series MIG]", "805-1061582636", "LIQUIDITY"],
         # ["Lucid Prime Fund LLC [Series USGM]", "805-9881830623", "LIQUIDITY"],
+        ["Lucid Prime Fund LLC [Series USGM]", "805-2462468395", "LIQUIDITY"] # to remove
+
     ]
 else:
     SECTION_1B_SHEETS = [
@@ -214,13 +212,16 @@ if DOING_HEDGE:
     SECTION_1B_SHEETS.append("Section 1b - Prv Fnd Prime A1")
     SECTION_1B_SHEETS.append("Section 1b - Prv Fnd Prime 2YIG")
     SECTION_1B_SHEETS.append("Section 1b - Prv Fnd MMT T")
+    SECTION_1B_SHEETS.append("Section 1b - Prv Fnd Prime A2Y")
 
 if DOING_HEDGE:
-    FUND_DATA.append(["Lucid Prime Fund LLC [Series A1]", "805-6101207933", "PRIVATE"])
+    # FUND_DATA.append(["Lucid Prime Fund LLC [Series A1]", "805-6101207933", "PRIVATE"])
     FUND_DATA.append(
         ["Lucid Prime Fund LLC [Series 2YIG]", "805-8312373461", "PRIVATE"]
     )
     FUND_DATA.append(["MM Term Income Master Fund LLC", "805-5607102875", "HEDGE"])
+    # FUND_DATA.append(["Lucid Prime Fund LLC [Series A2Y]", "805-6555173424", "PRIVATE"])
+    FUND_DATA.append(["Lucid Prime Fund LLC [Series A2Y]", "805-6101207933", "PRIVATE"])
 
 NA = -2146826246
 
