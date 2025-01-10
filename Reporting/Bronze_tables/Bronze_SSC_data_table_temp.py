@@ -46,11 +46,6 @@ PUBLISH_TO_PROD = True
 repo_path = get_repo_root()
 bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
 
-# Need to extract zip files before uploading to Bronze table
-ssc_file_crawler_file_path = (
-    repo_path / "Reporting/Bronze_tables/Bronze_returns_SSC_file_crawler.py"
-)
-
 if PUBLISH_TO_PROD:
     engine = engine_prod
     bronze_table_tracker = (
@@ -172,7 +167,9 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 if missing_columns:
                     print(f"File {file} is missing required columns: {e}. Skipping...")
                     continue  # Skip to the next file if some columns are missing
-                df = pd.read_excel(file_path, usecols=bronze_ssc_table_needed_columns, dtype=str)
+                df = pd.read_excel(
+                    file_path, usecols=bronze_ssc_table_needed_columns, dtype=str
+                )
 
                 df["FileName"] = file
                 df["FileDate"] = file_date
