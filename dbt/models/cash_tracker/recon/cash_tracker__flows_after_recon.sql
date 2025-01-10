@@ -33,6 +33,7 @@ combined AS (
     report_date,
     fund,
     series,
+    [_flow_id],
     [route],
     transaction_action_id,
     transaction_desc,
@@ -57,6 +58,7 @@ combined AS (
     report_date,
     fund,
     series,
+    [_flow_id],
     [route],
     transaction_action_id,
     transaction_desc,
@@ -79,7 +81,8 @@ combined AS (
 ),
 final AS (
   SELECT
-    *
+    *,
+    ROW_NUMBER() OVER (PARTITION BY report_date, fund, _flow_id ORDER BY generated_id) AS ct_use
   FROM combined
 )
 

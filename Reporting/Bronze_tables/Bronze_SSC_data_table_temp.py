@@ -53,30 +53,12 @@ ssc_file_crawler_file_path = (
 
 if PUBLISH_TO_PROD:
     engine = engine_prod
-    bronze_table_tracker = bronze_tracker_dir / "Bronze Table Processed SSC Files PROD"
+    bronze_table_tracker = (
+        bronze_tracker_dir / "Bronze Table Processed SSC Files PROD TEMP"
+    )
 else:
     engine = engine_staging
     bronze_table_tracker = bronze_tracker_dir / "Bronze Table Processed SSC Files"
-
-try:
-    result_price = subprocess.run(
-        [
-            "python",
-            ssc_file_crawler_file_path,
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    print("SSC file crawler executed successfully.")
-except subprocess.CalledProcessError as e:
-    error_message = (
-        f"Error preparing raw SSC file with the crawler. Return code: {e.returncode}"
-    )
-    error_output = e.stderr
-    print(error_message)
-    print("Error output:", error_output)
-    raise Exception(error_message) from e
 
 
 # Function to extract date from filename using regex
@@ -218,14 +200,11 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 
 
 # Main execution
-TABLE_NAME = "bronze_ssc_data"
+TABLE_NAME = "bronze_ssc_data_temp"
 base_directories = [
-    r"S:/Users/THoang/Data/SSC/Prime",
-    r"S:/Users/THoang/Data/SSC/USG",
+    r"S:/Users/THoang/Data/SSC/Temp/Prime",
+    r"S:/Users/THoang/Data/SSC/Temp/USG",
 ]
 
-historical_data = [r"S:/Users/THoang/Data/SSC/Historical"]
-
 create_transactions_table(TABLE_NAME)
-# validate_schema_and_update_db(base_directories, TABLE_NAME)
-validate_schema_and_update_db(historical_data, TABLE_NAME)
+validate_schema_and_update_db(base_directories, TABLE_NAME)

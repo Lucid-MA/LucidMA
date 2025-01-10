@@ -78,10 +78,7 @@ trade_query_part1 AS (
         END
       ELSE 0
     END roll_of,
-    CASE
-      WHEN TRIM(UPPER(tradepieces.acct_number)) = '400CAPTX' THEN 'TEX'
-      ELSE TRIM(UPPER(tradepieces.acct_number))
-    END counterparty,
+    TRIM(UPPER(tradepieces.acct_number)) AS counterparty,
     tradepieces.depository,
     tradepieces.startdate,
     tradepieces.closedate,
@@ -166,4 +163,4 @@ SELECT
   *,
   report_date AS orig_report_date
 FROM final
-WHERE row_rank = 1
+--WHERE row_rank = 1

@@ -29,6 +29,12 @@ compare AS (
         transaction_action_id,
         flow_account,
         flow_status,
+         SUM(
+            CASE
+                WHEN series != '' THEN used_alloc
+                ELSE 0
+            END
+        ) AS total_alloc,
         SUM(
             CASE
                 WHEN series = '' THEN flow_amount
@@ -47,7 +53,16 @@ compare AS (
 ),
 final AS (
     SELECT
-        *
+        report_date,
+        _flow_id,
+        fund,
+        transaction_action_id,
+        flow_account,
+        flow_status,
+        total_alloc,
+        main_amount,
+        --ROUND(series_total, 8) AS series_total
+        series_total
     FROM
         compare
 )

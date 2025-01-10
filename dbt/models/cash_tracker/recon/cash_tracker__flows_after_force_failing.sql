@@ -9,6 +9,7 @@ final AS (
     report_date,
     fund,
     series,
+    [_flow_id],
     [route],
     transaction_action_id,
     transaction_desc,
@@ -30,7 +31,8 @@ final AS (
     is_hxswing,
     sweep_detected,
     generated_id,
-    reference_number
+    reference_number,
+    ct_use
   FROM flows
 )
 

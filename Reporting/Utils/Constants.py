@@ -64,10 +64,12 @@ transaction_map = {
     "CE AD COST": "Expense",
     "CE ADMIN": "Expense",
     "CE AUDIT": "Expense",
+    "CE BANK FE": "Expense",
     "CE CUST FE": "Expense",
     "CE FCE": "Expense",
     "CE HED FEE": "Expense",
     "CE IF": "Mgmt Fee Waiver",
+    "CE IER": "Income",
     "CE IIEA": "Income",
     "CE IIEM": "Income",
     "CE IIF": "Income",
@@ -233,6 +235,14 @@ investor_mapping = {
     "00006800001": "University Of Minnesota Foundation",
     "176399001": "GuideStone Financial Resources of the Southern Baptist Convention - Restricted Insurance Reserves",
     "155714002": "Word of God Fellowship, Inc. Cash Reserves",
+    "1000062824": "University of Virginia Investment Mgmt Company",
+    "1000063375": "David K. Carlson",
+    "1000063792": "Martin St. Pierre",
+    "1000065733": "USG ASSETS LLC Series M-1",
+    "1000069366": "Martin I St. Pierre",
+    "1000069527": "USG ASSETS LLC Series M-2",
+    "1000071469": "IRR K LLC",
+    "1000071782": "USG Assets Series M-3",
 }
 
 period_mapping = {
@@ -390,6 +400,7 @@ pool_mapping = {
     "GEN-LUCIDII_A1": "Lucid Prime Fund LLC_A1",
     "GEN-LUCID": "Lucid Cash Fund USG LLC",
     "GEN-LUCIDII_A2Y": "Lucid Prime Fund LLC_A2Y",
+    "GEN-LUCIDII_USG": "Lucid Prime Fund LLC_USGM",
 }
 
 vehicle_mapping = {

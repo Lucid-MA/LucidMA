@@ -91,11 +91,12 @@ df["Transaction_category"] = df["Head1"].apply(
 df["Amount"] = df["Amt1"].astype(float)
 
 # Step 1: Filter the DataFrame for the specified date range
-df = df[
-    (df["Start_date"] >= pd.Timestamp("2021-01-01"))
-    # & (df["End_date"] <= pd.Timestamp("2024-03-31"))
-    # & (df["PoolDescription"] == "Lucid Prime Fund LLC")
-]
+# 01/07/2024 - temporary disable as we now have historical data
+# df = df[
+#     (df["Start_date"] >= pd.Timestamp("2021-01-01"))
+#     # & (df["End_date"] <= pd.Timestamp("2024-03-31"))
+#     # & (df["PoolDescription"] == "Lucid Prime Fund LLC")
+# ]
 
 # Step 2: Deduplicate the DataFrame due to repeating transactions on later file dates of the same year
 subset_cols = [
@@ -177,21 +178,26 @@ import numpy as np
 # Calculate Returns, handle division by zero
 pivot_df["Returns"] = np.where(
     pivot_df["Revised Beginning Cap Balance"] != 0,
-    (pivot_df["Revised Ending Cap Acct Balance"] - pivot_df["Revised Beginning Cap Balance"])
+    (
+        pivot_df["Revised Ending Cap Acct Balance"]
+        - pivot_df["Revised Beginning Cap Balance"]
+    )
     / pivot_df["Revised Beginning Cap Balance"],
-    0  # Set Returns to 0 when Revised Beginning Cap Balance is 0
+    0,  # Set Returns to 0 when Revised Beginning Cap Balance is 0
 )
 
 # Calculate Annualized Returns, handle day count > 0
 pivot_df["Annualized Returns"] = np.where(
     pivot_df["Day Count"] > 0,
     pivot_df["Returns"] * 360 / pivot_df["Day Count"],
-    0  # Set Annualized Returns to 0 when Day Count is 0
+    0,  # Set Annualized Returns to 0 when Day Count is 0
 )
 
 # Replace any inf or -inf with 0 for Returns and Annualized Returns
 pivot_df.loc[:, "Returns"] = pivot_df["Returns"].replace([np.inf, -np.inf], 0)
-pivot_df.loc[:, "Annualized Returns"] = pivot_df["Annualized Returns"].replace([np.inf, -np.inf], 0)
+pivot_df.loc[:, "Annualized Returns"] = pivot_df["Annualized Returns"].replace(
+    [np.inf, -np.inf], 0
+)
 
 # Drop 'Unmapped / Others'
 pivot_df = pivot_df.drop("Unmapped / Others", axis=1)

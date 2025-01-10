@@ -119,7 +119,6 @@ ranked_matches AS (
       WHEN e.is_po = 0 AND e.related_helix_id IS NULL AND e.flow_amount > 0 AND o.transaction_type_name = 'CASH DEPOSIT' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 140
       WHEN e.is_po = 1 AND PATINDEX(UPPER(o.client_reference_number)+'%', UPPER(e.desc_replaced)) = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 150
       WHEN e.is_po = 0 AND e.flow_amount < 0 AND o.transaction_type_name = 'BUY' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 160
-      WHEN e.is_hxswing = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 200
       ELSE 9999
     END AS match_rank,
     CASE
@@ -193,7 +192,10 @@ combined_matches AS (
 sorted_matches AS (
   SELECT
     *,
-    ROW_NUMBER() OVER (PARTITION BY report_date, _flow_id ORDER BY match_rank) AS row_rank
+    CASE
+      WHEN match_rank = 1.0 THEN 1
+      ELSE ROW_NUMBER() OVER (PARTITION BY report_date, _flow_id ORDER BY match_rank) 
+    END AS row_rank
   FROM combined_matches
 ),
 final_flows AS (
@@ -237,6 +239,7 @@ final_flows AS (
     o.helix_id AS ob_helix_id,
     o.sweep_detected,
     o.cash_account_number,
+    o.cash_posting_transaction_timestamp,
     CASE
       WHEN m.match_rank IS NOT NULL THEN m.match_rank
       WHEN e.is_margin = 1 AND e.margin_total = 0.0 THEN 0

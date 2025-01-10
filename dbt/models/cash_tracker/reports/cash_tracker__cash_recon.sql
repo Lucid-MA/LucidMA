@@ -33,7 +33,8 @@ observed AS (
     client_reference_number,
     local_amount AS amount,
     reference_number,
-    transaction_type_name
+    transaction_type_name,
+    cash_posting_transaction_timestamp
   FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
   WHERE 1=1
   AND fund IS NOT NULL
@@ -73,7 +74,8 @@ observed_flows AS (
     helix_id,
     client_reference_number,
     amount,
-    reference_number
+    reference_number,
+    cash_posting_transaction_timestamp
   FROM observed
 ),
 combined AS (
@@ -93,6 +95,7 @@ combined AS (
     o.amount AS o_amount,
     o.client_reference_number AS o_desc,
     COALESCE(e.reference_number, o.reference_number) AS reference_number,
+    o.cash_posting_transaction_timestamp,
     ROW_NUMBER() OVER (ORDER BY COALESCE(e.sort_amount, o.amount), e.generated_id) AS row_num,
     CASE
       WHEN e._flow_id IS NULL THEN 0
@@ -101,7 +104,7 @@ combined AS (
     CASE
       WHEN o.reference_number IS NULL THEN 0
       ELSE ROW_NUMBER() OVER (PARTITION BY o.report_date, o.fund, o.reference_number ORDER BY e.generated_id)
-    END AS bynm_use
+    END AS bnym_use
   FROM expected_flows AS e
   FULL OUTER JOIN observed_flows AS o 
     ON (
@@ -137,16 +140,17 @@ balance_calc AS (
       ELSE NULL
     END AS e_amount,
     CASE
-      WHEN bynm_use = 1 THEN c.o_amount
+      WHEN bnym_use = 1 THEN c.o_amount
       ELSE NULL
     END AS o_amount,
-    COALESCE(SUM(CASE WHEN bynm_use = 1 THEN c.o_amount ELSE NULL END) 
+    COALESCE(SUM(CASE WHEN bnym_use = 1 THEN c.o_amount ELSE NULL END) 
       OVER (PARTITION BY c.report_date, c.fund, c.acct_name ORDER BY c.row_num) ,0) 
       AS o_balance,
     c.o_desc,
     c.reference_number,
+    c.cash_posting_transaction_timestamp,
     row_num AS order_by_amt,
-    bynm_use
+    bnym_use
   FROM combined AS c
   LEFT JOIN bnyn_summary AS b
     ON (
@@ -176,8 +180,9 @@ final AS (
     o_balance,
     o_desc,
     reference_number,
+    cash_posting_transaction_timestamp,
     order_by_amt,
-    bynm_use,
+    bnym_use,
     CASE 
       WHEN reference_number IS NULL THEN NULL
       ELSE SUM(COALESCE(e_amount, 0)) OVER (PARTITION BY report_date, reference_number) 
