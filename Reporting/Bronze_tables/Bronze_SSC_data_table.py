@@ -190,7 +190,9 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 if missing_columns:
                     print(f"File {file} is missing required columns: {e}. Skipping...")
                     continue  # Skip to the next file if some columns are missing
-                df = pd.read_excel(file_path, usecols=bronze_ssc_table_needed_columns)
+                df = pd.read_excel(
+                    file_path, usecols=bronze_ssc_table_needed_columns, dtype=str
+                )
 
                 df["FileName"] = file
                 df["FileDate"] = file_date
