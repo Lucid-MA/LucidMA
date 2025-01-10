@@ -227,5 +227,5 @@ base_directories = [
 historical_data = [r"S:/Users/THoang/Data/SSC/Historical"]
 
 create_transactions_table(TABLE_NAME)
-# validate_schema_and_update_db(base_directories, TABLE_NAME)
-validate_schema_and_update_db(historical_data, TABLE_NAME)
+validate_schema_and_update_db(base_directories, TABLE_NAME)
+# validate_schema_and_update_db(historical_data, TABLE_NAME)
