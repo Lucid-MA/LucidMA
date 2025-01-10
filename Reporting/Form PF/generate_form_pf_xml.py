@@ -28,6 +28,7 @@ prefix_path = get_file_path("S:/Mandates/Funds/Fund Reporting/Form PF working fi
 
 # PARAMETERS TO INITIALIZE
 FILING_DATE = "2024-12-31"  # quarter-end here as YYYY-MM-DD string
+quarter = "4" # Update the corresponding quarter here
 IS_QUARTERLY_FILING = True
 
 # Turn this flag on to get data for quarterly only
@@ -245,7 +246,8 @@ def main():
     excel.Interactive = False
     wb = open_workbook(excel, WORKBOOK_PATH)
     print("Preparing filing...")
-    init_filing(FILING_TYPE, FILING_FREQUENCY, FILING_DATE, "4")
+    # Make sure to change this according to the quarter in the year
+    init_filing(FILING_TYPE, FILING_FREQUENCY, FILING_DATE, quarter)
     print("1a_A")
     section1a_ItemA(wb)
     print("1a_B")
