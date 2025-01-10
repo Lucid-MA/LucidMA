@@ -166,11 +166,10 @@ if not ONLY_QUARTERLY_DATA:
 
     FUND_DATA = [
         ["Lucid Cash Fund USG LLC", "805-6455113436", "LIQUIDITY"],
-        ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"], # add back
+        ["Lucid Prime Fund LLC [Series M]", "805-2462468395", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series C1]", "805-3531452546", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series MIG]", "805-1061582636", "LIQUIDITY"],
         ["Lucid Prime Fund LLC [Series USGM]", "805-9881830623", "LIQUIDITY"],
-        # ["Lucid Prime Fund LLC [Series USGM]", "805-2462468395", "LIQUIDITY"] # to remove
 
     ]
 else:
@@ -217,13 +216,12 @@ if DOING_HEDGE:
     SECTION_1B_SHEETS.append("Section 1b - Prv Fnd Prime A2Y")
 
 if DOING_HEDGE:
-    FUND_DATA.append(["Lucid Prime Fund LLC [Series A1]", "805-6101207933", "PRIVATE"])
+    FUND_DATA.append(["Lucid Prime Fund LLC [Series A1]", "805-6101207933", "OTHER"])
     FUND_DATA.append(
-        ["Lucid Prime Fund LLC [Series 2YIG]", "805-8312373461", "PRIVATE"]
+        ["Lucid Prime Fund LLC [Series 2YIG]", "805-8312373461", "OTHER"]
     )
-    FUND_DATA.append(["MM Term Income Master Fund LLC", "805-5607102875", "HEDGE"])
-    FUND_DATA.append(["Lucid Prime Fund LLC [Series A2Y]", "805-6555173424", "PRIVATE"])
-    # FUND_DATA.append(["Lucid Prime Fund LLC [Series A2Y]", "805-6101207933", "PRIVATE"])
+    FUND_DATA.append(["MM Term Income Master Fund LLC", "805-5607102875", "OTHER"])
+    FUND_DATA.append(["Lucid Prime Fund LLC [Series A2Y]", "805-6555173424", "OTHER"])
 
 NA = -2146826246
 
@@ -247,7 +245,7 @@ def main():
     excel.Interactive = False
     wb = open_workbook(excel, WORKBOOK_PATH)
     print("Preparing filing...")
-    init_filing(FILING_TYPE, FILING_FREQUENCY, FILING_DATE, "2")
+    init_filing(FILING_TYPE, FILING_FREQUENCY, FILING_DATE, "4")
     print("1a_A")
     section1a_ItemA(wb)
     print("1a_B")
@@ -350,6 +348,17 @@ def section1a_itemB(wb):
         int(sheet.Range("D9").Value)
     )
 
+    # New fund type OTHER added 1/10/2025
+    privateFundData = ET.SubElement(funds, "FilersAssetsFundData")
+
+    ET.SubElement(privateFundData, "FundType").text = "OTHER"
+    ET.SubElement(privateFundData, "RegulatoryAssetsFunds").text = str(
+        int(sheet.Range("C15").Value)
+    )
+    ET.SubElement(privateFundData, "NetAssetsFunds").text = str(
+        int(sheet.Range("D15").Value)
+    )
+
 
 def section1a_itemC(wb):
     sheet = wb.Worksheets("Items B & C")
@@ -379,8 +388,8 @@ def section1a_itemC(wb):
             ET.SubElement(new_misc_item, "QuestionNumber").text = "53a,b,f;56;63"
         elif q_n == "3,8,9,12,20":
             ET.SubElement(new_misc_item, "QuestionNumber").text = "3,8,9,12,20"
-        elif q_n == "Q 8-16":
-            ET.SubElement(new_misc_item, "QuestionNumber").text = "8 to 16"
+        elif q_n == "16(n)":
+            ET.SubElement(new_misc_item, "QuestionNumber").text = "16(n)"
         else:
             ET.SubElement(new_misc_item, "QuestionNumber").text = "17"
         #
