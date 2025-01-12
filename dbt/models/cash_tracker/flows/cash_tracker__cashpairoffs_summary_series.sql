@@ -19,7 +19,7 @@ source AS (
       counterparty,
       series,
       sum(amount2) as amount,
-      min(used_alloc) AS used_alloc
+      avg(used_alloc) AS used_alloc
     FROM {{ ref('cash_tracker__cashpairoffs_series') }}
     GROUP BY report_date, fund, counterparty2, counterparty, series
 ),

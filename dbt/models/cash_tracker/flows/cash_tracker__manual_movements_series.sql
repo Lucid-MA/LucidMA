@@ -18,7 +18,7 @@ FINAL AS (
         C.flow_status,
         CASE
             WHEN C.flow_account = 'EXPENSE' THEN 0.0
-            ELSE ROUND(amount * ua.used_alloc, 4)
+            ELSE ROUND(amount * ua.used_alloc, 3)
         END AS flow_amount,
         flow_is_settled,
         flow_after_sweep,

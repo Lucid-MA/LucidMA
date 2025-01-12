@@ -31,6 +31,7 @@ realloc_cash_flows AS (
 combined AS (
   SELECT
     report_date,
+    orig_report_date,
     fund,
     series,
     [_flow_id],
@@ -56,6 +57,7 @@ combined AS (
   UNION ALL
   SELECT
     report_date,
+    orig_report_date,
     fund,
     series,
     [_flow_id],

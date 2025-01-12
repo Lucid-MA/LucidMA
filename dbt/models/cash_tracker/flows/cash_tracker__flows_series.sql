@@ -14,6 +14,16 @@ cashpairoffs_agg AS (
     *
   FROM {{ ref('cash_tracker__cashpairoffs_summary_series') }}
 ),
+manual_movements AS (
+  SELECT
+    *
+  FROM {{ ref('cash_tracker__manual_movements_series') }}
+),
+manual_allocations AS (
+  SELECT
+    *
+  FROM {{ ref('cash_tracker__manual_allocations') }}
+),
 final AS (
   SELECT 
     report_date,
@@ -71,6 +81,25 @@ final AS (
     counterparty,
     used_alloc
   FROM margin
+   UNION
+  SELECT 
+    report_date,
+    orig_report_date,
+    fund,
+    series,
+    [route],
+    transaction_action_id,
+    transaction_desc,
+    flow_account, 
+    flow_security,
+    flow_status,
+    flow_amount,
+    flow_is_settled,
+    flow_after_sweep,
+    trade_id,
+    NULL AS counterparty,
+    portion AS used_alloc
+  FROM manual_allocations
 )
 
 SELECT 
@@ -92,7 +121,7 @@ SELECT
   flow_account, 
   flow_security,
   flow_status,
-  flow_amount,
+  ROUND(flow_amount, 4) AS flow_amount,
   flow_is_settled,
   flow_after_sweep,
   trade_id,
