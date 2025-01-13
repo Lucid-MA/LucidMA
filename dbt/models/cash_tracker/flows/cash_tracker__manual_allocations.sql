@@ -61,9 +61,9 @@ combined AS (
         AND flows.flow_status = '{{var('AVAILABLE')}}'
     )
     WHERE is_outgoing = 1
-    UNION
+    UNION ALL
      SELECT
-        'manual-allocations-outgoing' AS route,
+        'manual-allocations-incoming' AS route,
         source.action_id AS transaction_action_id,
         source.action_id AS transaction_desc,
         to_acct_name AS flow_account, 
@@ -94,12 +94,12 @@ combined AS (
 ),
 final AS (
     SELECT
-      settle_date AS report_date,
-      settle_date AS orig_report_date,
+      TRY_CAST(settle_date AS DATE) AS report_date,
+      TRY_CAST(settle_date AS DATE) AS orig_report_date,
       NULL as flow_is_settled,
       NULL as flow_after_sweep,
       *
     FROM combined
 )
 
-SELECT * FROM final
+SELECT * FROM final where settle_date > '2024-09-04'
