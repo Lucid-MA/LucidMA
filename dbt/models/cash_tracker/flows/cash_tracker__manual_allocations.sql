@@ -13,7 +13,6 @@ source AS (
         END is_outgoing,
         CASE
           WHEN allocations.to_account IS NULL THEN 0
-          WHEN from_account.fund = to_account.fund THEN 0
           ELSE 1
         END is_incoming,
         from_account.fund AS from_fund,
@@ -95,15 +94,12 @@ combined AS (
 ),
 final AS (
     SELECT
-        *
+      settle_date AS report_date,
+      settle_date AS orig_report_date,
+      NULL as flow_is_settled,
+      NULL as flow_after_sweep,
+      *
     FROM combined
 )
 
-SELECT
-    settle_date AS report_date,
-    settle_date AS orig_report_date,
-    NULL as flow_is_settled,
-    NULL as flow_after_sweep,
-    *
-FROM
-    final
+SELECT * FROM final

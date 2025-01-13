@@ -7,6 +7,7 @@ flows AS (
 final AS (
   SELECT
     report_date,
+    orig_report_date,
     fund,
     series,
     [_flow_id],

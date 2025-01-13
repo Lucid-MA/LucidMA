@@ -36,7 +36,7 @@ series AS (
     mf.flow_amount AS master_flow_amount,
     CAST(CASE
       WHEN mf.flow_account = 'EXPENSE' THEN 0.0
-      ELSE (mf.flow_amount * tf.used_alloc)
+      ELSE ROUND(mf.flow_amount * tf.used_alloc, 3)
     END AS MONEY) AS flow_amount,
     tf.*
   FROM tradesfree tf

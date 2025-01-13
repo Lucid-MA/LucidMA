@@ -54,7 +54,7 @@ not_roll AS (
     CASE
       WHEN bs.flow_account = 'EXPENSE' THEN 0.0
       ELSE (
-        ROUND(bs.flow_amount * st.used_alloc, 4)
+        ROUND(bs.flow_amount * st.used_alloc, 3)
       )
     END AS flow_amount,
     st.*
