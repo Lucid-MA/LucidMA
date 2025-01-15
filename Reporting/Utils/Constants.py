@@ -450,6 +450,7 @@ cusip_mapping = {
     "Lucid Prime Fund LLC_M1": "PRIME-M100",
     "Lucid Prime Fund LLC_S1": "PRIME-S100",
     "Lucid Prime Fund LLC_A2Y": "PRIME-A2Y0",
+    "Lucid Prime Fund LLC_USGM": "PRIME-USGM",
 }
 
 reverse_cusip_mapping = {
