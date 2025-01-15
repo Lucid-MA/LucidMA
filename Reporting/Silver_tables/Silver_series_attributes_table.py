@@ -25,9 +25,9 @@ if PUBLISH_TO_PROD:
 else:
     engine = engine_staging
 
-tb_name = "silver_series_attributes"
+tb_name = "silver_series_attributes_v2"
 # Update path to CSV file
-file_path = get_file_path(r"S:/Users/THoang/Data/Series attributes.xlsx")
+file_path = get_file_path(r"S:/Users/THoang/Data/Series attributes v2.xlsx")
 
 
 def create_table_with_schema(tb_name):
@@ -72,6 +72,7 @@ def create_table_with_schema(tb_name):
         Column("status", String),
         Column("other_eligible_assets", String),
         Column("borrowing_base_description", String),
+        Column("min_investment", Integer),
         Column("timestamp", DateTime),
         extend_existing=True,
     )
@@ -178,6 +179,7 @@ try:
         "status",
         "other_eligible_assets",
         "borrowing_base_description",
+        "min_investment",
     ]
 
     # Convert date columns to datetime

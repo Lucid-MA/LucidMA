@@ -107,6 +107,7 @@ def mark_file_processed(filename):
         file.write(filename + "\n")
 
 
+# Deprecated - can delete
 def load_transaction_ids():
     """
     Load existing transaction IDs from a pickle file if it exists.
@@ -119,6 +120,7 @@ def load_transaction_ids():
     return set()
 
 
+# Deprecated - can delete
 def save_transaction_ids(transaction_ids):
     """
     Save the updated transaction IDs to a pickle file.
@@ -182,11 +184,10 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
     Processes Excel files, validates schema, deduplicates, and updates the database.
 
     Args:
-        excel_dirs (str): The directories containing Excel files.
+        excel_dirs (list): The directories containing Excel files.
         tb_name (str): The name of the database table to update.
     """
-    # Load transaction IDs from pickle file
-    existing_transaction_ids = load_transaction_ids()
+    batch_size = 1000  # Adjust batch size for optimal performance
 
     for excel_dir in excel_dirs:
         excel_dir = get_file_path(excel_dir)
@@ -224,40 +225,28 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 df["FileDate"] = file_date
                 df["TransactionID"] = df.apply(generate_transaction_id, axis=1)
 
-                # Filter out transactions that are already in the in-memory set
-                new_transactions = df[
-                    ~df["TransactionID"].isin(existing_transaction_ids)
-                ]
-
-                if new_transactions.empty:
-                    print(f"No new transactions in {file}.")
-                    continue
-
                 try:
-                    # Insert only new transactions into the database
-                    upsert_data(
-                        engine,
-                        tb_name,
-                        new_transactions,
-                        "TransactionID",
-                        PUBLISH_TO_PROD,
-                    )
-
-                    # Update the in-memory set and save to pickle
-                    existing_transaction_ids.update(
-                        new_transactions["TransactionID"].tolist()
-                    )
-                    save_transaction_ids(existing_transaction_ids)
+                    # Batch upsert to reduce SQL overhead
+                    for i in range(0, len(df), batch_size):
+                        batch = df.iloc[i : i + batch_size]
+                        upsert_data(
+                            engine,
+                            tb_name,
+                            batch,
+                            primary_key_name="TransactionID",
+                            publish_to_prod=PUBLISH_TO_PROD,
+                        )
 
                     # Mark file as processed
                     mark_file_processed(file)
+
                 except SQLAlchemyError as e:
                     print(f"Skipping {file} due to an error: {e}")
 
                 end_time = time.time()
                 process_time = end_time - start_time
                 print(
-                    f"Processed {len(new_transactions)} new transactions from {file} in {process_time:.2f} seconds."
+                    f"Processed {len(df)} transactions from {file} in {process_time:.2f} seconds."
                 )
 
 
