@@ -119,6 +119,7 @@ def load_transaction_ids():
             return pickle.load(file)
     return set()
 
+
 # Deprecated - can delete
 def save_transaction_ids(transaction_ids):
     """
@@ -197,7 +198,9 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 file_date = extract_file_date(file)
 
                 if not file_date:
-                    print(f"Skipping {file} due to incorrect date format in the file name.")
+                    print(
+                        f"Skipping {file} due to incorrect date format in the file name."
+                    )
                     continue
                 if file in read_processed_files():
                     print(f"File already processed: {file}")
@@ -205,13 +208,19 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 
                 df_header = pd.read_excel(file_path, nrows=0)
                 missing_columns = [
-                    col for col in bronze_ssc_table_needed_columns if col not in df_header.columns
+                    col
+                    for col in bronze_ssc_table_needed_columns
+                    if col not in df_header.columns
                 ]
                 if missing_columns:
-                    print(f"File {file} is missing required columns: {missing_columns}. Skipping...")
+                    print(
+                        f"File {file} is missing required columns: {missing_columns}. Skipping..."
+                    )
                     continue
 
-                df = pd.read_excel(file_path, usecols=bronze_ssc_table_needed_columns, dtype=str)
+                df = pd.read_excel(
+                    file_path, usecols=bronze_ssc_table_needed_columns, dtype=str
+                )
                 df["FileName"] = file
                 df["FileDate"] = file_date
                 df["TransactionID"] = df.apply(generate_transaction_id, axis=1)
@@ -219,7 +228,7 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
                 try:
                     # Batch upsert to reduce SQL overhead
                     for i in range(0, len(df), batch_size):
-                        batch = df.iloc[i: i + batch_size]
+                        batch = df.iloc[i : i + batch_size]
                         upsert_data(
                             engine,
                             tb_name,
