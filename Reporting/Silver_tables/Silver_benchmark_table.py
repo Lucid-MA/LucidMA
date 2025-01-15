@@ -1,19 +1,8 @@
-from datetime import datetime
-
 import pandas as pd
 from sqlalchemy import MetaData, Table, Column, Float, String, DateTime, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from Utils.Common import get_datetime_object
-from Utils.database_utils import (
-    get_database_engine,
-    read_table_from_db,
-    prod_db_type,
-    staging_db_type,
-    engine_prod,
-    engine_staging,
-)
-
 from Utils.Constants import (
     SOFR_1M,
     SOFR_3M,
@@ -28,6 +17,12 @@ from Utils.Constants import (
     CRANE_PRIME_IDX,
     LIBOR_1M,
     LIBOR_3M,
+)
+from Utils.database_utils import (
+    read_table_from_db,
+    prod_db_type,
+    engine_prod,
+    engine_staging,
 )
 
 # TODO: Create table in PostGres
@@ -52,7 +47,7 @@ crane_columns = [
 ]
 
 bronze_benchmark_df = read_table_from_db(bronze_benchmark_table_name, prod_db_type)
-bronze_crane_df = read_table_from_db(bronze_crane_table_name, staging_db_type)
+bronze_crane_df = read_table_from_db(bronze_crane_table_name, prod_db_type)
 bronze_crane_df = bronze_crane_df[crane_columns]
 
 # Divide the data by 100 (excluding the 'benchmark_date' and 'timestamp' columns)
@@ -79,12 +74,43 @@ silver_benchmark_df = bronze_benchmark_df.merge(
     bronze_crane_df, left_on="benchmark_date", right_on="Date", how="outer"
 )
 
-silver_benchmark_df = silver_benchmark_df.drop(columns=["Date", "timestamp"])
+# Combine the two date columns into one unified column
+silver_benchmark_df["benchmark_date"] = silver_benchmark_df[
+    "benchmark_date"
+].combine_first(silver_benchmark_df["Date"])
+
+# # Drop the redundant 'Date' column
+# silver_benchmark_df.drop(columns=["Date"], inplace=True)
+
+# Fill NaN values with None
+silver_benchmark_df = silver_benchmark_df.where(pd.notnull(silver_benchmark_df), None)
+
+silver_benchmark_df.drop(columns=["Date", "timestamp"], inplace=True)
 
 # Fill NaN values with None
 silver_benchmark_df = silver_benchmark_df.where(pd.notnull(silver_benchmark_df), None)
 
 silver_benchmark_df["timestamp"] = get_datetime_object()
+
+silver_benchmark_cols = [
+    "benchmark_date",
+    CP_1M,
+    CP_3M,
+    CP_6M,
+    CP_9M,
+    SOFR_1M,
+    SOFR_3M,
+    SOFR_6M,
+    SOFR_1Y,
+    LIBOR_1M,
+    LIBOR_3M,
+    CRANE_100_IDX,
+    CRANE_GOVT_IDX,
+    CRANE_PRIME_IDX,
+    "timestamp",
+]
+
+silver_benchmark_df = silver_benchmark_df[silver_benchmark_cols]
 
 
 def create_table_with_schema(tb_name):

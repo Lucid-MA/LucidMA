@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from Utils.Common import get_current_timestamp
 from Utils.Constants import reverse_cusip_mapping, series_return_intervals
-from Utils.database_utils import read_table_from_db, get_database_engine
+from Utils.database_utils import read_table_from_db, get_database_engine, prod_db_type
 
 
 def calculate_growth_rates(subset_df, period, column):
@@ -186,9 +186,9 @@ def process_series(df, series_id):
 
 db_type = "postgres"
 
-benchmark_df = read_table_from_db("bronze_daily_bloomberg_rates", db_type)
+benchmark_df = read_table_from_db("bronze_daily_bloomberg_rates", prod_db_type)
 benchmark_df["benchmark_date"] = pd.to_datetime(benchmark_df["benchmark_date"])
-df = read_table_from_db("historical_returns", db_type)
+df = read_table_from_db("historical_returns", prod_db_type)
 
 reporting_series = [
     "PRIME-C10",
