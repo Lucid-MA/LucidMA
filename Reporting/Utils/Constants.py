@@ -243,8 +243,17 @@ investor_mapping = {
     "1000069527": "USG ASSETS LLC Series M-2",
     "1000071469": "IRR K LLC",
     "1000071782": "USG Assets Series M-3",
+    "00179765001": "Prime Notes Series USGM-1",
+    "179765001": "Prime Notes Series USGM-1",
+    "00155488004": "Lucid Management and Capital Partners LP",
+    "155488004": "Lucid Management and Capital Partners LP",
+    "00028966002": "Children's Medical Center Foundation",
+    "28966002": "Children's Medical Center Foundation",
+    "00026450003": "The Kresge Foundation",
+    "26450003": "The Kresge Foundation",
 }
 
+# Might want to deprecate this
 period_mapping = {
     "2021-129": "From 1/29/2021 To 1/31/2021",
     "2021-115": "From 1/15/2021 To 1/28/2021",
@@ -463,6 +472,7 @@ reverse_cusip_mapping = {
     "PRIME-Q36": "Lucid Prime Fund LLC_Q364",
     "PRIME-QX0": "Lucid Prime Fund LLC_QX",
     "PRIME-Q10": "Lucid Prime Fund LLC_Q1",
+    "PRIME-USGM": "Lucid Prime Fund LLC_USGM",
 }
 
 lucid_series = {
