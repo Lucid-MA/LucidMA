@@ -182,7 +182,7 @@ def fetch_and_prepare_data(report_date):
     df_cash_balance = df_cash_balance.loc[
         (
             df_cash_balance["Balance_date"]
-            == datetime.strptime("2024-10-16", "%Y-%m-%d").date()
+            == datetime.strptime("2025-01-15", "%Y-%m-%d").date()
         )
     ]
     # ACCRUED INTEREST
