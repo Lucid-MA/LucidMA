@@ -62,11 +62,11 @@ silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
 if PUBLISH_TO_PROD:
     engine = engine_prod
     db_type = prod_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD v2"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD"
 else:
     engine = engine_staging
     db_type = staging_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data v2"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
 
 bronze_table_name = "bronze_ssc_data_v2"
 

@@ -278,6 +278,7 @@ investor_mapping = {
     "104604001": "IRR K LLC",
     "00104604002": "IRR K LLC",
     "104604002": "IRR K LLC",
+    "00027132": "Georgia Tech Foundation, Inc",
 }
 
 
