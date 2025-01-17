@@ -1,4 +1,5 @@
 import os
+import pickle
 import re
 import subprocess
 import time
@@ -46,6 +47,14 @@ PUBLISH_TO_PROD = True
 repo_path = get_repo_root()
 bronze_tracker_dir = repo_path / "Reporting" / "Bronze_tables" / "File_trackers"
 
+# Need to extract zip files before uploading to Bronze table
+ssc_file_crawler_file_path = (
+    repo_path / "Reporting/Bronze_tables/Bronze_returns_SSC_file_crawler.py"
+)
+
+# Path to store the TransactionID pickle file
+transaction_pickle_path = repo_path / "bronze_ssc_transaction_ids.pkl"
+
 if PUBLISH_TO_PROD:
     engine = engine_prod
     bronze_table_tracker = (
@@ -54,6 +63,26 @@ if PUBLISH_TO_PROD:
 else:
     engine = engine_staging
     bronze_table_tracker = bronze_tracker_dir / "Bronze Table Processed SSC Files"
+
+try:
+    result_price = subprocess.run(
+        [
+            "python",
+            ssc_file_crawler_file_path,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    print("SSC file crawler executed successfully.")
+except subprocess.CalledProcessError as e:
+    error_message = (
+        f"Error preparing raw SSC file with the crawler. Return code: {e.returncode}"
+    )
+    error_output = e.stderr
+    print(error_message)
+    print("Error output:", error_output)
+    raise Exception(error_message) from e
 
 
 # Function to extract date from filename using regex
@@ -76,6 +105,30 @@ def read_processed_files():
 def mark_file_processed(filename):
     with open(bronze_table_tracker, "a") as file:
         file.write(filename + "\n")
+
+
+# Deprecated - can delete
+def load_transaction_ids():
+    """
+    Load existing transaction IDs from a pickle file if it exists.
+    Returns:
+        set: A set of existing TransactionIDs.
+    """
+    if os.path.exists(transaction_pickle_path):
+        with open(transaction_pickle_path, "rb") as file:
+            return pickle.load(file)
+    return set()
+
+
+# Deprecated - can delete
+def save_transaction_ids(transaction_ids):
+    """
+    Save the updated transaction IDs to a pickle file.
+    Args:
+        transaction_ids (set): The set of TransactionIDs to save.
+    """
+    with open(transaction_pickle_path, "wb") as file:
+        pickle.dump(transaction_ids, file)
 
 
 # Context manager for database connection
@@ -128,80 +181,84 @@ def generate_transaction_id(row):
 # Function to validate schema consistency and update database
 def validate_schema_and_update_db(excel_dirs, tb_name):
     """
-    This function iterates through Excel files in a specified directory,
-    validates their schema against a predefined list of columns,
-    and efficiently updates the database with the data.
+    Processes Excel files, validates schema, deduplicates, and updates the database.
 
     Args:
-        excel_dir (str): The directory containing Excel files.
+        excel_dirs (list): The directories containing Excel files.
         tb_name (str): The name of the database table to update.
     """
+    batch_size = 1000  # Adjust batch size for optimal performance
 
-    # Process each Excel file
     for excel_dir in excel_dirs:
         excel_dir = get_file_path(excel_dir)
         for file in os.listdir(excel_dir):
             if file.endswith(".xlsx"):
                 start_time = time.time()
-
                 file_path = os.path.join(excel_dir, file)
                 file_date = extract_file_date(file)
+
                 if not file_date:
                     print(
-                        f"Skipping {file} as it does not contain a correct date format in file name."
+                        f"Skipping {file} due to incorrect date format in the file name."
                     )
                     continue
-                # Check if file has been processed
                 if file in read_processed_files():
                     print(f"File already processed: {file}")
                     continue
 
-                # Read Excel data and add FileName, FileDate columns
-                # Read Excel data
-                df_header = pd.read_excel(file_path, nrows=0)  # Reads only the header
+                df_header = pd.read_excel(file_path, nrows=0)
                 missing_columns = [
                     col
                     for col in bronze_ssc_table_needed_columns
                     if col not in df_header.columns
                 ]
                 if missing_columns:
-                    print(f"File {file} is missing required columns: {e}. Skipping...")
-                    continue  # Skip to the next file if some columns are missing
+                    print(
+                        f"File {file} is missing required columns: {missing_columns}. Skipping..."
+                    )
+                    continue
+
                 df = pd.read_excel(
                     file_path, usecols=bronze_ssc_table_needed_columns, dtype=str
                 )
-
                 df["FileName"] = file
                 df["FileDate"] = file_date
-
-                # Generate TransactionIDs
                 df["TransactionID"] = df.apply(generate_transaction_id, axis=1)
 
-                # # OPTION 1: Efficient bulk upsert using chunk size
-                # with DatabaseConnection() as conn:
-                #     df.to_sql(tb_name, conn, if_exists='append', index=False, method='multi', chunksize=5000)
-
                 try:
-                    # Insert into PostgreSQL table
-                    upsert_data(engine, tb_name, df, "TransactionID", PUBLISH_TO_PROD)
+                    # Batch upsert to reduce SQL overhead
+                    for i in range(0, len(df), batch_size):
+                        batch = df.iloc[i : i + batch_size]
+                        upsert_data(
+                            engine,
+                            tb_name,
+                            batch,
+                            primary_key_name="TransactionID",
+                            publish_to_prod=PUBLISH_TO_PROD,
+                        )
+
                     # Mark file as processed
                     mark_file_processed(file)
-                except SQLAlchemyError:
-                    print(f"Skipping {file} due to an error")
 
-                end_time = time.time()  # Capture end time
+                except SQLAlchemyError as e:
+                    print(f"Skipping {file} due to an error: {e}")
+
+                end_time = time.time()
                 process_time = end_time - start_time
                 print(
-                    f"Data from {file} successfully upserted into {tb_name}. Processing time: {process_time:.2f} seconds"
+                    f"Processed {len(df)} transactions from {file} in {process_time:.2f} seconds."
                 )
 
 
 # Main execution
 TABLE_NAME = "bronze_ssc_data_temp"
 base_directories = [
-    r"S:/Users/THoang/Data/SSC/Temp/Prime",
-    r"S:/Users/THoang/Data/SSC/Temp/USG",
+    r"S:/Users/THoang/Data/Temp/SSC/Prime",
+    r"S:/Users/THoang/Data/Temp/SSC/USG",
 ]
+
+historical_data = [r"S:/Users/THoang/Data/SSC/Historical"]
 
 create_transactions_table(TABLE_NAME)
 validate_schema_and_update_db(base_directories, TABLE_NAME)
+# validate_schema_and_update_db(historical_data, TABLE_NAME)

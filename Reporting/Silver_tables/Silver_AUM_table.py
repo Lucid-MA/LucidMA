@@ -227,8 +227,8 @@ def get_trading_days(start_date, end_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine)
-    start_date = "2024-10-18"
-    end_date = "2025-01-13"
+    start_date = "2025-01-14"
+    end_date = "2025-01-16"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():
