@@ -253,8 +253,8 @@ def validate_schema_and_update_db(excel_dirs, tb_name):
 # Main execution
 TABLE_NAME = "bronze_ssc_data_temp"
 base_directories = [
-    r"S:/Users/THoang/Data/Temp/SSC/Prime",
-    r"S:/Users/THoang/Data/Temp/SSC/USG",
+    r"S:/Users/THoang/Data/SSC/Temp/Prime",
+    r"S:/Users/THoang/Data/SSC/Temp/USG",
 ]
 
 historical_data = [r"S:/Users/THoang/Data/SSC/Historical"]
