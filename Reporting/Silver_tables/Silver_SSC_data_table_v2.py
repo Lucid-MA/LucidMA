@@ -62,13 +62,13 @@ silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
 if PUBLISH_TO_PROD:
     engine = engine_prod
     db_type = prod_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD v2"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD"
 else:
     engine = engine_staging
     db_type = staging_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data v2"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
 
-bronze_table_name = "bronze_ssc_data"
+bronze_table_name = "bronze_ssc_data_v2"
 
 start_time = time.time()
 
@@ -90,6 +90,21 @@ df["Transaction_category"] = df["Head1"].apply(
     lambda x: transaction_map.get(x, "Unmapped / Others")
 )
 df["Amount"] = df["Amt1"].astype(float)
+
+# List of allowed 'Head1' values where 'Amount' can be 0
+allowed_head1_values = [
+    "ASSIGN (BEG)",
+    "BAL FWD",
+    "TOTAL PF",
+    "WITH (BEG)",
+    "WITH (END)",
+]
+
+# Filter the DataFrame
+df = df[(df["Amount"] != 0) | (df["Head1"].isin(allowed_head1_values))]
+
+# Optional: Reset the index if needed
+df.reset_index(drop=True, inplace=True)
 
 # Step 1: Filter the DataFrame for the specified date range
 # 01/07/2024 - temporary disable as we now have historical data

@@ -36,18 +36,12 @@ logging.basicConfig(
 
 PUBLISH_TO_PROD = True
 
-# Get the repository root directory
-repo_path = get_repo_root()
-silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
-
 if PUBLISH_TO_PROD:
     engine = engine_prod
     db_type = prod_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver Return Data PROD"
 else:
     engine = engine_staging
     db_type = staging_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver Return Data"
 
 # Specify your table name and schema
 ssc_table_name = "silver_ssc_data"
