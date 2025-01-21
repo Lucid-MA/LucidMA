@@ -33,6 +33,28 @@ series AS (
     *
   FROM {{ ref('stg_lucid__series') }}
 ),
+series_bod_balance AS (
+  SELECT
+    {{ next_business_day('balance_date') }} AS report_date,
+    fund,
+    series,
+    account,
+    cash_balance,
+    sweep_balance,
+    projected_total_balance
+  FROM {{ ref('series_balance') }}
+),
+series_eod_balance AS (
+  SELECT
+    balance_date AS report_date,
+    fund,
+    series,
+    account,
+    cash_balance,
+    sweep_balance,
+    projected_total_balance
+  FROM {{ ref('series_balance') }}
+),
 final_settled_flows AS (
   SELECT
     s.report_date,
@@ -40,18 +62,18 @@ final_settled_flows AS (
     s.flow_account,
     s.series,
     a.acct_number AS account_number,
-    SUM(
+    TRY_CAST(SUM(
       CASE
         WHEN s.flow_is_settled = 1 THEN s.flow_amount
         ELSE 0
       END
-    ) AS series_settled_activity,
-    SUM(
+    ) AS MONEY) AS series_settled_activity,
+    TRY_CAST(SUM(
       CASE
         WHEN s.flow_is_settled = 0 THEN s.flow_amount
         ELSE 0
       END
-    ) AS series_unsettled_activity
+    ) AS MONEY) AS series_unsettled_activity
   FROM series_flows AS s
   JOIN accounts AS a ON (s.fund = a.fund AND s.flow_account = a.acct_name)
   GROUP BY s.report_date, s.fund, s.flow_account, s.series, a.acct_number
@@ -75,19 +97,54 @@ flows_pivot AS (
 final AS (
   SELECT
     p.*,
+    TRY_CAST(bod.cash_balance AS MONEY) AS cash_actual_bod,
+    TRY_CAST((eod.cash_balance - bod.cash_balance) AS MONEY) AS cash_actual_activity,
+    TRY_CAST(eod.cash_balance AS MONEY) AS cash_actual_eod,
+    TRY_CAST(bod.sweep_balance AS MONEY) AS sweep_actual_bod,
+    TRY_CAST((eod.sweep_balance - bod.sweep_balance) AS MONEY) AS sweep_actual_activity,
+    TRY_CAST(eod.sweep_balance AS MONEY) AS sweep_actual_eod,
     CAST(
       SUM(p.series_settled_activity) OVER (PARTITION BY p.report_date, p.fund, p.account_number) 
     AS MONEY) AS series_total,
-    CAST(m.ct_cash_flows AS MONEY) AS ct_cash_flows
+    CAST(m.ct_cash_flows AS MONEY) AS ct_cash_flows,
+    CAST(m.ct_sweep_activity AS MONEY) AS ct_sweep_activity
   FROM final_settled_flows AS p
   LEFT JOIN master_summary AS m ON (
     p.report_date = m.report_date
     AND p.fund = m.fund
     AND p.account_number = m.account_number
   )
+  LEFT JOIN series_eod_balance AS eod ON (
+    p.report_date = eod.report_date
+    AND p.fund = eod.fund
+    AND p.flow_account = eod.account
+    AND p.series = eod.series
+  )
+  LEFT JOIN series_bod_balance AS bod ON (
+    p.report_date = bod.report_date
+    AND p.fund = bod.fund
+    AND p.flow_account = bod.account
+    AND p.series = bod.series
+  )
 )
 
 SELECT
-  *,
-  CAST(abs(series_total - ct_cash_flows) AS MONEY) AS diff
+  report_date,
+  fund,
+  flow_account,
+  series,
+  account_number,
+  series_settled_activity,
+  series_unsettled_activity,
+  cash_actual_bod,
+  cash_actual_activity AS cash_actual_change,
+  cash_actual_eod,
+  sweep_actual_bod,
+  sweep_actual_activity AS sweep_actual_change,
+  sweep_actual_eod,
+  series_total,
+  ct_cash_flows,
+  ct_sweep_activity,
+  CAST((cash_actual_activity + sweep_actual_activity) AS MONEY) AS total_cash_activity,
+  CAST(abs(series_total - ct_cash_flows) AS MONEY) AS series_flows_diff
 FROM final

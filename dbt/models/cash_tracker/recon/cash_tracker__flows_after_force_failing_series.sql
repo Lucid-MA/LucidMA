@@ -40,6 +40,7 @@ combined AS (
     m.flow_security,
     m.flow_status,
     s.flow_amount,
+    m.cash_posting_transaction_timestamp,
     m.flow_is_settled,
     m.flow_after_sweep,
     m.trade_id,

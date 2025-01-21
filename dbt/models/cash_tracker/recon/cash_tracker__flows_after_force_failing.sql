@@ -19,6 +19,7 @@ final AS (
     flow_security,
     flow_status,
     flow_amount,
+    cash_posting_transaction_timestamp,
     CASE
       WHEN flow_is_settled IS NULL AND flow_security = '{{var('CASH')}}' AND flow_status = '{{var('AVAILABLE')}}'
         THEN 0 --failing

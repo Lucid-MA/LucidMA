@@ -29,6 +29,7 @@ series AS (
 final2 AS (
   SELECT
     report_date,
+    cash_posting_transaction_timestamp,
     fund,
     flow_account,
     flow_status,
@@ -42,6 +43,7 @@ final2 AS (
   UNION ALL
   SELECT
     report_date,
+    cash_posting_transaction_timestamp,
     fund,
     flow_account,
     flow_status,
