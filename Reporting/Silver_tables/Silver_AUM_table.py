@@ -95,6 +95,7 @@ def fetch_and_prepare_data(report_date):
         "Series A2Y": ("To be updated", "IG Only", "Open"),
         "Series A1": ("1yr", "IG Only", "Not Offered"),
         "Series C1": ("1m", "Highly Rated IG", "Not Offered"),
+        "Series USGM": ("1m", "Gov't Only", "Open"),
         "USG M": ("1m", "Gov't Only", "Open"),
         "Other Mandates": ("Term", "IG Only", "Not Offered"),
     }
@@ -227,8 +228,8 @@ def get_trading_days(start_date, end_date):
 
 def main():
     create_table_with_schema(TABLE_NAME, engine)
-    start_date = "2025-01-14"
-    end_date = "2025-01-16"
+    start_date = "2024-12-01"
+    end_date = "2025-01-20"
     trading_days = get_trading_days(start_date, end_date)
     for report_date in trading_days:
         if report_date in read_processed_files():

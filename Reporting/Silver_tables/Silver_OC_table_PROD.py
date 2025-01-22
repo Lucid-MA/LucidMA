@@ -218,8 +218,13 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2025-01-16"
-    end_date = "2025-01-16"
+    # start_date = "2024-12-31"
+    # end_date = "2024-12-31"
+
+    # If want to run daily:
+    start_date = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d")
+    end_date = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d")
+
     trading_days = get_trading_days(start_date, end_date)
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
 

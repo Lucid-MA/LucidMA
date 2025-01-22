@@ -213,7 +213,10 @@ def fetch_and_prepare_data(report_date):
     # CASH BALANCE
     df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
     df_cash_balance = df_cash_balance.loc[
-        (df_cash_balance["Balance_date"] == report_date_dt)
+        (
+            df_cash_balance["Balance_date"]
+            == datetime.strptime("2025-01-15", "%Y-%m-%d").date()
+        )
     ]
     # ACCRUED INTEREST
     """
@@ -248,8 +251,14 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2025-01-11"
-    end_date = "2025-01-15"
+    # TODO: If want to run historically
+    # start_date = "2024-12-31"
+    # end_date = "2024-12-31"
+
+    # If want to run daily:
+    start_date = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d")
+    end_date = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d")
+
     trading_days = get_trading_days(start_date, end_date)
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
 
