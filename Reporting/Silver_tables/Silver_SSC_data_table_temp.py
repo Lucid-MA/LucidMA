@@ -62,13 +62,13 @@ silver_tracker_dir = repo_path / "Reporting" / "Silver_tables" / "File_trackers"
 if PUBLISH_TO_PROD:
     engine = engine_prod
     db_type = prod_db_type
-    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD"
+    Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data PROD TEMP"
 else:
     engine = engine_staging
     db_type = staging_db_type
     Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
 
-bronze_table_name = "bronze_ssc_data_v2"
+bronze_table_name = "bronze_ssc_data_temp"
 
 start_time = time.time()
 
@@ -339,7 +339,7 @@ rename_dict = dict(zip(current_columns, new_columns))
 pivot_df.rename(columns=rename_dict, inplace=True)
 
 ## TABLE UPLOAD ##
-table_name = "silver_ssc_data"
+table_name = "silver_ssc_data_temp"
 
 # Columns with float data type
 float_columns = [
