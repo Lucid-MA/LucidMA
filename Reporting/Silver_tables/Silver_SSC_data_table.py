@@ -68,12 +68,12 @@ else:
     db_type = staging_db_type
     Silver_SSC_TRACKER = silver_tracker_dir / "Silver SSC Data"
 
-table_name = "bronze_ssc_data"
+bronze_table_name = "bronze_ssc_data_v2"
 
 start_time = time.time()
 
 # Read the table into a pandas DataFrame
-df = read_table_from_db(table_name, db_type)
+df = read_table_from_db(bronze_table_name, db_type)
 
 ### PREPROCESSING ###
 # Splitting the 'Period' column into 'Start_date' and 'End_date'
@@ -85,10 +85,26 @@ df[["Start_date", "End_date"]] = df["PeriodDescription"].str.extract(
 df["Start_date"] = pd.to_datetime(df["Start_date"], format="%m/%d/%Y")
 df["End_date"] = pd.to_datetime(df["End_date"], format="%m/%d/%Y")
 
+
 df["Transaction_category"] = df["Head1"].apply(
     lambda x: transaction_map.get(x, "Unmapped / Others")
 )
 df["Amount"] = df["Amt1"].astype(float)
+
+# List of allowed 'Head1' values where 'Amount' can be 0
+allowed_head1_values = [
+    "ASSIGN (BEG)",
+    "BAL FWD",
+    "TOTAL PF",
+    "WITH (BEG)",
+    "WITH (END)",
+]
+
+# Filter the DataFrame
+df = df[(df["Amount"] != 0) | (df["Head1"].isin(allowed_head1_values))]
+
+# Optional: Reset the index if needed
+df.reset_index(drop=True, inplace=True)
 
 # Step 1: Filter the DataFrame for the specified date range
 # 01/07/2024 - temporary disable as we now have historical data
