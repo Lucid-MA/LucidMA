@@ -213,10 +213,7 @@ def fetch_and_prepare_data(report_date):
     # CASH BALANCE
     df_cash_balance = read_table_from_db("bronze_cash_balance", prod_db_type)
     df_cash_balance = df_cash_balance.loc[
-        (
-            df_cash_balance["Balance_date"]
-            == datetime.strptime("2025-01-15", "%Y-%m-%d").date()
-        )
+        (df_cash_balance["Balance_date"] == report_date_dt)
     ]
     # ACCRUED INTEREST
     """

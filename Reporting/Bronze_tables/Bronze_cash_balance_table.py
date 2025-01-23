@@ -2,7 +2,7 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import Table, MetaData, Column, String, Float, Date
+from sqlalchemy import Table, MetaData, Column, String, Float, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
 from Reporting.Utils.Common import (
@@ -10,6 +10,7 @@ from Reporting.Utils.Common import (
     get_repo_root,
     read_skipped_files,
     mark_file_skipped,
+    get_current_timestamp,
 )
 from Reporting.Utils.Constants import cash_balance_column_order
 from Reporting.Utils.Hash import hash_string
@@ -91,6 +92,7 @@ def create_table_with_schema(tb_name):
         Column("Projected_Total_Balance", Float),
         Column("Balance_date", Date),
         Column("Source", String),
+        Column("timestamp", DateTime),
         extend_existing=True,
     )
     metadata.create_all(engine)
@@ -151,6 +153,7 @@ for filename in os.listdir(directory):
         df["Balance_date"] = date
         df["Balance_date"] = pd.to_datetime(df["Balance_date"]).dt.strftime("%Y-%m-%d")
         df["Source"] = filename
+        df["timestamp"] = get_current_timestamp()
 
         try:
             # Insert into PostgreSQL table
