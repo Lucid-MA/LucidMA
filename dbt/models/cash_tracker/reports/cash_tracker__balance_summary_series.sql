@@ -17,6 +17,11 @@ master_flows AS (
     FROM {{ ref('cash_tracker__flows_after_force_failing') }}
     WHERE ct_use = 1
 ),
+cash_summary AS (
+  SELECT
+    *
+  FROM {{ ref('stg_lucid__cash_balance_history') }}
+),
 series_flows AS (
     SELECT
         *
@@ -39,10 +44,10 @@ series_bod_balance AS (
     fund,
     series,
     account,
-    cash_balance,
-    sweep_balance,
-    projected_total_balance
-  FROM {{ ref('series_balance') }}
+    COALESCE(cash_balance, 0) AS cash_balance,
+    COALESCE(sweep_balance, 0) AS sweep_balance,
+    COALESCE(projected_total_balance, 0) AS projected_total_balance
+  FROM cash_summary
 ),
 series_eod_balance AS (
   SELECT
@@ -50,10 +55,10 @@ series_eod_balance AS (
     fund,
     series,
     account,
-    cash_balance,
-    sweep_balance,
-    projected_total_balance
-  FROM {{ ref('series_balance') }}
+    COALESCE(cash_balance, 0) AS cash_balance,
+    COALESCE(sweep_balance, 0) AS sweep_balance,
+    COALESCE(projected_total_balance, 0) AS projected_total_balance
+  FROM cash_summary
 ),
 final_settled_flows AS (
   SELECT
@@ -94,7 +99,7 @@ flows_pivot AS (
   FROM final_settled_flows
   GROUP BY report_date, fund, flow_account, account_number
 ),
-final AS (
+final1 AS (
   SELECT
     p.*,
     TRY_CAST(bod.cash_balance AS MONEY) AS cash_actual_bod,
@@ -126,8 +131,8 @@ final AS (
     AND p.flow_account = bod.account
     AND p.series = bod.series
   )
-)
-
+),
+final2 AS (
 SELECT
   report_date,
   fund,
@@ -143,8 +148,44 @@ SELECT
   sweep_actual_activity AS sweep_actual_change,
   sweep_actual_eod,
   series_total,
+  CAST(
+      SUM(cash_actual_activity) OVER (PARTITION BY report_date, fund, account_number) 
+  AS MONEY) AS cash_actual_total,
+  CAST(
+      SUM(sweep_actual_activity) OVER (PARTITION BY report_date, fund, account_number) 
+  AS MONEY) AS sweep_actual_total,
   ct_cash_flows,
   ct_sweep_activity,
   CAST((cash_actual_activity + sweep_actual_activity) AS MONEY) AS total_cash_activity,
   CAST(abs(series_total - ct_cash_flows) AS MONEY) AS series_flows_diff
-FROM final
+FROM final1
+)
+
+SELECT
+  report_date,
+  fund,
+  flow_account,
+  series,
+  account_number,
+  series_settled_activity,
+  (series_settled_activity/ct_sweep_activity) AS series_settled_sweep_percent,
+  (cash_actual_change/cash_actual_total) AS series_cash_percent,
+  (series_settled_activity/series_total) AS series_settled_total_percent,
+  ((cash_actual_change+sweep_actual_change)/ct_sweep_activity) AS series_total_percent,
+  (sweep_actual_change/sweep_actual_total) AS series_sweep_percent,
+  series_unsettled_activity,
+  cash_actual_bod,
+  cash_actual_change,
+  cash_actual_eod,
+  sweep_actual_bod,
+  sweep_actual_change,
+  sweep_actual_eod,
+  series_total,
+  cash_actual_total,
+  sweep_actual_total,
+  ct_cash_flows,
+  ct_sweep_activity,
+  (cash_actual_total-sweep_actual_total) AS total_change,
+  total_cash_activity,
+  series_flows_diff
+FROM final2

@@ -16,3 +16,4 @@ sources:
       - name: bronze_manual_allocation
       - name: holidays
       - name: cash_tracker_manual_matches
+      - name: bronze_cash_balance
