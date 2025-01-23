@@ -93,6 +93,10 @@ final AS (
           WHEN UPPER(SUBSTRING(ref_id,0,5)) = 'MRGN' THEN 1
           ELSE 0
         END AS is_margin,
+        CASE 
+          WHEN UPPER(SUBSTRING(ref_id,1,2)) = 'PO' THEN 1 
+          ELSE 0 
+        END AS is_po,
         blotter.*
     FROM
         renamed AS blotter

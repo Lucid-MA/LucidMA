@@ -60,3 +60,12 @@ seeds:
         series: varchar(30)
         sheet_name: varchar(50)
         nav_ratio: numeric 
+    series_balance:
+      +column_types:
+        balance_date: date
+        fund: varchar(20)
+        series: varchar(30)
+        account: varchar(30)
+        cash_balance: money
+        sweep_balance: money
+        projected_total_balance: money

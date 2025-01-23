@@ -143,7 +143,7 @@ trade_query_final AS (
     *
   FROM
     trade_query_part2
-  WHERE trade_id NOT IN (202278)
+  --WHERE trade_id NOT IN (202278)
   UNION ALL
   SELECT
     COALESCE(closedate, enddate) AS report_date,
@@ -152,7 +152,7 @@ trade_query_final AS (
   FROM
     trade_query_part2
   WHERE (closedate IS NOT NULL OR enddate IS NOT NULL)
-  AND trade_id NOT IN (202278)
+  --AND trade_id NOT IN (202278)
 ),
 final AS (
   SELECT

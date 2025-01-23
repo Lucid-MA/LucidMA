@@ -20,8 +20,8 @@ clean_source AS (
         source.*
     FROM source
     WHERE
-        check_pairoff_margin = 0
-        AND is_hxswing = 0
+        (check_pairoff_margin = 0 AND is_hxswing = 0)
+      OR (check_pairoff_margin = 1 AND is_margin = 0 AND is_po = 0)
 ),
 pairoff_margin AS (
     SELECT
@@ -35,7 +35,7 @@ pairoff_margin AS (
         )
     WHERE
         check_pairoff_margin = 1
-        AND is_margin = 0
+        AND is_po = 1
         AND ABS(COALESCE(cpo.amount, 0) + source.amount) > {{var('PAIROFF_DIFF_THRESHOLD')}}
 ),
 combined AS (
