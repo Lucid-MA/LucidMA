@@ -1,4 +1,4 @@
-from Utils.Common import get_file_path
+from Utils.Common import get_file_path, get_current_timestamp
 from Utils.database_utils import (
     read_table_from_db,
     prod_db_type,
@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     Float,
     DateTime,
+    text,
 )
 from sqlalchemy.exc import SQLAlchemyError
 import pandas as pd
@@ -119,9 +120,15 @@ def fetch_latest_report_date(engine, table_name):
     """
     try:
         with engine.connect() as connection:
-            latest_date_query = f"SELECT MAX(report_date) as max_date FROM {table_name}"
+            latest_date_query = text(
+                f"SELECT MAX(report_date) as max_date FROM {table_name}"
+            )
             latest_date_result = connection.execute(latest_date_query).fetchone()
-            return latest_date_result["max_date"]
+            return (
+                latest_date_result[0]
+                if latest_date_result and latest_date_result[0]
+                else None
+            )
     except SQLAlchemyError as e:
         logger.error(f"Error fetching latest report_date: {e}")
         raise
@@ -151,6 +158,7 @@ new_data = preprocess_new_data(final_data, latest_date)
 
 if not new_data.empty:
     # Upsert the new data
+    new_data["timestamp"] = get_current_timestamp()
     upsert_data_multiple_keys(
         engine=engine,
         table_name=tb_name,
