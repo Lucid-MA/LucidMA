@@ -19,7 +19,7 @@ from Utils.database_utils import (
 
 holiday_df = read_table_from_db("holidays", prod_db_type)
 
-current_date = datetime.now() - timedelta(days=0)
+current_date = datetime.now() - timedelta(days=3)
 prev_date = get_previous_business_day(current_date, holiday_df)
 valdate = current_date.strftime("%Y-%m-%d")
 prev_valdate = prev_date.strftime("%Y-%m-%d")
@@ -108,7 +108,6 @@ def send_email(
 
 
 def process_data(data, threshold, threshold_style, subheader):
-
     column_order = [
         "Bond ID",
         "Quantity",
@@ -119,8 +118,10 @@ def process_data(data, threshold, threshold_style, subheader):
         "PX Change DoD",
         "PX Change % DoD",
         "MV Change",
+        "MV Change %",
         "Rating",
-        "Collateral Type",
+        "Product Type",
+        "Counterparty",
     ]
 
     data = data[column_order]
@@ -135,8 +136,10 @@ def process_data(data, threshold, threshold_style, subheader):
         "PX Change DoD",
         "PX Change % DoD",
         "MV Change",
+        "MV Change %",
         "Rating",
         "Collateral Type",
+        "Counterparty",
     ]
 
     data.columns = column_names
@@ -149,6 +152,7 @@ def process_data(data, threshold, threshold_style, subheader):
         "PX Change DoD",
         "PX Change % DoD",
         "MV Change",
+        "MV Change %",
     ]
 
     # Convert columns to float, forcing invalid data to NaN
@@ -181,9 +185,7 @@ def process_data(data, threshold, threshold_style, subheader):
     ]
 
     # Convert percentage columns to whole percentages, handling empty strings
-    percent_columns = [
-        "PX Change % DoD",
-    ]
+    percent_columns = ["PX Change % DoD", "MV Change %"]
 
     for col in percent_columns:
         if col in filtered_data.columns:
@@ -224,64 +226,238 @@ def process_data(data, threshold, threshold_style, subheader):
             )
 
     # Apply styling to the DataFrame
-    styled_data = filtered_data.style.map(style_percentage, subset=percent_columns)
+    styled_data = filtered_data.style.map(style_percentage, subset=["PX Change % DoD"])
 
     # Format the styled DataFrame as an HTML table
     html_table = styled_data.to_html(index=False, border=1, escape=False)
 
-    html_content = f"""
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <style>
-                                table {{
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                }}
-                                th, td {{
-                                    border: 1px solid black;
-                                    padding: 8px;
-                                    text-align: center;
-                                }}
-                                th {{
-                                    background-color: #f2f2f2;
-                                }}
-                                .header {{
-                                    background-color: #d9edf7;
-                                }}
-                                .header span {{
-                                    font-size: 24px;
-                                    font-weight: bold;
-                                }}
-                                .subheader {{
-                                    background-color: #dff0d8;
-                                }}
-                            </style>
-                        </head>
-                        <body>
-                            <table>
-                                <tr class="header">
-                                    <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
-                                </tr>
-                                <tr class="subheader">
-                                    <td colspan="{len(filtered_data.columns)}">{subheader}</td>
-                                </tr>
+    # html_content = f"""
+    #                     <!DOCTYPE html>
+    #                     <html lang="en">
+    #                     <head>
+    #                         <meta charset="UTF-8">
+    #                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    #                         <style>
+    #                             table {{
+    #                                 width: 100%;
+    #                                 border-collapse: collapse;
+    #                             }}
+    #                             th, td {{
+    #                                 border: 1px solid black;
+    #                                 padding: 8px;
+    #                                 text-align: center;
+    #                             }}
+    #                             th {{
+    #                                 background-color: #f2f2f2;
+    #                             }}
+    #                             .header {{
+    #                                 background-color: #d9edf7;
+    #                             }}
+    #                             .header span {{
+    #                                 font-size: 24px;
+    #                                 font-weight: bold;
+    #                             }}
+    #                             .subheader {{
+    #                                 background-color: #dff0d8;
+    #                             }}
+    #                         </style>
+    #                     </head>
+    #                     <body>
+    #                         <table>
+    #                             <tr class="header">
+    #                                 <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
+    #                             </tr>
+    #                             <tr class="subheader">
+    #                                 <td colspan="{len(filtered_data.columns)}">{subheader}</td>
+    #                             </tr>
+    #
+    #                         </table>
+    #                         <table>
+    #                             {html_table}
+    #                         </table>
+    #                     </body>
+    #                     </html>
+    #                     """
 
-                            </table>
-                            <table>
-                                {html_table}
-                            </table>
-                        </body>
-                        </html>
-                        """
+    return html_table
 
-    return html_content
+
+def process_data_io(data, threshold, threshold_style, subheader):
+    column_order = [
+        "Bond ID",
+        "Quantity",
+        "Invest Amount",
+        "MV",
+        "T-1 Price",
+        "Current Price",
+        "PX Change DoD",
+        "PX Change % DoD",
+        "MV Change",
+        "MV Change %",
+        "Rating",
+        "Product Type",
+        "Counterparty",
+    ]
+
+    data = data[column_order]
+
+    column_names = [
+        "Bond ID",
+        "Quantity",
+        "Investment Amount",
+        "MV",
+        "T-1 PX",
+        "Current PX",
+        "PX Change DoD",
+        "PX Change % DoD",
+        "MV Change",
+        "MV Change %",
+        "Rating",
+        "Collateral Type",
+        "Counterparty",
+    ]
+
+    data.columns = column_names
+
+    # List of columns to convert
+    cols_to_convert = [
+        "Quantity",
+        "T-1 PX",
+        "Current PX",
+        "PX Change DoD",
+        "PX Change % DoD",
+        "MV Change",
+        "MV Change %",
+    ]
+
+    # Convert columns to float, forcing invalid data to NaN
+    for col in cols_to_convert:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
+
+    # Round up 'Quantity', 'Investment Amount', 'MV', and 'MV Change' and convert to integers
+    # Use 'Int64' to allow NaN values
+    data["Quantity"] = np.ceil(data["Quantity"]).astype("Int64")
+    data["Investment Amount"] = np.ceil(data["Investment Amount"]).astype("Int64")
+    data["MV"] = np.ceil(data["MV"]).astype("Int64")
+    data["MV Change"] = np.ceil(data["MV Change"]).astype("Int64")
+
+    # Remove rows where Bond ID is 'Biggest Movers' or Quantity is NaN
+    filtered_data = data[
+        (~(data["Bond ID"] == "Biggest Movers")) & (data["Quantity"].notna())
+    ]
+
+    # Filter for PX Change % DoD < threshold after conversion to float
+    filtered_data = filtered_data[filtered_data["PX Change % DoD"] < threshold]
+
+    # Sort the filtered data by PX Change % DoD in ascending order
+    filtered_data = filtered_data.sort_values(by="PX Change % DoD", ascending=True)
+
+    # Keep number columns with maximum 4 digit after decimal
+    number_columns = [
+        "T-1 PX",
+        "Current PX",
+        "PX Change DoD",
+    ]
+
+    # Convert percentage columns to whole percentages, handling empty strings
+    percent_columns = ["PX Change % DoD", "MV Change %"]
+
+    for col in percent_columns:
+        if col in filtered_data.columns:
+            filtered_data[col] = (
+                pd.to_numeric(filtered_data[col], errors="coerce")
+                .multiply(100)
+                .fillna("")
+            )
+
+    # Define styling functions
+    def style_percentage(val):
+        if pd.isna(val) or val == "":
+            return "background-color: #dff0d8"
+        val = abs(float(val.strip("%")))
+        if val >= threshold_style[0] and val <= threshold_style[1]:
+            return "background-color: #FFD700"  # Dark yellow
+        elif val > threshold_style[1]:
+            return "background-color: #FF0000"  # Red
+        return "background-color: #dff0d8"  # Dark green
+
+    # Format 'Quantity', 'Investment Amount', and 'MV' columns with comma and no decimal
+    filtered_data["Quantity"] = filtered_data["Quantity"].apply("{:,.0f}".format)
+    filtered_data["Investment Amount"] = filtered_data["Investment Amount"].apply(
+        "{:,.0f}".format
+    )
+    filtered_data["MV"] = filtered_data["MV"].apply("{:,.0f}".format)
+
+    # Format 'MV Change' column with comma, parentheses for negative values, and no decimal
+    filtered_data["MV Change"] = filtered_data["MV Change"].apply(
+        lambda x: "({:,.0f})".format(abs(x)) if x < 0 else "{:,.0f}".format(x)
+    )
+
+    # Convert percentage columns to whole percentages
+    for col in percent_columns:
+        if col in filtered_data.columns:
+            filtered_data[col] = filtered_data[col].apply(
+                lambda x: "{:.2f}%".format(x * 1)
+            )
+
+    # Apply styling to the DataFrame
+    styled_data = filtered_data.style.map(style_percentage, subset=["MV Change %"])
+
+    # Format the styled DataFrame as an HTML table
+    html_table = styled_data.to_html(index=False, border=1, escape=False)
+
+    # html_content = f"""
+    #                     <!DOCTYPE html>
+    #                     <html lang="en">
+    #                     <head>
+    #                         <meta charset="UTF-8">
+    #                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    #                         <style>
+    #                             table {{
+    #                                 width: 100%;
+    #                                 border-collapse: collapse;
+    #                             }}
+    #                             th, td {{
+    #                                 border: 1px solid black;
+    #                                 padding: 8px;
+    #                                 text-align: center;
+    #                             }}
+    #                             th {{
+    #                                 background-color: #f2f2f2;
+    #                             }}
+    #                             .header {{
+    #                                 background-color: #d9edf7;
+    #                             }}
+    #                             .header span {{
+    #                                 font-size: 24px;
+    #                                 font-weight: bold;
+    #                             }}
+    #                             .subheader {{
+    #                                 background-color: #dff0d8;
+    #                             }}
+    #                         </style>
+    #                     </head>
+    #                     <body>
+    #                         <table>
+    #                             <tr class="header">
+    #                                 <td colspan="{len(filtered_data.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
+    #                             </tr>
+    #                             <tr class="subheader">
+    #                                 <td colspan="{len(filtered_data.columns)}">{subheader}</td>
+    #                             </tr>
+    #
+    #                         </table>
+    #                         <table>
+    #                             {html_table}
+    #                         </table>
+    #                     </body>
+    #                     </html>
+    #                     """
+
+    return html_table
 
 
 def refresh_data_and_send_email():
-
     price_report_helix_df = execute_sql_query_v2(
         price_report_helix_query, helix_db_type, params=()
     )
@@ -294,6 +470,7 @@ def refresh_data_and_send_email():
         "Product Type",  # Check whether it's IO or not
         "Rating",
         "Collateral Type",
+        "contraname",
     ]
 
     price_report_helix_df = price_report_helix_df[helix_rating_columns_to_use]
@@ -306,6 +483,7 @@ def refresh_data_and_send_email():
         "Product Type",
         "Rating",
         "Collateral Type",
+        "Counterparty",
     ]
 
     price_df = read_table_from_db("silver_clean_and_dirty_prices", prod_db_type)
@@ -321,22 +499,14 @@ def refresh_data_and_send_email():
     # Keep only necessary columns
     price_df = price_df[["price_date", "bond_id", "dirty_price"]]
 
-    factor_df = read_table_from_db("bronze_bond_data", prod_db_type)
-
-    factor_df["bond_data_date"] = pd.to_datetime(
-        factor_df["bond_data_date"], errors="coerce"
+    factor_df = read_table_from_db(
+        "silver_bloomberg_factor_interest_accrued", prod_db_type
     )
+    factor_df["date"] = factor_df["date"].astype(str)
 
-    factor_df = factor_df[
-        (factor_df["is_am"] == 0)
-        & (
-            factor_df["bond_data_date"]
-            .dt.strftime("%Y-%m-%d")
-            .isin([valdate, prev_valdate])
-        )
-    ]
+    factor_df = factor_df[factor_df["date"].isin([valdate, prev_valdate])]
 
-    factor_df = factor_df[["bond_id", "mtg_factor", "bond_data_date"]]
+    factor_df = factor_df[["date", "bond_id", "factor"]]
 
     ######
 
@@ -350,6 +520,7 @@ def refresh_data_and_send_email():
                 "Product Type": "first",  # Assumes "Product Type" is consistent within each "Bond ID"
                 "Rating": "first",  # Same assumption for "Rating"
                 "Collateral Type": "first",  # Same assumption for "Collateral Type"
+                "Counterparty": "first",
             }
         )
         .reset_index()
@@ -391,24 +562,22 @@ def refresh_data_and_send_email():
     ### FACTOR ###
     # Add "Current Factor" column by merging on Bond ID and bond_data_date = valdate
     price_report_helix_df = price_report_helix_df.merge(
-        factor_df[factor_df["bond_data_date"] == valdate][["bond_id", "mtg_factor"]],
+        factor_df[factor_df["date"] == valdate][["bond_id", "factor"]],
         how="left",
         left_on="Bond ID",
         right_on="bond_id",
-    ).rename(columns={"mtg_factor": "Current Factor"})
+    ).rename(columns={"factor": "Current Factor"})
 
     # Drop the extra bond_id column after the merge
     price_report_helix_df = price_report_helix_df.drop(columns=["bond_id"])
 
     # Add "T-1 Factor" column by merging on Bond ID and bond_data_date = prev_valdate
     price_report_helix_df = price_report_helix_df.merge(
-        factor_df[factor_df["bond_data_date"] == prev_valdate][
-            ["bond_id", "mtg_factor"]
-        ],
+        factor_df[factor_df["date"] == prev_valdate][["bond_id", "factor"]],
         how="left",
         left_on="Bond ID",
         right_on="bond_id",
-    ).rename(columns={"mtg_factor": "T-1 Factor"})
+    ).rename(columns={"factor": "T-1 Factor"})
 
     # Drop the extra bond_id column after the merge
     price_report_helix_df = price_report_helix_df.drop(columns=["bond_id"])
@@ -438,6 +607,7 @@ def refresh_data_and_send_email():
         * price_report_helix_df["T-1 Factor"]
         * price_report_helix_df["Quantity"]
     ) / 100
+    # print(price_report_helix_df["T-1 Factor"])
 
     # Calculate MV Change from Factor
     price_report_helix_df["MV Change from Factor"] = (
@@ -445,12 +615,29 @@ def refresh_data_and_send_email():
         * price_report_helix_df["T-1 Price"]
         * price_report_helix_df["Quantity"]
     ) / 100
+    # print(price_report_helix_df["MV Change from Factor"])
 
     # Combine both to calculate total MV Change
     price_report_helix_df["MV Change"] = (
         price_report_helix_df["MV Change from Price"]
         + price_report_helix_df["MV Change from Factor"]
     )
+
+    # Calculate MV Change %
+    # Calculate T-1 Market Value (MV_T-1)
+    price_report_helix_df["MV_T-1"] = (
+        price_report_helix_df["T-1 Price"]
+        * price_report_helix_df["T-1 Factor"]
+        * price_report_helix_df["Quantity"]
+    ) / 100
+
+    # Calculate MV Change %
+    price_report_helix_df["MV Change %"] = (
+        price_report_helix_df["MV"] / price_report_helix_df["MV_T-1"] - 1
+    )
+
+    # Optional: Round the percentage to 2 decimal places
+    price_report_helix_df["MV Change %"] = price_report_helix_df["MV Change %"]
 
     # Drop intermediate columns if not needed
     price_report_helix_df = price_report_helix_df.drop(
@@ -459,6 +646,7 @@ def refresh_data_and_send_email():
             "MV Change from Factor",
             "Current Factor",
             "T-1 Factor",
+            "MV_T-1",
         ]
     )
 
@@ -476,22 +664,75 @@ def refresh_data_and_send_email():
         )
     ]
 
-    thresshold_style_1 = [0.25, 0.5]
+    threshold_style_1 = [1.50, 3.0]
     html_content = process_data(
         price_df_pi_product,
-        -0.001,
-        thresshold_style_1,
+        -0.015,
+        threshold_style_1,
         "PX Change Report - P & I Products",
     )
 
-    thresshold_style_2 = [3, 5]
-    html_content_2 = process_data(
-        price_df_io_product, -0.01, thresshold_style_2, "PX Change Report - IO Products"
+    threshold_style_2 = [5, 9]
+    html_content_2 = process_data_io(
+        price_df_io_product, -0.05, threshold_style_2, "PX Change Report - IO Products"
     )
 
-    subject = f"LRX - PX change report P&I Products - {valdate}"
+    html_content = f"""
+                            <!DOCTYPE html>
+                            <html lang="en">
+                            <head>
+                                <meta charset="UTF-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <style>
+                                    table {{
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                    }}
+                                    th, td {{
+                                        border: 1px solid black;
+                                        padding: 8px;
+                                        text-align: center;
+                                    }}
+                                    th {{
+                                        background-color: #f2f2f2;
+                                    }}
+                                    .header {{
+                                        background-color: #d9edf7;
+                                    }}
+                                    .header span {{
+                                        font-size: 24px;
+                                        font-weight: bold;
+                                    }}
+                                    .subheader {{
+                                        background-color: #dff0d8;
+                                    }}
+                                </style>
+                            </head>
+                            <body>
+                                <table>
+                                    <tr class="header">
+                                        <td colspan="{len(price_df_pi_product.columns)}"><span>Lucid Management and Capital Partners LP</span></td>
+                                    </tr>
+                                </table>
+                                <table>
+                                    <tr class="subheader">
+                                        <td colspan="{len(price_df_pi_product.columns)}">PX Change Report - P & I Products</td>
+                                    </tr>
+                                    {html_content}
+                                </table>
+                                <table>
+                                    <tr class="subheader">
+                                        <td colspan="{len(price_df_io_product.columns)}">PX Change Report - I & O Products</td>
+                                    </tr>
+                                    {html_content_2}
+                                </table>
+                            </body>
+                            </html>
+                            """
 
-    subject_2 = f"LRX - PX change report IO Products - {valdate}"
+    subject = f"LRX - PX change report - {valdate}"
+    # subject = f"LRX - PX change report P&I Products - {valdate}"
+    # subject_2 = f"LRX - PX change report IO Products - {valdate}"
 
     recipients = [
         "tony.hoang@lucidma.com",
@@ -511,15 +752,15 @@ def refresh_data_and_send_email():
         # attachment_path,
         # attachment_name,
     )
-
-    send_email(
-        subject_2,
-        html_content_2,
-        recipients,
-        cc_recipients,
-        # attachment_path,
-        # attachment_name,
-    )
+    #
+    # send_email(
+    #     subject_2,
+    #     html_content_2,
+    #     recipients,
+    #     cc_recipients,
+    #     # attachment_path,
+    #     # attachment_name,
+    # )
 
 
 # Run the script
