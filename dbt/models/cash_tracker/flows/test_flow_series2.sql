@@ -3,12 +3,14 @@ WITH master_flows AS (
         *
     FROM
         {{ ref('cash_tracker__flows') }}
+    WHERE flow_security = '{{var('CASH')}}' AND flow_status = '{{var('AVAILABLE')}}'
 ),
 series_flows AS (
     SELECT
         *
     FROM
         {{ ref('cash_tracker__flows_series') }}
+    WHERE flow_security = '{{var('CASH')}}' AND flow_status = '{{var('AVAILABLE')}}'
 ),
 compare AS (
     SELECT
