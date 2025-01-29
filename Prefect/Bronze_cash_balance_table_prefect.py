@@ -145,7 +145,7 @@ def process_cash_balance_files():
 # Add this deployment configuration at the bottom
 if __name__ == "__main__":
     process_cash_balance_files.serve(
-        name="cash_balance_production",
+        name="Cash Balance Update",
         cron="0 15 * * 1-5",
         tags=["bronze-layer"],
         description="Daily processing of cash balance files",
