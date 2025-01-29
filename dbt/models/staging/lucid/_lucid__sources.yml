@@ -6,6 +6,7 @@ sources:
     schema: dbt
     tables:
       - name: cash_tracker__failing_trades
+      - name: cash_tracker__balance_history_series
   - name: sql2
     database: Prod1
     schema: dbo

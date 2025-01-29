@@ -35,6 +35,7 @@ final2 AS (
     flow_status,
     series,
     transaction_action_id,
+    transaction_desc,
     flow_amount,
     flow_is_settled,
     ct_use,
@@ -49,6 +50,7 @@ final2 AS (
     flow_status,
     series,
     transaction_action_id,
+    transaction_desc,
     flow_amount,
     flow_is_settled,
     ct_use,
@@ -56,4 +58,7 @@ final2 AS (
   FROM series_flows
 )
 
-SELECT * FROM final2
+SELECT 
+  *,
+  COUNT(1) OVER (PARTITION BY report_date, fund, flow_account, transaction_action_id) AS cnt
+FROM final2
