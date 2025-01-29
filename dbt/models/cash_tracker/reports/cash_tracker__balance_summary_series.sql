@@ -3,28 +3,36 @@ master_summary AS (
   SELECT
     *
   FROM {{ ref('cash_tracker__balance_summary') }}
+  WHERE report_date >= '2024-10-31'
+  AND acct_name IN ('MAIN','MARGIN','MANAGEMENT')
 ),
 master_flows AS (
     SELECT
         *
     FROM {{ ref('cash_tracker__flows_after_force_failing') }}
     WHERE ct_use = 1
+    AND report_date >= '2024-10-31'
 ),
 series_summary AS (
   SELECT
     *
   FROM {{ ref('stg_lucid__balance_history_series') }}
+  WHERE report_date >= '2024-10-31'
+  AND flow_account IN ('MAIN','MARGIN','MANAGEMENT')
 ),
 series_flows AS (
     SELECT
         *
     FROM {{ ref('cash_tracker__flows_after_force_failing_series') }}
     WHERE ct_use = 1
+    AND report_date >= '2024-10-31'
 ),
 accounts AS (
   SELECT
     *
   FROM {{ ref('stg_lucid__accounts') }}
+  WHERE 1=1
+  AND acct_name IN ('MAIN','MARGIN','MANAGEMENT')
 ),
 series AS (
   SELECT
@@ -34,16 +42,6 @@ series AS (
 series_bod_balance AS (
   SELECT
     {{ next_business_day('report_date') }} AS report_date,
-    fund,
-    flow_account,
-    series,
-    TRY_CAST(COALESCE(series_cash_eod, 0) AS MONEY) AS cash_balance,
-    TRY_CAST(COALESCE(series_sweep_eod, 0) AS MONEY) AS sweep_balance
-  FROM series_summary
-),
-series_eod_balance AS (
-  SELECT
-    report_date,
     fund,
     flow_account,
     series,
@@ -85,10 +83,8 @@ series_combined AS (
     m.account_number,
     COALESCE(p.series_settled_activity, 0) AS series_settled_activity,
     COALESCE(p.series_unsettled_activity, 0) AS series_unsettled_activity,
-    bod.cash_balance AS series_cash_bod,
-    eod.cash_balance AS series_cash_eod,
-    bod.sweep_balance AS series_sweep_bod,
-    eod.sweep_balance AS series_sweep_eod,
+    COALESCE(bod.cash_balance, 0) AS series_cash_bod,
+    COALESCE(bod.sweep_balance, 0) AS series_sweep_bod,
     CAST(
       SUM(p.series_settled_activity) OVER (PARTITION BY m.report_date, m.fund, m.account_number) 
     AS MONEY) AS series_flows_total,
@@ -114,12 +110,6 @@ series_combined AS (
     AND m.fund = bod.fund
     AND m.acct_name = bod.flow_account
     AND s.series = bod.series
-  )
-  LEFT JOIN series_eod_balance AS eod ON (
-    m.report_date = eod.report_date
-    AND m.fund = eod.fund
-    AND m.acct_name = eod.flow_account
-    AND s.series = eod.series
   )
 ),
 calc_sweep_extra AS (
