@@ -51,23 +51,8 @@ helix_prime_new_trade_ids = df_helix_trade.loc[
     "Trade ID",
 ].unique()
 
-# # Step 4: Handle the case where no rows match the criteria
-# if len(helix_prime_new_trade_ids) == 0:
-#     helix_prime_new_trade_ids = ""
-#
-# # Step 5: (Optional) Convert to list for easier handling
-# helix_prime_new_trade_ids = (
-#     helix_prime_new_trade_ids.tolist()
-#     if isinstance(helix_prime_new_trade_ids, np.ndarray)
-#     else helix_prime_new_trade_ids
-# )
-
 helix_prime_new_trade_ids = safe_to_list(helix_prime_new_trade_ids)
 
-print(helix_prime_new_trade_ids)
-
-
-# Step 3: Apply the filter conditions
 helix_prime_closes_trade_ids = df_helix_trade.loc[
     (df_helix_trade["End Date"] == cutoff_date)
     & (df_helix_trade["Include"] == "Include"),
@@ -330,33 +315,35 @@ def get_helix_status(trade_id, df_helix_trade):
     return match.iloc[0] if not match.empty else ""
 
 
-# Usage example:
-helix_id = 208030  # Replace with your H26 value
-
-
-buy_settled = get_status_from_cash_sec(helix_id, df_cash_rec, df_nexen, "BUY")
-sell_settled = get_status_from_cash_sec(helix_id, df_cash_rec, df_nexen, "SELL")
-bny_buy_ref = get_reference_number(helix_id, df_nexen, df_cash_rec, "BUY")
-bny_sell_ref = get_reference_number(helix_id, df_nexen, df_cash_rec, "SELL")
-helix_status = get_helix_status(helix_id, df_helix_trade)
-roll_of = get_roll_of(helix_id, df_helix_trade)
-roll_for = get_roll_for(helix_id, df_helix_trade)
-nexen_status = get_nexen_status(helix_id, buy_settled, df_nexen)
-end_date = get_end_date([helix_id], df_helix_trade)
-
-
-print(
-    helix_id,
-    buy_settled,
-    sell_settled,
-    bny_buy_ref,
-    bny_sell_ref,
-    helix_status,
-    roll_of,
-    roll_for,
-    nexen_status,
-    end_date,
-)
+#
+#
+# # Usage example:
+# helix_id = 208030  # Replace with your H26 value
+#
+#
+# buy_settled = get_status_from_cash_sec(helix_id, df_cash_rec, df_nexen, "BUY")
+# sell_settled = get_status_from_cash_sec(helix_id, df_cash_rec, df_nexen, "SELL")
+# bny_buy_ref = get_reference_number(helix_id, df_nexen, df_cash_rec, "BUY")
+# bny_sell_ref = get_reference_number(helix_id, df_nexen, df_cash_rec, "SELL")
+# helix_status = get_helix_status(helix_id, df_helix_trade)
+# roll_of = get_roll_of(helix_id, df_helix_trade)
+# roll_for = get_roll_for(helix_id, df_helix_trade)
+# nexen_status = get_nexen_status(helix_id, buy_settled, df_nexen)
+# end_date = get_end_date([helix_id], df_helix_trade)
+#
+#
+# print(
+#     helix_id,
+#     buy_settled,
+#     sell_settled,
+#     bny_buy_ref,
+#     bny_sell_ref,
+#     helix_status,
+#     roll_of,
+#     roll_for,
+#     nexen_status,
+#     end_date,
+# )
 
 
 def create_final_report(
