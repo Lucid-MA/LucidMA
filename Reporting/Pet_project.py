@@ -61,8 +61,6 @@ helix_prime_closes_trade_ids = df_helix_trade.loc[
 
 helix_prime_closes_trade_ids = safe_to_list(helix_prime_closes_trade_ids)
 
-print(helix_prime_closes_trade_ids)
-
 
 def parse_helix_id(ref_value):
     substring = str(ref_value)[:6]
@@ -119,7 +117,6 @@ combined = list1 + list2 + list3 + list4
 unique_sorted_ids = sorted(
     list(set(int(x) for x in combined if pd.notna(x) and str(x).isdigit()))
 )
-print(unique_sorted_ids)
 
 
 def get_reference_number(helix_id, df_nexen, df_cash_rec, transaction_type):
@@ -353,15 +350,10 @@ def create_final_report(
     rows = []
 
     for helix_id in unique_ids:
-        print(f"\nProcessing Helix ID: {helix_id}")
-
         buy_settled = get_status_from_cash_sec(helix_id, df_cash_rec, df_nexen, "BUY")
         sell_settled = get_status_from_cash_sec(helix_id, df_cash_rec, df_nexen, "SELL")
         bny_buy_ref = get_reference_number(helix_id, df_nexen, df_cash_rec, "BUY")
         bny_sell_ref = get_reference_number(helix_id, df_nexen, df_cash_rec, "SELL")
-
-        print(f"Report: Helix ID: {helix_id}, BNY Sell Ref: {bny_sell_ref}")
-
         helix_status = get_helix_status(helix_id, df_helix_trade)
         roll_of = get_roll_of(helix_id, df_helix_trade)
         roll_for = get_roll_for(helix_id, df_helix_trade)
@@ -390,11 +382,168 @@ def create_final_report(
 
 
 # Run the final report with debugging enabled
-final_report_df = create_final_report(
+df_output = create_final_report(
     unique_sorted_ids, df_helix_trade, df_nexen, df_cash_rec
 )
 
 # # Optional: Set Helix_ID as index
 # final_report_df.set_index("Helix_ID", inplace=True)
 
-print_df(final_report_df)
+# print_df(df_output)
+
+# Apply filtering conditions
+filtered_df = df_output[
+    (df_output["Roll_Of"].isna())  # Roll_Of is empty
+    | (
+        ~df_output["Roll_Of"].isna() & (df_output["End_Date"] == report_date)
+    )  # Roll_Of is not empty and End_Date matches T1
+]
+
+#### MAIN REPORT ####
+
+# Extract unique and sorted "Helix_ID" values
+# trade_ids = sorted(filtered_df["Helix_ID"].dropna().unique())
+trade_ids = unique_sorted_ids[:5]
+
+
+# Function to perform XLOOKUP equivalent in Pandas
+def lookup_value(trade_id, lookup_df, key_col, value_col):
+    if pd.isna(trade_id) or str(trade_id).strip() == "":
+        return ""  # Handle empty input case
+    match = lookup_df.loc[lookup_df[key_col] == trade_id, value_col]
+    return match.iloc[0] if not match.empty else ""  # Equivalent to IFNA
+
+
+# Creating df_final structure
+df_final = pd.DataFrame({"Trade_ID": trade_ids})
+
+# Populate columns using the lookup function
+df_final["Helix_status"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "Status Detail")
+)
+df_final["BNY_buy_ref"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_output, "Helix_ID", "BNY_Buy_Ref")
+)
+df_final["BNY_sell_ref"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_output, "Helix_ID", "BNY_Sell_Ref")
+)
+df_final["BNY_fail_reason"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_output, "Helix_ID", "Nexen_Status")
+)
+df_final["Buy_settled"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_output, "Helix_ID", "Buy_Settled")
+)
+df_final["Sell_settled"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_output, "Helix_ID", "Sell_Settled")
+)
+
+# Populate columns from df_helix_trade
+df_final["Counterparty"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "Counterparty")
+)
+df_final["Start_date"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "Start Date")
+)
+df_final["End_date"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "End Date")
+)
+df_final["Cusip"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "BondID")
+)
+df_final["Start_money"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "Money")
+)
+df_final["End_money"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "End Money")
+)
+df_final["Shares"] = df_final["Trade_ID"].apply(
+    lambda x: lookup_value(x, df_helix_trade, "Trade ID", "Par/Quantity")
+)
+
+
+# Formatting function for currency ($xxx,xxx,xxx)
+def format_currency(value):
+    try:
+        return f"${int(value):,}" if pd.notna(value) and str(value).strip() else ""
+    except ValueError:
+        return ""
+
+
+# Formatting function for numbers (xxx,xxx,xxx)
+def format_number(value):
+    try:
+        return f"{int(value):,}" if pd.notna(value) and str(value).strip() else ""
+    except ValueError:
+        return ""
+
+
+df_final["Start_date"] = pd.to_datetime(df_final["Start_date"], errors="coerce")
+df_final["End_date"] = pd.to_datetime(df_final["End_date"], errors="coerce")
+df_final["Start_money"] = df_final["Start_money"].apply(format_currency)
+df_final["End_money"] = df_final["End_money"].apply(format_currency)
+df_final["Shares"] = df_final["Shares"].apply(format_number)
+
+
+# Conditional formatting functions
+def highlight_helix_status(val):
+    return "background-color: #FFD700" if val == "Pending" else ""
+
+
+report_date = report_date.date()
+
+
+def highlight_start_date(val):
+    if not val:
+        return ""
+    try:
+        # Convert val to a date object if it's a string or datetime
+        if isinstance(val, str):
+            val = datetime.strptime(val, "%Y-%m-%d").date()
+        elif isinstance(val, datetime):
+            val = val.date()
+        return "background-color: #FFD700" if val <= report_date else ""
+    except ValueError:
+        return ""
+
+
+def highlight_end_date(val):
+    if not val:
+        return ""
+    try:
+        # Convert val to a date object if it's a string or datetime
+        if isinstance(val, str):
+            val = datetime.strptime(val, "%Y-%m-%d").date()
+        elif isinstance(val, datetime):
+            val = val.date()
+        return "background-color: #FFD700" if val <= report_date else ""
+    except ValueError:
+        return ""
+
+
+def highlight_settled(val):
+    return "background-color: #90EE90" if val == "Settled" else ""
+
+
+#
+# # Convert df_final to HTML for Email
+# html_table = df_final.to_html(index=False, escape=False)
+
+# Create a Styler object from df_final
+styler = df_final.style
+
+# Format Start_date and End_date to display as YYYY-MM-DD
+styler.format(
+    subset=["Start_date", "End_date"],
+    formatter=lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else "",
+)
+
+# Apply conditional highlighting
+styler.map(highlight_helix_status, subset=["Helix_status"])
+styler.map(highlight_settled, subset=["Buy_settled", "Sell_settled"])
+styler.map(highlight_start_date, subset=["Start_date"])
+styler.map(highlight_end_date, subset=["End_date"])
+
+# Generate the HTML table
+html_table = styler.hide(axis="index").to_html()
+
+print_df(html_table)
