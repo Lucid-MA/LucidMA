@@ -414,7 +414,7 @@ def create_final_report(
     return pd.DataFrame(rows)
 
 
-# Generate the final report DataFrame
+# Run the final report with debugging enabled
 final_report_df = create_final_report(
     unique_sorted_ids, df_helix_trade, df_nexen, df_cash_rec
 )
