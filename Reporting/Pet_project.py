@@ -74,17 +74,6 @@ helix_prime_closes_trade_ids = df_helix_trade.loc[
     "Trade ID",
 ].unique()
 
-# # Step 4: Handle the case where no rows match the criteria
-# if len(helix_prime_closes_trade_ids) == 0:
-#     helix_prime_closes_trade_ids = ""
-#
-# # Step 5: (Optional) Convert to list for easier handling
-# helix_prime_closes_trade_ids = (
-#     helix_prime_closes_trade_ids.tolist()
-#     if isinstance(helix_prime_closes_trade_ids, np.ndarray)
-#     else helix_prime_closes_trade_ids
-# )
-
 helix_prime_closes_trade_ids = safe_to_list(helix_prime_closes_trade_ids)
 
 print(helix_prime_closes_trade_ids)
@@ -141,18 +130,14 @@ list4 = helix_prime_closes_trade_ids.tolist()
 
 # Combine and deduplicate
 combined = list1 + list2 + list3 + list4
-unique_sorted_ids = sorted(list(set(combined)))
-
+# unique_sorted_ids = sorted(list(set(combined)))
+unique_sorted_ids = sorted(
+    list(set(int(x) for x in combined if pd.notna(x) and str(x).isdigit()))
+)
 print(unique_sorted_ids)
 
 
 def get_reference_number(helix_id, df_nexen, df_cash_rec, transaction_type):
-    """
-    Replicates the Excel formula:
-    =IFNA(IF(H26="","",IFERROR(XLOOKUP(...), XLOOKUP(...))), ""))
-    """
-    print(f"\nChecking Helix ID: {helix_id}, Transaction: {transaction_type}")
-
     if not helix_id:  # Equivalent to IF(H26="",""
         print("Helix ID is empty or invalid")
         return ""
@@ -164,33 +149,36 @@ def get_reference_number(helix_id, df_nexen, df_cash_rec, transaction_type):
             & (df_nexen["Transaction Name"] == transaction_type)
             & (df_nexen["Include"] == "INCLUDE")
         )
-        result = df_nexen.loc[mask_nexen, "Reference Number"]
 
+        # # For SELL transactions, ignore the "Include" column
+        # if transaction_type == "SELL":
+        #     mask_nexen = (df_nexen["Helix ID"] == helix_id) & (
+        #         df_nexen["Transaction Name"] == transaction_type
+        #     )
+        # else:
+        #     mask_nexen = (
+        #         (df_nexen["Helix ID"] == helix_id)
+        #         & (df_nexen["Transaction Name"] == transaction_type)
+        #         & (df_nexen["Include"] == "INCLUDE")
+        #     )
+
+        result = df_nexen.loc[mask_nexen, "Reference Number"]
         if not result.empty:
-            print(f"Found in df_nexen: {result.iloc[0]}")
             return result.iloc[0]
-        else:
-            print("Not found in df_nexen")
     except Exception as e:
         print(f"Error searching in df_nexen: {e}")
 
     try:
-        # Fallback to df_cash_rec (Table_Query_from_Spiral171819)
         mask_cash = (df_cash_rec["Helix ID"] == helix_id) & (
             df_cash_rec["Transaction Type Name"] == transaction_type
         )
         result = df_cash_rec.loc[mask_cash, "Reference Number"]
-
         if not result.empty:
-            print(f"Found in df_cash_rec: {result.iloc[0]}")
             return result.iloc[0]
-        else:
-            print("Not found in df_cash_rec")
     except Exception as e:
         print(f"Error searching in df_cash_rec: {e}")
 
-    print("Returning empty string for reference number")
-    return ""  # IFNA fallback
+    return ""
 
 
 def get_roll_of(trade_id, df_helix_trade):
@@ -256,15 +244,15 @@ def get_nexen_status(helix_id, status_from_cash_sec, df_nexen):
     if pd.isna(helix_id) or not str(helix_id).strip():
         return ""
 
-    df_nexen["Helix ID"] = df_nexen["Helix ID"].astype(str)
-    helix_id = str(helix_id)
+    # Convert to string for comparison without modifying the original DataFrame
+    helix_id_str = str(helix_id)
 
     if not status_from_cash_sec:
-        mask = (df_nexen["Helix ID"] == helix_id) & (
+        mask = (df_nexen["Helix ID"].astype(str) == helix_id_str) & (
             df_nexen["Transaction Name"] == "BUY"
         )
     else:
-        mask = (df_nexen["Helix ID"] == helix_id) & (
+        mask = (df_nexen["Helix ID"].astype(str) == helix_id_str) & (
             df_nexen["Transaction Name"] == "SELL"
         )
 
