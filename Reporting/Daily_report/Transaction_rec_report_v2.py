@@ -609,9 +609,7 @@ def main():
         "swayam.sinha@lucidma.com",
     ]
 
-    cc_recipients = [
-        "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     # attachment_path = file_path
     # attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
