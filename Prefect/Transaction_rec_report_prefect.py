@@ -1,15 +1,15 @@
 import base64
 import os
-import time
 from datetime import datetime, timedelta
 
 import msal
 import numpy as np
 import pandas as pd
 import requests
-from Utils.Common import get_file_path
 from prefect import task, flow
-from Utils.Common import format_date_YYYY_MM_DD, print_df
+
+from Utils.Common import format_date_YYYY_MM_DD
+from Utils.Common import get_file_path
 from Utils.SQL_queries import transaction_rec_report_helix_trade_query
 from Utils.database_utils import (
     execute_sql_query_v2,
@@ -646,7 +646,7 @@ def main():
 if __name__ == "__main__":
     main.serve(
         name="Transaction Reconciliation Report Deployment",
-        cron="15 17 * * 1-5",
+        cron=["55 6 * * 1-5", "15 17 * * 1-5"],
         tags=[
             "transaction-recs",
             "daily-report",
