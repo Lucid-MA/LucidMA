@@ -9,6 +9,14 @@ import pandas as pd
 import requests
 from Utils.Common import get_file_path
 from prefect import task, flow
+from Utils.Common import format_date_YYYY_MM_DD, print_df
+from Utils.SQL_queries import transaction_rec_report_helix_trade_query
+from Utils.database_utils import (
+    execute_sql_query_v2,
+    helix_db_type,
+    read_table_from_db,
+    prod_db_type,
+)
 
 current_date = datetime.now() - timedelta(0)
 valdate = current_date.strftime("%Y-%m-%d")
@@ -63,31 +71,17 @@ def authenticate_and_get_token():
 
 #######
 
-from datetime import datetime, timedelta
-import numpy as np
-import pandas as pd
-from Utils.Common import format_date_YYYY_MM_DD, print_df
-from Utils.SQL_queries import transaction_rec_report_helix_trade_query
-from Utils.database_utils import (
-    execute_sql_query_v2,
-    helix_db_type,
-    read_table_from_db,
-    prod_db_type,
-)
 
-
-@task
+# -------------------- Helper Functions (No @task decorators) --------------------
 def safe_to_list(obj):
     return obj.tolist() if isinstance(obj, (np.ndarray, pd.Index)) else obj
 
 
-@task
 def parse_helix_id(ref_value):
     substring = str(ref_value)[:6]
     return int(substring) if substring.isdigit() else "INVALID"
 
 
-@task
 def get_reference_number(helix_id, df_nexen, df_cash_rec, transaction_type):
     if not helix_id:
         print("Helix ID is empty or invalid")
@@ -129,7 +123,6 @@ def get_roll_of(trade_id, df_helix_trade):
         return facility_value
 
 
-@task
 def get_roll_for(trade_id, df_helix_trade):
     if pd.isna(trade_id) or str(trade_id).strip() == "":
         return ""
@@ -150,7 +143,6 @@ def get_roll_for(trade_id, df_helix_trade):
         return facility_value
 
 
-@task
 def get_nexen_status(helix_id, status_from_cash_sec, df_nexen):
     if pd.isna(helix_id) or not str(helix_id).strip():
         return ""
@@ -167,13 +159,11 @@ def get_nexen_status(helix_id, status_from_cash_sec, df_nexen):
     return result.iloc[0] if not result.empty else ""
 
 
-@task
 def get_end_date(trade_ids, df_helix_trade):
     lookup_dict = df_helix_trade.set_index("Trade ID")["End Date"].to_dict()
     return [lookup_dict.get(x, "") for x in trade_ids] if trade_ids else []
 
 
-@task
 def get_status_from_cash_sec(trade_id, df_cash_sec, df_nexen, transaction_type):
     if pd.isna(trade_id) or str(trade_id).strip() in ["", "nan"]:
         return ""
@@ -197,7 +187,6 @@ def get_status_from_cash_sec(trade_id, df_cash_sec, df_nexen, transaction_type):
         return ""
 
 
-@task
 def get_helix_status(trade_id, df_helix_trade):
     if not trade_id or pd.isna(trade_id):
         return ""
@@ -205,6 +194,7 @@ def get_helix_status(trade_id, df_helix_trade):
     return match.iloc[0] if not match.empty else ""
 
 
+# -------------------- Core Logic Tasks --------------------
 @task
 def create_final_report(
     unique_ids, df_helix_trade, df_nexen, df_cash_rec
@@ -305,6 +295,7 @@ def prepare_cash_rec_data():
     return df_cash_rec
 
 
+# -------------------- Consolidated Data Preparation --------------------
 @task
 def prepare_nexen_data():
     df_nexen = read_table_from_db("bronze_NEXEN_unsettle_trades", prod_db_type)
@@ -320,7 +311,6 @@ def prepare_nexen_data():
     return df_nexen
 
 
-@task
 def get_unique_helix_ids(
     df_nexen, helix_prime_new_trade_ids, helix_prime_closes_trade_ids
 ):
@@ -426,7 +416,7 @@ def generate_final_report(df_output, df_helix_trade, unique_sorted_ids):
     return df_final
 
 
-@task
+# -------------------- Report Formatting & Email --------------------
 def style_and_print_report(df_final, report_date):
     def highlight_helix_status(val):
         return "background-color: #FFD700" if val == "Pending" else ""
@@ -504,7 +494,7 @@ def generate_html_table_content():
     return style_and_print_report(df_final, report_date)
 
 
-######
+@task
 def send_email(
     subject, body, recipients, cc_recipients, attachment_path=None, attachment_name=None
 ):
@@ -630,12 +620,14 @@ def main():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        "amelia.thompson@lucidma.com",
-        "stephen.ng@lucidma.com",
-        "swayam.sinha@lucidma.com",
+        # "amelia.thompson@lucidma.com",
+        # "stephen.ng@lucidma.com",
+        # "swayam.sinha@lucidma.com",
     ]
 
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        # "operations@lucidma.com"
+    ]
 
     # attachment_path = file_path
     # attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
