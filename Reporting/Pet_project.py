@@ -20,7 +20,7 @@ def safe_to_list(obj):
 df_helix_trade = execute_sql_query_v2(
     transaction_rec_report_helix_trade_query,
     helix_db_type,
-    params=(datetime.strptime("2025-01-29", "%Y-%m-%d"),),
+    params=(datetime.strptime("2025-02-03", "%Y-%m-%d"),),
 )
 
 df_helix_trade["Trade ID"] = pd.to_numeric(
@@ -38,7 +38,7 @@ df_helix_trade["Roll for"] = df_helix_trade["Facility"].where(
 )
 
 
-cutoff_date_str = "2025-01-29"
+cutoff_date_str = "2025-02-03"
 cutoff_date = datetime.strptime(cutoff_date_str, "%Y-%m-%d").date()
 
 df_helix_trade["Start Date"] = pd.to_datetime(df_helix_trade["Start Date"]).dt.date
@@ -70,7 +70,7 @@ def parse_helix_id(ref_value):
 df_cash_rec = read_table_from_db(
     "bronze_nexen_cash_and_security_transactions", prod_db_type
 )
-report_date = datetime.strptime("2025-01-29", "%Y-%m-%d")
+report_date = datetime.strptime("2025-02-03", "%Y-%m-%d")
 cutoff_date = report_date - timedelta(days=500)
 df_cash_rec = df_cash_rec[
     df_cash_rec["Settle / Pay Date"] > format_date_YYYY_MM_DD(cutoff_date)
@@ -393,17 +393,17 @@ df_output = create_final_report(
 
 # Apply filtering conditions
 filtered_df = df_output[
-    (df_output["Roll_Of"].isna())  # Roll_Of is empty
+    (df_output["Roll_Of"] == "")  # Roll_Of is empty
     | (
-        ~df_output["Roll_Of"].isna() & (df_output["End_Date"] == report_date)
+        ~(df_output["Roll_Of"] == "") & (df_output["End_Date"] == report_date.date())
     )  # Roll_Of is not empty and End_Date matches T1
 ]
 
 #### MAIN REPORT ####
 
 # Extract unique and sorted "Helix_ID" values
-# trade_ids = sorted(filtered_df["Helix_ID"].dropna().unique())
-trade_ids = unique_sorted_ids[:5]
+trade_ids = sorted(filtered_df["Helix_ID"].dropna().unique())
+# trade_ids = unique_sorted_ids[:5]
 
 
 # Function to perform XLOOKUP equivalent in Pandas

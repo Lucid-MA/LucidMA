@@ -488,6 +488,15 @@ def generate_html_table_content():
         unique_sorted_ids, df_helix_trade, df_nexen, df_cash_rec
     )
 
+    filtered_df = df_output[
+        (df_output["Roll_Of"] == "")  # Roll_Of is empty
+        | (
+            ~(df_output["Roll_Of"] == "") & (df_output["End_Date"] == valdate)
+        )  # Roll_Of is not empty and End_Date matches T1
+    ]
+
+    unique_sorted_ids = sorted(filtered_df["Helix_ID"].dropna().unique())
+
     # Generate and style final report
     df_final = generate_final_report(df_output, df_helix_trade, unique_sorted_ids)
     report_date = datetime.strptime(valdate, "%Y-%m-%d").date()
@@ -620,14 +629,12 @@ def main():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        # "amelia.thompson@lucidma.com",
-        # "stephen.ng@lucidma.com",
-        # "swayam.sinha@lucidma.com",
+        "amelia.thompson@lucidma.com",
+        "stephen.ng@lucidma.com",
+        "swayam.sinha@lucidma.com",
     ]
 
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     # attachment_path = file_path
     # attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"

@@ -1,12 +1,10 @@
 import base64
 import os
-import time
 from datetime import datetime, timedelta
 
 import msal
-import numpy as np
-import pandas as pd
 import requests
+
 from Utils.Common import get_file_path
 
 current_date = datetime.now() - timedelta(0)
@@ -64,7 +62,7 @@ def authenticate_and_get_token():
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
-from Utils.Common import format_date_YYYY_MM_DD, print_df
+from Utils.Common import format_date_YYYY_MM_DD
 from Utils.SQL_queries import transaction_rec_report_helix_trade_query
 from Utils.database_utils import (
     execute_sql_query_v2,
@@ -479,6 +477,15 @@ def generate_html_table_content():
         unique_sorted_ids, df_helix_trade, df_nexen, df_cash_rec
     )
 
+    filtered_df = df_output[
+        (df_output["Roll_Of"] == "")  # Roll_Of is empty
+        | (
+            ~(df_output["Roll_Of"] == "") & (df_output["End_Date"] == valdate)
+        )  # Roll_Of is not empty and End_Date matches T1
+    ]
+
+    unique_sorted_ids = sorted(filtered_df["Helix_ID"].dropna().unique())
+
     # Generate and style final report
     df_final = generate_final_report(df_output, df_helix_trade, unique_sorted_ids)
     report_date = datetime.strptime(valdate, "%Y-%m-%d").date()
@@ -604,12 +611,14 @@ def main():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        "amelia.thompson@lucidma.com",
-        "stephen.ng@lucidma.com",
-        "swayam.sinha@lucidma.com",
+        # "amelia.thompson@lucidma.com",
+        # "stephen.ng@lucidma.com",
+        # "swayam.sinha@lucidma.com",
     ]
 
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        # "operations@lucidma.com"
+    ]
 
     # attachment_path = file_path
     # attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"

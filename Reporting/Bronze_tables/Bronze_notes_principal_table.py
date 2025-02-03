@@ -34,12 +34,15 @@ else:
 engine = get_database_engine(db_type)
 
 # Path to the input file
-file_path = get_file_path("S:/Mandates/Funds/Note Feeders/Notes Administration.xlsm")
+# file_path = get_file_path("S:/Mandates/Funds/Note Feeders/Notes Administration.xlsm")
+file_path = get_file_path(
+    "S:/Mandates/Funds/Note Feeders/SQL Notes Admin Republish.xlsx"
+)
 
 # Read the Excel file
 notes_admin_df = pd.read_excel(
     file_path,
-    sheet_name="Historical Data",
+    sheet_name="Sheet1",
     header=0,  # Header is in the first row
 )
 
