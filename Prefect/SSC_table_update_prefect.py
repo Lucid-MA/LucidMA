@@ -5,6 +5,19 @@ import requests
 import msal
 from prefect import flow, task
 
+from Utils.Common import get_repo_root
+
+# Get the repository root directory
+repo_path = get_repo_root()
+# Need to extract zip files before uploading to Bronze table
+bronze_ssc_script_file_path = (
+            repo_path / "Reporting/Bronze_tables/Bronze_SSC_data_table.py"
+)
+
+silver_ssc_script_file_path = (
+            repo_path / "Reporting/Silver_tables/Silver_SSC_data_table.py"
+)
+
 # Email Authentication Function
 def authenticate_and_get_token():
     client_id = "10b66482-7a87-40ec-a409-4635277f3ed5"
@@ -47,8 +60,16 @@ def authenticate_and_get_token():
 
     return result["access_token"]
 
+
 # Email Send Function
-def send_email(subject, body, recipients, cc_recipients=[], attachment_path=None, attachment_name=None):
+def send_email(
+    subject,
+    body,
+    recipients,
+    cc_recipients=[],
+    attachment_path=None,
+    attachment_name=None,
+):
     token = authenticate_and_get_token()
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
@@ -57,8 +78,13 @@ def send_email(subject, body, recipients, cc_recipients=[], attachment_path=None
             "subject": subject,
             "body": {"contentType": "HTML", "content": body},
             "from": {"emailAddress": {"address": "operations@lucidma.com"}},
-            "toRecipients": [{"emailAddress": {"address": recipient}} for recipient in recipients],
-            "ccRecipients": [{"emailAddress": {"address": cc_recipient}} for cc_recipient in cc_recipients],
+            "toRecipients": [
+                {"emailAddress": {"address": recipient}} for recipient in recipients
+            ],
+            "ccRecipients": [
+                {"emailAddress": {"address": cc_recipient}}
+                for cc_recipient in cc_recipients
+            ],
         }
     }
 
@@ -81,33 +107,44 @@ def send_email(subject, body, recipients, cc_recipients=[], attachment_path=None
     else:
         print(f"Email '{subject}' sent successfully")
 
+
 # Prefect Task: Run Bronze Script
 @task(retries=2, retry_delay_seconds=30)
 def run_bronze_script():
     """Execute the Bronze SSC data table script."""
     try:
-        subprocess.run(["python", "Reporting/Bronze_tables/Bronze_SSC_data_table.py"], check=True)
+        result = subprocess.run(
+            ["python", bronze_ssc_script_file_path],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
     except subprocess.CalledProcessError as e:
+        print(f"Bronze SSC Data Table failed. Error:\n{e.stderr}")
         send_email(
             subject="[ALERT] Bronze SSC Data Table Failed",
-            body=f"The Bronze SSC Data Table script failed.<br><br>Error Details:<br>{str(e)}",
-            recipients=["tony.hoang@lucidma.com"]
+            body=f"The Bronze SSC Data Table script failed.<br><br><b>Error Details:</b><br><pre>{e.stderr}</pre>",
+            recipients=["tony.hoang@lucidma.com"],
         )
         raise
+
 
 # Prefect Task: Run Silver Script
 @task(retries=2, retry_delay_seconds=30)
 def run_silver_script():
     """Execute the Silver SSC data table script."""
     try:
-        subprocess.run(["python", "Reporting/Silver_tables/Silver_SSC_data_table.py"], check=True)
+        subprocess.run(
+            ["python", silver_ssc_script_file_path], check=True
+        )
     except subprocess.CalledProcessError as e:
         send_email(
             subject="[ALERT] Silver SSC Data Table Failed",
             body=f"The Silver SSC Data Table script failed.<br><br>Error Details:<br>{str(e)}",
-            recipients=["tony.hoang@lucidma.com"]
+            recipients=["tony.hoang@lucidma.com"],
         )
         raise
+
 
 # Prefect Flow Definition using .submit() and .wait()
 @flow(
@@ -122,6 +159,7 @@ def ssc_data_pipeline():
     bronze_task_future = run_bronze_script.submit()
     bronze_task_future.wait()  # Ensure Bronze completes before proceeding
     run_silver_script.submit()  # Run Silver only after Bronze succeeds
+
 
 # Run the flow with cron scheduling
 if __name__ == "__main__":
