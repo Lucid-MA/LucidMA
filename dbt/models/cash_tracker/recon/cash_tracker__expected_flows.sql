@@ -12,6 +12,20 @@
 }}
 
 WITH
+first_sweep AS (
+  SELECT
+    report_date,
+    fund,
+    acct_name,
+    MIN(cash_posting_transaction_timestamp) as first_sweep_timestamp
+  FROM {{ ref('stg_lucid__cash_and_security_transactions') }}
+  WHERE 1=1
+    AND fund IS NOT NULL
+    AND report_date <= CAST(getdate() AS DATE)
+    AND location_name = 'STIF LOCATIONS' 
+    AND transaction_type_name != 'DIVIDEND'
+  GROUP BY report_date, fund, acct_name
+),
 cash_recon AS (
   SELECT
     *
@@ -120,11 +134,7 @@ ranked_matches AS (
       WHEN e.is_po = 1 AND PATINDEX(UPPER(o.client_reference_number)+'%', UPPER(e.desc_replaced)) = 1 AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 150
       WHEN e.is_po = 0 AND e.flow_amount < 0 AND o.transaction_type_name = 'BUY' AND  {{ abs_diff('o.local_amount', 'e.flow_amount') }} <= 0.01 THEN 160
       ELSE 9999
-    END AS match_rank,
-    CASE
-      WHEN o.location_name = 'STIF LOCATIONS' AND o.transaction_type_name != 'DIVIDEND' THEN 1
-      ELSE 0
-    END AS after_sweep
+    END AS match_rank
   FROM expected AS e
   LEFT JOIN cash_recon AS o
     ON (
@@ -227,7 +237,10 @@ final_flows AS (
       WHEN m.is_settled IS NOT NULL THEN m.is_settled
       ELSE e.flow_is_settled
     END AS flow_is_settled,
-    e.flow_after_sweep,
+    CASE
+      WHEN o.cash_posting_transaction_timestamp > fs.first_sweep_timestamp THEN 1
+      ELSE 0
+    END AS flow_after_sweep,
     e.trade_id,
     e.counterparty,
     e.is_margin,
@@ -244,11 +257,7 @@ final_flows AS (
       WHEN m.match_rank IS NOT NULL THEN m.match_rank
       WHEN e.is_margin = 1 AND e.margin_total = 0.0 THEN 0
       ELSE 9999
-    END AS match_rank,
-    CASE
-      WHEN o.location_name = 'STIF LOCATIONS' AND o.transaction_type_name != 'DIVIDEND' THEN 1
-      ELSE 0
-    END AS after_sweep
+    END AS match_rank
   FROM expected AS e
   LEFT JOIN sorted_matches m 
     ON (
@@ -261,6 +270,12 @@ final_flows AS (
       e.report_date = o.report_date
       AND m.reference_number = o.reference_number
     )
+  LEFT JOIN first_sweep AS fs
+    ON (
+      e.report_date = fs.report_date
+      AND e.fund = fs.fund
+      AND e.flow_account = fs.acct_name
+    )
 ),
 final AS (
   SELECT
@@ -270,11 +285,6 @@ final AS (
       WHEN is_margin = 1 AND margin_total = 0.0 AND match_rank = 0 THEN 1
       ELSE flow_is_settled
     END AS expected_is_settled,
-    CASE
-      WHEN is_margin = 1 AND margin_total = 0.0 AND match_rank = 0 THEN flow_after_sweep
-      WHEN reference_number IS NOT NULL THEN after_sweep
-      ELSE flow_after_sweep
-    END AS expected_after_sweep,
     CASE
       WHEN {{ abs_diff('local_amount', 'flow_amount') }} > 0.05 AND is_margin = 1 THEN {{ abs_diff('local_amount', 'margin_total') }} 
       ELSE {{ abs_diff('local_amount', 'flow_amount') }} 

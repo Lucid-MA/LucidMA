@@ -31,7 +31,7 @@ final AS (
   SELECT
     balance_date AS report_date,
     fund,
-    '' AS series,
+    'MASTER' AS series,
     MAX(CASE
       WHEN account = 'MAIN' THEN cash_balance
       ELSE 0.00
@@ -69,7 +69,7 @@ final AS (
   SELECT
     report_date,
     fund,
-    '' AS series,
+    'MASTER' AS series,
     MAX(CASE
       WHEN acct_name = 'MAIN' THEN ct_cash_eod
       ELSE 0.00

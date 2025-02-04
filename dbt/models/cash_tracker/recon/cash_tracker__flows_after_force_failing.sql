@@ -34,7 +34,25 @@ final AS (
     sweep_detected,
     generated_id,
     reference_number,
-    ct_use
+    local_amount,
+    transaction_type_name,
+    ct_use,
+    CASE 
+      WHEN flow_amount > 0 AND flow_after_sweep = 1 AND transaction_type_name = 'CASH DEPOSIT' THEN SUM(CASE WHEN flow_amount > 0 AND flow_after_sweep = 1 AND transaction_type_name = 'CASH DEPOSIT' THEN flow_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
+      ELSE 0
+    END AS sum_cash_deposit_flows,
+    CASE
+      WHEN flow_amount > 0 AND flow_after_sweep = 1 AND transaction_type_name = 'CASH DEPOSIT' THEN SUM(CASE WHEN flow_amount > 0 AND flow_after_sweep = 1 AND transaction_type_name = 'CASH DEPOSIT' THEN local_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account) 
+      ELSE 0
+    END AS sum_cash_deposit_local,
+    CASE 
+      WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN SUM(CASE WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN flow_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
+      ELSE 0
+    END AS sum_buy_flows,
+     CASE 
+      WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN SUM(CASE WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN local_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
+      ELSE 0
+    END AS sum_buy_local
   FROM flows
 )
 
