@@ -4,7 +4,7 @@ flows AS (
     *
   FROM {{ ref('cash_tracker__flows_after_recon') }}
 ),
-final AS (
+flows_plus_after_sweep AS (
   SELECT
     report_date,
     orig_report_date,
@@ -46,14 +46,27 @@ final AS (
       ELSE 0
     END AS sum_cash_deposit_local,
     CASE 
-      WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN SUM(CASE WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN flow_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
+      WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' AND transaction_desc LIKE '%reverse repo open' THEN SUM(CASE WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN flow_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
       ELSE 0
-    END AS sum_buy_flows,
+    END AS sum_revrepo_open_flows,
      CASE 
-      WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN SUM(CASE WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN local_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
+      WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' AND transaction_desc LIKE '%reverse repo open' THEN SUM(CASE WHEN flow_amount < 0 AND flow_after_sweep = 1 AND transaction_type_name = 'BUY' THEN local_amount ELSE 0 END) OVER (PARTITION BY report_date, fund, flow_account)
       ELSE 0
-    END AS sum_buy_local
+    END AS sum_revrepo_open_local
   FROM flows
+),
+final AS (
+  SELECT
+    *,
+    CASE
+      WHEN sum_cash_deposit_flows <> 0 THEN flow_amount/sum_cash_deposit_flows
+      ELSE 0
+    END AS cash_deposit_ratio,
+    CASE
+      WHEN sum_revrepo_open_flows <> 0 THEN flow_amount/sum_revrepo_open_flows
+      ELSE 0
+    END AS revrepo_open_ratio
+  FROM flows_plus_after_sweep
 )
 
 SELECT * FROM final
