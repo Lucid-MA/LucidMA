@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import requests
 from prefect import task, flow
+from prefect.server.schemas.schedules import CronSchedule
 
 from Utils.Common import format_date_YYYY_MM_DD
 from Utils.Common import get_file_path
@@ -491,7 +492,8 @@ def generate_html_table_content():
     filtered_df = df_output[
         (df_output["Roll_Of"] == "")  # Roll_Of is empty
         | (
-            ~(df_output["Roll_Of"] == "") & (df_output["End_Date"] == valdate)
+            ~(df_output["Roll_Of"] == "")
+            & (df_output["End_Date"] == current_date.date())
         )  # Roll_Of is not empty and End_Date matches T1
     ]
 
@@ -546,6 +548,9 @@ def send_email(
         print(f"Email '{subject}' sent successfully")
 
 
+schedule = CronSchedule(cron="10,40 8-17 * * 1-5", timezone="America/New_York")
+
+
 @flow(
     name="Transaction Reconciliation Report",
     description="Transaction Reconciliation Report",
@@ -554,7 +559,6 @@ def send_email(
     timeout_seconds=120,
 )
 def main():
-
     html_table = generate_html_table_content()
     directory_name = save_directory
 
@@ -629,12 +633,14 @@ def main():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        "amelia.thompson@lucidma.com",
-        "stephen.ng@lucidma.com",
-        "swayam.sinha@lucidma.com",
+        # "amelia.thompson@lucidma.com",
+        # "stephen.ng@lucidma.com",
+        # "swayam.sinha@lucidma.com",
     ]
 
-    cc_recipients = ["operations@lucidma.com"]
+    cc_recipients = [
+        # "operations@lucidma.com"
+    ]
 
     # attachment_path = file_path
     # attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
@@ -653,7 +659,8 @@ def main():
 if __name__ == "__main__":
     main.serve(
         name="Transaction Reconciliation Report Deployment",
-        cron=["55 6 * * 1-5", "15 17 * * 1-5"],
+        # schedule=schedule,
+        cron="10,40 8-17 * * 1-5",
         tags=[
             "transaction-recs",
             "daily-report",

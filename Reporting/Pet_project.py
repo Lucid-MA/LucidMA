@@ -20,7 +20,7 @@ def safe_to_list(obj):
 df_helix_trade = execute_sql_query_v2(
     transaction_rec_report_helix_trade_query,
     helix_db_type,
-    params=(datetime.strptime("2025-02-03", "%Y-%m-%d"),),
+    params=(datetime.strptime("2025-02-04", "%Y-%m-%d"),),
 )
 
 df_helix_trade["Trade ID"] = pd.to_numeric(
@@ -38,7 +38,7 @@ df_helix_trade["Roll for"] = df_helix_trade["Facility"].where(
 )
 
 
-cutoff_date_str = "2025-02-03"
+cutoff_date_str = "2025-02-04"
 cutoff_date = datetime.strptime(cutoff_date_str, "%Y-%m-%d").date()
 
 df_helix_trade["Start Date"] = pd.to_datetime(df_helix_trade["Start Date"]).dt.date
@@ -70,7 +70,7 @@ def parse_helix_id(ref_value):
 df_cash_rec = read_table_from_db(
     "bronze_nexen_cash_and_security_transactions", prod_db_type
 )
-report_date = datetime.strptime("2025-02-03", "%Y-%m-%d")
+report_date = datetime.strptime("2025-02-04", "%Y-%m-%d")
 cutoff_date = report_date - timedelta(days=500)
 df_cash_rec = df_cash_rec[
     df_cash_rec["Settle / Pay Date"] > format_date_YYYY_MM_DD(cutoff_date)
@@ -493,7 +493,7 @@ report_date = report_date.date()
 
 
 def highlight_start_date(val):
-    if not val:
+    if pd.isna(val) or not val:
         return ""
     try:
         # Convert val to a date object if it's a string or datetime
@@ -507,7 +507,7 @@ def highlight_start_date(val):
 
 
 def highlight_end_date(val):
-    if not val:
+    if pd.isna(val) or not val:
         return ""
     try:
         # Convert val to a date object if it's a string or datetime

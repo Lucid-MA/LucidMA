@@ -480,7 +480,8 @@ def generate_html_table_content():
     filtered_df = df_output[
         (df_output["Roll_Of"] == "")  # Roll_Of is empty
         | (
-            ~(df_output["Roll_Of"] == "") & (df_output["End_Date"] == valdate)
+            ~(df_output["Roll_Of"] == "")
+            & (df_output["End_Date"] == current_date.date())
         )  # Roll_Of is not empty and End_Date matches T1
     ]
 
