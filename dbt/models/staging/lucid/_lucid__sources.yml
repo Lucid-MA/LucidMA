@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: lucid
     database: Prod1
-    schema: dbt
+    schema: "{{ target.schema }}"
     tables:
       - name: cash_tracker__failing_trades
       - name: cash_tracker__balance_history_series

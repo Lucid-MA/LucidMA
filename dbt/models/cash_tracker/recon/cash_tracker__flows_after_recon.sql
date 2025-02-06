@@ -45,7 +45,7 @@ combined AS (
     flow_amount,
     cash_posting_transaction_timestamp,
     expected_is_settled AS flow_is_settled,
-    expected_after_sweep AS flow_after_sweep,
+    flow_after_sweep,
     trade_id,
     counterparty,
     used_alloc,
@@ -53,7 +53,9 @@ combined AS (
     is_hxswing,
     sweep_detected,
     generated_id,
-    reference_number
+    reference_number,
+    local_amount,
+    transaction_type_name
   FROM expected_flows
   UNION ALL
   SELECT
@@ -80,7 +82,9 @@ combined AS (
     0 AS is_hxswing,
     NULL AS sweep_detected,
     generated_id,
-    NULL AS reference_number
+    NULL AS reference_number,
+    NULL AS local_amount,
+    NULL AS transaction_type_name
   FROM realloc_cash_flows
 ),
 final AS (
