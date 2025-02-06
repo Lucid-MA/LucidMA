@@ -51,7 +51,13 @@ combined AS (
     m.sweep_detected,
     m.generated_id,
     m.reference_number,
-    m.ct_use
+    m.ct_use,
+    m.cash_deposit_ratio,
+    m.sum_cash_deposit_local,
+    (m.cash_deposit_ratio * m.sum_cash_deposit_local * s.used_alloc) AS cash_deposit_amt,
+    m.revrepo_open_ratio,
+    m.sum_revrepo_open_local,
+    (m.revrepo_open_ratio * m.sum_revrepo_open_local * s.used_alloc) AS revrepo_open_amt
   FROM master_flows AS m
   JOIN series_flows AS s ON (
     m.orig_report_date = s.report_date

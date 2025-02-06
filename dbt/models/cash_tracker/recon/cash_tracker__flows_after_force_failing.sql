@@ -59,11 +59,11 @@ final AS (
   SELECT
     *,
     CASE
-      WHEN sum_cash_deposit_flows <> 0 THEN flow_amount/sum_cash_deposit_flows
+      WHEN sum_cash_deposit_flows <> 0 THEN CAST(flow_amount AS DECIMAL(18,8)) / CAST(sum_cash_deposit_flows AS DECIMAL(18,8))
       ELSE 0
     END AS cash_deposit_ratio,
     CASE
-      WHEN sum_revrepo_open_flows <> 0 THEN flow_amount/sum_revrepo_open_flows
+      WHEN sum_revrepo_open_flows <> 0 THEN CAST(flow_amount AS DECIMAL(18,8)) / CAST(sum_revrepo_open_flows AS DECIMAL(18,8))
       ELSE 0
     END AS revrepo_open_ratio
   FROM flows_plus_after_sweep

@@ -1,7 +1,8 @@
 WITH 
 master_summary AS (
   SELECT
-    *
+    *,
+    (ct_sweep_activity + ct_cash_flows + cash_actual_bod) AS ct_sweep_extra
   FROM {{ ref('cash_tracker__balance_summary') }}
   WHERE report_date >= '2024-10-31'
   AND acct_name IN ('MAIN','MARGIN','MANAGEMENT')
@@ -67,7 +68,9 @@ final_settled_flows AS (
         WHEN s.flow_is_settled = 0 THEN s.flow_amount
         ELSE 0
       END
-    ) AS MONEY) AS series_unsettled_activity
+    ) AS MONEY) AS series_unsettled_activity,
+    TRY_CAST(SUM(cash_deposit_amt) AS MONEY) AS series_cash_deposit,
+    TRY_CAST(SUM(revrepo_open_amt) AS MONEY) AS series_revrepo_open
   FROM series_flows AS s
   JOIN accounts AS a ON (s.fund = a.fund AND s.flow_account = a.acct_name)
   GROUP BY s.report_date, s.fund, s.flow_account, s.series, a.acct_number
@@ -96,7 +99,12 @@ series_combined AS (
     CAST(m.ct_cash_flows AS MONEY) AS ct_cash_flows,
     CAST(m.bnym_cash_activity AS MONEY) AS bnym_cash_activity,
     CAST(m.ct_sweep_activity AS MONEY) AS ct_sweep_activity,
-    (m.ct_cash_flows+m.cash_actual_bod) AS ct_cash_total
+    (m.ct_cash_flows+m.cash_actual_bod) AS ct_cash_total,
+    m.ct_sweep_extra,
+    COALESCE(p.series_cash_deposit, 0) AS series_cash_deposit,
+    CAST(
+      SUM(p.series_cash_deposit) OVER (PARTITION BY m.report_date, m.fund, m.account_number) 
+    AS MONEY) AS series_cash_deposit_total
   FROM master_summary AS m 
   JOIN series AS s ON (m.fund = s.fund)
   LEFT JOIN final_settled_flows AS p ON (
@@ -112,22 +120,41 @@ series_combined AS (
     AND s.series = bod.series
   )
 ),
-calc_sweep_extra AS (
+series_combined_final AS (
   SELECT
     *,
-    COALESCE((series_acct_total/NULLIF(series_sum_total,0)), 0) AS series_total_ratio,
-    (ct_sweep_activity + ct_cash_total) AS ct_sweep_extra
+    - (series_cash_bod + series_settled_activity) AS base_sweep_amt,
+    COALESCE((series_acct_total/NULLIF(series_sum_total,0)), 0) AS series_total_ratio
   FROM series_combined
+),
+calc_sweep_amt_1 AS (
+  SELECT
+    *,
+    CASE
+      WHEN abs(ct_sweep_extra) > 0.01 AND series_cash_deposit_total > ct_sweep_extra 
+        THEN (series_cash_deposit/series_cash_deposit_total) * ct_sweep_extra
+      WHEN abs(ct_sweep_extra) > 0.01 AND series_cash_deposit_total > 0 
+        THEN series_cash_deposit
+      ELSE 0
+    END AS cash_deposit_sweep_amt,
+    CASE
+      WHEN abs(ct_sweep_extra) > 0.01 AND series_cash_deposit_total > ct_sweep_extra 
+        THEN 0
+      WHEN abs(ct_sweep_extra) > 0.01 AND series_cash_deposit_total > 0 
+        THEN ct_sweep_extra - series_cash_deposit_total 
+      ELSE ct_sweep_extra
+    END AS ct_sweep_extra_1
+  FROM series_combined_final
 ),
 calc_sweep_amt AS (
   SELECT
     *,
     CASE
-      WHEN abs(ct_sweep_extra) > 0.01 THEN 
-           - (series_cash_bod + series_settled_activity) + (series_total_ratio * ct_sweep_extra)
-      ELSE - (series_cash_bod + series_settled_activity)
+      WHEN abs(ct_sweep_extra_1) > 0.01 THEN 
+           base_sweep_amt + cash_deposit_sweep_amt + (series_total_ratio * ct_sweep_extra_1)
+      ELSE base_sweep_amt + cash_deposit_sweep_amt
     END AS series_sweep_amount
-  FROM calc_sweep_extra
+  FROM calc_sweep_amt_1
 ),
 final AS (
   SELECT
