@@ -253,8 +253,8 @@ def main():
     # end_date = "2024-12-31"
 
     # If want to run daily:
-    start_date = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d")
-    end_date = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    end_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     trading_days = get_trading_days(start_date, end_date)
     # trading_days = [datetime.now().strftime("%Y-%m-%d")]
