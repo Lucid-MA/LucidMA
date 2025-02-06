@@ -9,3 +9,5 @@ sources:
       - name: helix_raw__stream_TRADECOMMISSIONPIECEINFO
       - name: helix_raw__stream_TRADEPIECEXREFS
       - name: helix_raw__stream_TRADEPIECECALCDATAS
+      - name: helix_raw__stream_TRADETYPES
+      - name: helix_raw__stream_HISTORY_TRADEPIECES
