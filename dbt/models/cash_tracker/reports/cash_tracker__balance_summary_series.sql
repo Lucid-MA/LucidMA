@@ -178,7 +178,34 @@ calc_sweep_amt AS (
 ),
 final AS (
   SELECT
-    *
+    report_date,
+    fund,
+    flow_account,
+    series,
+    account_number,
+    series_settled_activity,
+    series_unsettled_activity,
+    series_cash_bod,
+    series_sweep_bod
+    series_acct_total,
+    series_sum_total,
+    master_acct_total,
+    ct_cash_flows,
+    bnym_cash_activity,
+    ct_sweep_activity,
+    series_cash_deposit,
+    series_cash_deposit_total,
+    series_revrepo_open,
+    series_revrepo_open_total,
+    series_total_ratio,
+    base_sweep_amt,
+    ct_sweep_extra,
+    cash_deposit_sweep_amt,
+    ct_sweep_extra_1,
+    revrepo_sweep_amt,
+    ct_sweep_extra_2,
+    extra_sweep_amt,
+    series_sweep_amount
   FROM calc_sweep_amt
 )
 
