@@ -186,7 +186,7 @@ final AS (
     series_settled_activity,
     series_unsettled_activity,
     series_cash_bod,
-    series_sweep_bod
+    series_sweep_bod,
     series_acct_total,
     series_sum_total,
     master_acct_total,
