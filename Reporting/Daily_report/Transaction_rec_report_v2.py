@@ -612,14 +612,12 @@ def main():
 
     recipients = [
         "tony.hoang@lucidma.com",
-        # "amelia.thompson@lucidma.com",
-        # "stephen.ng@lucidma.com",
-        # "swayam.sinha@lucidma.com",
+        "amelia.thompson@lucidma.com",
+        "stephen.ng@lucidma.com",
+        "swayam.sinha@lucidma.com",
     ]
 
-    cc_recipients = [
-        # "operations@lucidma.com"
-    ]
+    cc_recipients = ["operations@lucidma.com"]
 
     # attachment_path = file_path
     # attachment_name = f"Transaction Reconciliation Report_{valdate}.xlsm"
