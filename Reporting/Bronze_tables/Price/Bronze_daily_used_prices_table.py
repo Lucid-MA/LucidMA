@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
-from Reporting.Utils.Common import get_file_path, get_repo_root
+from Reporting.Utils.Common import get_file_path, get_repo_root, get_current_timestamp
 from Reporting.Utils.Hash import hash_string
 from Reporting.Utils.database_utils import engine_prod, engine_staging, upsert_data
 
@@ -28,7 +28,7 @@ else:
 # Directory and file pattern
 
 pattern = "Used Prices "
-directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical/Test/")
+directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
 date_pattern = re.compile(r"(\d{4}-\d{2}-\d{2})(AM|PM)")
 
 
@@ -194,6 +194,13 @@ for filename in os.listdir(directory):
                 },
                 inplace=True,
             )
+
+            # Ensure Clean_price and Final_price are floats
+            df["Clean_price"] = pd.to_numeric(df["Clean_price"], errors="coerce")
+            df["Final_price"] = pd.to_numeric(df["Final_price"], errors="coerce")
+            df = df.dropna(subset=["Clean_price", "Final_price"], how="all")
+            df = df.dropna(subset=["Bond_ID"], how="any")
+
             # Create Price_ID
             df["Price_ID"] = df.apply(
                 lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1
@@ -202,14 +209,14 @@ for filename in os.listdir(directory):
             df["Price_date"] = pd.to_datetime(df["Price_date"]).dt.strftime("%Y-%m-%d")
             df["Is_AM"] = is_am
             df["Source"] = filename
+            df["timestamp"] = get_current_timestamp()
 
-            df = df.dropna(subset=["Bond_ID"], how="any")
-            df = df.dropna(subset=["Clean_price", "Final_price"], how="all")
             try:
                 # Insert into PostgreSQL table
                 # upsert_data(tb_name, df)
                 # Mark file as processed
                 upsert_data(engine, tb_name, df, "Price_ID", PUBLISH_TO_PROD)
+                print(f"Processed daily prices for {date}")
                 mark_file_processed(filename)
             except SQLAlchemyError:
                 print(f"Skipping {filename} due to an error")
