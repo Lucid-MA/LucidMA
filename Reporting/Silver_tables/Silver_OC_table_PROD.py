@@ -155,19 +155,30 @@ def fetch_and_prepare_data(report_date):
         df_factor = df_factor[["BondID", "Helix_factor"]]
     else:
         ## This table should be deprecated now
-        # df_price_and_factor_backup = read_table_from_db(
+        # df_price_and_factor = read_table_from_db(
         #     "bronze_helix_price_and_factor", prod_db_type
         # )
-        # df_price_and_factor_backup = df_price_and_factor_backup[
-        #     df_price_and_factor_backup["data_date"] == report_date_dt
+        # df_price_and_factor = df_price_and_factor[
+        #     df_price_and_factor["data_date"] == report_date_dt
         # ][["bond_id", "factor"]]
         #
-        # df_factor = df_price_and_factor_backup.rename(
+        # df_factor = df_price_and_factor.rename(
         #     columns={"bond_id": "BondID", "factor": "Helix_factor"}
         # )
-        df_factor = execute_sql_query_v2(
-            HELIX_current_factor,
-            db_type=helix_db_type,
+        #
+        # df_factor = execute_sql_query_v2(
+        #     HELIX_current_factor,
+        #     db_type=helix_db_type,
+        # )
+        df_price_and_factor = read_table_from_db(
+            "bronze_bond_data_factor", prod_db_type
+        )
+        df_price_and_factor = df_price_and_factor[
+            df_price_and_factor["bond_data_date"] == report_date_dt
+        ][["bond_id", "mtg_factor"]]
+
+        df_factor = df_price_and_factor.rename(
+            columns={"bond_id": "BondID", "mtg_factor": "Helix_factor"}
         )
 
     # CLEAN PRICE
