@@ -46,5 +46,16 @@ final AS (
 )
 
 SELECT 
-  *
+  report_date,
+  fund,
+  series,
+  flow_account,
+  series_cash_eod,
+  series_sweep_eod,
+  series_cash_total,
+  cash_actual_eod,
+  (series_cash_total - cash_actual_eod) AS cash_diff,
+  series_sweep_total,
+  sweep_actual_eod,
+  (series_sweep_total - sweep_actual_eod) AS sweep_diff
 FROM final
