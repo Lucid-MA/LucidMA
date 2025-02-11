@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 
 from Utils.Common import print_df
-from Utils.SQL_queries import HELIX_price_and_factor_by_date, OC_query_historical_v2
+from Utils.SQL_queries import OC_query_historical_v2
 
 # Get the absolute path of the current script
 script_path = os.path.abspath(__file__)
@@ -23,8 +23,6 @@ sys.path.insert(0, os.path.dirname(script_dir))
 
 from Utils.database_utils import (
     get_database_engine,
-    execute_sql_query_v2,
-    helix_db_type,
     engine_helix,
 )
 
@@ -45,18 +43,18 @@ else:
 
 inspector = inspect(engine)
 
-report_date = "2021-06-07"
+report_date = "2018-05-11"
 report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
-df_factor = execute_sql_query_v2(
-    HELIX_price_and_factor_by_date,
-    db_type=helix_db_type,
-    params=(report_date_dt,),
-)
-
-print_df(df_factor)
-output_file = rf"S:\Users\THoang\Data\helix_factor_{report_date}.xlsx"
-df_factor.to_excel(output_file, index=False)
+# df_factor = execute_sql_query_v2(
+#     HELIX_price_and_factor_by_date,
+#     db_type=helix_db_type,
+#     params=(report_date_dt,),
+# )
+#
+# print_df(df_factor)
+# output_file = rf"S:\Users\THoang\Data\helix_factor_{report_date}.xlsx"
+# df_factor.to_excel(output_file, index=False)
 
 params = {"valdate": datetime.strptime(report_date, "%Y-%m-%d")}
 df_bronze_oc = pd.read_sql(
