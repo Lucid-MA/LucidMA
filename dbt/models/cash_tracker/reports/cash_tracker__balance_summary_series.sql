@@ -190,7 +190,9 @@ final AS (
     series_acct_total,
     series_sum_total,
     master_acct_total,
+    series_flows_total,
     ct_cash_flows,
+    series_flows_total - ct_cash_flows AS diff_cash_flows,
     bnym_cash_activity,
     ct_sweep_activity,
     series_cash_deposit,
@@ -205,7 +207,10 @@ final AS (
     revrepo_sweep_amt,
     ct_sweep_extra_2,
     extra_sweep_amt,
-    series_sweep_amount
+    series_sweep_amount,
+    CAST(
+      SUM(series_sweep_amount) OVER (PARTITION BY report_date, fund, account_number) 
+    AS MONEY) AS series_sweep_total
   FROM calc_sweep_amt
 )
 
