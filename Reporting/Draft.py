@@ -43,7 +43,7 @@ else:
 
 inspector = inspect(engine)
 
-report_date = "2018-05-11"
+report_date = "2019-01-02"
 report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
 # df_factor = execute_sql_query_v2(
