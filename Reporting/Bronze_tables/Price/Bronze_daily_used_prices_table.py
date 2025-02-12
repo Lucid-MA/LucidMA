@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import Table, MetaData, Column, String, Integer, Float, Date, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
-from Reporting.Utils.Common import get_file_path, get_repo_root
+from Reporting.Utils.Common import get_file_path, get_repo_root, get_current_timestamp
 from Reporting.Utils.Hash import hash_string
 from Reporting.Utils.database_utils import engine_prod, engine_staging, upsert_data
 
@@ -28,7 +28,7 @@ else:
 # Directory and file pattern
 
 pattern = "Used Prices "
-directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical/")
+directory = get_file_path(r"S:/Lucid/Data/Bond Data/Historical")
 date_pattern = re.compile(r"(\d{4}-\d{2}-\d{2})(AM|PM)")
 
 
@@ -92,63 +92,133 @@ inspector = inspect(engine)
 if not inspector.has_table(tb_name):
     create_table_with_schema(tb_name)
 
+
+def is_valid_file(filename, pattern, extension, processed_files):
+    """
+    Check if a file meets the required criteria for processing.
+
+    Args:
+        filename (str): The file name to check.
+        pattern (str): The expected pattern in the file name.
+        extension (str): The expected file extension (e.g., '.xls' or '.xlsm').
+        processed_files (set): A set of already processed files.
+
+    Returns:
+        bool: True if the file should be processed, False otherwise.
+    """
+    return (
+        filename.startswith(pattern)
+        and filename.endswith(extension)
+        and filename not in processed_files
+    )
+
+
+def extract_date_and_indicator_new_format(filename):
+    """
+    Extract date from new format 'IDC Prices-YYYY-MM-DD.xlsm'.
+
+    Args:
+        filename (str): The filename to extract the date from.
+
+    Returns:
+        tuple: A tuple containing the date and an indicator (None for new format).
+    """
+    match = re.search(r"IDC Prices-(\d{4}-\d{2}-\d{2})\.xlsm", filename)
+    return (match.group(1), 0) if match else (None, None)
+
+
+# Define file types and patterns
+file_configs = [
+    {
+        "pattern": "Used Prices ",
+        "extension": ".xls",
+        "extract_date_func": extract_date_and_indicator,
+    },
+    {
+        "pattern": "IDC Prices-",
+        "extension": ".xlsm",
+        "extract_date_func": extract_date_and_indicator_new_format,
+    },
+]
+
+# Get the list of processed files
+processed_files = read_processed_files()
+
 # Iterate over files in the specified directory
 for filename in os.listdir(directory):
-    if (
-        filename.startswith(pattern)
-        and filename.endswith(".xls")
-        and filename not in read_processed_files()
-    ):
-        filepath = os.path.join(directory, filename)
+    for config in file_configs:
+        if is_valid_file(
+            filename, config["pattern"], config["extension"], processed_files
+        ):
+            filepath = os.path.join(directory, filename)
 
-        date, is_am = extract_date_and_indicator(filename)
-        if not date:
-            print(
-                f"Skipping {filename} as it does not contain a correct date format in file name."
+            date, is_am = config["extract_date_func"](filename)
+            if not date:
+                print(
+                    f"Skipping {filename} as it does not contain a correct date format in the file name."
+                )
+                continue
+
+            # Read and process the Excel file based on its format
+            if config["extension"] == ".xlsm":
+                df = pd.read_excel(
+                    filepath,
+                    skiprows=6,
+                    usecols="C:D",
+                    header=None,
+                    names=["cusip", "clean price"],
+                    engine="openpyxl",
+                )
+                df["set source"] = "IDC"
+                df["price to use"] = df["clean price"]
+            elif config["extension"] == ".xls":
+                df = pd.read_excel(filepath, engine="openpyxl")
+
+            # Convert all column names to lowercase
+            df.columns = df.columns.str.lower()
+
+            # Check if 'set source' column exists, if not, create it with default value 'Unknown'
+            if "set source" not in df.columns:
+                df["set source"] = "Unknown"
+
+            # Now you can use the lowercase column names
+            df = df[["cusip", "clean price", "price to use", "set source"]]
+
+            # Rename columns
+            df.rename(
+                columns={
+                    "cusip": "Bond_ID",
+                    "clean price": "Clean_price",
+                    "price to use": "Final_price",
+                    "set source": "Price_source",
+                },
+                inplace=True,
             )
-            continue
 
-        # Read the Excel file
-        df = pd.read_excel(filepath)
+            # Ensure Clean_price and Final_price are floats
+            df["Clean_price"] = pd.to_numeric(df["Clean_price"], errors="coerce")
+            df["Final_price"] = pd.to_numeric(df["Final_price"], errors="coerce")
+            df = df.dropna(subset=["Clean_price", "Final_price"], how="all")
+            df = df.dropna(subset=["Bond_ID"], how="any")
 
-        # Convert all column names to lowercase
-        df.columns = df.columns.str.lower()
+            # Create Price_ID
+            df["Price_ID"] = df.apply(
+                lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1
+            ).astype("string")
+            df["Price_date"] = date
+            df["Price_date"] = pd.to_datetime(df["Price_date"]).dt.strftime("%Y-%m-%d")
+            df["Is_AM"] = is_am
+            df["Source"] = filename
+            df["timestamp"] = get_current_timestamp()
 
-        # Check if 'set source' column exists, if not, create it with default value 'Unknown'
-        if "set source" not in df.columns:
-            df["set source"] = "Unknown"
-
-        # Now you can use the lowercase column names
-        df = df[["cusip", "clean price", "price to use", "set source"]]
-
-        # Rename columns
-        df.rename(
-            columns={
-                "cusip": "Bond_ID",
-                "clean price": "Clean_price",
-                "price to use": "Final_price",
-                "set source": "Price_source",
-            },
-            inplace=True,
-        )
-        # Create Price_ID
-        df["Price_ID"] = df.apply(
-            lambda row: hash_string(f"{row['Bond_ID']}{date}{is_am}"), axis=1
-        ).astype("string")
-        df["Price_date"] = date
-        df["Price_date"] = pd.to_datetime(df["Price_date"]).dt.strftime("%Y-%m-%d")
-        df["Is_AM"] = is_am
-        df["Source"] = filename
-
-        df = df.dropna(subset=["Bond_ID"], how="any")
-        df = df.dropna(subset=["Clean_price", "Final_price"], how="all")
-        try:
-            # Insert into PostgreSQL table
-            # upsert_data(tb_name, df)
-            # Mark file as processed
-            upsert_data(engine, tb_name, df, "Price_ID", PUBLISH_TO_PROD)
-            mark_file_processed(filename)
-        except SQLAlchemyError:
-            print(f"Skipping {filename} due to an error")
+            try:
+                # Insert into PostgreSQL table
+                # upsert_data(tb_name, df)
+                # Mark file as processed
+                upsert_data(engine, tb_name, df, "Price_ID", PUBLISH_TO_PROD)
+                print(f"Processed daily prices for {date}")
+                mark_file_processed(filename)
+            except SQLAlchemyError:
+                print(f"Skipping {filename} due to an error")
 
 print("Process completed.")

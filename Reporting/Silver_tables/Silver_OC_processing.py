@@ -78,6 +78,45 @@ def calculate_net_margin_mv(row, df_bronze):
     return filtered_df["Collateral_MV"].sum()
 
 
+fund_series_pairs = [
+    ("PRIME", "USGM"),
+    ("MMT", "MASTER"),
+    ("PRIME", "A1"),
+    ("PRIME", "A1"),
+    ("PRIME", "2YIG"),
+    ("PRIME", "QUARTERLY1"),
+    ("PRIME", "S1"),
+    ("PRIME", "USGM"),
+    ("MMT", "MASTER"),
+    ("PRIME", "MONTHLY1"),
+    ("PRIME", "CUSTOM1"),
+    ("PRIME", "QUARTERLY1"),
+    ("PRIME", "MONTHLY1"),
+    ("MMT", "TERM"),
+    ("USG", "MONTHLY"),
+    ("MMT", "TERM"),
+    ("PRIME", "MASTER"),
+    ("PRIME", "MONTHLYIG"),
+    ("USG", "MONTHLY"),
+    ("PRIME", "MONTHLY"),
+    ("PRIME", "A2Y"),
+    ("USG", "MASTER"),
+    ("PRIME", "A2Y"),
+    ("USG", "MASTER"),
+    ("PRIME", "MASTER"),
+    ("PRIME", "CUSTOM1"),
+    ("PRIME", "MONTHLY"),
+    ("PRIME", "QUARTERLYX"),
+    ("PRIME", "2YIG"),
+    ("PRIME", "S1"),
+    ("PRIME", "QUARTERLYX"),
+    ("PRIME", "Q364"),
+    ("PRIME", "MONTHLYIG"),
+    ("PRIME", "Q364"),
+    ("USG", "MONTHLY"),
+]
+
+
 # TODO: Refractor this later to combine with the above
 def generate_silver_oc_rates_prod(
     bronze_oc_data,
@@ -93,8 +132,8 @@ def generate_silver_oc_rates_prod(
     # Assuming report_date is a string in the format 'YYYY-MM-DD'
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
-    df_cash_balance = cash_balance_data
-    fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
+    # df_cash_balance = cash_balance_data
+    # fund_series_pairs = list(zip(df_cash_balance["Fund"], df_cash_balance["Series"]))
 
     for fund_name, series_name in fund_series_pairs:
         oc_rate_id = f"{fund_name}_{series_name}_{report_date}"
@@ -103,10 +142,6 @@ def generate_silver_oc_rates_prod(
                 f"Skipping OC rates for {oc_rate_id} as it has already been processed."
             )
             continue
-
-        cash_balance_mask = (df_cash_balance["Fund"] == fund_name) & (
-            df_cash_balance["Series"] == series_name
-        )
 
         mask_bronze_oc = (bronze_oc_data["End Date"] > valdate) | (
             bronze_oc_data["End Date"].isnull()
@@ -118,7 +153,8 @@ def generate_silver_oc_rates_prod(
             & (df_bronze["Start Date"] <= valdate)
         )
         df_bronze = df_bronze[mask]
-
+        if df_bronze.empty:
+            continue
         # Adding Factor
         df_factor = factor_data.rename(
             columns={"BondID": "bond_id", "Helix_factor": "Factor"}
