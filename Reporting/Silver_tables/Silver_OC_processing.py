@@ -569,7 +569,7 @@ def generate_silver_oc_rates_prod(
         # Export_pre_calculation_file
         oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
         pre_calculation_file_name = (
-            f"oc_rates_{fund_name}_{series_name}_{report_date}_v2.xlsx"
+            f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
         )
         pre_calculation_file_path = os.path.join(
             oc_export_path, pre_calculation_file_name
