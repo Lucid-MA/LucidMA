@@ -35,7 +35,8 @@ final AS (
     ms.cash_actual_eod,
     CAST(SUM(sh.series_sweep_eod) OVER (PARTITION BY sh.report_date, sh.fund, sh.flow_account) 
     AS MONEY) AS series_sweep_total,
-    ms.sweep_actual_eod
+    ms.sweep_actual_eod,
+    ms.diff_cash_eod
   FROM series_balance_history AS sh
   LEFT JOIN master_summary AS ms 
     ON (
@@ -46,5 +47,17 @@ final AS (
 )
 
 SELECT 
-  *
+  report_date,
+  fund,
+  series,
+  flow_account,
+  series_cash_eod,
+  series_sweep_eod,
+  series_cash_total,
+  cash_actual_eod,
+  (series_cash_total - cash_actual_eod) AS cash_diff,
+  diff_cash_eod,
+  series_sweep_total,
+  sweep_actual_eod,
+  (series_sweep_total - sweep_actual_eod) AS sweep_diff
 FROM final
