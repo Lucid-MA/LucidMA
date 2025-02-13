@@ -44,6 +44,21 @@ final AS (
       AND sh.fund = ms.fund
       AND sh.flow_account = ms.acct_name
     )
+),
+final2 AS (
+  SELECT
+    final.*,
+    ss.series_flows_total,
+    ss.ct_cash_flows,
+    ss.diff_cash_flows
+  FROM final
+  LEFT JOIN series_balance_summary AS ss
+    ON (
+      final.report_date = ss.report_date
+      AND final.fund = ss.fund
+      AND final.flow_account = ss.flow_account
+      AND final.series = ss.series
+    )
 )
 
 SELECT 
@@ -59,5 +74,8 @@ SELECT
   diff_cash_eod,
   series_sweep_total,
   sweep_actual_eod,
-  (series_sweep_total - sweep_actual_eod) AS sweep_diff
-FROM final
+  (series_sweep_total - sweep_actual_eod) AS sweep_diff,
+  series_flows_total,
+  ct_cash_flows,
+  diff_cash_flows
+FROM final2
