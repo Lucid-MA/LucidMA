@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 
 start_date = datetime.strptime("2024-11-01", "%Y-%m-%d")
-end_date = datetime.strptime("2025-02-07", "%Y-%m-%d")
+end_date = datetime.strptime("2025-02-12", "%Y-%m-%d")
 current_date = start_date
 
 while current_date <= end_date:
