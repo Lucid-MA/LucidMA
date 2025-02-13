@@ -231,8 +231,8 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2019-01-01"
-    end_date = "2019-12-31"
+    start_date = "2020-01-01"
+    end_date = "2021-12-31"
     # processed_dates = read_processed_dates()
 
     # # If want to run daily:
