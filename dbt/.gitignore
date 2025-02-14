@@ -2,3 +2,10 @@
 target/
 dbt_packages/
 logs/
+
+# Ignore virtual environment
+.venv/
+
+# Ignore Python cache files
+__pycache__/
+

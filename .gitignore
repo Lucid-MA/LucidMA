@@ -3,6 +3,12 @@
 *.apk
 *.ap_
 
+# Ignore virtual environment
+dbt/.venv/
+
+# Ignore Python cache files
+**/__pycache__/
+
 # Files for the ART/Dalvik VM
 *.dex
 
