@@ -128,6 +128,8 @@ def generate_silver_oc_rates_prod(
             & (df_bronze["Start Date"] <= valdate)
         )
         df_bronze = df_bronze[mask]
+        if df_bronze.empty:
+            continue
 
         # Adding Factor
         df_factor = factor_data.rename(
