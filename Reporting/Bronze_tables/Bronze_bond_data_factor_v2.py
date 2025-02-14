@@ -35,6 +35,7 @@ skipped_files_tracker = bronze_tracker_dir / "Bronze Table Skipped Helix Factor 
 file_patterns = [
     r"Helix Factors \d{4}-\d{2}-\d{2}\.xls",
     r"Helix Factors \d{4}-\d{2}-\d{2}_PM\.xls",
+    r"Helix Factors \d{4}-\d{2}-\d{2}_\d{4}\.xls",
 ]
 
 # SQLAlchemy Engine

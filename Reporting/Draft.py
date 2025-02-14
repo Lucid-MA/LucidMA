@@ -87,6 +87,8 @@ dtype_dict = {
 }
 df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
+df_bronze_oc = df_bronze_oc[df_bronze_oc["Counterparty"] != "BNYPnI"]
+
 output_file = rf"S:\Users\THoang\Data\bronze_oc_{report_date}.xlsx"
 df_bronze_oc.to_excel(output_file, index=False)
 print_df(df_bronze_oc)

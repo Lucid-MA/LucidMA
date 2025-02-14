@@ -18,3 +18,11 @@ sources:
       - name: holidays
       - name: cash_tracker_manual_matches
       - name: bronze_cash_balance
+      - name: counterparties
+      - name: counterpartyicreview
+      - name: counterparty_financials
+      - name: counterpartyleveragearchive
+      - name: counterpartynavarchive
+      - name: counterpartyaumarchive
+      - name: counterparty_mra
+      - name: counterparty_contacts

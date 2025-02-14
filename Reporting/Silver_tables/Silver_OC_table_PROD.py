@@ -137,6 +137,8 @@ def fetch_and_prepare_data(report_date):
     }
     df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
+    df_bronze_oc = df_bronze_oc[df_bronze_oc["Counterparty"] != "BNYPnI"]
+
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
     # FACTOR
@@ -231,8 +233,8 @@ def fetch_and_prepare_data(report_date):
 def main():
     create_table_with_schema(TABLE_NAME, engine_oc_rate_prod)
     # TODO: If want to run historically
-    start_date = "2020-01-01"
-    end_date = "2021-12-31"
+    start_date = "2025-02-13"
+    end_date = "2025-02-13"
     # processed_dates = read_processed_dates()
 
     # # If want to run daily:

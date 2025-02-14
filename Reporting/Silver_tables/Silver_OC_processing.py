@@ -567,7 +567,7 @@ def generate_silver_oc_rates_prod(
         )
 
         # Export_pre_calculation_file
-        oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation")
+        oc_export_path = get_file_path(r"S:/Lucid/Data/OC Rates/Pre-calculation/Test")
         pre_calculation_file_name = (
             f"oc_rates_{fund_name}_{series_name}_{report_date}.xlsx"
         )
