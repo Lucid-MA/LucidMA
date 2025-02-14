@@ -8,7 +8,7 @@ from sqlalchemy import (
     text,
 )
 
-from Utils.Common import print_df
+from Utils.Common import print_df, get_file_path
 from Utils.SQL_queries import OC_query_historical_v2
 
 # Get the absolute path of the current script
@@ -43,7 +43,7 @@ else:
 
 inspector = inspect(engine)
 
-report_date = "2019-01-02"
+report_date = "2025-02-12"
 report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
 # df_factor = execute_sql_query_v2(
@@ -87,6 +87,8 @@ dtype_dict = {
 }
 df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
-output_file = rf"S:\Users\THoang\Data\bronze_oc_{report_date}.xlsx"
+df_bronze_oc = df_bronze_oc[df_bronze_oc["Counterparty"] != "BNYPnI"]
+
+output_file = get_file_path(rf"S:/Users/THoang/Data/bronze_oc_{report_date}.xlsx")
 df_bronze_oc.to_excel(output_file, index=False)
 print_df(df_bronze_oc)
