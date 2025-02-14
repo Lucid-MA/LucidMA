@@ -9,15 +9,11 @@ from Silver_OC_processing_with_cash_exposure import generate_silver_oc_rates_pro
 from Utils.Common import get_repo_root, get_file_path, get_trading_days
 from Utils.SQL_queries import (
     OC_query_historical_v2,
-    HELIX_price_and_factor_by_date,
-    HELIX_current_factor,
 )
 from Utils.database_utils import (
     get_database_engine,
     read_table_from_db,
     prod_db_type,
-    helix_db_type,
-    execute_sql_query_v2,
 )
 
 # Constants
@@ -174,34 +170,54 @@ def fetch_and_prepare_data(report_date):
     }
     df_bronze_oc = df_bronze_oc.astype(dtype_dict).replace({pd.NaT: None})
 
+    df_bronze_oc = df_bronze_oc[df_bronze_oc["Counterparty"] != "BNYPnI"]
+
     report_date_dt = datetime.strptime(report_date, "%Y-%m-%d").date()
 
     # FACTOR
     current_date_dt = datetime.now().date()
+    # if current_date_dt - report_date_dt >= timedelta(days=2):
+    #     df_factor = execute_sql_query_v2(
+    #         HELIX_price_and_factor_by_date,
+    #         db_type=helix_db_type,
+    #         params=(report_date_dt,),
+    #     )
+    #     df_factor = df_factor[["BondID", "Helix_factor"]]
+    # else:
+    #     ## This table should be deprecated now
+    #     # df_price_and_factor = read_table_from_db(
+    #     #     "bronze_helix_price_and_factor", prod_db_type
+    #     # )
+    #     # df_price_and_factor = df_price_and_factor[
+    #     #     df_price_and_factor["data_date"] == report_date_dt
+    #     # ][["bond_id", "factor"]]
+    #     #
+    #     # df_factor = df_price_and_factor.rename(
+    #     #     columns={"bond_id": "BondID", "factor": "Helix_factor"}
+    #     # )
+    #     #
+    #     # df_factor = execute_sql_query_v2(
+    #     #     HELIX_current_factor,
+    #     #     db_type=helix_db_type,
+    #     # )
+    #     df_price_and_factor = read_table_from_db(
+    #         "bronze_bond_data_factor", prod_db_type
+    #     )
+    #     df_price_and_factor = df_price_and_factor[
+    #         df_price_and_factor["bond_data_date"] == report_date_dt
+    #     ][["bond_id", "mtg_factor"]]
+    #
+    #     df_factor = df_price_and_factor.rename(
+    #         columns={"bond_id": "BondID", "mtg_factor": "Helix_factor"}
+    #     )
+    df_price_and_factor = read_table_from_db("bronze_bond_data_factor", prod_db_type)
+    df_price_and_factor = df_price_and_factor[
+        df_price_and_factor["bond_data_date"] == report_date_dt
+    ][["bond_id", "mtg_factor"]]
 
-    if current_date_dt - report_date_dt >= timedelta(days=2):
-        df_factor = execute_sql_query_v2(
-            HELIX_price_and_factor_by_date,
-            db_type=helix_db_type,
-            params=(report_date_dt,),
-        )
-        df_factor = df_factor[["BondID", "Helix_factor"]]
-    else:
-        ## This table should be deprecated now
-        # df_price_and_factor_backup = read_table_from_db(
-        #     "bronze_helix_price_and_factor", prod_db_type
-        # )
-        # df_price_and_factor_backup = df_price_and_factor_backup[
-        #     df_price_and_factor_backup["data_date"] == report_date_dt
-        # ][["bond_id", "factor"]]
-        #
-        # df_factor = df_price_and_factor_backup.rename(
-        #     columns={"bond_id": "BondID", "factor": "Helix_factor"}
-        # )
-        df_factor = execute_sql_query_v2(
-            HELIX_current_factor,
-            db_type=helix_db_type,
-        )
+    df_factor = df_price_and_factor.rename(
+        columns={"bond_id": "BondID", "mtg_factor": "Helix_factor"}
+    )
 
     # CLEAN PRICE
     df_clean_price = read_table_from_db("bronze_daily_used_price", prod_db_type)
@@ -221,8 +237,7 @@ def fetch_and_prepare_data(report_date):
     OC rates historically
     """
     if current_date_dt - report_date_dt >= timedelta(days=2):
-        bronze_data_df = read_table_from_db("bronze_bond_data", prod_db_type)
-        bronze_data_df = bronze_data_df.loc[bronze_data_df["is_am"] == 0]
+        bronze_data_df = read_table_from_db("bronze_bond_data_factor", prod_db_type)
         df_accrued_interest = bronze_data_df[
             ["bond_data_date", "bond_id", "interest_accrued"]
         ]
@@ -253,7 +268,7 @@ def main():
     # end_date = "2024-12-31"
 
     # If want to run daily:
-    start_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d")
     end_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     trading_days = get_trading_days(start_date, end_date)

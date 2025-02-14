@@ -1,10 +1,6 @@
-from Utils.Common import get_file_path, get_current_timestamp
-from Utils.database_utils import (
-    read_table_from_db,
-    prod_db_type,
-    engine_prod,
-    upsert_data_multiple_keys,
-)
+import logging
+
+import pandas as pd
 from sqlalchemy import (
     Table,
     MetaData,
@@ -12,14 +8,19 @@ from sqlalchemy import (
     String,
     Date,
     inspect,
-    Integer,
     Float,
     DateTime,
     text,
 )
 from sqlalchemy.exc import SQLAlchemyError
-import pandas as pd
-import logging
+
+from Utils.Common import get_current_timestamp
+from Utils.database_utils import (
+    read_table_from_db,
+    prod_db_type,
+    engine_prod,
+    upsert_data_multiple_keys,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def create_table_with_schema(tb_name):
         Column("fund", String(255), primary_key=True),
         Column("series", String(255), primary_key=True),
         Column("report_date", Date, primary_key=True),
-        Column("rating_buckets", String),
+        Column("rating_buckets", String(255), primary_key=True),
         Column("oc_rate", Float),
         Column("percentage_of_series_portfolio", Float),
         Column("timestamp", DateTime),
@@ -163,7 +164,7 @@ if not new_data.empty:
         engine=engine,
         table_name=tb_name,
         df=new_data,
-        primary_key_names=["fund", "series", "report_date"],
+        primary_key_names=["fund", "series", "report_date", "rating_buckets"],
         publish_to_prod=True,
     )
 else:
